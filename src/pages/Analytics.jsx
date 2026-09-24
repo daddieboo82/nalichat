@@ -249,6 +249,8 @@ export default function Analytics() {
         clicks: row.clicks.size,
         checkouts: row.checkouts.size,
         purchases: row.purchases.size,
+        clickToCheckout: row.clicks.size > 0 ? Math.min(100, Math.round((row.checkouts.size / row.clicks.size) * 100)) : 0,
+        checkoutToPurchase: row.checkouts.size > 0 ? Math.min(100, Math.round((row.purchases.size / row.checkouts.size) * 100)) : 0,
       }))
       .filter(row => row.clicks || row.checkouts || row.purchases)
       .sort((a, b) => b.purchases - a.purchases || b.checkouts - a.checkouts || b.clicks - a.clicks)
@@ -521,14 +523,14 @@ export default function Analytics() {
               )}
               {premiumSources.length > 0 && (
                 <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
-                  <table className="w-full min-w-[520px] text-left text-xs">
+                  <table className="w-full min-w-[760px] text-left text-xs">
                     <thead className="border-b border-border/60 text-muted-foreground">
-                      <tr><th className="p-3 font-semibold">Upgrade source</th><th className="p-3 font-semibold">Clicks</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th></tr>
+                      <tr><th className="p-3 font-semibold">Upgrade source</th><th className="p-3 font-semibold">Clicks</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th><th className="p-3 font-semibold">Click → checkout</th><th className="p-3 font-semibold">Checkout → paid</th></tr>
                     </thead>
                     <tbody>
                       {premiumSources.map(row => (
                         <tr key={row.source} className="border-b border-border/40 last:border-0">
-                          <td className="p-3 font-medium">{row.label}</td><td className="p-3 tabular-nums">{row.clicks}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td>
+                          <td className="p-3 font-medium">{row.label}</td><td className="p-3 tabular-nums">{row.clicks}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td><td className="p-3 tabular-nums">{row.clickToCheckout}%</td><td className="p-3 font-bold tabular-nums">{row.checkoutToPurchase}%</td>
                         </tr>
                       ))}
                     </tbody>

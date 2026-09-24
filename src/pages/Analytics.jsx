@@ -252,7 +252,15 @@ export default function Analytics() {
       planMap.set(sku, row);
     }
     return [...planMap.values()]
-      .map(row => ({ sku: row.sku, label: labels[row.sku] || row.sku.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()), selected: row.selected.size, checkouts: row.checkouts.size, purchases: row.purchases.size }))
+      .map(row => ({
+        sku: row.sku,
+        label: labels[row.sku] || row.sku.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+        selected: row.selected.size,
+        checkouts: row.checkouts.size,
+        purchases: row.purchases.size,
+        selectionToCheckout: row.selected.size > 0 ? Math.round((row.checkouts.size / row.selected.size) * 100) : 0,
+        checkoutToPurchase: row.checkouts.size > 0 ? Math.round((row.purchases.size / row.checkouts.size) * 100) : 0,
+      }))
       .sort((a, b) => b.purchases - a.purchases || b.checkouts - a.checkouts || b.selected - a.selected);
   }, [filteredFunnelEvents]);
 
@@ -455,8 +463,8 @@ export default function Analytics() {
                 <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
                   <div className="border-b border-border/60 p-3"><p className="text-xs font-semibold">Premium plan performance</p><p className="mt-1 text-[11px] text-muted-foreground">See which subscription options users select and which plans complete purchase.</p></div>
                   <table className="w-full min-w-[520px] text-left text-xs">
-                    <thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Plan</th><th className="p-3 font-semibold">Selected</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th></tr></thead>
-                    <tbody>{premiumPlans.map(row => <tr key={row.sku} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.label}</td><td className="p-3 tabular-nums">{row.selected}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td></tr>)}</tbody>
+                    <thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Plan</th><th className="p-3 font-semibold">Selected</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th><th className="p-3 font-semibold">Select → checkout</th><th className="p-3 font-semibold">Checkout → paid</th></tr></thead>
+                    <tbody>{premiumPlans.map(row => <tr key={row.sku} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.label}</td><td className="p-3 tabular-nums">{row.selected}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td><td className="p-3 tabular-nums">{row.selectionToCheckout}%</td><td className="p-3 font-bold tabular-nums">{row.checkoutToPurchase}%</td></tr>)}</tbody>
                   </table>
                 </div>
               )}

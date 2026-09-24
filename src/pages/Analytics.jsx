@@ -129,6 +129,15 @@ export default function Analytics() {
     }));
   }, [filteredFunnelEvents]);
 
+  const premiumDropoff = React.useMemo(() => {
+    const candidates = premiumConversion.slice(1).map((step, index) => ({
+      label: `${premiumConversion[index].label} → ${step.label}`,
+      lost: Math.max(0, premiumConversion[index].count - step.count),
+      retention: step.previousRate,
+    }));
+    return candidates.sort((a, b) => b.lost - a.lost)[0] || null;
+  }, [premiumConversion]);
+
   const premiumHealth = React.useMemo(() => {
     const unique = (name) => new Set(filteredFunnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)).size;
     const checkout = unique("checkout_started");
@@ -352,6 +361,13 @@ export default function Analytics() {
                   </div>
                 ))}
               </div>
+              {premiumDropoff?.lost > 0 && (
+                <div className="mt-4 rounded-2xl border border-border/60 bg-background/40 p-3">
+                  <p className="text-xs font-semibold">Largest Premium drop-off</p>
+                  <p className="mt-1 text-sm font-heading font-bold">{premiumDropoff.label}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{premiumDropoff.lost} fewer unique users/sessions reached the next stage · {premiumDropoff.retention}% stage retention.</p>
+                </div>
+              )}
               {premiumHealth.checkout > 0 && (
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">Checkout completion</p><p className="mt-2 text-xl font-heading font-bold tabular-nums">{premiumHealth.completionRate}%</p><p className="mt-1 text-xs text-muted-foreground">{premiumHealth.purchases} confirmed of {premiumHealth.checkout} checkout starters</p></div>

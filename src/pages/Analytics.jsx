@@ -275,6 +275,8 @@ export default function Analytics() {
         clicks: row.clicks.size,
         checkouts: row.checkouts.size,
         purchases: row.purchases.size,
+        clickToCheckout: row.clicks.size > 0 ? Math.min(100, Math.round((row.checkouts.size / row.clicks.size) * 100)) : 0,
+        checkoutToPurchase: row.checkouts.size > 0 ? Math.min(100, Math.round((row.purchases.size / row.checkouts.size) * 100)) : 0,
       }))
       .sort((a, b) => b.purchases - a.purchases || b.checkouts - a.checkouts || b.clicks - a.clicks)
       .slice(0, 8);
@@ -560,9 +562,9 @@ export default function Analytics() {
               {premiumFeatures.length > 0 && (
                 <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
                   <div className="border-b border-border/60 p-3"><p className="text-xs font-semibold">Premium feature demand</p><p className="mt-1 text-[11px] text-muted-foreground">Which locked creator tools are driving upgrade intent and purchases.</p></div>
-                  <table className="w-full min-w-[520px] text-left text-xs">
-                    <thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Feature</th><th className="p-3 font-semibold">Clicks</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th></tr></thead>
-                    <tbody>{premiumFeatures.map(row => <tr key={row.feature} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.label}</td><td className="p-3 tabular-nums">{row.clicks}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td></tr>)}</tbody>
+                  <table className="w-full min-w-[760px] text-left text-xs">
+                    <thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Feature</th><th className="p-3 font-semibold">Clicks</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th><th className="p-3 font-semibold">Click → checkout</th><th className="p-3 font-semibold">Checkout → paid</th></tr></thead>
+                    <tbody>{premiumFeatures.map(row => <tr key={row.feature} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.label}</td><td className="p-3 tabular-nums">{row.clicks}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td><td className="p-3 tabular-nums">{row.clickToCheckout}%</td><td className="p-3 font-bold tabular-nums">{row.checkoutToPurchase}%</td></tr>)}</tbody>
                   </table>
                 </div>
               )}

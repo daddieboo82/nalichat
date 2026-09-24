@@ -77,9 +77,15 @@ export default function ThankYou() {
         }
         try { sessionStorage.removeItem(CHECKOUT_ATTRIBUTION_KEY); } catch {}
       } else if (result.outcome === "failed") {
+        const attribution = getMarketingAttribution();
         trackPaywallEvent("purchase_failed", {
-          source: "subscription_thank_you",
+          source: checkoutAttribution?.source || "subscription_thank_you",
           outcome: "verification_error",
+          upgrade_feature: checkoutAttribution?.feature || undefined,
+          checkout_sku: checkoutAttribution?.sku || undefined,
+          campaign_source: attribution?.utm_source || undefined,
+          campaign_medium: attribution?.utm_medium || undefined,
+          campaign_name: attribution?.utm_campaign || undefined,
         });
       }
     };

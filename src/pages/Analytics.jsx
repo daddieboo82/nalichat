@@ -352,6 +352,16 @@ export default function Analytics() {
     };
   }, [filteredFunnelEvents]);
 
+  const premiumAttributionHealth = React.useMemo(() => {
+    const metrics = [premiumAttributionCoverage.source, premiumAttributionCoverage.feature, premiumAttributionCoverage.sku, premiumAttributionCoverage.campaign];
+    const total = premiumAttributionCoverage.source.total;
+    if (!total) return { status: "Collecting data", average: 0, weakest: null };
+    const average = Math.round(metrics.reduce((sum, metric) => sum + metric.rate, 0) / metrics.length);
+    const labels = ["Upgrade source", "Feature", "Plan SKU", "Campaign"];
+    const weakestIndex = metrics.reduce((lowest, metric, index) => metric.rate < metrics[lowest].rate ? index : lowest, 0);
+    return { status: average >= 90 ? "Strong coverage" : average >= 70 ? "Partial coverage" : "Needs attention", average, weakest: { label: labels[weakestIndex], ...metrics[weakestIndex] } };
+  }, [premiumAttributionCoverage]);
+
   const premiumOpportunities = React.useMemo(() => {
     const weakest = (rows, key) => rows.filter(row => (row.checkouts || 0) >= 2).sort((a, b) => (a[key] || 0) - (b[key] || 0))[0] || null;
     return {
@@ -547,6 +557,7 @@ export default function Analytics() {
                   <p className="text-xs font-semibold">Purchase attribution coverage</p>
                   <p className="mt-1 text-[11px] text-muted-foreground">How much of confirmed Premium purchase history includes the context needed for source, feature, plan, and campaign reporting.</p>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[["Upgrade source", premiumAttributionCoverage.source], ["Feature", premiumAttributionCoverage.feature], ["Plan SKU", premiumAttributionCoverage.sku], ["Campaign", premiumAttributionCoverage.campaign]].map(([label, metric]) => <div key={label} className="rounded-xl border border-border/50 p-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-lg font-bold tabular-nums">{metric.rate}%</p><p className="text-[11px] text-muted-foreground">{metric.count} of {metric.total} purchases attributed · {metric.missing} missing</p></div>)}</div>
+                  <div className="mt-3 rounded-xl border border-border/50 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-[11px] text-muted-foreground">Attribution health</p><p className="text-sm font-semibold">{premiumAttributionHealth.status}</p></div><p className="text-lg font-bold tabular-nums">{premiumAttributionHealth.average}% avg</p></div>{premiumAttributionHealth.weakest && <p className="mt-2 text-[11px] text-muted-foreground">Weakest coverage: {premiumAttributionHealth.weakest.label} at {premiumAttributionHealth.weakest.rate}% ({premiumAttributionHealth.weakest.missing} missing).</p>}</div>
                 </div>
               )}
               {Object.values(premiumLeaders).some(Boolean) && (

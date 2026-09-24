@@ -129,6 +129,25 @@ export default function Analytics() {
     }));
   }, [filteredFunnelEvents]);
 
+  const premiumTrend = React.useMemo(() => {
+    const days = funnelWindow === "7d" ? 7 : 30;
+    if (funnelWindow === "all") return [];
+    const rows = [];
+    for (let offset = days - 1; offset >= 0; offset -= 1) {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - offset);
+      const next = new Date(date); next.setDate(next.getDate() + 1);
+      const daily = filteredFunnelEvents.filter(event => {
+        const created = new Date(event.created_date || event.created_at || 0).getTime();
+        return created >= date.getTime() && created < next.getTime();
+      });
+      const unique = name => new Set(daily.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)).size;
+      rows.push({ date: date.toLocaleDateString(undefined, { month: "short", day: "numeric" }), upgrades: unique("upgrade_click"), checkouts: unique("checkout_started"), purchases: unique("purchase_completed") });
+    }
+    return rows;
+  }, [filteredFunnelEvents, funnelWindow]);
+
   const premiumDropoff = React.useMemo(() => {
     const candidates = premiumConversion.slice(1).map((step, index) => ({
       label: `${premiumConversion[index].label} → ${step.label}`,
@@ -415,6 +434,12 @@ export default function Analytics() {
                 ))}
               </div>
               <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">Premium stages count unique users/sessions within the selected date range. Users can enter Pricing directly, so stage totals are directional and may not always decrease step-by-step.</p>
+              {premiumTrend.length > 0 && (
+                <div className="mt-4 h-56 rounded-2xl border border-border/60 bg-background/30 p-3">
+                  <p className="mb-2 text-xs font-semibold">Premium conversion trend</p>
+                  <ResponsiveContainer width="100%" height="88%"><LineChart data={premiumTrend}><CartesianGrid strokeDasharray="3 3" opacity={0.2} /><XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" /><YAxis allowDecimals={false} tick={{ fontSize: 10 }} /><Tooltip /><Legend /><Line type="monotone" dataKey="upgrades" name="Upgrade clicks" stroke="currentColor" dot={false} /><Line type="monotone" dataKey="checkouts" name="Checkouts" stroke="currentColor" strokeDasharray="5 3" dot={false} /><Line type="monotone" dataKey="purchases" name="Purchases" stroke="currentColor" strokeDasharray="2 2" dot={false} /></LineChart></ResponsiveContainer>
+                </div>
+              )}
               {premiumDropoff?.lost > 0 && (
                 <div className="mt-4 rounded-2xl border border-border/60 bg-background/40 p-3">
                   <p className="text-xs font-semibold">Largest Premium drop-off</p>

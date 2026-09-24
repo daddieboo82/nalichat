@@ -206,6 +206,21 @@ export default function Analytics() {
       .slice(0, 8);
   }, [filteredFunnelEvents]);
 
+  const premiumFailureSources = React.useMemo(() => {
+    const aliases = { desktop_nav: "desktop_nav_upgrade", mobile_header: "mobile_header_upgrade" };
+    const rows = new Map();
+    for (const event of filteredFunnelEvents) {
+      if (event.event_name !== "purchase_failed") continue;
+      const raw = event.source || "unknown";
+      let source = aliases[raw] || raw;
+      if (/^(connect|create|discover|share|visualize|compete)_world$/.test(source)) source = `${source}_upgrade`;
+      const row = rows.get(source) || { source, identities: new Set() };
+      row.identities.add(event.user_id || event.session_id || event.id);
+      rows.set(source, row);
+    }
+    return [...rows.values()].map(row => ({ source: row.source, failures: row.identities.size })).sort((a, b) => b.failures - a.failures).slice(0, 8);
+  }, [filteredFunnelEvents]);
+
   const premiumSources = React.useMemo(() => {
     const labels = {
       desktop_nav_upgrade: "Desktop nav",
@@ -477,6 +492,12 @@ export default function Analytics() {
                 <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
                   <div className="border-b border-border/60 p-3"><p className="text-xs font-semibold">Premium failure breakdown</p><p className="mt-1 text-[11px] text-muted-foreground">Separate checkout-start errors from payment verification failures by subscription plan.</p></div>
                   <table className="w-full min-w-[520px] text-left text-xs"><thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Plan</th><th className="p-3 font-semibold">Failure type</th><th className="p-3 font-semibold">Affected</th></tr></thead><tbody>{premiumFailures.map(row => <tr key={row.key} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.label}</td><td className="p-3">{row.outcome.replace(/_/g, " ")}</td><td className="p-3 font-bold tabular-nums">{row.failures}</td></tr>)}</tbody></table>
+                </div>
+              )}
+              {premiumFailureSources.length > 0 && (
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
+                  <div className="border-b border-border/60 p-3"><p className="text-xs font-semibold">Failures by upgrade source</p><p className="mt-1 text-[11px] text-muted-foreground">Shows where users entered the Premium journey before a persisted purchase failure.</p></div>
+                  <table className="w-full min-w-[420px] text-left text-xs"><thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Upgrade source</th><th className="p-3 font-semibold">Affected</th></tr></thead><tbody>{premiumFailureSources.map(row => <tr key={row.source} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.source.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</td><td className="p-3 font-bold tabular-nums">{row.failures}</td></tr>)}</tbody></table>
                 </div>
               )}
               {premiumSources.length > 0 && (

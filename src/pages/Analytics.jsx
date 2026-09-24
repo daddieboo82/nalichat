@@ -339,6 +339,16 @@ export default function Analytics() {
 
   const premiumCampaignEfficiency = React.useMemo(() => premiumCampaigns.map(row => ({ ...row, clickToCheckout: row.clicks > 0 ? Math.min(100, Math.round((row.checkouts / row.clicks) * 100)) : 0, checkoutToPurchase: row.checkouts > 0 ? Math.min(100, Math.round((row.purchases / row.checkouts) * 100)) : 0 })), [premiumCampaigns]);
 
+  const premiumLeaders = React.useMemo(() => {
+    const best = (rows, key, minimum = 1) => rows.filter(row => (row.purchases || 0) >= minimum).sort((a, b) => (b[key] || 0) - (a[key] || 0))[0] || null;
+    return {
+      source: best(premiumSources, "checkoutToPurchase"),
+      feature: best(premiumFeatures, "checkoutToPurchase"),
+      plan: best(premiumPlans, "checkoutToPurchase"),
+      campaign: best(premiumCampaignEfficiency, "checkoutToPurchase"),
+    };
+  }, [premiumSources, premiumFeatures, premiumPlans, premiumCampaignEfficiency]);
+
   const premiumCampaignFailures = React.useMemo(() => {
     const rows = new Map();
     for (const event of filteredFunnelEvents) {
@@ -507,6 +517,13 @@ export default function Analytics() {
                   <div className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">Checkout completion</p><p className="mt-2 text-xl font-heading font-bold tabular-nums">{premiumHealth.completionRate}%</p><p className="mt-1 text-xs text-muted-foreground">{premiumHealth.purchases} confirmed of {premiumHealth.checkout} checkout starters</p></div>
                   <div className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">Purchase failures</p><p className="mt-2 text-xl font-heading font-bold tabular-nums">{premiumHealth.failures}</p><p className="mt-1 text-xs text-muted-foreground">{premiumHealth.failureRate}% of checkout starters</p></div>
                   <div className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">Checkout health</p><p className="mt-2 text-sm font-heading font-bold">{premiumHealth.failureRate >= 20 ? "Needs attention" : premiumHealth.checkout >= 3 ? "Healthy signal" : "Collecting data"}</p><p className="mt-1 text-xs text-muted-foreground">Based on persisted checkout outcomes in this date range.</p></div>
+                </div>
+              )}
+              {Object.values(premiumLeaders).some(Boolean) && (
+                <div className="mt-4 rounded-2xl border border-border/60 bg-background/30 p-4">
+                  <p className="text-xs font-semibold">Premium conversion leaders</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Highest checkout-to-paid rate among rows with at least one confirmed purchase in this date range.</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[["Source", premiumLeaders.source], ["Feature", premiumLeaders.feature], ["Plan", premiumLeaders.plan], ["Campaign", premiumLeaders.campaign]].filter(([, row]) => row).map(([kind, row]) => <div key={kind} className="rounded-xl border border-border/50 p-3"><p className="text-[11px] text-muted-foreground">{kind}</p><p className="mt-1 text-sm font-semibold">{row.label || row.campaign || row.source || row.sku}</p><p className="mt-1 text-lg font-bold tabular-nums">{row.checkoutToPurchase}%</p></div>)}</div>
                 </div>
               )}
               {premiumFailures.length > 0 && (

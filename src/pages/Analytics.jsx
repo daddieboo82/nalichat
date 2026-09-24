@@ -152,6 +152,27 @@ export default function Analytics() {
     };
   }, [filteredFunnelEvents]);
 
+  const premiumFailures = React.useMemo(() => {
+    const labels = {
+      premium_monthly: "Premium Monthly", premium_yearly: "Premium Yearly",
+      premium_plus_monthly: "Premium Plus Monthly", premium_plus_yearly: "Premium Plus Yearly",
+    };
+    const rows = new Map();
+    for (const event of filteredFunnelEvents) {
+      if (event.event_name !== "purchase_failed") continue;
+      const sku = event.metadata?.checkout_sku || event.metadata?.sku || "unknown";
+      const outcome = event.metadata?.outcome || "unknown";
+      const key = `${sku}:${outcome}`;
+      const row = rows.get(key) || { key, sku, outcome, identities: new Set() };
+      row.identities.add(event.user_id || event.session_id || event.id);
+      rows.set(key, row);
+    }
+    return [...rows.values()]
+      .map(row => ({ ...row, label: labels[row.sku] || row.sku.replace(/_/g, " ").replace(/\\b\\w/g, c => c.toUpperCase()), failures: row.identities.size }))
+      .sort((a, b) => b.failures - a.failures)
+      .slice(0, 8);
+  }, [filteredFunnelEvents]);
+
   const premiumSources = React.useMemo(() => {
     const labels = {
       desktop_nav_upgrade: "Desktop nav",
@@ -397,6 +418,12 @@ export default function Analytics() {
                   <div className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">Checkout completion</p><p className="mt-2 text-xl font-heading font-bold tabular-nums">{premiumHealth.completionRate}%</p><p className="mt-1 text-xs text-muted-foreground">{premiumHealth.purchases} confirmed of {premiumHealth.checkout} checkout starters</p></div>
                   <div className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">Purchase failures</p><p className="mt-2 text-xl font-heading font-bold tabular-nums">{premiumHealth.failures}</p><p className="mt-1 text-xs text-muted-foreground">{premiumHealth.failureRate}% of checkout starters</p></div>
                   <div className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">Checkout health</p><p className="mt-2 text-sm font-heading font-bold">{premiumHealth.failureRate >= 20 ? "Needs attention" : premiumHealth.checkout >= 3 ? "Healthy signal" : "Collecting data"}</p><p className="mt-1 text-xs text-muted-foreground">Based on persisted checkout outcomes in this date range.</p></div>
+                </div>
+              )}
+              {premiumFailures.length > 0 && (
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
+                  <div className="border-b border-border/60 p-3"><p className="text-xs font-semibold">Premium failure breakdown</p><p className="mt-1 text-[11px] text-muted-foreground">Separate checkout-start errors from payment verification failures by subscription plan.</p></div>
+                  <table className="w-full min-w-[520px] text-left text-xs"><thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Plan</th><th className="p-3 font-semibold">Failure type</th><th className="p-3 font-semibold">Affected</th></tr></thead><tbody>{premiumFailures.map(row => <tr key={row.key} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.label}</td><td className="p-3">{row.outcome.replace(/_/g, " ")}</td><td className="p-3 font-bold tabular-nums">{row.failures}</td></tr>)}</tbody></table>
                 </div>
               )}
               {premiumSources.length > 0 && (

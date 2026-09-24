@@ -333,6 +333,21 @@ export default function Analytics() {
       .slice(0, 8);
   }, [filteredFunnelEvents]);
 
+  const premiumCampaignFailures = React.useMemo(() => {
+    const rows = new Map();
+    for (const event of filteredFunnelEvents) {
+      if (event.event_name !== "purchase_failed") continue;
+      const campaign = event.campaign_name || event.metadata?.campaign_name;
+      const source = event.campaign_source || event.metadata?.campaign_source;
+      if (!campaign && !source) continue;
+      const key = `${source || "direct"}:${campaign || "unspecified"}`;
+      const row = rows.get(key) || { key, source: source || "Direct", campaign: campaign || "Unspecified", identities: new Set() };
+      row.identities.add(event.user_id || event.session_id || event.id);
+      rows.set(key, row);
+    }
+    return [...rows.values()].map(row => ({ key: row.key, source: row.source, campaign: row.campaign, failures: row.identities.size })).sort((a, b) => b.failures - a.failures).slice(0, 8);
+  }, [filteredFunnelEvents]);
+
   const { data: userPosts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["userAnalytics", currentUser?.id],
     queryFn: () =>
@@ -514,6 +529,12 @@ export default function Analytics() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+              {premiumCampaignFailures.length > 0 && (
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
+                  <div className="border-b border-border/60 p-3"><p className="text-xs font-semibold">Campaign purchase failures</p><p className="mt-1 text-[11px] text-muted-foreground">Shows persisted purchase failures tied to marketing attribution.</p></div>
+                  <table className="w-full min-w-[520px] text-left text-xs"><thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Source</th><th className="p-3 font-semibold">Campaign</th><th className="p-3 font-semibold">Affected</th></tr></thead><tbody>{premiumCampaignFailures.map(row => <tr key={row.key} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.source}</td><td className="p-3">{row.campaign}</td><td className="p-3 font-bold tabular-nums">{row.failures}</td></tr>)}</tbody></table>
                 </div>
               )}
               {premiumCampaigns.length > 0 && (

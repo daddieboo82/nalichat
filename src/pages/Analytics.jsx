@@ -162,7 +162,10 @@ export default function Analytics() {
     const sourceMap = new Map();
     for (const event of filteredFunnelEvents) {
       if (!["upgrade_click", "checkout_started", "purchase_completed"].includes(event.event_name)) continue;
-      const source = event.source || "unknown";
+      const rawSource = event.source || "unknown";
+      const legacyAliases = { desktop_nav: "desktop_nav_upgrade", mobile_header: "mobile_header_upgrade" };
+      let source = legacyAliases[rawSource] || rawSource;
+      if (/^(connect|create|discover|share|visualize|compete)_world$/.test(source)) source = `${source}_upgrade`;
       const row = sourceMap.get(source) || { source, clicks: new Set(), checkouts: new Set(), purchases: new Set() };
       const identity = event.user_id || event.session_id || event.id;
       if (event.event_name === "upgrade_click") row.clicks.add(identity);

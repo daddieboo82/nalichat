@@ -333,6 +333,8 @@ export default function Analytics() {
       .slice(0, 8);
   }, [filteredFunnelEvents]);
 
+  const premiumCampaignEfficiency = React.useMemo(() => premiumCampaigns.map(row => ({ ...row, clickToCheckout: row.clicks > 0 ? Math.min(100, Math.round((row.checkouts / row.clicks) * 100)) : 0, checkoutToPurchase: row.checkouts > 0 ? Math.min(100, Math.round((row.purchases / row.checkouts) * 100)) : 0 })), [premiumCampaigns]);
+
   const premiumCampaignFailures = React.useMemo(() => {
     const rows = new Map();
     for (const event of filteredFunnelEvents) {
@@ -540,9 +542,9 @@ export default function Analytics() {
               {premiumCampaigns.length > 0 && (
                 <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
                   <div className="border-b border-border/60 p-3"><p className="text-xs font-semibold">Premium campaign performance</p><p className="mt-1 text-[11px] text-muted-foreground">Connect marketing campaigns to upgrade intent and confirmed subscriptions.</p></div>
-                  <table className="w-full min-w-[620px] text-left text-xs">
-                    <thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Source</th><th className="p-3 font-semibold">Campaign</th><th className="p-3 font-semibold">Clicks</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th></tr></thead>
-                    <tbody>{premiumCampaigns.map(row => <tr key={row.key} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.source}</td><td className="p-3">{row.campaign}</td><td className="p-3 tabular-nums">{row.clicks}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td></tr>)}</tbody>
+                  <table className="w-full min-w-[820px] text-left text-xs">
+                    <thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Source</th><th className="p-3 font-semibold">Campaign</th><th className="p-3 font-semibold">Clicks</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th><th className="p-3 font-semibold">Click → checkout</th><th className="p-3 font-semibold">Checkout → paid</th></tr></thead>
+                    <tbody>{premiumCampaignEfficiency.map(row => <tr key={row.key} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.source}</td><td className="p-3">{row.campaign}</td><td className="p-3 tabular-nums">{row.clicks}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td><td className="p-3 tabular-nums">{row.clickToCheckout}%</td><td className="p-3 font-bold tabular-nums">{row.checkoutToPurchase}%</td></tr>)}</tbody>
                   </table>
                 </div>
               )}

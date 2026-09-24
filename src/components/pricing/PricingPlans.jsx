@@ -235,6 +235,10 @@ export default function PricingPlans({
         billing_period: period,
         sku,
         outcome: "checkout_error",
+        source: upgradeSource || "pricing",
+        upgrade_feature: upgradeFeature || undefined,
+        checkout_sku: sku,
+        ...campaignContext(),
       });
       toast.error(checkoutError?.message || "Could not start checkout. Please try again.");
       setStartingPlan(null);

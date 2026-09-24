@@ -235,6 +235,27 @@ export default function Analytics() {
       .sort((a, b) => b.purchases - a.purchases || b.checkouts - a.checkouts || b.selected - a.selected);
   }, [filteredFunnelEvents]);
 
+  const premiumCampaigns = React.useMemo(() => {
+    const campaignMap = new Map();
+    for (const event of filteredFunnelEvents) {
+      if (!["upgrade_click", "checkout_started", "purchase_completed"].includes(event.event_name)) continue;
+      const campaign = event.campaign_name || event.metadata?.campaign_name;
+      const source = event.campaign_source || event.metadata?.campaign_source;
+      if (!campaign && !source) continue;
+      const key = `${source || "direct"}:${campaign || "unspecified"}`;
+      const row = campaignMap.get(key) || { key, source: source || "Direct", campaign: campaign || "Unspecified", clicks: new Set(), checkouts: new Set(), purchases: new Set() };
+      const identity = event.user_id || event.session_id || event.id;
+      if (event.event_name === "upgrade_click") row.clicks.add(identity);
+      if (event.event_name === "checkout_started") row.checkouts.add(identity);
+      if (event.event_name === "purchase_completed") row.purchases.add(identity);
+      campaignMap.set(key, row);
+    }
+    return [...campaignMap.values()]
+      .map(row => ({ key: row.key, source: row.source, campaign: row.campaign, clicks: row.clicks.size, checkouts: row.checkouts.size, purchases: row.purchases.size }))
+      .sort((a, b) => b.purchases - a.purchases || b.checkouts - a.checkouts || b.clicks - a.clicks)
+      .slice(0, 8);
+  }, [filteredFunnelEvents]);
+
   const { data: userPosts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["userAnalytics", currentUser?.id],
     queryFn: () =>
@@ -391,6 +412,15 @@ export default function Analytics() {
                         </tr>
                       ))}
                     </tbody>
+                  </table>
+                </div>
+              )}
+              {premiumCampaigns.length > 0 && (
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
+                  <div className="border-b border-border/60 p-3"><p className="text-xs font-semibold">Premium campaign performance</p><p className="mt-1 text-[11px] text-muted-foreground">Connect marketing campaigns to upgrade intent and confirmed subscriptions.</p></div>
+                  <table className="w-full min-w-[620px] text-left text-xs">
+                    <thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Source</th><th className="p-3 font-semibold">Campaign</th><th className="p-3 font-semibold">Clicks</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th></tr></thead>
+                    <tbody>{premiumCampaigns.map(row => <tr key={row.key} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.source}</td><td className="p-3">{row.campaign}</td><td className="p-3 tabular-nums">{row.clicks}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td></tr>)}</tbody>
                   </table>
                 </div>
               )}

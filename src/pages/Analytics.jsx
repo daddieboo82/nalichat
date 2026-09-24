@@ -150,16 +150,16 @@ export default function Analytics() {
 
   const premiumTrendSummary = React.useMemo(() => {
     if (premiumTrend.length < 2) return null;
-    const midpoint = Math.floor(premiumTrend.length / 2);
+    const periodSize = Math.floor(premiumTrend.length / 2);
     const sum = (rows, key) => rows.reduce((total, row) => total + row[key], 0);
-    const previous = premiumTrend.slice(0, midpoint);
-    const recent = premiumTrend.slice(midpoint);
+    const previous = premiumTrend.slice(premiumTrend.length - periodSize * 2, premiumTrend.length - periodSize);
+    const recent = premiumTrend.slice(-periodSize);
     const metric = (key) => {
       const before = sum(previous, key);
       const after = sum(recent, key);
       return { before, after, change: before > 0 ? Math.round(((after - before) / before) * 100) : after > 0 ? 100 : 0 };
     };
-    return { upgrades: metric("upgrades"), checkouts: metric("checkouts"), purchases: metric("purchases") };
+    return { periodSize, upgrades: metric("upgrades"), checkouts: metric("checkouts"), purchases: metric("purchases") };
   }, [premiumTrend]);
 
   const premiumDropoff = React.useMemo(() => {
@@ -529,7 +529,7 @@ export default function Analytics() {
               <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">Premium stages count unique users/sessions within the selected date range. Users can enter Pricing directly, so stage totals are directional and may not always decrease step-by-step.</p>
               {premiumTrendSummary && (
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  {[["Upgrade clicks", premiumTrendSummary.upgrades], ["Checkouts", premiumTrendSummary.checkouts], ["Purchases", premiumTrendSummary.purchases]].map(([label, metric]) => <div key={label} className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">{label} trend</p><p className="mt-2 text-lg font-heading font-bold tabular-nums">{metric.change > 0 ? "+" : ""}{metric.change}%</p><p className="mt-1 text-[11px] text-muted-foreground">Recent half vs prior half · {metric.before} → {metric.after}</p></div>)}
+                  {[["Upgrade clicks", premiumTrendSummary.upgrades], ["Checkouts", premiumTrendSummary.checkouts], ["Purchases", premiumTrendSummary.purchases]].map(([label, metric]) => <div key={label} className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">{label} trend</p><p className="mt-2 text-lg font-heading font-bold tabular-nums">{metric.change > 0 ? "+" : ""}{metric.change}%</p><p className="mt-1 text-[11px] text-muted-foreground">Recent {premiumTrendSummary.periodSize}d vs prior {premiumTrendSummary.periodSize}d · {metric.before} → {metric.after}</p></div>)}
                 </div>
               )}
               {premiumTrend.length > 0 && (

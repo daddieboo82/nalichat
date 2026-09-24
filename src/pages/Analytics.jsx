@@ -258,7 +258,6 @@ export default function Analytics() {
         selected: row.selected.size,
         checkouts: row.checkouts.size,
         purchases: row.purchases.size,
-        selectionToCheckout: row.selected.size > 0 ? Math.round((row.checkouts.size / row.selected.size) * 100) : 0,
         selectionToCheckout: row.selected.size > 0 ? Math.min(100, Math.round((row.checkouts.size / row.selected.size) * 100)) : 0,
         checkoutToPurchase: row.checkouts.size > 0 ? Math.min(100, Math.round((row.purchases.size / row.checkouts.size) * 100)) : 0,
       }))

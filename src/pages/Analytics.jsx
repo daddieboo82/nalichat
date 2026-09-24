@@ -343,7 +343,7 @@ export default function Analytics() {
     const purchaseEvents = filteredFunnelEvents.filter(event => event.event_name === "purchase_completed");
     const covered = (predicate) => purchaseEvents.filter(predicate).length;
     const total = purchaseEvents.length;
-    const metric = (count) => ({ count, total, rate: total > 0 ? Math.round((count / total) * 100) : 0 });
+    const metric = (count) => ({ count, total, missing: Math.max(0, total - count), rate: total > 0 ? Math.round((count / total) * 100) : 0 });
     return {
       source: metric(covered(event => Boolean(event.source))),
       feature: metric(covered(event => Boolean(event.metadata?.upgrade_feature || event.metadata?.entitlement))),
@@ -546,7 +546,7 @@ export default function Analytics() {
                 <div className="mt-4 rounded-2xl border border-border/60 bg-background/30 p-4">
                   <p className="text-xs font-semibold">Purchase attribution coverage</p>
                   <p className="mt-1 text-[11px] text-muted-foreground">How much of confirmed Premium purchase history includes the context needed for source, feature, plan, and campaign reporting.</p>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[["Upgrade source", premiumAttributionCoverage.source], ["Feature", premiumAttributionCoverage.feature], ["Plan SKU", premiumAttributionCoverage.sku], ["Campaign", premiumAttributionCoverage.campaign]].map(([label, metric]) => <div key={label} className="rounded-xl border border-border/50 p-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-lg font-bold tabular-nums">{metric.rate}%</p><p className="text-[11px] text-muted-foreground">{metric.count} of {metric.total} purchases attributed</p></div>)}</div>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[["Upgrade source", premiumAttributionCoverage.source], ["Feature", premiumAttributionCoverage.feature], ["Plan SKU", premiumAttributionCoverage.sku], ["Campaign", premiumAttributionCoverage.campaign]].map(([label, metric]) => <div key={label} className="rounded-xl border border-border/50 p-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-lg font-bold tabular-nums">{metric.rate}%</p><p className="text-[11px] text-muted-foreground">{metric.count} of {metric.total} purchases attributed · {metric.missing} missing</p></div>)}</div>
                 </div>
               )}
               {Object.values(premiumLeaders).some(Boolean) && (

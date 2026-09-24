@@ -364,7 +364,7 @@ export default function Analytics() {
   }, [premiumAttributionCoverage]);
 
   const premiumOpportunities = React.useMemo(() => {
-    const weakest = (rows, key) => rows.filter(row => (row.checkouts || 0) >= 2).sort((a, b) => (a[key] || 0) - (b[key] || 0))[0] || null;
+    const weakest = (rows, key) => rows.filter(row => (row.checkouts || 0) >= 2).sort((a, b) => (a[key] || 0) - (b[key] || 0) || (b.checkouts || 0) - (a.checkouts || 0))[0] || null;
     return {
       source: weakest(premiumSources, "checkoutToPurchase"),
       feature: weakest(premiumFeatures, "checkoutToPurchase"),
@@ -374,7 +374,7 @@ export default function Analytics() {
   }, [premiumSources, premiumFeatures, premiumPlans, premiumCampaignEfficiency]);
 
   const premiumLeaders = React.useMemo(() => {
-    const best = (rows, key, minimum = 1) => rows.filter(row => (row.purchases || 0) >= minimum).sort((a, b) => (b[key] || 0) - (a[key] || 0))[0] || null;
+    const best = (rows, key, minimum = 1) => rows.filter(row => (row.purchases || 0) >= minimum).sort((a, b) => (b[key] || 0) - (a[key] || 0) || (b.checkouts || 0) - (a.checkouts || 0) || (b.purchases || 0) - (a.purchases || 0))[0] || null;
     return {
       source: best(premiumSources, "checkoutToPurchase"),
       feature: best(premiumFeatures, "checkoutToPurchase"),

@@ -102,7 +102,7 @@ export default function MusicVideoGenerator() {
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
     const visible = clipsRef.current.filter((clip) => at >= clip.start && at < clip.start + clipLength(clip));
     const clip = visible.at(-1);
-    const opacity = clip ? Math.min(1, (at - clip.start) / Math.max(clip.fadeIn ?? .3, .001), (clip.start + clipLength(clip) - at) / Math.max(clip.fadeOut ?? .3, .001)) : 0;
+    const opacity = clip ? Math.min(1, (clip.fadeIn ?? .3) > 0 ? (at - clip.start) / clip.fadeIn : 1, (clip.fadeOut ?? .3) > 0 ? (clip.start + clipLength(clip) - at) / clip.fadeOut : 1) : 0;
     for (const [id, gain] of exportGainsRef.current || []) gain.gain.value = id === clip?.assetId ? clamp(clip.volume ?? 1, 0, 1) * opacity : 0;
     for (const [id, element] of mediaRef.current) {
       if (element.tagName === "VIDEO" && id !== clip?.assetId) element.pause();

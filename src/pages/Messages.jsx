@@ -933,7 +933,7 @@ export default function Messages() {
                       queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] }),
                       queryClient.invalidateQueries({ queryKey: ["public-conversations"] }),
                     ]);
-                  }} className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]">
+                  }} className="flex flex-1 min-h-0 flex-col overflow-hidden">
                     {conversationsError ? (
                       <div className="m-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
                         Couldn't load conversations. Pull to refresh or try again.

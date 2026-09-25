@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
       return typeof value !== 'string' || !value.trim();
     });
     const sandboxMode = environment === 'sandbox';
+    const webhookConfigured = Boolean(String(secrets.get('PAYPAL_WEBHOOK_ID') || '').trim());
 
     return Response.json({
       success: true,
@@ -47,6 +48,7 @@ Deno.serve(async (req) => {
       priceCatalogReady: missingSecrets.length === 0,
       missingPriceSecrets: missingSecrets,
       missingSecrets,
+      webhookConfigured,
     });
   } catch (error) {
     console.error('getBillingTestStatus error:', error);

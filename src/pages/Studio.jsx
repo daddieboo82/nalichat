@@ -3337,7 +3337,7 @@ export default function Studio() {
             <span className="w-7 text-right font-mono text-[10px]">{masterVolume}%</span>
           </div>
           <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
-          <NudgeValueSelector nudgeValue={nudgeValue} setNudgeValue={setNudgeValue} bpm={bpm} />
+          <NudgeValueSelector nudgeValue={nudgeValue} setNudgeValue={setNudgeValue} bpm={bpm} sampleRate={audioSettings.sampleRate} />
         </div>
         <div className="flex items-center gap-4 shrink-0">
           <span className="flex items-center gap-1.5">

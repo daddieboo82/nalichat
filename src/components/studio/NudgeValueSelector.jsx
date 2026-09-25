@@ -27,8 +27,8 @@ const getNudgeValues = (bpm = 120, sampleRate = 44100) => {
  * Pro Tools-style Nudge Value Selector — configures the nudge amount
  * used by Shift+Arrow key nudging.
  */
-export default function NudgeValueSelector({ nudgeValue, setNudgeValue, bpm = 120 }) {
-  const nudgeValues = getNudgeValues(bpm);
+export default function NudgeValueSelector({ nudgeValue, setNudgeValue, bpm = 120, sampleRate = 44100 }) {
+  const nudgeValues = getNudgeValues(bpm, sampleRate);
   const current = nudgeValues.find(n => Math.abs(n.value - nudgeValue) < 0.0001);
   const label = current?.label || `${(nudgeValue * 1000).toFixed(1)}ms`;
 

@@ -242,6 +242,20 @@ export default function MusicVideoGenerator() {
   }, [assets, clips, title, draw]);
 
   useEffect(() => {
+    const next = new Map();
+    for (const item of music) {
+      const asset = assets.find((source) => source.id === item.assetId);
+      if (!asset) continue;
+      let audio = audioElementsRef.current.get(item.id);
+      if (!audio) { audio = new Audio(asset.url); audio.preload = "auto"; }
+      next.set(item.id, audio);
+    }
+    for (const [id, audio] of audioElementsRef.current) if (!next.has(id)) audio.pause();
+    audioElementsRef.current = next;
+    for (const item of music) syncSoundtrack(next.get(item.id), timeRef.current, item, playingRef.current);
+  }, [assets, music]);
+
+  useEffect(() => {
     if (!restoredRef.current) return;
     const snapshot = JSON.stringify({ clips, music, title, trackCount });
     const history = historyRef.current;

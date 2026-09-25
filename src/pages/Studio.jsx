@@ -3063,8 +3063,11 @@ export default function Studio() {
                                 : secondsPerBeat * 4 * gridSize;
                               newStartTime = Math.round(newStartTime / gridSeconds) * gridSeconds;
                             } else if (editMode === 'shuffle') {
-                              const otherClips = tracksRef.current.filter(t => t.id !== track.id && t.waveform?.length > 0);
-                              const boundaries = [0, ...otherClips.map(t => (t.startTime || 0) + (t.duration || 0))];
+                              const laneKey = track.splitFrom || track.id;
+                              const otherClips = tracksRef.current.filter(t =>
+                                t.id !== track.id && (t.splitFrom || t.id) === laneKey && t.waveform?.length > 0
+                              );
+                              const boundaries = [0, ...otherClips.flatMap(t => [t.startTime || 0, (t.startTime || 0) + (t.duration || 0)])];
                               newStartTime = boundaries.reduce((nearest, boundary) =>
                                 Math.abs(boundary - newStartTime) < Math.abs(nearest - newStartTime) ? boundary : nearest,
                               boundaries[0]);
@@ -3082,7 +3085,27 @@ export default function Studio() {
                             hideEditTooltip();
                             if (target.dataset.newStartTime !== undefined) {
                               const newStartTime = parseFloat(target.dataset.newStartTime);
-                              setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t));
+                              if (editMode === 'shuffle') {
+                                const laneKey = track.splitFrom || track.id;
+                                setTracksWithHistory(prev => {
+                                  const lane = prev
+                                    .filter(t => (t.splitFrom || t.id) === laneKey)
+                                    .map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t)
+                                    .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
+                                  if (lane.length <= 1) {
+                                    return prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t);
+                                  }
+                                  let cursor = Math.min(...lane.map(t => t.startTime || 0));
+                                  const positions = new Map();
+                                  lane.forEach(clip => {
+                                    positions.set(clip.id, cursor);
+                                    cursor += clip.duration || 0;
+                                  });
+                                  return prev.map(t => positions.has(t.id) ? { ...t, startTime: positions.get(t.id) } : t);
+                                });
+                              } else {
+                                setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t));
+                              }
                               delete target.dataset.newStartTime;
                             }
                           };

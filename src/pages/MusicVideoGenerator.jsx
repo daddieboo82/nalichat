@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Film, FolderOpen, Pause, Play, Plus, Save, Scissor
 import { Button } from "@/components/ui/button";
 import { clamp, clipLength, formatTime, projectLength, splitClip, trimClip } from "@/lib/videoTimeline";
 import { removeTransformKeyframe, setTransformKeyframe, transformAt } from "@/lib/videoKeyframes";
+import { transitionState } from "@/lib/videoTransitions";
 
 const PROJECT_KEY = "nalibase.videoEditor.v1";
 const DB_NAME = "nalibase-video-assets";
@@ -152,9 +153,7 @@ export default function MusicVideoGenerator() {
     }
     for (const [id, gain] of exportGainsRef.current || []) if (!activeIds.has(id)) gain.gain.value = 0;
     for (const clip of visible) {
-      const fadeIn = clip.fadeIn ?? .3;
-      const fadeOut = clip.fadeOut ?? .3;
-      const opacity = Math.min(1, fadeIn > 0 ? (at - clip.start) / fadeIn : 1, fadeOut > 0 ? (clip.start + clipLength(clip) - at) / fadeOut : 1);
+      const transition = transitionState(clip, at);
       const source = mediaRef.current.get(clip.id);
       const asset = assetsRef.current.find((item) => item.id === clip.assetId);
       if (!source || !asset) continue;
@@ -163,9 +162,9 @@ export default function MusicVideoGenerator() {
         if (Math.abs(source.currentTime - sourceTime) > 0.16 && Number.isFinite(sourceTime)) {
           try { source.currentTime = sourceTime; } catch { /* seek may wait for metadata */ }
         }
-        source.volume = exportGainsRef.current ? 1 : clamp(clip.volume ?? 1, 0, 1) * opacity;
+        source.volume = exportGainsRef.current ? 1 : clamp(clip.volume ?? 1, 0, 1) * transition.audio;
         const gain = exportGainsRef.current?.get(clip.id);
-        if (gain) gain.gain.value = clamp(clip.volume ?? 1, 0, 1) * opacity;
+        if (gain) gain.gain.value = clamp(clip.volume ?? 1, 0, 1) * transition.audio;
         if (playingRef.current && source.paused) source.play().catch(() => setStatus("Video audio was blocked. Tap Play again."));
       }
       const w = source.videoWidth || source.naturalWidth;
@@ -173,7 +172,12 @@ export default function MusicVideoGenerator() {
       if (w && h) {
         const scale = Math.max(WIDTH / w, HEIGHT / h);
         ctx.save();
-        ctx.globalAlpha = opacity;
+        ctx.globalAlpha = transition.opacity;
+        if (transition.type === "wipeLeft") {
+          ctx.beginPath(); ctx.rect(0, 0, WIDTH * transition.reveal, HEIGHT); ctx.clip();
+        } else if (transition.type === "wipeRight") {
+          ctx.beginPath(); ctx.rect(WIDTH * (1 - transition.reveal), 0, WIDTH * transition.reveal, HEIGHT); ctx.clip();
+        }
         ctx.filter = `brightness(${clip.brightness ?? 100}%) contrast(${clip.contrast ?? 100}%) saturate(${clip.saturation ?? 100}%)`;
         const transform = transformAt(clip, at);
         ctx.translate(WIDTH / 2 + transform.x * WIDTH / 100, HEIGHT / 2 + transform.y * HEIGHT / 100);
@@ -357,7 +361,7 @@ export default function MusicVideoGenerator() {
     }
     const track = chosen?.track ?? 0;
     const start = Math.max(0, ...clips.filter((clip) => (clip.track ?? 0) === track).map((clip) => clip.start + clipLength(clip)));
-    const clip = { id: crypto.randomUUID(), assetId: asset.id, track, start, in: 0, out: asset.duration, sourceDuration: asset.duration, brightness: 100, contrast: 100, saturation: 100, volume: 1, fadeIn: .3, fadeOut: .3 };
+    const clip = { id: crypto.randomUUID(), assetId: asset.id, track, start, in: 0, out: asset.duration, sourceDuration: asset.duration, brightness: 100, contrast: 100, saturation: 100, volume: 1, fadeIn: .3, fadeOut: .3, transitionIn: "fade" };
     setClips((current) => [...current, clip]);
     setSelected(clip.id);
   };
@@ -543,7 +547,8 @@ export default function MusicVideoGenerator() {
             <label className="block">Start (seconds)<input type="number" min="0" step=".1" value={chosen.start} onChange={(e) => updateClip({ start: Math.max(0, Number(e.target.value) || 0) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <label className="block">In point (seconds)<input type="number" min="0" max={chosen.out - .1} step=".1" value={chosen.in} onChange={(e) => setClips((current) => trimClip(current, selected, "left", chosen.start + Number(e.target.value) - chosen.in))} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <label className="block">Out point (seconds)<input type="number" min={chosen.in + .1} max={chosen.sourceDuration} step=".1" value={chosen.out} onChange={(e) => setClips((current) => trimClip(current, selected, "right", Number(e.target.value)))} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
-            <label className="block">Fade in (seconds)<input type="number" min="0" max={clipLength(chosen)} step=".1" value={chosen.fadeIn ?? .3} onChange={(e) => updateClip({ fadeIn: clamp(Number(e.target.value) || 0, 0, clipLength(chosen)) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
+            <label className="block">Entrance transition<select value={chosen.transitionIn ?? "fade"} onChange={(e) => updateClip({ transitionIn: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-[#171720] p-2"><option value="fade">Dissolve</option><option value="cut">Cut</option><option value="wipeLeft">Wipe left to right</option><option value="wipeRight">Wipe right to left</option></select></label>
+            <label className="block">Entrance length (seconds)<input type="number" min="0" max={clipLength(chosen)} step=".1" value={chosen.fadeIn ?? .3} onChange={(e) => updateClip({ fadeIn: clamp(Number(e.target.value) || 0, 0, clipLength(chosen)) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <label className="block">Fade out (seconds)<input type="number" min="0" max={clipLength(chosen)} step=".1" value={chosen.fadeOut ?? .3} onChange={(e) => updateClip({ fadeOut: clamp(Number(e.target.value) || 0, 0, clipLength(chosen)) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <div className="rounded-lg border border-white/10 p-2"><p className="font-semibold">Transform at {formatTime(keyframeTime)} in clip</p><div className="mt-2 grid grid-cols-3 gap-2">{[["x", "X %", -100, 100, 1], ["y", "Y %", -100, 100, 1], ["scale", "Scale", .25, 4, .05]].map(([key, label, min, max, step]) => <label key={key}>{label}<input type="number" min={min} max={max} step={step} value={Math.round(currentTransform[key] * 100) / 100} onChange={(e) => setClips((current) => current.map((clip) => clip.id === selected ? setTransformKeyframe(clip, time, { [key]: clamp(Number(e.target.value) || 0, min, max) }) : clip))} className="mt-1 w-full rounded border border-white/15 bg-black/40 p-1" /></label>)}</div><div className="mt-2 flex gap-2"><Button size="sm" variant="outline" onClick={() => setClips((current) => current.map((clip) => clip.id === selected ? setTransformKeyframe(clip, time) : clip))}>{atKeyframe ? "Update keyframe" : "Add keyframe"}</Button>{atKeyframe && <Button size="sm" variant="outline" onClick={() => setClips((current) => current.map((clip) => clip.id === selected ? removeTransformKeyframe(clip, time) : clip))}>Remove keyframe</Button>}</div><p className="mt-2 text-white/50">Set the playhead, then change X, Y or scale. Values animate between keyframes.</p></div>
             {selectedAsset?.kind === "video" && <label className="block">Clip volume: {Math.round((chosen.volume ?? 1) * 100)}%<input type="range" min="0" max="1" step=".01" value={chosen.volume ?? 1} onChange={(e) => updateClip({ volume: Number(e.target.value) })} className="mt-1 w-full accent-fuchsia-400" /></label>}
@@ -562,7 +567,7 @@ export default function MusicVideoGenerator() {
           {music.map((item, index) => <div key={item.id} className="flex h-12 items-center"><span className="w-20 shrink-0 text-xs text-white/50">AUDIO {index + 1}</span><div className="h-9 flex-1 rounded bg-white/5"><button onClick={() => { setSelectedMusic(item.id); seek(item.start ?? 0); }} style={{ marginLeft: (item.start ?? 0) * zoom, width: Math.max(0, Math.min((item.out ?? item.duration) - (item.in ?? 0), length - (item.start ?? 0))) * zoom }} className={`h-full truncate rounded border px-2 py-2 text-left text-xs ${selectedMusic === item.id ? "border-cyan-200 bg-cyan-700" : "border-cyan-500 bg-cyan-900"}`}>{assets.find((asset) => asset.id === item.assetId)?.name}</button></div></div>)}
           <div className="pointer-events-none absolute top-5 bottom-2 w-px bg-white" style={{ left: 90 + time * zoom }} />
         </div></div>
-        <p className="mt-2 text-xs text-white/50">Import your own media. Drag a video clip to move it; use the Inspector to trim, split, fade, grade or delete it. Export plays in real time and mixes video clip audio with all imported audio clips.</p>
+        <p className="mt-2 text-xs text-white/50">Import your own media. Drag a video clip to move it; use the Inspector to trim, split, transition, grade or delete it. Export plays in real time and mixes video clip audio with all imported audio clips.</p>
       </section>
     </div>
   </div>;

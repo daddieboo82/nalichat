@@ -2864,7 +2864,12 @@ export default function Studio() {
                         }
 
                         const rect = e.currentTarget.getBoundingClientRect();
-                        const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
+                        const relativeX = e.clientX - rect.left;
+                        const relativeY = e.clientY - rect.top;
+                        const isTopHalf = relativeY < rect.height / 2;
+                        const smartEdgeWidth = Math.min(16, rect.width * 0.12);
+                        const smartAtLeftEdge = relativeX <= smartEdgeWidth;
+                        const smartAtRightEdge = relativeX >= rect.width - smartEdgeWidth;
 
                         if (activeTool === 'cut') {
                            // Behave like Pro Tools Separate-at-cursor: preserve both sides of
@@ -2940,9 +2945,42 @@ export default function Studio() {
                            return;
                         }
 
+                        if (activeTool === 'smart' && !isTopHalf && (smartAtLeftEdge || smartAtRightEdge)) {
+                          // Smart Tool lower-corner zones trim the corresponding clip edge.
+                          const isLeft = smartAtLeftEdge;
+                          const startX = e.clientX;
+                          const initialStartTime = track.startTime || 0;
+                          const initialDuration = track.duration || 40;
+                          const initialClipStart = track.clipStart || 0;
+                          const fullDuration = track.fullDuration || initialDuration;
+                          const target = e.currentTarget;
+                          target.setPointerCapture(e.pointerId);
+                          const handleSmartTrim = (moveEvent) => {
+                            const delta = (moveEvent.clientX - startX) / (20 * zoom);
+                            setTracks(prev => prev.map(t => {
+                              if (t.id !== track.id) return t;
+                              if (isLeft) {
+                                const amount = Math.max(-initialClipStart, Math.min(initialDuration - 0.001, delta));
+                                return { ...t, startTime: Math.max(0, initialStartTime + amount), duration: initialDuration - amount, clipStart: initialClipStart + amount };
+                              }
+                              const maxRestore = fullDuration - (initialClipStart + initialDuration);
+                              const amount = Math.max(-initialDuration + 0.001, Math.min(maxRestore, delta));
+                              return { ...t, duration: initialDuration + amount };
+                            }));
+                          };
+                          const finishSmartTrim = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleSmartTrim);
+                            target.removeEventListener('pointerup', finishSmartTrim);
+                            pushToHistory(tracksRef.current);
+                          };
+                          target.addEventListener('pointermove', handleSmartTrim);
+                          target.addEventListener('pointerup', finishSmartTrim);
+                          return;
+                        }
+
                         if (activeTool === 'smart' && isTopHalf) {
-                          const clickX = e.clientX - rect.left;
-                          const clickRatio = clickX / rect.width;
+                          const clickRatio = relativeX / rect.width;
                           const newTime = (track.startTime || 0) + ((track.duration || 40) * clickRatio);
                           updateCurrentTime(newTime);
                           return;

@@ -286,25 +286,49 @@ export default function MusicVideoGenerator() {
     let context;
     let stream;
     let exportAudio;
+    const previewMedia = mediaRef.current;
     try {
-      const canvasStream = canvasRef.current.captureStream(30);
-      stream = new MediaStream(canvasStream.getVideoTracks());
+      const videoAssets = assets.filter((asset) => asset.kind === "video" && clips.some((clip) => clip.assetId === asset.id));
+      const exportMedia = new Map(previewMedia);
+      const gains = new Map();
+      context = new AudioContext();
+      const mix = context.createMediaStreamDestination();
+      for (const asset of videoAssets) {
+        const video = document.createElement("video");
+        video.src = asset.url;
+        video.preload = "auto";
+        video.playsInline = true;
+        video.onseeked = () => draw(timeRef.current);
+        exportMedia.set(asset.id, video);
+        const source = context.createMediaElementSource(video);
+        const gain = context.createGain();
+        gain.gain.value = 0;
+        source.connect(gain).connect(mix);
+        gain.connect(context.destination);
+        gains.set(asset.id, gain);
+      }
+      await Promise.all(videoAssets.map((asset) => new Promise((resolve, reject) => {
+        const video = exportMedia.get(asset.id);
+        if (video.readyState >= 2) return resolve();
+        video.onloadeddata = resolve;
+        video.onerror = () => reject(new Error(`Cannot decode ${asset.name} for export.`));
+      })));
+      mediaRef.current = exportMedia;
+      exportGainsRef.current = gains;
       const soundtrackUrl = assets.find((asset) => asset.id === music?.assetId)?.url;
       if (soundtrackUrl) {
         exportAudio = new Audio(soundtrackUrl);
         exportAudio.preload = "auto";
-        context = new AudioContext();
         const source = context.createMediaElementSource(exportAudio);
         const gain = context.createGain();
-        const output = context.createMediaStreamDestination();
         gain.gain.value = music.volume;
-        source.connect(gain).connect(output);
+        source.connect(gain).connect(mix);
         gain.connect(context.destination);
-        output.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
-        exportAudio.currentTime = 0;
-        await context.resume();
-        await exportAudio.play();
       }
+      const canvasStream = canvasRef.current.captureStream(30);
+      stream = new MediaStream(canvasStream.getVideoTracks());
+      if (videoAssets.length || soundtrackUrl) mix.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
+      await context.resume();
       const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
       const parts = [];
       recorder.ondataavailable = (event) => { if (event.data.size) parts.push(event.data); };
@@ -314,7 +338,9 @@ export default function MusicVideoGenerator() {
       });
       recorder.start(1000);
       playingRef.current = true;
-      let start = performance.now();
+      const start = performance.now();
+      draw(0);
+      if (exportAudio) { exportAudio.currentTime = 0; await exportAudio.play(); }
       const frame = () => {
         if (recorder.state === "inactive") return;
         const next = Math.min(length, (performance.now() - start) / 1000);
@@ -334,7 +360,9 @@ export default function MusicVideoGenerator() {
       playingRef.current = false;
       cancelAnimationFrame(rafRef.current);
       exportAudio?.pause();
-      for (const element of mediaRef.current.values()) if (element.tagName === "VIDEO") element.pause();
+      for (const element of mediaRef.current.values()) if (element.tagName === "VIDEO") { element.pause(); if (element !== previewMedia.get([...mediaRef.current].find(([, candidate]) => candidate === element)?.[0])) element.onseeked = null; }
+      mediaRef.current = previewMedia;
+      exportGainsRef.current = null;
       stream?.getTracks().forEach((track) => track.stop());
       await context?.close();
       setRendering(false);

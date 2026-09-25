@@ -3108,9 +3108,9 @@ export default function Studio() {
                             const deltaTime = round(deltaX / (20 * zoom));
                             
                             if (deltaTime < initialDuration - MIN_CLIP_DURATION) { 
-                               // Don't allow left trim to go before the actual start of the audio file
-                               const maxLeftTrim = -initialClipStart;
-                               const trimAmount = Math.max(maxLeftTrim, deltaTime);
+                               // Don't allow an extension past source start or before session zero.
+                               const maxLeftExtension = Math.max(-initialClipStart, -initialStartTime);
+                               const trimAmount = Math.max(maxLeftExtension, deltaTime);
                                
                                setTracks(prev => prev.map(t => 
                                 t.id === track.id ? { 
@@ -3128,7 +3128,7 @@ export default function Studio() {
                                   target.releasePointerCapture(upEvent.pointerId);
                                   target.removeEventListener('pointermove', handleMove);
                                   target.removeEventListener('pointerup', handleUp);
-                                  pushToHistory(tracksRef.current);
+                                  setTracksWithHistory(prev => prev);
                                   hideEditTooltip();
                                   };
 
@@ -3181,7 +3181,7 @@ export default function Studio() {
                                   target.releasePointerCapture(upEvent.pointerId);
                                   target.removeEventListener('pointermove', handleMove);
                                   target.removeEventListener('pointerup', handleUp);
-                                  pushToHistory(tracksRef.current);
+                                  setTracksWithHistory(prev => prev);
                                   hideEditTooltip();
                                   };
                           

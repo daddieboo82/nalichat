@@ -9,6 +9,9 @@ describe('mobile Messages viewport scrolling', () => {
     expect(layout).toContain('h-screen h-[100dvh]');
     expect(layout).toContain("scroll={!location.pathname.startsWith('/messages')}");
     expect(messages).toContain('flex-1 h-full min-h-0 flex flex-col');
+    expect(messages).toContain('className="flex flex-1 min-h-0 flex-col overflow-hidden"');
+    const list = await readFile('src/components/messages/ConversationList.jsx', 'utf8');
+    expect(list).toContain('flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y');
   });
 
   it('enables native vertical touch scrolling in the message history and threads', async () => {

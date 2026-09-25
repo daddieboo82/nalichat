@@ -1441,6 +1441,8 @@ export default function Studio() {
 
   const deleteSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
+    // In the Edit window, Delete/Clear should remove the selected clip(s) from
+    // the timeline without revoking their underlying source media.
     sounds.error();
     selectedTrackIds.forEach(id => {
       const track = tracks.find(t => t.id === id);
@@ -1450,14 +1452,10 @@ export default function Studio() {
         delete audioElementsRef.current[id];
         mixEngineRef.current?.detach(id);
       }
-      // Revoke object URLs to free memory from blob-based audio
-      if (track?.audioUrl?.startsWith('blob:')) {
-        try { URL.revokeObjectURL(track.audioUrl); } catch (e) {}
-      }
     });
     setTracksWithHistory(tracks.filter(t => !selectedTrackIds.includes(t.id)));
     setSelectedTrackIds([]);
-    toast.success("Selected tracks deleted");
+    toast.success("Selected clips cleared");
   };
 
   const duplicateSelectedTracks = () => {

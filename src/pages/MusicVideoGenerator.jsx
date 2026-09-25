@@ -367,52 +367,34 @@ export default function MusicVideoGenerator() {
     try {
       const uploaded = await secureUploadFile(storedSong, { accept: "audio" });
       const response = await base44.functions.invoke("generateMusicVideoStoryboard", {
-        audio_url: uploaded.file_url,
-        title: title || song.name.replace(/\\.[^.]+$/, ""),
-        concept: aiConcept,
-        style: aiStyle,
-        duration: song.duration,
+        audio_url: uploaded.file_url, title: title || song.name.replace(/\\.[^.]+$/, ""),
+        concept: aiConcept, style: aiStyle, duration: song.duration,
       });
       const payload = response?.data ?? response;
       if (payload?.error) throw new Error(payload.error);
       const scenes = Array.isArray(payload?.scenes) ? payload.scenes.filter((scene) => scene?.image_url) : [];
       if (!scenes.length) throw new Error("No AI scenes were generated. Try again.");
       const sceneDuration = Math.max(2, song.duration / scenes.length);
-      const generatedAssets = [];
-      const generatedClips = [];
+      const generatedAssets = [], generatedClips = [];
       for (let index = 0; index < scenes.length; index++) {
-        const scene = scenes[index];
-        const imageResponse = await fetch(scene.image_url);
+        const scene = scenes[index], imageResponse = await fetch(scene.image_url);
         if (!imageResponse.ok) continue;
         const blob = await imageResponse.blob();
         const file = new File([blob], `AI Scene ${index + 1}.png`, { type: blob.type || "image/png" });
         const id = crypto.randomUUID();
         await storeFile(id, file);
         generatedAssets.push({ id, name: file.name, kind: "image", duration: sceneDuration, url: URL.createObjectURL(file), aiScene: scene });
-        generatedClips.push({
-          id: crypto.randomUUID(), assetId: id, track: 0, start: index * sceneDuration,
-          in: 0, out: sceneDuration, sourceDuration: sceneDuration, brightness: 100,
-          contrast: 100, saturation: 100, volume: 1, fadeIn: .45, fadeOut: .45,
-          transitionIn: index ? "fade" : "cut",
-          keyframes: [
-            { time: 0, x: 0, y: 0, scale: 1 },
-            { time: sceneDuration, x: index % 2 ? -2 : 2, y: index % 3 ? 1 : -1, scale: 1.08 },
-          ],
-        });
+        generatedClips.push({ id: crypto.randomUUID(), assetId: id, track: 0, start: index * sceneDuration, in: 0, out: sceneDuration, sourceDuration: sceneDuration, brightness: 100, contrast: 100, saturation: 100, volume: 1, fadeIn: .45, fadeOut: .45, transitionIn: index ? "fade" : "cut", keyframes: [{ time: 0, x: 0, y: 0, scale: 1 }, { time: sceneDuration, x: index % 2 ? -2 : 2, y: index % 3 ? 1 : -1, scale: 1.08 }] });
       }
       if (!generatedAssets.length) throw new Error("AI scenes were created but could not be downloaded.");
       setAssets((current) => [...current, ...generatedAssets]);
       setClips((current) => [...current.filter((clip) => (clip.track ?? 0) !== 0), ...generatedClips]);
-      const existingSong = music.find((item) => item.assetId === song.id);
-      if (!existingSong) setMusic((current) => [...current, { id: crypto.randomUUID(), assetId: song.id, duration: song.duration, volume: 1, start: 0, in: 0, out: song.duration, fadeIn: 0, fadeOut: 0 }]);
+      if (!music.find((item) => item.assetId === song.id)) setMusic((current) => [...current, { id: crypto.randomUUID(), assetId: song.id, duration: song.duration, volume: 1, start: 0, in: 0, out: song.duration, fadeIn: 0, fadeOut: 0 }]);
       setTitle((current) => current || song.name.replace(/\\.[^.]+$/, ""));
       seek(0);
       setStatus(`AI video created: ${generatedAssets.length} animated scenes are now on the timeline. Preview, edit, then export.`);
-    } catch (error) {
-      setStatus(`AI generation failed: ${error.message || "Unknown error"}`);
-    } finally {
-      setAiGenerating(false);
-    }
+    } catch (error) { setStatus(`AI generation failed: ${error.message || "Unknown error"}`); }
+    finally { setAiGenerating(false); }
   };
 
   const addClip = (asset) => {

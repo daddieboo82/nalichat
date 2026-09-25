@@ -2964,7 +2964,15 @@ export default function Studio() {
                             }
                             const deltaTime = deltaX / (20 * zoom);
                             let newStartTime = Math.max(0, initialStartTime + deltaTime);
-                            if (editMode === 'grid') newStartTime = Math.round(newStartTime / gridSize) * gridSize;
+                            if (editMode === 'grid') {
+                              newStartTime = Math.round(newStartTime / gridSize) * gridSize;
+                            } else if (editMode === 'shuffle') {
+                              const otherClips = tracksRef.current.filter(t => t.id !== track.id && t.waveform?.length > 0);
+                              const boundaries = [0, ...otherClips.map(t => (t.startTime || 0) + (t.duration || 0))];
+                              newStartTime = boundaries.reduce((nearest, boundary) =>
+                                Math.abs(boundary - newStartTime) < Math.abs(nearest - newStartTime) ? boundary : nearest,
+                              boundaries[0]);
+                            }
                             target.style.left = `${newStartTime * 20 * zoom}px`;
                             target.dataset.newStartTime = newStartTime;
                             showEditTooltip(moveEvent.clientX, moveEvent.clientY, newStartTime);

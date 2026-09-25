@@ -4,6 +4,8 @@ import { ArrowLeft, Download, Film, FolderOpen, Pause, Play, Plus, Save, Scissor
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { secureUploadFile } from "@/lib/secureUpload";
+import { base44 } from "@/api/base44Client";
+import { secureUploadFile } from "@/lib/secureUpload";
 import { clamp, clipLength, formatTime, projectLength, splitClip, trimClip } from "@/lib/videoTimeline";
 import { removeTransformKeyframe, setTransformKeyframe, transformAt } from "@/lib/videoKeyframes";
 import { transitionState } from "@/lib/videoTransitions";

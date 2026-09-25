@@ -77,6 +77,21 @@ const syncSoundtrack = (audio, at, music, active, outputGain) => {
   if (audible && active && audio.paused) audio.play().catch(() => {});
 };
 
+function AudioClipInspector({ item, asset, onChange, onRemove }) {
+  const duration = Math.max(.1, (item.out ?? item.duration) - (item.in ?? 0));
+  const numberField = (label, value, min, max, key) => <label className="block">{label}<input type="number" min={min} max={max} step=".1" value={value} onChange={(event) => onChange({ [key]: clamp(Number(event.target.value) || 0, min, max) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>;
+  return <div className="mt-4 space-y-2 border-t border-white/10 pt-3 text-xs">
+    <p className="truncate font-bold">Audio clip: {asset?.name}</p>
+    {numberField("Timeline start (seconds)", item.start ?? 0, 0, 86400, "start")}
+    {numberField("Song in point (seconds)", item.in ?? 0, 0, (item.out ?? item.duration) - .1, "in")}
+    {numberField("Song out point (seconds)", item.out ?? item.duration, (item.in ?? 0) + .1, item.duration, "out")}
+    {numberField("Fade in (seconds)", item.fadeIn ?? 0, 0, duration, "fadeIn")}
+    {numberField("Fade out (seconds)", item.fadeOut ?? 0, 0, duration, "fadeOut")}
+    <label className="block">Volume {Math.round((item.volume ?? 1) * 100)}%<input type="range" min="0" max="1" step=".01" value={item.volume ?? 1} onChange={(event) => onChange({ volume: Number(event.target.value) })} className="w-full accent-fuchsia-400" /></label>
+    <button className="text-rose-300" onClick={onRemove}>Remove audio clip</button>
+  </div>;
+}
+
 export default function MusicVideoGenerator() {
   const navigate = useNavigate();
   const canvasRef = useRef(null);

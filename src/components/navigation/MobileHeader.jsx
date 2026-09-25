@@ -191,7 +191,7 @@ export default function MobileHeader() {
                         key={itemPath}
                         onClick={() => handleNavigate(itemPath)}
                         className={cn(
-                          "ui-hover w-full min-h-[58px] flex items-center gap-3 p-2.5 rounded-xl transition-all text-left focus-visible:ring-2 focus-visible:ring-primary/40",
+                          "ui-hover w-full min-h-[64px] flex items-center gap-3 p-2.5 rounded-xl transition-all text-left focus-visible:ring-2 focus-visible:ring-primary/40",
                           active
                             ? "bg-primary/15 text-primary"
                             : "hover:bg-secondary/50 text-foreground"
@@ -205,7 +205,7 @@ export default function MobileHeader() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate">{label}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">{desc}</p>
+                          <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">{desc}</p>
                         </div>
                       </button>
                     );

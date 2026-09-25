@@ -8,7 +8,7 @@ export function createStudioKeyHandler(deps) {
     selectedTrackIds, setSelectedTrackIds,
     deleteSelectedTracks, duplicateSelectedTracks, splitSelectedTracks,
     toggleTrackProperty, addTrack, addVcaTrack, addFolderTrack, setEditMode,
-    toggleSolo, toggleMute, setShowFadePresets, setActiveTool,
+    toggleSolo, toggleMute, setShowFadePresets, setActiveTool, activeTool,
     updateCurrentTime, setSelectionStart, setSelectionEnd,
     selectionStart, selectionEnd, tracks, setLoopActive, loopActive,
     setMetronomeEnabled, metronomeEnabled, handleHealSplit,
@@ -37,6 +37,11 @@ export function createStudioKeyHandler(deps) {
     else if (e.key === 'F2') { e.preventDefault(); setEditMode('slip'); }
     else if (e.key === 'F3') { e.preventDefault(); setEditMode('spot'); }
     else if (e.key === 'F4') { e.preventDefault(); setEditMode('grid'); }
+    else if (e.key === 'F6') { e.preventDefault(); setActiveTool('trim'); }
+    else if (e.key === 'F7') { e.preventDefault(); setActiveTool('selector'); }
+    else if (e.key === 'F8') { e.preventDefault(); setActiveTool('grab'); }
+    else if (e.key === 'F9') { e.preventDefault(); setActiveTool('scrub'); }
+    else if ((e.ctrlKey || e.metaKey) && e.key === '7') { e.preventDefault(); setActiveTool('smart'); }
     else if (e.shiftKey && e.key === '1') { e.preventDefault(); setEditMode('shuffle'); }
     else if (e.shiftKey && e.key === '2') { e.preventDefault(); setEditMode('slip'); }
     else if (e.shiftKey && e.key === '3') { e.preventDefault(); setEditMode('grid'); }
@@ -55,7 +60,16 @@ export function createStudioKeyHandler(deps) {
     else if (e.key === 'i' || e.key === 'I') { e.preventDefault(); setSelectionStart(currentTimeRef.current); if (selectionEnd !== null && currentTimeRef.current >= selectionEnd) setSelectionEnd(null); }
     else if (e.key === 'o' || e.key === 'O') { e.preventDefault(); setSelectionEnd(currentTimeRef.current); if (selectionStart !== null && currentTimeRef.current <= selectionStart) setSelectionStart(null); }
     else if (e.key === 'a' || e.key === 'A') { if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); const end = Math.max(...tracks.map(t => (t.startTime||0)+(t.duration||0)), 20); setSelectionStart(0); setSelectionEnd(end); } }
-    else if (e.key === 'Escape') { e.preventDefault(); setSelectionStart(null); setSelectionEnd(null); setSelectedTrackIds([]); }
+    else if (e.key === 'Escape') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        setSelectionStart(null); setSelectionEnd(null); setSelectedTrackIds([]);
+      } else {
+        const tools = ['trim', 'selector', 'grab', 'scrub', 'smart'];
+        const index = tools.indexOf(activeTool);
+        setActiveTool(tools[(index + 1 + tools.length) % tools.length]);
+      }
+    }
     else if (e.key === 'Tab') { e.preventDefault();
       const curr = currentTimeRef.current;
       if (e.shiftKey) {

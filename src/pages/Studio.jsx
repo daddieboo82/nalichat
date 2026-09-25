@@ -1360,7 +1360,7 @@ export default function Studio() {
       selectedTrackIds, setSelectedTrackIds,
       deleteSelectedTracks, duplicateSelectedTracks, splitSelectedTracks,
       toggleTrackProperty, addTrack, addVcaTrack, addFolderTrack, setEditMode,
-      toggleSolo, toggleMute, setShowFadePresets, setActiveTool,
+      toggleSolo, toggleMute, setShowFadePresets, setActiveTool, activeTool,
       updateCurrentTime, setSelectionStart, setSelectionEnd,
       selectionStart, selectionEnd, tracks, setLoopActive, loopActive,
       setMetronomeEnabled, metronomeEnabled, handleHealSplit,
@@ -2860,6 +2860,8 @@ export default function Studio() {
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
                         if (activeTool === 'smart') {
                            e.currentTarget.style.cursor = isTopHalf ? 'text' : 'grab';
+                         } else if (activeTool === 'selector') {
+                           e.currentTarget.style.cursor = 'text';
                          } else if (activeTool === 'grab') {
                            e.currentTarget.style.cursor = 'grab';
                          } else if (activeTool === 'cut') {
@@ -3002,9 +3004,8 @@ export default function Studio() {
                           return;
                         }
 
-                        if (activeTool === 'smart' && isTopHalf) {
-                          // Smart Tool upper zone acts like the Pro Tools Selector: click places
-                          // the insertion point; drag creates an edit selection.
+                        if (activeTool === 'selector' || (activeTool === 'smart' && isTopHalf)) {
+                          // Selector, and the Smart Tool upper zone, place the insertion point or drag an edit range.
                           const clipStart = track.startTime || 0;
                           const clipDuration = track.duration || 40;
                           const timeFromClientX = (clientX) => {

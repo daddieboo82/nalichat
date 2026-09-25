@@ -1,4 +1,4 @@
-import { clamp } from "./videoTimeline";
+const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || 0));
 
 const DEFAULT = { x: 0, y: 0, scale: 1 };
 

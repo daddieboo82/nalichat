@@ -1442,6 +1442,43 @@ export default function Studio() {
 
   const deleteSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
+    const hasRange = selectionStart !== null && selectionEnd !== null && Math.abs(selectionEnd - selectionStart) > 0.001;
+    if (hasRange) {
+      const rangeStart = Math.min(selectionStart, selectionEnd);
+      const rangeEnd = Math.max(selectionStart, selectionEnd);
+      const rangeDuration = rangeEnd - rangeStart;
+      let nextId = nextTrackId(tracks);
+      let changed = false;
+      const nextTracks = [];
+      tracks.forEach(t => {
+        if (!selectedTrackIds.includes(t.id) || !t.waveform?.length) { nextTracks.push(t); return; }
+        const start = t.startTime || 0;
+        const duration = t.duration || 40;
+        const end = start + duration;
+        const cutStart = Math.max(start, rangeStart);
+        const cutEnd = Math.min(end, rangeEnd);
+        if (cutEnd <= cutStart) { nextTracks.push(t); return; }
+        changed = true;
+        const lineage = t.splitFrom || t.id;
+        const leftDuration = cutStart - start;
+        const rightDuration = end - cutEnd;
+        if (leftDuration > 0.001) nextTracks.push({ ...t, duration: leftDuration, splitFrom: lineage });
+        if (rightDuration > 0.001) nextTracks.push({ ...t, id: nextId++, name: `${t.name} (After Clear)`, startTime: editMode === 'shuffle' ? cutStart : cutEnd, duration: rightDuration, clipStart: (t.clipStart || 0) + (cutEnd - start), splitFrom: lineage });
+      });
+      if (!changed) { toast.error("The selection does not overlap a selected clip"); return; }
+      if (editMode === 'shuffle') {
+        nextTracks.forEach(t => {
+          if (!selectedTrackIds.includes(t.id) && (t.startTime || 0) >= rangeEnd) t.startTime = Math.max(0, (t.startTime || 0) - rangeDuration);
+        });
+      }
+      setTracksWithHistory(nextTracks);
+      setSelectedTrackIds([]);
+      setSelectionStart(null);
+      setSelectionEnd(null);
+      toast.success(editMode === 'shuffle' ? "Selection cleared and gap closed" : "Selection cleared");
+      sounds.error();
+      return;
+    }
     // In the Edit window, Delete/Clear should remove the selected clip(s) from
     // the timeline without revoking their underlying source media.
     sounds.error();
@@ -1563,20 +1600,30 @@ export default function Studio() {
       toast.error("This clip wasn't split — nothing to heal.");
       return;
     }
-    // Find the sibling clip that shares the same splitFrom id
-    const sibling = tracks.find(t => t.id !== track.id && t.splitFrom === track.splitFrom);
+    const lineage = tracks
+      .filter(t => t.splitFrom === track.splitFrom)
+      .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
+    const index = lineage.findIndex(t => t.id === track.id);
+    const candidates = [lineage[index - 1], lineage[index + 1]].filter(Boolean);
+    const sibling = candidates.find(candidate => {
+      const [left, right] = (track.startTime || 0) <= (candidate.startTime || 0) ? [track, candidate] : [candidate, track];
+      const timelineContiguous = Math.abs(((left.startTime || 0) + (left.duration || 0)) - (right.startTime || 0)) < 0.002;
+      const sourceContiguous = Math.abs(((left.clipStart || 0) + (left.duration || 0)) - (right.clipStart || 0)) < 0.002;
+      return timelineContiguous && sourceContiguous;
+    });
     if (!sibling) {
-      toast.error("Can't find the other half of this split.");
+      toast.error("Heal requires adjacent clips from the same original source.");
       return;
     }
-    // Determine which is left and which is right
-    const [left, right] = (track.startTime || 0) < (sibling.startTime || 0) ? [track, sibling] : [sibling, track];
+    const [left, right] = (track.startTime || 0) <= (sibling.startTime || 0) ? [track, sibling] : [sibling, track];
     const mergedDuration = (left.duration || 0) + (right.duration || 0);
+    const remainingInLineage = lineage.filter(t => t.id !== left.id && t.id !== right.id);
     setTracksWithHistory(prev => prev
-      .map(t => t.id === left.id ? { ...t, duration: mergedDuration, splitFrom: undefined, clipStart: left.clipStart || 0, fullDuration: left.fullDuration || mergedDuration } : t)
+      .map(t => t.id === left.id ? { ...t, duration: mergedDuration, splitFrom: remainingInLineage.length ? track.splitFrom : undefined, clipStart: left.clipStart || 0, fullDuration: left.fullDuration || mergedDuration } : t)
       .filter(t => t.id !== right.id)
     );
-    toast.success("Split healed — clips rejoined.");
+    setSelectedTrackIds([left.id]);
+    toast.success("Adjacent split healed.");
     sounds.nav();
   };
 
@@ -1716,55 +1763,59 @@ export default function Studio() {
     if (selectedTrackIds.length === 0) return;
     sounds.click();
     
-    if (tracks.length + selectedTrackIds.length > maxTracks) {
+    const hasRange = selectionStart !== null && selectionEnd !== null && Math.abs(selectionEnd - selectionStart) > 0.001;
+    const maximumNewClips = selectedTrackIds.length * (hasRange ? 2 : 1);
+    if (tracks.length + maximumNewClips > maxTracks) {
       toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
       return;
     }
 
+    const cutPoints = hasRange ? [Math.min(selectionStart, selectionEnd), Math.max(selectionStart, selectionEnd)] : [currentTimeRef.current];
     let nextId = nextTrackId(tracks);
     let splitCount = 0;
-    
     const newTracksList = [];
 
-    const updatedTracks = tracks.map(t => {
-      if (selectedTrackIds.includes(t.id) && t.waveform && t.waveform.length > 0) {
+    let updatedTracks = tracks.map(t => ({ ...t }));
+    const eligibleIds = new Set(selectedTrackIds);
+    cutPoints.forEach(curr => {
+      const additions = [];
+      updatedTracks = updatedTracks.map(t => {
+        if (!eligibleIds.has(t.id) || !t.waveform?.length) return t;
         const clipStart = t.startTime !== undefined ? t.startTime : 0;
         const clipDuration = t.duration !== undefined ? t.duration : 40;
         const clipEnd = clipStart + clipDuration;
-        const curr = currentTimeRef.current;
-        
-        if (curr > clipStart && curr < clipEnd) {
-          const splitDuration = curr - clipStart;
-          
-          splitCount++;
-          
-          newTracksList.push({
-            ...t,
-            id: nextId++,
-            name: `${t.name} (Cut)`,
-            startTime: curr,
-            duration: clipDuration - splitDuration,
-            fullDuration: t.fullDuration || t.duration,
-            clipStart: (t.clipStart || 0) + splitDuration,
-            splitFrom: t.splitFrom || t.id
-          });
-
-          return {
-            ...t,
-            duration: splitDuration,
-            fullDuration: t.fullDuration || t.duration,
-            clipStart: t.clipStart || 0,
-            splitFrom: t.splitFrom || t.id
-          };
-        }
-      }
-      return t;
+        if (curr <= clipStart || curr >= clipEnd) return t;
+        const splitDuration = curr - clipStart;
+        const lineage = t.splitFrom || t.id;
+        const right = {
+          ...t,
+          id: nextId++,
+          name: `${t.name} (Cut)`,
+          startTime: curr,
+          duration: clipDuration - splitDuration,
+          fullDuration: t.fullDuration || t.duration,
+          clipStart: (t.clipStart || 0) + splitDuration,
+          splitFrom: lineage
+        };
+        additions.push(right);
+        newTracksList.push(right);
+        eligibleIds.add(right.id);
+        splitCount++;
+        return { ...t, duration: splitDuration, fullDuration: t.fullDuration || t.duration, splitFrom: lineage };
+      });
+      updatedTracks = [...updatedTracks, ...additions];
     });
 
     if (splitCount > 0) {
-      setTracksWithHistory([...updatedTracks, ...newTracksList]);
-      setSelectedTrackIds(newTracksList.map(t => t.id));
-      toast.success(`${splitCount} clip${splitCount === 1 ? '' : 's'} separated at playhead`);
+      setTracksWithHistory(updatedTracks);
+      if (hasRange) {
+        const rangeStart = Math.min(selectionStart, selectionEnd);
+        const rangeEnd = Math.max(selectionStart, selectionEnd);
+        setSelectedTrackIds(updatedTracks.filter(t => eligibleIds.has(t.id) && (t.startTime || 0) >= rangeStart - 0.001 && ((t.startTime || 0) + (t.duration || 0)) <= rangeEnd + 0.001).map(t => t.id));
+      } else {
+        setSelectedTrackIds(newTracksList.map(t => t.id));
+      }
+      toast.success(hasRange ? "Selection separated at both boundaries" : `${splitCount} clip${splitCount === 1 ? '' : 's'} separated at playhead`);
     } else {
       toast.error("Playhead is not positioned over the selected clip");
     }
@@ -3100,6 +3151,8 @@ export default function Studio() {
                           const target = e.currentTarget;
                           const startX = e.clientX;
                           const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
+                          const groupedClipIds = track.groupId ? tracksRef.current.filter(t => t.groupId === track.groupId && !t.locked).map(t => t.id) : [];
+                          const groupedInitialStarts = new Map(tracksRef.current.filter(t => groupedClipIds.includes(t.id)).map(t => [t.id, t.startTime || 0]));
                           target.setPointerCapture(e.pointerId);
                           let hasDragged = false;
                           
@@ -3161,7 +3214,14 @@ export default function Studio() {
                                   return prev.map(t => positions.has(t.id) ? { ...t, startTime: positions.get(t.id) } : t);
                                 });
                               } else {
-                                setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t));
+                                const delta = newStartTime - initialStartTime;
+                                if (groupedClipIds.length > 1) {
+                                  const minInitialStart = Math.min(...groupedInitialStarts.values());
+                                  const safeDelta = Math.max(-minInitialStart, delta);
+                                  setTracksWithHistory(prev => prev.map(t => groupedInitialStarts.has(t.id) ? { ...t, startTime: groupedInitialStarts.get(t.id) + safeDelta } : t));
+                                } else {
+                                  setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t));
+                                }
                               }
                               delete target.dataset.newStartTime;
                             }
@@ -3227,7 +3287,16 @@ export default function Studio() {
                                   target.releasePointerCapture(upEvent.pointerId);
                                   target.removeEventListener('pointermove', handleMove);
                                   target.removeEventListener('pointerup', handleUp);
-                                  setTracksWithHistory(prev => prev);
+                                  setTracksWithHistory(prev => {
+                                    if (editMode !== 'shuffle') return prev;
+                                    const edited = prev.find(t => t.id === track.id);
+                                    if (!edited) return prev;
+                                    const laneKey = track.splitFrom || track.id;
+                                    const oldEnd = initialStartTime + initialDuration;
+                                    const newEnd = (edited.startTime || 0) + (edited.duration || 0);
+                                    const shift = newEnd - oldEnd;
+                                    return prev.map(t => t.id !== track.id && (t.splitFrom || t.id) === laneKey && (t.startTime || 0) >= oldEnd - 0.001 ? { ...t, startTime: Math.max(0, (t.startTime || 0) + shift) } : t);
+                                  });
                                   hideEditTooltip();
                                   };
 
@@ -3280,7 +3349,16 @@ export default function Studio() {
                                   target.releasePointerCapture(upEvent.pointerId);
                                   target.removeEventListener('pointermove', handleMove);
                                   target.removeEventListener('pointerup', handleUp);
-                                  setTracksWithHistory(prev => prev);
+                                  setTracksWithHistory(prev => {
+                                    if (editMode !== 'shuffle') return prev;
+                                    const edited = prev.find(t => t.id === track.id);
+                                    if (!edited) return prev;
+                                    const laneKey = track.splitFrom || track.id;
+                                    const oldEnd = (track.startTime || 0) + initialDuration;
+                                    const newEnd = (track.startTime || 0) + (edited.duration || 0);
+                                    const shift = newEnd - oldEnd;
+                                    return prev.map(t => t.id !== track.id && (t.splitFrom || t.id) === laneKey && (t.startTime || 0) >= oldEnd - 0.001 ? { ...t, startTime: Math.max(0, (t.startTime || 0) + shift) } : t);
+                                  });
                                   hideEditTooltip();
                                   };
                           

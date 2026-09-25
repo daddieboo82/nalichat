@@ -232,10 +232,10 @@ export default function MusicVideoGenerator() {
 
   useEffect(() => {
     const onKeyDown = (event) => {
-      if (rendering || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "z") return;
+      if (rendering || !(event.ctrlKey || event.metaKey) || !["z", "y"].includes(event.key.toLowerCase())) return;
       if (event.target instanceof HTMLElement && event.target.closest("input, textarea, [contenteditable]")) return;
       event.preventDefault();
-      travel(event.shiftKey ? "redo" : "undo");
+      travel(event.shiftKey || event.key.toLowerCase() === "y" ? "redo" : "undo");
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);

@@ -395,8 +395,7 @@ export default function MusicVideoGenerator() {
     setStatus("Exporting in real time. Keep this tab open until the video finishes.");
     let context;
     let stream;
-    let exportAudio;
-    let soundtrackGain;
+    const exportAudio = new Map();
     let recorder;
     const previewMedia = mediaRef.current;
     try {
@@ -427,19 +426,20 @@ export default function MusicVideoGenerator() {
       })));
       mediaRef.current = exportMedia;
       exportGainsRef.current = gains;
-      const soundtrackUrl = assets.find((asset) => asset.id === music?.assetId)?.url;
-      if (soundtrackUrl) {
-        exportAudio = new Audio(soundtrackUrl);
-        exportAudio.preload = "auto";
-        const source = context.createMediaElementSource(exportAudio);
+      for (const item of music) {
+        const url = assets.find((asset) => asset.id === item.assetId)?.url;
+        if (!url) continue;
+        const audio = new Audio(url);
+        audio.preload = "auto";
+        const source = context.createMediaElementSource(audio);
         const gain = context.createGain();
         gain.gain.value = 0;
         source.connect(gain).connect(mix);
-        soundtrackGain = gain;
+        exportAudio.set(item.id, { audio, gain });
       }
       const canvasStream = canvasRef.current.captureStream(30);
       stream = new MediaStream(canvasStream.getVideoTracks());
-      if (videoClips.length || soundtrackUrl) mix.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
+      if (videoClips.length || exportAudio.size) mix.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
       await context.resume();
       recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
       const parts = [];
@@ -450,7 +450,7 @@ export default function MusicVideoGenerator() {
       });
       playingRef.current = true;
       draw(0);
-      if (exportAudio) syncSoundtrack(exportAudio, 0, music, true, soundtrackGain);
+      for (const item of music) { const output = exportAudio.get(item.id); if (output) syncSoundtrack(output.audio, 0, item, true, output.gain); }
       recorder.start(1000);
       const start = performance.now();
       const frame = () => {
@@ -459,7 +459,7 @@ export default function MusicVideoGenerator() {
         const next = Math.min(length, (performance.now() - start) / 1000);
         timeRef.current = next;
         draw(next);
-        if (exportAudio) syncSoundtrack(exportAudio, next, music, true, soundtrackGain);
+        for (const item of music) { const output = exportAudio.get(item.id); if (output) syncSoundtrack(output.audio, next, item, true, output.gain); }
         setTime(next);
         if (next >= length) recorder.stop();
         else rafRef.current = requestAnimationFrame(frame);
@@ -478,7 +478,7 @@ export default function MusicVideoGenerator() {
       playingRef.current = false;
       cancelAnimationFrame(rafRef.current);
       if (recorder?.state === "recording") recorder.stop();
-      exportAudio?.pause();
+      for (const output of exportAudio.values()) output.audio.pause();
       for (const [id, element] of mediaRef.current) if (element.tagName === "VIDEO") { element.pause(); if (element !== previewMedia.get(id)) element.onseeked = null; }
       mediaRef.current = previewMedia;
       exportGainsRef.current = null;
@@ -516,7 +516,7 @@ export default function MusicVideoGenerator() {
             {rendering && <Button variant="outline" onClick={() => { cancelExportRef.current = true; setStatus("Canceling export..."); }}>Cancel export</Button>}
             {output && <a href={output} download={`nalibase-music-video.${outputFormat}`} className="inline-flex items-center gap-2 rounded-lg bg-fuchsia-500 px-3 py-2 text-sm font-bold"><Download size={16} /> Download</a>}
           </div>
-          <audio ref={audioRef} src={assets.find((asset) => asset.id === music?.assetId)?.url || undefined} preload="auto" />
+
           <p role="status" className="mt-2 min-h-5 text-xs text-white/65">{status}</p>
         </section>
         <section className="rounded-2xl border border-white/10 bg-white/[.04] p-3">

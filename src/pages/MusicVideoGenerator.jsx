@@ -123,36 +123,37 @@ export default function MusicVideoGenerator() {
     const ctx = canvas.getContext("2d");
     ctx.fillStyle = "#050509";
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
-    const visible = clipsRef.current.filter((clip) => at >= clip.start && at < clip.start + clipLength(clip));
-    const clip = visible.at(-1);
+    const visible = clipsRef.current.filter((clip) => at >= clip.start && at < clip.start + clipLength(clip)).sort((a, b) => (a.track ?? 0) - (b.track ?? 0));
+    const activeIds = new Set(visible.map((clip) => clip.id));
     if (!exportGainsRef.current) syncSoundtrack(audioRef.current, at, musicRef.current, playingRef.current);
-    const opacity = clip ? Math.min(1, (clip.fadeIn ?? .3) > 0 ? (at - clip.start) / clip.fadeIn : 1, (clip.fadeOut ?? .3) > 0 ? (clip.start + clipLength(clip) - at) / clip.fadeOut : 1) : 0;
-    for (const [id, gain] of exportGainsRef.current || []) gain.gain.value = id === clip?.assetId ? clamp(clip.volume ?? 1, 0, 1) * opacity : 0;
     for (const [id, element] of mediaRef.current) {
-      if (element.tagName === "VIDEO" && id !== clip?.assetId) element.pause();
+      if (element.tagName === "VIDEO" && !activeIds.has(id)) element.pause();
     }
-    if (clip) {
-      const source = mediaRef.current.get(clip.assetId);
+    for (const [id, gain] of exportGainsRef.current || []) if (!activeIds.has(id)) gain.gain.value = 0;
+    for (const clip of visible) {
+      const opacity = Math.min(1, (clip.fadeIn ?? .3) > 0 ? (at - clip.start) / clip.fadeIn : 1, (clip.fadeOut ?? .3) > 0 ? (clip.start + clipLength(clip) - at) / clip.fadeOut : 1);
+      const source = mediaRef.current.get(clip.id);
       const asset = assetsRef.current.find((item) => item.id === clip.assetId);
-      if (source && asset) {
-        if (asset.kind === "video") {
-          const sourceTime = clip.in + (at - clip.start);
-          if (Math.abs(source.currentTime - sourceTime) > 0.16 && Number.isFinite(sourceTime)) {
-            try { source.currentTime = sourceTime; } catch { /* seek may wait for metadata */ }
-          }
-          source.volume = exportGainsRef.current ? 1 : clamp(clip.volume ?? 1, 0, 1) * opacity;
-          if (playingRef.current && source.paused) source.play().catch(() => setStatus("Video audio was blocked. Tap Play again."));
+      if (!source || !asset) continue;
+      if (asset.kind === "video") {
+        const sourceTime = clip.in + (at - clip.start);
+        if (Math.abs(source.currentTime - sourceTime) > 0.16 && Number.isFinite(sourceTime)) {
+          try { source.currentTime = sourceTime; } catch { /* seek may wait for metadata */ }
         }
-        const w = source.videoWidth || source.naturalWidth;
-        const h = source.videoHeight || source.naturalHeight;
-        if (w && h) {
-          const scale = Math.max(WIDTH / w, HEIGHT / h);
-          ctx.save();
-          ctx.globalAlpha = opacity;
-          ctx.filter = `brightness(${clip.brightness ?? 100}%) contrast(${clip.contrast ?? 100}%) saturate(${clip.saturation ?? 100}%)`;
-          ctx.drawImage(source, (WIDTH - w * scale) / 2, (HEIGHT - h * scale) / 2, w * scale, h * scale);
-          ctx.restore();
-        }
+        source.volume = exportGainsRef.current ? 1 : clamp(clip.volume ?? 1, 0, 1) * opacity;
+        const gain = exportGainsRef.current?.get(clip.id);
+        if (gain) gain.gain.value = clamp(clip.volume ?? 1, 0, 1) * opacity;
+        if (playingRef.current && source.paused) source.play().catch(() => setStatus("Video audio was blocked. Tap Play again."));
+      }
+      const w = source.videoWidth || source.naturalWidth;
+      const h = source.videoHeight || source.naturalHeight;
+      if (w && h) {
+        const scale = Math.max(WIDTH / w, HEIGHT / h);
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.filter = `brightness(${clip.brightness ?? 100}%) contrast(${clip.contrast ?? 100}%) saturate(${clip.saturation ?? 100}%)`;
+        ctx.drawImage(source, (WIDTH - w * scale) / 2, (HEIGHT - h * scale) / 2, w * scale, h * scale);
+        ctx.restore();
       }
     }
     if (titleRef.current.trim()) {

@@ -55,9 +55,11 @@ function getAcquisition() {
     const referrer = document.referrer || "";
     let referrerHost = "";
     try { referrerHost = referrer ? new URL(referrer).hostname.replace(/^www\./, "") : ""; } catch {}
+    const searchHosts = /(^|\.)(google\.[a-z.]+|bing\.com|search\.yahoo\.com|duckduckgo\.com)$/i;
+    const inferredMedium = !referrerHost ? "direct" : searchHosts.test(referrerHost) ? "organic" : "referral";
     const acquisition = {
       campaign_source: params.get("utm_source") || referrerHost || "direct",
-      campaign_medium: params.get("utm_medium") || (referrerHost ? "referral" : "direct"),
+      campaign_medium: params.get("utm_medium") || inferredMedium,
       campaign_name: params.get("utm_campaign") || "",
       campaign_content: params.get("utm_content") || "",
       campaign_term: params.get("utm_term") || "",

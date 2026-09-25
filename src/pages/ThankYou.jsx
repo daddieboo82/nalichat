@@ -33,7 +33,7 @@ export default function ThankYou() {
       try {
         const raw = sessionStorage.getItem(CHECKOUT_ATTRIBUTION_KEY);
         checkoutAttribution = raw ? JSON.parse(raw) : null;
-        sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+        try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}
       } catch {}
       setSubscriptionConfirmation("processing");
       const result = await pollForSubscriptionConfirmation({

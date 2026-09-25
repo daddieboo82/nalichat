@@ -102,6 +102,8 @@ export default function MusicVideoGenerator() {
   const [playing, setPlaying] = useState(false);
   const [rendering, setRendering] = useState(false);
   const [output, setOutput] = useState("");
+  const [outputFormat, setOutputFormat] = useState("webm");
+  const [exportFormat, setExportFormat] = useState("webm");
   const [status, setStatus] = useState("");
   const [zoom, setZoom] = useState(60);
 
@@ -345,8 +347,9 @@ export default function MusicVideoGenerator() {
   const exportVideo = async () => {
     if (!length || rendering) return;
     if (!canvasRef.current?.captureStream || !window.MediaRecorder) { setStatus("This browser cannot export video. Use current Chrome or Edge."); return; }
-    const mime = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].find((type) => MediaRecorder.isTypeSupported(type));
-    if (!mime) { setStatus("This browser does not support WebM export."); return; }
+    const formats = exportFormat === "mp4" ? ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=avc1.42E01E", "video/mp4"] : ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
+    const mime = formats.find((type) => MediaRecorder.isTypeSupported(type));
+    if (!mime) { setStatus(`${exportFormat.toUpperCase()} recording is unavailable in this browser. Select WebM or use a supported browser.`); return; }
     stop();
     seek(0);
     setRendering(true);
@@ -424,7 +427,8 @@ export default function MusicVideoGenerator() {
       rafRef.current = requestAnimationFrame(frame);
       const blob = await finished;
       setOutput(URL.createObjectURL(blob));
-      setStatus(`Export ready: ${(blob.size / 1048576).toFixed(1)} MB WebM.`);
+      setOutputFormat(exportFormat);
+      setStatus(`Export ready: ${(blob.size / 1048576).toFixed(1)} MB ${exportFormat.toUpperCase()}.`);
     } catch (error) {
       setStatus(`Export failed: ${error.message || "Unknown error"}`);
     } finally {
@@ -464,8 +468,9 @@ export default function MusicVideoGenerator() {
             <Button onClick={play} disabled={!length || rendering} aria-label={playing ? "Pause preview" : "Play preview"}>{playing ? <Pause size={16}/> : <Play size={16}/>}</Button>
             <span className="font-mono text-sm">{formatTime(time)} / {formatTime(length)}</span>
             <input aria-label="Playhead" type="range" min="0" max={Math.max(length, 0.1)} step=".01" value={Math.min(time, Math.max(length, .1))} onChange={(e) => seek(Number(e.target.value))} className="min-w-28 flex-1 accent-fuchsia-400" />
-            <Button onClick={exportVideo} disabled={!length || rendering}><Film size={16} className="mr-2" />{rendering ? "Exporting..." : "Export WebM"}</Button>
-            {output && <a href={output} download="nalibase-music-video.webm" className="inline-flex items-center gap-2 rounded-lg bg-fuchsia-500 px-3 py-2 text-sm font-bold"><Download size={16} /> Download</a>}
+            <label className="text-xs text-white/70">Format <select aria-label="Export format" value={exportFormat} onChange={(e) => setExportFormat(e.target.value)} disabled={rendering} className="ml-1 rounded border border-white/20 bg-[#171720] p-2 text-white"><option value="webm">WebM</option><option value="mp4">MP4 (if supported)</option></select></label>
+            <Button onClick={exportVideo} disabled={!length || rendering}><Film size={16} className="mr-2" />{rendering ? "Exporting..." : `Export ${exportFormat.toUpperCase()}`}</Button>
+            {output && <a href={output} download={`nalibase-music-video.${outputFormat}`} className="inline-flex items-center gap-2 rounded-lg bg-fuchsia-500 px-3 py-2 text-sm font-bold"><Download size={16} /> Download</a>}
           </div>
           <audio ref={audioRef} src={assets.find((asset) => asset.id === music?.assetId)?.url || undefined} preload="auto" />
           <p role="status" className="mt-2 min-h-5 text-xs text-white/65">{status}</p>

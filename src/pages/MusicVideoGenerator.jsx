@@ -179,9 +179,10 @@ export default function MusicVideoGenerator() {
       let element = mediaRef.current.get(asset.id);
       if (!element) {
         element = document.createElement(asset.kind === "image" ? "img" : asset.kind === "audio" ? "audio" : "video");
-        element.src = asset.url;
         element.preload = "auto";
-        if (asset.kind === "video") { element.muted = true; element.playsInline = true; }
+        if (asset.kind === "video") { element.muted = true; element.playsInline = true; element.onseeked = () => draw(timeRef.current); element.onloadeddata = () => draw(timeRef.current); }
+        if (asset.kind === "image") element.onload = () => draw(timeRef.current);
+        element.src = asset.url;
       }
       next.set(asset.id, element);
     });

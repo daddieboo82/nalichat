@@ -4,6 +4,8 @@ import { ArrowLeft, Download, Film, FolderOpen, Pause, Play, Plus, Save, Scissor
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { secureUploadFile } from "@/lib/secureUpload";
+import { base44 } from "@/api/base44Client";
+import { secureUploadFile } from "@/lib/secureUpload";
 import { clamp, clipLength, formatTime, projectLength, splitClip, trimClip } from "@/lib/videoTimeline";
 import { removeTransformKeyframe, setTransformKeyframe, transformAt } from "@/lib/videoKeyframes";
 import { transitionState } from "@/lib/videoTransitions";
@@ -128,6 +130,9 @@ export default function MusicVideoGenerator() {
   const [exportFormat, setExportFormat] = useState("webm");
   const [status, setStatus] = useState("");
   const [zoom, setZoom] = useState(60);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiConcept, setAiConcept] = useState("");
+  const [aiStyle, setAiStyle] = useState("Cinematic animation");
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiConcept, setAiConcept] = useState("");
   const [aiStyle, setAiStyle] = useState("Cinematic animation");

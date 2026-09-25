@@ -2964,8 +2964,11 @@ export default function Studio() {
                             setTracks(prev => prev.map(t => {
                               if (t.id !== track.id) return t;
                               if (isLeft) {
-                                const amount = Math.max(-initialClipStart, Math.min(initialDuration - 0.001, delta));
-                                return { ...t, startTime: Math.max(0, initialStartTime + amount), duration: initialDuration - amount, clipStart: initialClipStart + amount };
+                                // Extending left is limited by both available source media and
+                                // the session start, so startTime/duration/source offset stay coherent.
+                                const minAmount = Math.max(-initialClipStart, -initialStartTime);
+                                const amount = Math.max(minAmount, Math.min(initialDuration - 0.001, delta));
+                                return { ...t, startTime: initialStartTime + amount, duration: initialDuration - amount, clipStart: initialClipStart + amount };
                               }
                               const maxRestore = fullDuration - (initialClipStart + initialDuration);
                               const amount = Math.max(-initialDuration + 0.001, Math.min(maxRestore, delta));
@@ -2976,7 +2979,9 @@ export default function Studio() {
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleSmartTrim);
                             target.removeEventListener('pointerup', finishSmartTrim);
-                            pushToHistory(tracksRef.current);
+                            // Snapshot the final React state rather than relying on a ref update
+                            // racing the pointerup event.
+                            setTracksWithHistory(prev => prev);
                           };
                           target.addEventListener('pointermove', handleSmartTrim);
                           target.addEventListener('pointerup', finishSmartTrim);

@@ -162,7 +162,7 @@ export default function MusicVideoGenerator() {
     (async () => {
       try {
         const saved = JSON.parse(localStorage.getItem(PROJECT_KEY) || "null");
-        if (!saved) { restoredRef.current = true; return; }
+        if (!saved) { historyRef.current.current = JSON.stringify({ clips: [], music: null, title: "" }); restoredRef.current = true; return; }
         const restored = (await Promise.all((saved.assets || []).map(async (asset) => {
           const file = await loadFile(asset.id);
           return file ? { ...asset, url: URL.createObjectURL(file) } : null;
@@ -173,6 +173,7 @@ export default function MusicVideoGenerator() {
         setClips((saved.clips || []).filter((clip) => ids.has(clip.assetId)));
         setMusic(saved.music && ids.has(saved.music.assetId) ? saved.music : null);
         setTitle(saved.title || "");
+        historyRef.current.current = JSON.stringify({ clips: (saved.clips || []).filter((clip) => ids.has(clip.assetId)), music: saved.music && ids.has(saved.music.assetId) ? saved.music : null, title: saved.title || "" });
         restoredRef.current = true;
         setStatus("Saved project restored on this device.");
       } catch { restoredRef.current = true; setStatus("Saved project could not be restored. Import your media again."); }

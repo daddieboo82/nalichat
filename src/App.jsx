@@ -98,6 +98,8 @@ const OAuthConsent = lazyWithReloadRecovery(() => import('@/pages/OAuthConsent')
 const SharedFileDownload = lazyWithReloadRecovery(() => import('@/pages/SharedFileDownload'), 'shared-file-download');
 const LiveTV = lazyWithReloadRecovery(() => import('@/pages/LiveTV'), 'live-tv');
 const MusicVideoGenerator = lazyWithReloadRecovery(() => import('@/pages/MusicVideoGenerator'), 'music-video-generator');
+const ArtistCareerOS = lazyWithReloadRecovery(() => import('@/pages/ArtistCareerOS'), 'artist-career-os');
+const ArtistReleaseCenter = lazyWithReloadRecovery(() => import('@/pages/ArtistReleaseCenter'), 'artist-release-center');
 
 function safeLocalStorageGet(key) {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -360,6 +362,8 @@ const AuthenticatedApp = () => {
           <Route path="/messages" element={<Messages />} />
           <Route path="/live-tv" element={<LiveTV />} />
           <Route path="/music-video-generator" element={<MusicVideoGenerator />} />
+          <Route path="/artist-career-os" element={<ArtistCareerOS />} />
+          <Route path="/artist-release-center" element={<ArtistReleaseCenter />} />
           <Route path="/files" element={<Files />} />
 
           <Route path="/settings" element={<Settings />} />

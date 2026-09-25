@@ -86,7 +86,6 @@ vi.mock('@/pages/OAuthConsent', () => ({ default: () => <div>OAuth Consent Page<
 vi.mock('@/pages/Home', () => ({ default: () => <div>Home Page</div> }));
 vi.mock('@/pages/Terms', () => ({ default: () => <div>Terms Page</div> }));
 vi.mock('@/pages/Privacy', () => ({ default: () => <div>Privacy Page</div> }));
-vi.mock('@/pages/Download', () => ({ default: () => <div>Download Page</div> }));
 vi.mock('@/pages/ThankYou', () => ({ default: () => <div>Thank You Page</div> }));
 vi.mock('@/pages/Onboarding', () => ({ default: () => <div>Onboarding Page</div> }));
 vi.mock('@/pages/Messages', () => ({ default: () => <div>Messages Page</div> }));
@@ -144,7 +143,7 @@ describe('app routing guards', () => {
     expect(window.location.pathname).toBe('/onboarding');
   });
 
-  it('keeps legal and download pages reachable mid-onboarding', async () => {
+  it('keeps legal pages reachable mid-onboarding', async () => {
     mockAuthState.current = {
       ...mockAuthState.current,
       isAuthenticated: true,
@@ -155,10 +154,6 @@ describe('app routing guards', () => {
     render(<App />);
     await screen.findByText('Terms Page');
 
-    cleanup();
-    window.history.pushState({}, '', '/download');
-    render(<App />);
-    await screen.findByText('Download Page');
   });
 
   it('keeps OAuth consent reachable without onboarding and hides app overlays', async () => {

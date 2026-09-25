@@ -2978,9 +2978,39 @@ export default function Studio() {
                         }
 
                         if (activeTool === 'smart' && isTopHalf) {
-                          const clickRatio = relativeX / rect.width;
-                          const newTime = (track.startTime || 0) + ((track.duration || 40) * clickRatio);
-                          updateCurrentTime(newTime);
+                          // Smart Tool upper zone acts like the Pro Tools Selector: click places
+                          // the insertion point; drag creates an edit selection.
+                          const clipStart = track.startTime || 0;
+                          const clipDuration = track.duration || 40;
+                          const timeFromClientX = (clientX) => {
+                            const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                            return clipStart + (x / rect.width) * clipDuration;
+                          };
+                          const anchorTime = timeFromClientX(e.clientX);
+                          updateCurrentTime(anchorTime);
+                          setSelectionStart(anchorTime);
+                          setSelectionEnd(anchorTime);
+                          const target = e.currentTarget;
+                          target.setPointerCapture(e.pointerId);
+                          let dragged = false;
+                          const handleSelectMove = (moveEvent) => {
+                            if (Math.abs(moveEvent.clientX - e.clientX) > 2) dragged = true;
+                            const current = timeFromClientX(moveEvent.clientX);
+                            setSelectionStart(Math.min(anchorTime, current));
+                            setSelectionEnd(Math.max(anchorTime, current));
+                            updateCurrentTime(current);
+                          };
+                          const finishSelect = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleSelectMove);
+                            target.removeEventListener('pointerup', finishSelect);
+                            if (!dragged) {
+                              setSelectionStart(null);
+                              setSelectionEnd(null);
+                            }
+                          };
+                          target.addEventListener('pointermove', handleSelectMove);
+                          target.addEventListener('pointerup', finishSelect);
                           return;
                         }
 

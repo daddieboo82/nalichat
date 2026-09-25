@@ -280,22 +280,25 @@ export default function MusicVideoGenerator() {
     setStatus("Exporting in real time. Keep this tab open until the video finishes.");
     let context;
     let stream;
+    let exportAudio;
     try {
       const canvasStream = canvasRef.current.captureStream(30);
       stream = new MediaStream(canvasStream.getVideoTracks());
-      const soundtrack = audioRef.current;
-      if (soundtrack && music) {
+      const soundtrackUrl = assets.find((asset) => asset.id === music?.assetId)?.url;
+      if (soundtrackUrl) {
+        exportAudio = new Audio(soundtrackUrl);
+        exportAudio.preload = "auto";
         context = new AudioContext();
-        const source = context.createMediaElementSource(soundtrack);
+        const source = context.createMediaElementSource(exportAudio);
         const gain = context.createGain();
         const output = context.createMediaStreamDestination();
         gain.gain.value = music.volume;
         source.connect(gain).connect(output);
         gain.connect(context.destination);
         output.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
-        soundtrack.currentTime = 0;
+        exportAudio.currentTime = 0;
         await context.resume();
-        await soundtrack.play();
+        await exportAudio.play();
       }
       const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
       const parts = [];
@@ -325,7 +328,7 @@ export default function MusicVideoGenerator() {
     } finally {
       playingRef.current = false;
       cancelAnimationFrame(rafRef.current);
-      audioRef.current?.pause();
+      exportAudio?.pause();
       for (const element of mediaRef.current.values()) if (element.tagName === "VIDEO") element.pause();
       stream?.getTracks().forEach((track) => track.stop());
       await context?.close();

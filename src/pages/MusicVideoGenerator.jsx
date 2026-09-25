@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Film, FolderOpen, Pause, Play, Plus, Save, Scissors, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Download, Film, FolderOpen, Pause, Play, Plus, Save, Scissors, Trash2, Undo2, Redo2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { clamp, clipLength, formatTime, projectLength, splitClip, trimClip } from "@/lib/videoTimeline";
 
@@ -72,6 +72,8 @@ export default function MusicVideoGenerator() {
   const musicRef = useRef(null);
   const titleRef = useRef("");
   const restoredRef = useRef(false);
+  const historyRef = useRef({ current: null, past: [], future: [] });
+  const [, setHistoryVersion] = useState(0);
   const [assets, setAssets] = useState([]);
   const [clips, setClips] = useState([]);
   const [music, setMusic] = useState(null);
@@ -194,6 +196,37 @@ export default function MusicVideoGenerator() {
     mediaRef.current = next;
     draw(timeRef.current);
   }, [assets, clips, title, draw]);
+
+  useEffect(() => {
+    if (!restoredRef.current) return;
+    const snapshot = JSON.stringify({ clips, music, title });
+    const history = historyRef.current;
+    if (history.current && history.current !== snapshot) {
+      history.past.push(history.current);
+      if (history.past.length > 100) history.past.shift();
+      history.future = [];
+      setHistoryVersion((version) => version + 1);
+    }
+    history.current = snapshot;
+  }, [clips, music, title]);
+
+  const travel = (direction) => {
+    const history = historyRef.current;
+    const from = direction === "undo" ? history.past : history.future;
+    const to = direction === "undo" ? history.future : history.past;
+    if (!from.length) return;
+    stop();
+    to.push(history.current);
+    const snapshot = from.pop();
+    history.current = snapshot;
+    const restored = JSON.parse(snapshot);
+    setClips(restored.clips);
+    setMusic(restored.music);
+    setTitle(restored.title);
+    setSelected(null);
+    setHistoryVersion((version) => version + 1);
+    setStatus(direction === "undo" ? "Edit undone." : "Edit redone.");
+  };
 
   useEffect(() => {
     if (!restoredRef.current) return;
@@ -380,6 +413,8 @@ export default function MusicVideoGenerator() {
       <header className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Back"><ArrowLeft /></Button>
         <div className="min-w-0 flex-1"><p className="text-xs font-bold uppercase tracking-widest text-fuchsia-300">NaliBase Visualize</p><h1 className="text-2xl font-black sm:text-3xl">Music Video Lab</h1><p className="text-xs text-white/60">Import footage and a song. Edit the timeline, preview, then export a real video.</p></div>
+        <Button variant="outline" onClick={() => travel("undo")} disabled={!historyRef.current.past.length || rendering} aria-label="Undo edit" title="Undo edit"><Undo2 size={16} /></Button>
+        <Button variant="outline" onClick={() => travel("redo")} disabled={!historyRef.current.future.length || rendering} aria-label="Redo edit" title="Redo edit"><Redo2 size={16} /></Button>
         <span className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-3 py-2 text-xs text-white/70"><Save size={15} /> Saved on this device</span>
       </header>
       <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)_17rem]">

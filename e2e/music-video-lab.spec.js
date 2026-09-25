@@ -12,3 +12,13 @@ test('Music Video Lab release is present in the production bundle', async ({ req
   const html = await response.text();
   expect(html).toContain('<div id="root"');
 });
+
+test('Music Video Lab source ships the AI director and editable export workflow', async ({ request }) => {
+  const response = await request.get('/src/pages/MusicVideoGenerator.jsx');
+  test.skip(!response.ok(), 'source modules are not exposed by this deployment');
+  const source = await response.text();
+  expect(source).toContain('AI Music Video Director');
+  expect(source).toContain('generateMusicVideoStoryboard');
+  expect(source).toContain('Generate AI Video');
+  expect(source).toContain('Export');
+});

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Film, FolderOpen, Pause, Play, Plus, Save, Scissors, Trash2, Undo2, Redo2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { base44 } from "@/api/base44Client";
+import { secureUploadFile } from "@/lib/secureUpload";
 import { clamp, clipLength, formatTime, projectLength, splitClip, trimClip } from "@/lib/videoTimeline";
 import { removeTransformKeyframe, setTransformKeyframe, transformAt } from "@/lib/videoKeyframes";
 import { transitionState } from "@/lib/videoTransitions";
@@ -126,6 +128,9 @@ export default function MusicVideoGenerator() {
   const [exportFormat, setExportFormat] = useState("webm");
   const [status, setStatus] = useState("");
   const [zoom, setZoom] = useState(60);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiConcept, setAiConcept] = useState("");
+  const [aiStyle, setAiStyle] = useState("Cinematic animation");
 
   assetsRef.current = assets;
   clipsRef.current = clips;
@@ -351,6 +356,65 @@ export default function MusicVideoGenerator() {
     if (added.length) { setAssets((current) => [...current, ...added]); setStatus(`${added.length} file(s) imported and saved on this device.`); }
   };
 
+  const generateAiVideo = async () => {
+    if (aiGenerating || rendering) return;
+    const song = assets.find((asset) => asset.kind === "audio");
+    if (!song) { setStatus("Import a song first, then generate the AI video."); return; }
+    const storedSong = await loadFile(song.id);
+    if (!storedSong) { setStatus("The song file is unavailable on this device. Import it again."); return; }
+    setAiGenerating(true);
+    setStatus("Uploading song and creating an AI-directed storyboard...");
+    try {
+      const uploaded = await secureUploadFile(storedSong, { accept: "audio" });
+      const response = await base44.functions.invoke("generateMusicVideoStoryboard", {
+        audio_url: uploaded.file_url,
+        title: title || song.name.replace(/\\.[^.]+$/, ""),
+        concept: aiConcept,
+        style: aiStyle,
+        duration: song.duration,
+      });
+      const payload = response?.data ?? response;
+      if (payload?.error) throw new Error(payload.error);
+      const scenes = Array.isArray(payload?.scenes) ? payload.scenes.filter((scene) => scene?.image_url) : [];
+      if (!scenes.length) throw new Error("No AI scenes were generated. Try again.");
+      const sceneDuration = Math.max(2, song.duration / scenes.length);
+      const generatedAssets = [];
+      const generatedClips = [];
+      for (let index = 0; index < scenes.length; index++) {
+        const scene = scenes[index];
+        const imageResponse = await fetch(scene.image_url);
+        if (!imageResponse.ok) continue;
+        const blob = await imageResponse.blob();
+        const file = new File([blob], `AI Scene ${index + 1}.png`, { type: blob.type || "image/png" });
+        const id = crypto.randomUUID();
+        await storeFile(id, file);
+        generatedAssets.push({ id, name: file.name, kind: "image", duration: sceneDuration, url: URL.createObjectURL(file), aiScene: scene });
+        generatedClips.push({
+          id: crypto.randomUUID(), assetId: id, track: 0, start: index * sceneDuration,
+          in: 0, out: sceneDuration, sourceDuration: sceneDuration, brightness: 100,
+          contrast: 100, saturation: 100, volume: 1, fadeIn: .45, fadeOut: .45,
+          transitionIn: index ? "fade" : "cut",
+          keyframes: [
+            { time: 0, x: 0, y: 0, scale: 1 },
+            { time: sceneDuration, x: index % 2 ? -2 : 2, y: index % 3 ? 1 : -1, scale: 1.08 },
+          ],
+        });
+      }
+      if (!generatedAssets.length) throw new Error("AI scenes were created but could not be downloaded.");
+      setAssets((current) => [...current, ...generatedAssets]);
+      setClips((current) => [...current.filter((clip) => (clip.track ?? 0) !== 0), ...generatedClips]);
+      const existingSong = music.find((item) => item.assetId === song.id);
+      if (!existingSong) setMusic((current) => [...current, { id: crypto.randomUUID(), assetId: song.id, duration: song.duration, volume: 1, start: 0, in: 0, out: song.duration, fadeIn: 0, fadeOut: 0 }]);
+      setTitle((current) => current || song.name.replace(/\\.[^.]+$/, ""));
+      seek(0);
+      setStatus(`AI video created: ${generatedAssets.length} animated scenes are now on the timeline. Preview, edit, then export.`);
+    } catch (error) {
+      setStatus(`AI generation failed: ${error.message || "Unknown error"}`);
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const addClip = (asset) => {
     if (asset.kind === "audio") {
       const audioClip = { id: crypto.randomUUID(), assetId: asset.id, duration: asset.duration, volume: 1, start: 0, in: 0, out: asset.duration, fadeIn: 0, fadeOut: 0 };
@@ -517,6 +581,14 @@ export default function MusicVideoGenerator() {
         <Button variant="outline" onClick={() => travel("redo")} disabled={!historyRef.current.future.length || rendering} aria-label="Redo edit" title="Redo edit"><Redo2 size={16} /></Button>
         <span className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-3 py-2 text-xs text-white/70"><Save size={15} /> Saved on this device</span>
       </header>
+      <section className="rounded-2xl border border-fuchsia-400/20 bg-fuchsia-500/[.06] p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-52 flex-1"><h2 className="font-black">AI Music Video Director</h2><p className="mt-1 text-xs text-white/60">Import a song, describe the world you want, and Nali creates a lyric-aware animated storyboard directly on the editable timeline.</p></div>
+          <label className="min-w-48 flex-1 text-xs text-white/70">Concept<input value={aiConcept} onChange={(e) => setAiConcept(e.target.value)} maxLength={2000} placeholder="Neon city, heartbreak, surreal fire..." className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2 text-white" /></label>
+          <label className="text-xs text-white/70">Style<select value={aiStyle} onChange={(e) => setAiStyle(e.target.value)} className="mt-1 block rounded-lg border border-white/15 bg-[#171720] p-2 text-white"><option>Cinematic animation</option><option>Anime-inspired original</option><option>3D surreal</option><option>Graphic novel</option><option>Dreamlike watercolor</option><option>Dark futuristic</option></select></label>
+          <Button onClick={generateAiVideo} disabled={aiGenerating || rendering || !assets.some((asset) => asset.kind === "audio")}>{aiGenerating ? "Directing..." : "Generate AI Video"}</Button>
+        </div>
+      </section>
       <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)_17rem]">
         <section className="rounded-2xl border border-white/10 bg-white/[.04] p-3">
           <h2 className="mb-3 flex items-center gap-2 font-bold"><FolderOpen size={18} /> Project media</h2>

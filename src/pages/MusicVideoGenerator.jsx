@@ -56,7 +56,7 @@ const metadata = (url, type) => new Promise((resolve, reject) => {
   element.src = url;
 });
 const kindOf = (file) => file.type.startsWith("video/") ? "video" : file.type.startsWith("image/") ? "image" : file.type.startsWith("audio/") ? "audio" : null;
-const syncSoundtrack = (audio, at, music, active) => {
+const syncSoundtrack = (audio, at, music, active, outputGain) => {
   if (!audio || !music) return;
   const start = music.start ?? 0;
   const pointIn = music.in ?? 0;
@@ -65,7 +65,14 @@ const syncSoundtrack = (audio, at, music, active) => {
   if (!audible || !active) audio.pause();
   const target = clamp(pointIn + at - start, pointIn, pointOut);
   if (Math.abs(audio.currentTime - target) > .2 && Number.isFinite(target)) audio.currentTime = target;
-  audio.volume = clamp(music.volume ?? 1, 0, 1);
+  const elapsed = at - start;
+  const remaining = start + pointOut - pointIn - at;
+  const fadeIn = music.fadeIn ?? 0;
+  const fadeOut = music.fadeOut ?? 0;
+  const fade = Math.min(1, fadeIn > 0 ? elapsed / fadeIn : 1, fadeOut > 0 ? remaining / fadeOut : 1);
+  const level = audible && active ? clamp(music.volume ?? 1, 0, 1) * Math.max(0, fade) : 0;
+  if (outputGain) { outputGain.gain.value = level; audio.volume = 1; }
+  else audio.volume = level;
   if (audible && active && audio.paused) audio.play().catch(() => {});
 };
 
@@ -290,7 +297,7 @@ export default function MusicVideoGenerator() {
 
   const addClip = (asset) => {
     if (asset.kind === "audio") {
-      setMusic({ assetId: asset.id, duration: asset.duration, volume: 1, start: 0, in: 0, out: asset.duration });
+      setMusic({ assetId: asset.id, duration: asset.duration, volume: 1, start: 0, in: 0, out: asset.duration, fadeIn: 0, fadeOut: 0 });
       setStatus("Soundtrack loaded. It will play alongside audio from your video clips.");
       return;
     }
@@ -347,6 +354,7 @@ export default function MusicVideoGenerator() {
     let context;
     let stream;
     let exportAudio;
+    let soundtrackGain;
     let recorder;
     const previewMedia = mediaRef.current;
     try {
@@ -383,9 +391,9 @@ export default function MusicVideoGenerator() {
         exportAudio.preload = "auto";
         const source = context.createMediaElementSource(exportAudio);
         const gain = context.createGain();
-        gain.gain.value = music.volume;
+        gain.gain.value = 0;
         source.connect(gain).connect(mix);
-        gain.connect(context.destination);
+        soundtrackGain = gain;
       }
       const canvasStream = canvasRef.current.captureStream(30);
       stream = new MediaStream(canvasStream.getVideoTracks());
@@ -400,7 +408,7 @@ export default function MusicVideoGenerator() {
       });
       playingRef.current = true;
       draw(0);
-      if (exportAudio) syncSoundtrack(exportAudio, 0, music, true);
+      if (exportAudio) syncSoundtrack(exportAudio, 0, music, true, soundtrackGain);
       recorder.start(1000);
       const start = performance.now();
       const frame = () => {
@@ -408,7 +416,7 @@ export default function MusicVideoGenerator() {
         const next = Math.min(length, (performance.now() - start) / 1000);
         timeRef.current = next;
         draw(next);
-        if (exportAudio) syncSoundtrack(exportAudio, next, music, true);
+        if (exportAudio) syncSoundtrack(exportAudio, next, music, true, soundtrackGain);
         setTime(next);
         if (next >= length) recorder.stop();
         else rafRef.current = requestAnimationFrame(frame);
@@ -477,7 +485,7 @@ export default function MusicVideoGenerator() {
             <Button variant="outline" onClick={() => { setClips((current) => splitClip(current, selected, time)); setStatus("Split at playhead when it falls inside the selected clip."); }}><Scissors size={15} className="mr-2"/> Split at playhead</Button>
             <Button variant="destructive" onClick={() => { setClips((current) => current.filter((clip) => clip.id !== selected)); setSelected(null); }}><Trash2 size={15} className="mr-2"/> Delete clip</Button>
           </div>}
-          {music && <div className="mt-4 space-y-2 border-t border-white/10 pt-3 text-xs"><p className="font-bold">Soundtrack: {assets.find((asset) => asset.id === music.assetId)?.name}</p><label className="block">Timeline start (seconds)<input type="number" min="0" step=".1" value={music.start ?? 0} onChange={(e) => setMusic({ ...music, start: Math.max(0, Number(e.target.value) || 0) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label><label className="block">Song in point (seconds)<input type="number" min="0" max={(music.out ?? music.duration) - .1} step=".1" value={music.in ?? 0} onChange={(e) => setMusic({ ...music, in: clamp(Number(e.target.value) || 0, 0, (music.out ?? music.duration) - .1) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label><label className="block">Song out point (seconds)<input type="number" min={(music.in ?? 0) + .1} max={music.duration} step=".1" value={music.out ?? music.duration} onChange={(e) => setMusic({ ...music, out: clamp(Number(e.target.value) || 0, (music.in ?? 0) + .1, music.duration) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label><label className="mt-2 block">Volume {Math.round(music.volume * 100)}%<input type="range" min="0" max="1" step=".01" value={music.volume} onChange={(e) => { const volume = Number(e.target.value); setMusic({ ...music, volume }); if (audioRef.current) audioRef.current.volume = volume; }} className="w-full accent-fuchsia-400" /></label><button className="mt-2 text-rose-300" onClick={() => setMusic(null)}>Remove soundtrack</button></div>}
+          {music && <div className="mt-4 space-y-2 border-t border-white/10 pt-3 text-xs"><p className="font-bold">Soundtrack: {assets.find((asset) => asset.id === music.assetId)?.name}</p><label className="block">Timeline start (seconds)<input type="number" min="0" step=".1" value={music.start ?? 0} onChange={(e) => setMusic({ ...music, start: Math.max(0, Number(e.target.value) || 0) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label><label className="block">Song in point (seconds)<input type="number" min="0" max={(music.out ?? music.duration) - .1} step=".1" value={music.in ?? 0} onChange={(e) => setMusic({ ...music, in: clamp(Number(e.target.value) || 0, 0, (music.out ?? music.duration) - .1) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label><label className="block">Song out point (seconds)<input type="number" min={(music.in ?? 0) + .1} max={music.duration} step=".1" value={music.out ?? music.duration} onChange={(e) => setMusic({ ...music, out: clamp(Number(e.target.value) || 0, (music.in ?? 0) + .1, music.duration) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label><label className="block">Fade in (seconds)<input type="number" min="0" max={(music.out ?? music.duration) - (music.in ?? 0)} step=".1" value={music.fadeIn ?? 0} onChange={(e) => setMusic({ ...music, fadeIn: clamp(Number(e.target.value) || 0, 0, (music.out ?? music.duration) - (music.in ?? 0)) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label><label className="block">Fade out (seconds)<input type="number" min="0" max={(music.out ?? music.duration) - (music.in ?? 0)} step=".1" value={music.fadeOut ?? 0} onChange={(e) => setMusic({ ...music, fadeOut: clamp(Number(e.target.value) || 0, 0, (music.out ?? music.duration) - (music.in ?? 0)) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label><label className="mt-2 block">Volume {Math.round(music.volume * 100)}%<input type="range" min="0" max="1" step=".01" value={music.volume} onChange={(e) => { const volume = Number(e.target.value); setMusic({ ...music, volume }); if (audioRef.current) audioRef.current.volume = volume; }} className="w-full accent-fuchsia-400" /></label><button className="mt-2 text-rose-300" onClick={() => setMusic(null)}>Remove soundtrack</button></div>}
         </section>
       </div>
       <section className="rounded-2xl border border-white/10 bg-white/[.04] p-3">

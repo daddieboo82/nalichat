@@ -61,6 +61,7 @@ export default function MusicVideoGenerator() {
   const navigate = useNavigate();
   const canvasRef = useRef(null);
   const mediaRef = useRef(new Map());
+  const exportGainsRef = useRef(null);
   const audioRef = useRef(null);
   const rafRef = useRef(0);
   const playingRef = useRef(false);
@@ -98,6 +99,7 @@ export default function MusicVideoGenerator() {
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
     const visible = clipsRef.current.filter((clip) => at >= clip.start && at < clip.start + clipLength(clip));
     const clip = visible.at(-1);
+    for (const [id, gain] of exportGainsRef.current || []) gain.gain.value = id === clip?.assetId ? clamp(clip.volume ?? 1, 0, 1) : 0;
     for (const [id, element] of mediaRef.current) {
       if (element.tagName === "VIDEO" && id !== clip?.assetId) element.pause();
     }
@@ -110,7 +112,7 @@ export default function MusicVideoGenerator() {
           if (Math.abs(source.currentTime - sourceTime) > 0.16 && Number.isFinite(sourceTime)) {
             try { source.currentTime = sourceTime; } catch { /* seek may wait for metadata */ }
           }
-          source.volume = clamp(clip.volume ?? 1, 0, 1);
+          source.volume = exportGainsRef.current ? 1 : clamp(clip.volume ?? 1, 0, 1);
           if (playingRef.current && source.paused) source.play().catch(() => setStatus("Video audio was blocked. Tap Play again."));
         }
         const w = source.videoWidth || source.naturalWidth;

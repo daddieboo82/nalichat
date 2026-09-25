@@ -96,6 +96,7 @@ export default function MusicVideoGenerator() {
   const [, setHistoryVersion] = useState(0);
   const [assets, setAssets] = useState([]);
   const [clips, setClips] = useState([]);
+  const [trackCount, setTrackCount] = useState(2);
   const [music, setMusic] = useState(null);
   const [title, setTitle] = useState("");
   const [selected, setSelected] = useState(null);
@@ -190,7 +191,7 @@ export default function MusicVideoGenerator() {
     (async () => {
       try {
         const saved = JSON.parse(localStorage.getItem(PROJECT_KEY) || "null");
-        if (!saved) { historyRef.current.current = JSON.stringify({ clips: [], music: null, title: "" }); restoredRef.current = true; return; }
+        if (!saved) { historyRef.current.current = JSON.stringify({ clips: [], music: null, title: "", trackCount: 2 }); restoredRef.current = true; return; }
         const restored = (await Promise.all((saved.assets || []).map(async (asset) => {
           const file = await loadFile(asset.id);
           return file ? { ...asset, url: URL.createObjectURL(file) } : null;
@@ -201,7 +202,9 @@ export default function MusicVideoGenerator() {
         setClips((saved.clips || []).filter((clip) => ids.has(clip.assetId)));
         setMusic(saved.music && ids.has(saved.music.assetId) ? saved.music : null);
         setTitle(saved.title || "");
-        historyRef.current.current = JSON.stringify({ clips: (saved.clips || []).filter((clip) => ids.has(clip.assetId)), music: saved.music && ids.has(saved.music.assetId) ? saved.music : null, title: saved.title || "" });
+        const count = Math.max(2, saved.trackCount || 2, ...(saved.clips || []).map((clip) => (clip.track ?? 0) + 1));
+        setTrackCount(count);
+        historyRef.current.current = JSON.stringify({ clips: (saved.clips || []).filter((clip) => ids.has(clip.assetId)), music: saved.music && ids.has(saved.music.assetId) ? saved.music : null, title: saved.title || "", trackCount: count });
         restoredRef.current = true;
         setStatus("Saved project restored on this device.");
       } catch { restoredRef.current = true; setStatus("Saved project could not be restored. Import your media again."); }
@@ -231,7 +234,7 @@ export default function MusicVideoGenerator() {
 
   useEffect(() => {
     if (!restoredRef.current) return;
-    const snapshot = JSON.stringify({ clips, music, title });
+    const snapshot = JSON.stringify({ clips, music, title, trackCount });
     const history = historyRef.current;
     if (history.current && history.current !== snapshot) {
       history.past.push(history.current);
@@ -240,7 +243,7 @@ export default function MusicVideoGenerator() {
       setHistoryVersion((version) => version + 1);
     }
     history.current = snapshot;
-  }, [clips, music, title]);
+  }, [clips, music, title, trackCount]);
 
   const travel = (direction) => {
     const history = historyRef.current;
@@ -255,6 +258,7 @@ export default function MusicVideoGenerator() {
     setClips(restored.clips);
     setMusic(restored.music);
     setTitle(restored.title);
+    setTrackCount(restored.trackCount ?? 2);
     setSelected(null);
     setHistoryVersion((version) => version + 1);
     setStatus(direction === "undo" ? "Edit undone." : "Edit redone.");
@@ -276,10 +280,10 @@ export default function MusicVideoGenerator() {
     try {
       localStorage.setItem(PROJECT_KEY, JSON.stringify({
         assets: assets.map(({ id, name, kind, duration }) => ({ id, name, kind, duration })),
-        clips, music, title,
+        clips, music, title, trackCount,
       }));
     } catch { setStatus("Project storage is full. Export soon and free device space."); }
-  }, [assets, clips, music, title]);
+  }, [assets, clips, music, title, trackCount]);
 
   useEffect(() => () => { assetsRef.current.forEach((asset) => URL.revokeObjectURL(asset.url)); }, []);
   useEffect(() => { if (output) return () => URL.revokeObjectURL(output); }, [output]);
@@ -323,7 +327,7 @@ export default function MusicVideoGenerator() {
     stop();
     const remaining = clips.filter((clip) => clip.assetId !== asset.id);
     const nextMusic = music?.assetId === asset.id ? null : music;
-    historyRef.current = { current: JSON.stringify({ clips: remaining, music: nextMusic, title }), past: [], future: [] };
+    historyRef.current = { current: JSON.stringify({ clips: remaining, music: nextMusic, title, trackCount }), past: [], future: [] };
     setHistoryVersion((version) => version + 1);
     setClips(remaining);
     if (music?.assetId === asset.id) setMusic(null);
@@ -495,7 +499,7 @@ export default function MusicVideoGenerator() {
           <label className="block text-xs text-white/60">Video title<input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={55} placeholder="Optional title overlay" className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2 text-white" /></label>
           {chosen && <div className="mt-4 space-y-3 border-t border-white/10 pt-4 text-xs">
             <p className="truncate font-bold">{selectedAsset?.name}</p>
-            <label className="block">Video track<select value={chosen.track ?? 0} onChange={(e) => updateClip({ track: Number(e.target.value) })} className="mt-1 w-full rounded-lg border border-white/15 bg-[#171720] p-2"><option value="0">Video 1</option><option value="1">Video 2</option></select></label>
+            <label className="block">Video track<select value={chosen.track ?? 0} onChange={(e) => updateClip({ track: Number(e.target.value) })} className="mt-1 w-full rounded-lg border border-white/15 bg-[#171720] p-2">{Array.from({ length: trackCount }, (_, i) => <option key={i} value={i}>Video {i + 1}</option>)}</select></label>
             <label className="block">Start (seconds)<input type="number" min="0" step=".1" value={chosen.start} onChange={(e) => updateClip({ start: Math.max(0, Number(e.target.value) || 0) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <label className="block">In point (seconds)<input type="number" min="0" max={chosen.out - .1} step=".1" value={chosen.in} onChange={(e) => setClips((current) => trimClip(current, selected, "left", chosen.start + Number(e.target.value) - chosen.in))} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <label className="block">Out point (seconds)<input type="number" min={chosen.in + .1} max={chosen.sourceDuration} step=".1" value={chosen.out} onChange={(e) => setClips((current) => trimClip(current, selected, "right", Number(e.target.value)))} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
@@ -510,10 +514,10 @@ export default function MusicVideoGenerator() {
         </section>
       </div>
       <section className="rounded-2xl border border-white/10 bg-white/[.04] p-3">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="font-bold">Timeline · Video and soundtrack</h2><label className="text-xs">Zoom <input type="range" min="20" max="160" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="align-middle accent-fuchsia-400" /></label></div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="font-bold">Timeline · Video and soundtrack</h2><Button variant="outline" size="sm" onClick={() => setTrackCount((count) => count + 1)}><Plus size={14} className="mr-1" /> Add video track</Button><label className="text-xs">Zoom <input type="range" min="20" max="160" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="align-middle accent-fuchsia-400" /></label></div>
         <div className="overflow-x-auto"><div style={{ width: Math.max(700, length * zoom + 120) }} className="relative min-h-40 rounded-lg bg-black/40 p-2">
           <div className="ml-20 h-5 border-b border-white/10 font-mono text-[10px] text-white/40">{Array.from({ length: Math.ceil(Math.max(length, 10) / 5) + 1 }, (_, i) => <span key={i} className="absolute" style={{ left: 90 + i * 5 * zoom }}>{i * 5}s</span>)}</div>
-          {[0, 1].map((track) => <div key={track} className="mt-2 flex h-16 items-center"><span className="w-20 shrink-0 text-xs text-white/50">VIDEO {track + 1}</span><div className="relative h-14 flex-1 rounded bg-white/5" onClick={(e) => { if (e.target === e.currentTarget) seek(e.nativeEvent.offsetX / zoom); }}>{clips.filter((clip) => (clip.track ?? 0) === track).map((clip) => <button key={clip.id} draggable onDragStart={(e) => { e.dataTransfer.setData("text/plain", clip.id); }} onDragEnd={(e) => { if (e.dataTransfer.dropEffect === "none" && e.clientX === 0) return; const rail = e.currentTarget.parentElement.getBoundingClientRect(); setClips((current) => current.map((item) => item.id === clip.id ? { ...item, start: Math.max(0, Math.round((e.clientX - rail.left) / zoom * 10) / 10) } : item)); }} onClick={() => { setSelected(clip.id); seek(clip.start); }} style={{ left: clip.start * zoom, width: clipLength(clip) * zoom }} className={`absolute top-1 h-12 overflow-hidden rounded border px-2 text-left text-xs ${selected === clip.id ? "border-fuchsia-200 bg-fuchsia-600" : "border-fuchsia-500/70 bg-fuchsia-900"}`} title="Click to select; drag to move"><span className="block truncate font-bold">{assets.find((asset) => asset.id === clip.assetId)?.name}</span><span>{formatTime(clipLength(clip))}</span></button>)}</div></div>)}
+          {Array.from({ length: trackCount }, (_, track) => <div key={track} className="mt-2 flex h-16 items-center"><span className="w-20 shrink-0 text-xs text-white/50">VIDEO {track + 1}</span><div className="relative h-14 flex-1 rounded bg-white/5" onClick={(e) => { if (e.target === e.currentTarget) seek(e.nativeEvent.offsetX / zoom); }}>{clips.filter((clip) => (clip.track ?? 0) === track).map((clip) => <button key={clip.id} draggable onDragStart={(e) => { e.dataTransfer.setData("text/plain", clip.id); }} onDragEnd={(e) => { if (e.dataTransfer.dropEffect === "none" && e.clientX === 0) return; const rail = e.currentTarget.parentElement.getBoundingClientRect(); setClips((current) => current.map((item) => item.id === clip.id ? { ...item, start: Math.max(0, Math.round((e.clientX - rail.left) / zoom * 10) / 10) } : item)); }} onClick={() => { setSelected(clip.id); seek(clip.start); }} style={{ left: clip.start * zoom, width: clipLength(clip) * zoom }} className={`absolute top-1 h-12 overflow-hidden rounded border px-2 text-left text-xs ${selected === clip.id ? "border-fuchsia-200 bg-fuchsia-600" : "border-fuchsia-500/70 bg-fuchsia-900"}`} title="Click to select; drag to move"><span className="block truncate font-bold">{assets.find((asset) => asset.id === clip.assetId)?.name}</span><span>{formatTime(clipLength(clip))}</span></button>)}</div></div>)}
           <div className="flex h-12 items-center"><span className="w-20 shrink-0 text-xs text-white/50">MUSIC</span><div className="h-9 flex-1 rounded bg-white/5">{music && <div style={{ marginLeft: (music.start ?? 0) * zoom, width: Math.max(0, Math.min((music.out ?? music.duration) - (music.in ?? 0), length - (music.start ?? 0))) * zoom }} className="h-full truncate rounded border border-cyan-500 bg-cyan-900 px-2 py-2 text-xs">{assets.find((asset) => asset.id === music.assetId)?.name}</div>}</div></div>
           <div className="pointer-events-none absolute top-5 bottom-2 w-px bg-white" style={{ left: 90 + time * zoom }} />
         </div></div>

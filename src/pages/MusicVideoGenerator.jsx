@@ -231,6 +231,17 @@ export default function MusicVideoGenerator() {
   };
 
   useEffect(() => {
+    const onKeyDown = (event) => {
+      if (rendering || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "z") return;
+      if (event.target instanceof HTMLElement && event.target.closest("input, textarea, [contenteditable]")) return;
+      event.preventDefault();
+      travel(event.shiftKey ? "redo" : "undo");
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
+  useEffect(() => {
     if (!restoredRef.current) return;
     try {
       localStorage.setItem(PROJECT_KEY, JSON.stringify({

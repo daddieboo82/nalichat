@@ -1,6 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { Mic2, Users, Image, Film, FolderOpen, BarChart3, Rocket, MessageCircle, Sparkles, ArrowRight } from 'lucide-react';
 
+const worlds = [
+  ['Artist World', '/artist-world'], ['AI Creative Director', '/artist-creative-director'],
+  ['Collaboration Rooms', '/collaboration-rooms'], ['Artist Marketplace', '/artist-marketplace'],
+  ['Backstage', '/artist-backstage'], ['Release War Room', '/release-war-room'],
+  ['Song Feedback Lab', '/song-feedback-lab'], ['Live Studio Sessions', '/live-studio-sessions'],
+];
+
 const stages = [
   ['Create', 'Write, record and produce the next record.', '/studio', Mic2],
   ['Collaborate', 'Move ideas, stems and decisions between your team.', '/messages', Users],
@@ -34,6 +41,13 @@ export default function ArtistCareerOS() {
             <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-fuchsia-300">Enter <ArrowRight size={13}/></span>
           </button>
         ))}
+      </section>
+      <section className="rounded-3xl border border-white/10 bg-white/[.03] p-5">
+        <h2 className="text-xl font-black">Nali Artist Worlds</h2>
+        <p className="mt-1 text-xs text-white/55">Move into focused spaces for every part of the artist journey.</p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {worlds.map(([name, path]) => <button key={path} onClick={() => navigate(path)} className="rounded-xl border border-white/10 p-3 text-left text-sm font-bold hover:border-fuchsia-400/50">{name} <ArrowRight size={13} className="ml-1 inline"/></button>)}
+        </div>
       </section>
     </div>
   </div>;

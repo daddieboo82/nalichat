@@ -102,7 +102,8 @@ export default function MusicVideoGenerator() {
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
     const visible = clipsRef.current.filter((clip) => at >= clip.start && at < clip.start + clipLength(clip));
     const clip = visible.at(-1);
-    for (const [id, gain] of exportGainsRef.current || []) gain.gain.value = id === clip?.assetId ? clamp(clip.volume ?? 1, 0, 1) : 0;
+    const opacity = clip ? Math.min(1, (at - clip.start) / Math.max(clip.fadeIn ?? .3, .001), (clip.start + clipLength(clip) - at) / Math.max(clip.fadeOut ?? .3, .001)) : 0;
+    for (const [id, gain] of exportGainsRef.current || []) gain.gain.value = id === clip?.assetId ? clamp(clip.volume ?? 1, 0, 1) * opacity : 0;
     for (const [id, element] of mediaRef.current) {
       if (element.tagName === "VIDEO" && id !== clip?.assetId) element.pause();
     }
@@ -115,7 +116,7 @@ export default function MusicVideoGenerator() {
           if (Math.abs(source.currentTime - sourceTime) > 0.16 && Number.isFinite(sourceTime)) {
             try { source.currentTime = sourceTime; } catch { /* seek may wait for metadata */ }
           }
-          source.volume = exportGainsRef.current ? 1 : clamp(clip.volume ?? 1, 0, 1);
+          source.volume = exportGainsRef.current ? 1 : clamp(clip.volume ?? 1, 0, 1) * opacity;
           if (playingRef.current && source.paused) source.play().catch(() => setStatus("Video audio was blocked. Tap Play again."));
         }
         const w = source.videoWidth || source.naturalWidth;
@@ -123,7 +124,7 @@ export default function MusicVideoGenerator() {
         if (w && h) {
           const scale = Math.max(WIDTH / w, HEIGHT / h);
           ctx.save();
-          ctx.globalAlpha = Math.min(1, (at - clip.start) / 0.3, (clip.start + clipLength(clip) - at) / 0.3);
+          ctx.globalAlpha = opacity;
           ctx.filter = `brightness(${clip.brightness ?? 100}%) contrast(${clip.contrast ?? 100}%) saturate(${clip.saturation ?? 100}%)`;
           ctx.drawImage(source, (WIDTH - w * scale) / 2, (HEIGHT - h * scale) / 2, w * scale, h * scale);
           ctx.restore();
@@ -270,7 +271,7 @@ export default function MusicVideoGenerator() {
       return;
     }
     const start = projectLength(clips);
-    const clip = { id: crypto.randomUUID(), assetId: asset.id, start, in: 0, out: asset.duration, sourceDuration: asset.duration, brightness: 100, contrast: 100, saturation: 100, volume: 1 };
+    const clip = { id: crypto.randomUUID(), assetId: asset.id, start, in: 0, out: asset.duration, sourceDuration: asset.duration, brightness: 100, contrast: 100, saturation: 100, volume: 1, fadeIn: .3, fadeOut: .3 };
     setClips((current) => [...current, clip]);
     setSelected(clip.id);
   };
@@ -449,6 +450,8 @@ export default function MusicVideoGenerator() {
             <label className="block">Start (seconds)<input type="number" min="0" step=".1" value={chosen.start} onChange={(e) => updateClip({ start: Math.max(0, Number(e.target.value) || 0) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <label className="block">In point (seconds)<input type="number" min="0" max={chosen.out - .1} step=".1" value={chosen.in} onChange={(e) => setClips((current) => trimClip(current, selected, "left", chosen.start + Number(e.target.value) - chosen.in))} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <label className="block">Out point (seconds)<input type="number" min={chosen.in + .1} max={chosen.sourceDuration} step=".1" value={chosen.out} onChange={(e) => setClips((current) => trimClip(current, selected, "right", Number(e.target.value)))} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
+            <label className="block">Fade in (seconds)<input type="number" min="0" max={clipLength(chosen)} step=".1" value={chosen.fadeIn ?? .3} onChange={(e) => updateClip({ fadeIn: clamp(Number(e.target.value) || 0, 0, clipLength(chosen)) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
+            <label className="block">Fade out (seconds)<input type="number" min="0" max={clipLength(chosen)} step=".1" value={chosen.fadeOut ?? .3} onChange={(e) => updateClip({ fadeOut: clamp(Number(e.target.value) || 0, 0, clipLength(chosen)) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             {selectedAsset?.kind === "video" && <label className="block">Clip volume: {Math.round((chosen.volume ?? 1) * 100)}%<input type="range" min="0" max="1" step=".01" value={chosen.volume ?? 1} onChange={(e) => updateClip({ volume: Number(e.target.value) })} className="mt-1 w-full accent-fuchsia-400" /></label>}
             {["brightness", "contrast", "saturation"].map((key) => <label key={key} className="block capitalize">{key}: {chosen[key]}%<input type="range" min="0" max="200" value={chosen[key]} onChange={(e) => updateClip({ [key]: Number(e.target.value) })} className="mt-1 w-full accent-fuchsia-400" /></label>)}
             <Button variant="outline" onClick={() => { setClips((current) => splitClip(current, selected, time)); setStatus("Split at playhead when it falls inside the selected clip."); }}><Scissors size={15} className="mr-2"/> Split at playhead</Button>
@@ -465,7 +468,7 @@ export default function MusicVideoGenerator() {
           <div className="flex h-12 items-center"><span className="w-20 shrink-0 text-xs text-white/50">MUSIC</span><div className="h-9 flex-1 rounded bg-white/5">{music && <div style={{ width: Math.min(music.duration, length) * zoom }} className="h-full truncate rounded border border-cyan-500 bg-cyan-900 px-2 py-2 text-xs">{assets.find((asset) => asset.id === music.assetId)?.name}</div>}</div></div>
           <div className="pointer-events-none absolute top-5 bottom-2 w-px bg-white" style={{ left: 90 + time * zoom }} />
         </div></div>
-        <p className="mt-2 text-xs text-white/50">Import your own media. Drag a video clip to move it; use the Inspector to trim, split, grade or delete it. Export plays in real time and mixes video clip audio with your imported soundtrack.</p>
+        <p className="mt-2 text-xs text-white/50">Import your own media. Drag a video clip to move it; use the Inspector to trim, split, fade, grade or delete it. Export plays in real time and mixes video clip audio with your imported soundtrack.</p>
       </section>
     </div>
   </div>;

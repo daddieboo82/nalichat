@@ -82,7 +82,7 @@ export default function AppLayout() {
       )}
 
       {/* Main Content */}
-      <main className={`relative z-10 flex-1 overflow-hidden ${hasAudioPlayer ? 'pb-[calc(7.75rem+env(safe-area-inset-bottom))] lg:pb-[5rem]' : 'pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0'}`}>
+      <main className={`relative z-10 flex flex-col flex-1 min-h-0 overflow-hidden ${hasAudioPlayer ? 'pb-[calc(7.75rem+env(safe-area-inset-bottom))] lg:pb-[5rem]' : 'pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0'}`}>
         <AnimatePresence initial={false}>
           <PageTransition key={location.pathname} scroll={!location.pathname.startsWith('/messages')}>
             <Outlet />

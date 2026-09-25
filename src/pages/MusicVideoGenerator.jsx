@@ -71,6 +71,7 @@ export default function MusicVideoGenerator() {
   const clipsRef = useRef([]);
   const musicRef = useRef(null);
   const titleRef = useRef("");
+  const restoredRef = useRef(false);
   const [assets, setAssets] = useState([]);
   const [clips, setClips] = useState([]);
   const [music, setMusic] = useState(null);
@@ -159,7 +160,7 @@ export default function MusicVideoGenerator() {
     (async () => {
       try {
         const saved = JSON.parse(localStorage.getItem(PROJECT_KEY) || "null");
-        if (!saved) return;
+        if (!saved) { restoredRef.current = true; return; }
         const restored = (await Promise.all((saved.assets || []).map(async (asset) => {
           const file = await loadFile(asset.id);
           return file ? { ...asset, url: URL.createObjectURL(file) } : null;
@@ -170,8 +171,9 @@ export default function MusicVideoGenerator() {
         setClips((saved.clips || []).filter((clip) => ids.has(clip.assetId)));
         setMusic(saved.music && ids.has(saved.music.assetId) ? saved.music : null);
         setTitle(saved.title || "");
+        restoredRef.current = true;
         setStatus("Saved project restored on this device.");
-      } catch { setStatus("Saved project could not be restored. Import your media again."); }
+      } catch { restoredRef.current = true; setStatus("Saved project could not be restored. Import your media again."); }
     })();
     return () => { cancelled = true; stop(); };
   }, [stop]);
@@ -194,6 +196,7 @@ export default function MusicVideoGenerator() {
   }, [assets, clips, title, draw]);
 
   useEffect(() => {
+    if (!restoredRef.current) return;
     try {
       localStorage.setItem(PROJECT_KEY, JSON.stringify({
         assets: assets.map(({ id, name, kind, duration }) => ({ id, name, kind, duration })),
@@ -286,6 +289,7 @@ export default function MusicVideoGenerator() {
     let context;
     let stream;
     let exportAudio;
+    let recorder;
     const previewMedia = mediaRef.current;
     try {
       const videoAssets = assets.filter((asset) => asset.kind === "video" && clips.some((clip) => clip.assetId === asset.id));
@@ -329,18 +333,18 @@ export default function MusicVideoGenerator() {
       stream = new MediaStream(canvasStream.getVideoTracks());
       if (videoAssets.length || soundtrackUrl) mix.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
       await context.resume();
-      const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
+      recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
       const parts = [];
       recorder.ondataavailable = (event) => { if (event.data.size) parts.push(event.data); };
       const finished = new Promise((resolve, reject) => {
         recorder.onerror = (event) => reject(event.error || new Error("Recorder failed"));
         recorder.onstop = () => resolve(new Blob(parts, { type: mime }));
       });
-      recorder.start(1000);
       playingRef.current = true;
-      const start = performance.now();
       draw(0);
       if (exportAudio) { exportAudio.currentTime = 0; await exportAudio.play(); }
+      recorder.start(1000);
+      const start = performance.now();
       const frame = () => {
         if (recorder.state === "inactive") return;
         const next = Math.min(length, (performance.now() - start) / 1000);
@@ -359,6 +363,7 @@ export default function MusicVideoGenerator() {
     } finally {
       playingRef.current = false;
       cancelAnimationFrame(rafRef.current);
+      if (recorder?.state === "recording") recorder.stop();
       exportAudio?.pause();
       for (const [id, element] of mediaRef.current) if (element.tagName === "VIDEO") { element.pause(); if (element !== previewMedia.get(id)) element.onseeked = null; }
       mediaRef.current = previewMedia;

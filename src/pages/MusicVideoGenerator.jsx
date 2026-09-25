@@ -360,7 +360,7 @@ export default function MusicVideoGenerator() {
       playingRef.current = false;
       cancelAnimationFrame(rafRef.current);
       exportAudio?.pause();
-      for (const element of mediaRef.current.values()) if (element.tagName === "VIDEO") { element.pause(); if (element !== previewMedia.get([...mediaRef.current].find(([, candidate]) => candidate === element)?.[0])) element.onseeked = null; }
+      for (const [id, element] of mediaRef.current) if (element.tagName === "VIDEO") { element.pause(); if (element !== previewMedia.get(id)) element.onseeked = null; }
       mediaRef.current = previewMedia;
       exportGainsRef.current = null;
       stream?.getTracks().forEach((track) => track.stop());

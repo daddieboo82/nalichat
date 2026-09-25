@@ -19,6 +19,7 @@ const NAV_GROUPS = [
   { label: "NaliBase Worlds", items: WORLD_ORDER.map((id) => ({
     icon: WORLD_ICONS[id],
     label: WORLD_CONTEXTS[id].label[0] + WORLD_CONTEXTS[id].label.slice(1).toLowerCase(),
+    description: WORLD_CONTEXTS[id].menuDescription,
     path: WORLD_CONTEXTS[id].path,
   })) },
 ];
@@ -60,13 +61,14 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           {NAV_GROUPS.map((group, gi) => (
             <div key={group.label} className="flex items-center gap-0.5 shrink-0">
               {gi > 0 && <div className="w-px h-5 bg-white/[0.08] mx-1 shrink-0" />}
-              {group.items.map(({ icon: Icon, label, path }) => {
+              {group.items.map(({ icon: Icon, label, description, path }) => {
                 const active = isActive(path);
                 return (
                   <Link
                     key={path}
                     to={path}
-                    title={label}
+                    title={`${label}: ${description}`}
+                    aria-label={`${label}: ${description}`}
                     onClick={() => sounds.nav()}
                     className={cn(
                       "ui-hover group relative flex min-h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary/40",

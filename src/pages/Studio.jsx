@@ -1453,9 +1453,23 @@ export default function Studio() {
         mixEngineRef.current?.detach(id);
       }
     });
-    setTracksWithHistory(tracks.filter(t => !selectedTrackIds.includes(t.id)));
+    const clearedClips = tracks.filter(t => selectedTrackIds.includes(t.id));
+    const remaining = tracks.filter(t => !selectedTrackIds.includes(t.id));
+    const nextTracks = editMode === 'shuffle'
+      ? remaining.map(t => {
+          const laneKey = t.splitFrom || t.id;
+          const shiftLeft = clearedClips.reduce((sum, clip) => {
+            const clipLaneKey = clip.splitFrom || clip.id;
+            return clipLaneKey === laneKey && (clip.startTime || 0) < (t.startTime || 0)
+              ? sum + (clip.duration || 0)
+              : sum;
+          }, 0);
+          return shiftLeft > 0 ? { ...t, startTime: Math.max(0, (t.startTime || 0) - shiftLeft) } : t;
+        })
+      : remaining;
+    setTracksWithHistory(nextTracks);
     setSelectedTrackIds([]);
-    toast.success("Selected clips cleared");
+    toast.success(editMode === 'shuffle' ? "Selected clips cleared — later clips shuffled left" : "Selected clips cleared");
   };
 
   const duplicateSelectedTracks = () => {
@@ -2725,7 +2739,7 @@ export default function Studio() {
                   )}
                 >
                   {/* Grid lines */}
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px)] opacity-30 pointer-events-none z-0" style={{ backgroundSize: `${(60 / bpm) * parseInt(timeSignature.split('/')[0] || 4) * 20 * zoom}px 100%` }} />
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px)] opacity-30 pointer-events-none z-0" style={{ backgroundSize: `${(editMode === 'grid' ? (gridSize === 1 ? (60 / bpm) * (parseInt(timeSignature.split('/')[0]) || 4) : (60 / bpm) * 4 * gridSize) : (60 / bpm) * (parseInt(timeSignature.split('/')[0]) || 4)) * 20 * zoom}px 100%` }} />
                   
                   {/* Pro Tools-style Crossfade overlay between adjacent clips on this track */}
                   <CrossfadeOverlay clips={tracks.filter(t => t.id === track.id || (t.splitFrom === track.id))} zoom={zoom} trackId={track.id} />
@@ -3042,7 +3056,12 @@ export default function Studio() {
                             const deltaTime = deltaX / (20 * zoom);
                             let newStartTime = Math.max(0, initialStartTime + deltaTime);
                             if (editMode === 'grid') {
-                              newStartTime = Math.round(newStartTime / gridSize) * gridSize;
+                              const secondsPerBeat = 60 / (bpmRef.current || 120);
+                              const beatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
+                              const gridSeconds = gridSize === 1
+                                ? secondsPerBeat * beatsPerBar
+                                : secondsPerBeat * 4 * gridSize;
+                              newStartTime = Math.round(newStartTime / gridSeconds) * gridSeconds;
                             } else if (editMode === 'shuffle') {
                               const otherClips = tracksRef.current.filter(t => t.id !== track.id && t.waveform?.length > 0);
                               const boundaries = [0, ...otherClips.map(t => (t.startTime || 0) + (t.duration || 0))];

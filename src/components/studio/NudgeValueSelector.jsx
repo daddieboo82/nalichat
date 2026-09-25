@@ -9,9 +9,9 @@ const getNudgeValues = (bpm = 120, sampleRate = 44100) => {
   const beat = 60 / safeBpm;
   const tick = beat / 960;
   return [
-    { id: 'samples_1', label: '1 Sample', value: 1 / sampleRate },
-    { id: 'samples_10', label: '10 Samples', value: 10 / sampleRate },
-    { id: 'samples_100', label: '100 Samples', value: 100 / sampleRate },
+    { id: 'samples_1', label: '1 Sample', value: 1 / safeSampleRate },
+    { id: 'samples_10', label: '10 Samples', value: 10 / safeSampleRate },
+    { id: 'samples_100', label: '100 Samples', value: 100 / safeSampleRate },
     { id: 'ms_1', label: '1 ms', value: 0.001 },
     { id: 'ms_10', label: '10 ms', value: 0.01 },
     { id: 'ms_100', label: '100 ms', value: 0.1 },

@@ -190,12 +190,13 @@ export default function Studio() {
   const [newTrackMidiChannel, setNewTrackMidiChannel] = useState('1');
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
   const [pianoRollTrackId, setPianoRollTrackId] = useState(null);
+  const workspaceRef = useRef(null);
 
   const maxTracks = MAX_TRACKS;
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   
   const [editMode, setEditMode] = useState('slip'); // slip, grid, shuffle
-  const [activeTool, setActiveTool] = useState('grab'); // smart, trim, grab, fade
+  const [activeTool, setActiveTool] = useState('grab'); // zoomer, trim, selector, grab, scrub, pencil, smart (+ Nali cut/fade)
   const [gridSize, setGridSize] = useState(1);
 
   const [masterVolume, setMasterVolume] = useState(100);
@@ -1360,7 +1361,7 @@ export default function Studio() {
       selectedTrackIds, setSelectedTrackIds,
       deleteSelectedTracks, duplicateSelectedTracks, splitSelectedTracks,
       toggleTrackProperty, addTrack, addVcaTrack, addFolderTrack, setEditMode,
-      toggleSolo, toggleMute, setShowFadePresets, setActiveTool,
+      toggleSolo, toggleMute, setShowFadePresets, setActiveTool, activeTool,
       updateCurrentTime, setSelectionStart, setSelectionEnd,
       selectionStart, selectionEnd, tracks, setLoopActive, loopActive,
       setMetronomeEnabled, metronomeEnabled, handleHealSplit,
@@ -1441,6 +1442,8 @@ export default function Studio() {
 
   const deleteSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
+    // In the Edit window, Delete/Clear should remove the selected clip(s) from
+    // the timeline without revoking their underlying source media.
     sounds.error();
     selectedTrackIds.forEach(id => {
       const track = tracks.find(t => t.id === id);
@@ -1450,20 +1453,30 @@ export default function Studio() {
         delete audioElementsRef.current[id];
         mixEngineRef.current?.detach(id);
       }
-      // Revoke object URLs to free memory from blob-based audio
-      if (track?.audioUrl?.startsWith('blob:')) {
-        try { URL.revokeObjectURL(track.audioUrl); } catch (e) {}
-      }
     });
-    setTracksWithHistory(tracks.filter(t => !selectedTrackIds.includes(t.id)));
+    const clearedClips = tracks.filter(t => selectedTrackIds.includes(t.id));
+    const remaining = tracks.filter(t => !selectedTrackIds.includes(t.id));
+    const nextTracks = editMode === 'shuffle'
+      ? remaining.map(t => {
+          const laneKey = t.splitFrom || t.id;
+          const shiftLeft = clearedClips.reduce((sum, clip) => {
+            const clipLaneKey = clip.splitFrom || clip.id;
+            return clipLaneKey === laneKey && (clip.startTime || 0) < (t.startTime || 0)
+              ? sum + (clip.duration || 0)
+              : sum;
+          }, 0);
+          return shiftLeft > 0 ? { ...t, startTime: Math.max(0, (t.startTime || 0) - shiftLeft) } : t;
+        })
+      : remaining;
+    setTracksWithHistory(nextTracks);
     setSelectedTrackIds([]);
-    toast.success("Selected tracks deleted");
+    toast.success(editMode === 'shuffle' ? "Selected clips cleared — later clips shuffled left" : "Selected clips cleared");
   };
 
   const duplicateSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
     sounds.success();
-    
+
     if (tracks.length + selectedTrackIds.length > maxTracks) {
       toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
       return;
@@ -1474,17 +1487,23 @@ export default function Studio() {
 
     tracks.forEach(t => {
       if (selectedTrackIds.includes(t.id)) {
+        const duration = t.duration || 40;
         newTracks.push({
           ...t,
           id: nextId++,
-          name: `${t.name} (Copy)`
+          name: `${t.name} (Copy)`,
+          // Pro Tools Duplicate places the new clip directly after the source
+          // instead of stacking a second clip at the same timeline position.
+          startTime: (t.startTime || 0) + duration,
+          armed: false,
+          splitFrom: t.splitFrom || t.id,
         });
       }
     });
 
     setTracksWithHistory([...tracks, ...newTracks]);
-    setSelectedTrackIds([]);
-    toast.success("Tracks duplicated");
+    setSelectedTrackIds(newTracks.map(t => t.id));
+    toast.success(`Duplicated ${newTracks.length} clip${newTracks.length === 1 ? '' : 's'}`);
   };
 
   const deleteTrack = (trackId) => {
@@ -2550,7 +2569,7 @@ export default function Studio() {
       />
 
       {/* Main Workspace */}
-      <div className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+      <div ref={workspaceRef} className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} roomId={roomId} />
         {/* Unified scroll — left pane + waveforms move together in one container */}
@@ -2721,7 +2740,7 @@ export default function Studio() {
                   )}
                 >
                   {/* Grid lines */}
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px)] opacity-30 pointer-events-none z-0" style={{ backgroundSize: `${(60 / bpm) * parseInt(timeSignature.split('/')[0] || 4) * 20 * zoom}px 100%` }} />
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px)] opacity-30 pointer-events-none z-0" style={{ backgroundSize: `${(editMode === 'grid' ? (gridSize === 1 ? (60 / bpm) * (parseInt(timeSignature.split('/')[0]) || 4) : (60 / bpm) * 4 * gridSize) : (60 / bpm) * (parseInt(timeSignature.split('/')[0]) || 4)) * 20 * zoom}px 100%` }} />
                   
                   {/* Pro Tools-style Crossfade overlay between adjacent clips on this track */}
                   <CrossfadeOverlay clips={tracks.filter(t => t.id === track.id || (t.splitFrom === track.id))} zoom={zoom} trackId={track.id} />
@@ -2731,6 +2750,7 @@ export default function Studio() {
                     <AutomationLane
                       track={track}
                       zoom={zoom}
+                      activeTool={activeTool}
                       onPointsChange={(newPoints, mode, meta = null) => setTracks(prev => prev.map(t => {
                         if (t.id !== track.id) return t;
                         if (meta) return { ...t, ...meta };
@@ -2745,7 +2765,7 @@ export default function Studio() {
                         const key = keys[mode];
                         return key ? { ...t, [key]: newPoints, automationMode: mode } : t;
                       }))}
-                      onCommit={() => pushToHistory(tracksRef.current)}
+                      onCommit={() => setTracksWithHistory(prev => prev)}
                     />
                   )}
 
@@ -2840,8 +2860,12 @@ export default function Studio() {
                       onPointerMove={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
-                        if (activeTool === 'smart') {
+                        if (activeTool === 'zoomer') {
+                           e.currentTarget.style.cursor = 'zoom-in';
+                         } else if (activeTool === 'smart') {
                            e.currentTarget.style.cursor = isTopHalf ? 'text' : 'grab';
+                         } else if (activeTool === 'selector') {
+                           e.currentTarget.style.cursor = 'text';
                          } else if (activeTool === 'grab') {
                            e.currentTarget.style.cursor = 'grab';
                          } else if (activeTool === 'cut') {
@@ -2854,7 +2878,58 @@ export default function Studio() {
                       }}
                       onPointerDown={(e) => {
                         e.stopPropagation();
-                        if (track.locked || activeTool === 'fade') return;
+                        if (activeTool === 'fade') return;
+                        if (track.locked && !['zoomer', 'selector', 'scrub'].includes(activeTool)) return;
+
+                        if (activeTool === 'zoomer') {
+                          const target = e.currentTarget;
+                          const rect = target.getBoundingClientRect();
+                          const clipStart = track.startTime || 0;
+                          const clipDuration = track.duration || 40;
+                          const timeFromClientX = (clientX) => {
+                            const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                            return clipStart + (x / rect.width) * clipDuration;
+                          };
+                          const anchorTime = timeFromClientX(e.clientX);
+                          let endTime = anchorTime;
+                          let dragged = false;
+                          target.setPointerCapture(e.pointerId);
+                          const handleZoomMove = (moveEvent) => {
+                            endTime = timeFromClientX(moveEvent.clientX);
+                            dragged = dragged || Math.abs(moveEvent.clientX - e.clientX) > 4;
+                            if (dragged) {
+                              setSelectionStart(Math.min(anchorTime, endTime));
+                              setSelectionEnd(Math.max(anchorTime, endTime));
+                            }
+                          };
+                          const finishZoom = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleZoomMove);
+                            target.removeEventListener('pointerup', finishZoom);
+                            const workspace = workspaceRef.current;
+                            const viewportWidth = Math.max(320, (workspace?.clientWidth || 1200) - 384);
+                            if (dragged && Math.abs(endTime - anchorTime) > 0.01) {
+                              const start = Math.min(anchorTime, endTime);
+                              const range = Math.abs(endTime - anchorTime);
+                              const nextZoom = Math.max(0.5, Math.min(5000, viewportWidth / (range * 20)));
+                              setZoom(nextZoom);
+                              setTimeout(() => {
+                                if (workspaceRef.current) workspaceRef.current.scrollLeft = Math.max(0, start * 20 * nextZoom);
+                              }, 0);
+                            } else {
+                              const nextZoom = e.altKey ? Math.max(0.5, zoom / 2) : Math.min(5000, zoom * 2);
+                              setZoom(nextZoom);
+                              setTimeout(() => {
+                                if (workspaceRef.current) workspaceRef.current.scrollLeft = Math.max(0, anchorTime * 20 * nextZoom - viewportWidth / 2);
+                              }, 0);
+                            }
+                            setSelectionStart(null);
+                            setSelectionEnd(null);
+                          };
+                          target.addEventListener('pointermove', handleZoomMove);
+                          target.addEventListener('pointerup', finishZoom);
+                          return;
+                        }
 
                         // Spot mode: open dialog to type exact timecode position
                         if (editMode === 'spot') {
@@ -2864,25 +2939,50 @@ export default function Studio() {
                         }
 
                         const rect = e.currentTarget.getBoundingClientRect();
-                        const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
+                        const relativeX = e.clientX - rect.left;
+                        const relativeY = e.clientY - rect.top;
+                        const isTopHalf = relativeY < rect.height / 2;
+                        const smartEdgeWidth = Math.min(16, rect.width * 0.12);
+                        const smartAtLeftEdge = relativeX <= smartEdgeWidth;
+                        const smartAtRightEdge = relativeX >= rect.width - smartEdgeWidth;
 
                         if (activeTool === 'cut') {
-                           // Cut removes the audio after the click point (unlike Split, which
-                           // keeps both halves as separate clips) — the clip is simply shortened.
-                           const target = e.currentTarget;
-                           const rect = target.getBoundingClientRect();
-                           const clickX = e.clientX - rect.left;
-                           const clickRatio = clickX / rect.width;
-                           
-                           const newDuration = track.duration * clickRatio;
-                           
-                           setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
-                             ...t,
-                             duration: newDuration,
-                             fullDuration: t.fullDuration || t.duration,
-                             clipStart: t.clipStart || 0
-                           } : t));
-                           toast.success("Audio after the cut point removed");
+                           // Behave like Pro Tools Separate-at-cursor: preserve both sides of
+                           // the source instead of destructively deleting everything to the right.
+                           const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                           const clipStartTime = track.startTime || 0;
+                           const clipDuration = track.duration || 40;
+                           const splitTime = clipStartTime + (clipDuration * clickRatio);
+                           const leftDuration = splitTime - clipStartTime;
+                           const rightDuration = clipDuration - leftDuration;
+                           if (leftDuration <= 0.001 || rightDuration <= 0.001) return;
+                           if (tracksRef.current.length >= maxTracks) {
+                             toast.error(`Track limit reached (${maxTracks}).`);
+                             return;
+                           }
+                           const rightId = nextTrackId(tracksRef.current);
+                           const rightClip = {
+                             ...track,
+                             id: rightId,
+                             name: `${track.name} (Cut)`,
+                             startTime: splitTime,
+                             duration: rightDuration,
+                             fullDuration: track.fullDuration || clipDuration,
+                             clipStart: (track.clipStart || 0) + leftDuration,
+                             splitFrom: track.splitFrom || track.id,
+                           };
+                           setTracksWithHistory(prev => [
+                             ...prev.map(t => t.id === track.id ? {
+                               ...t,
+                               duration: leftDuration,
+                               fullDuration: t.fullDuration || clipDuration,
+                               splitFrom: t.splitFrom || t.id,
+                             } : t),
+                             rightClip,
+                           ]);
+                           setSelectedTrackIds([rightId]);
+                           updateCurrentTime(splitTime);
+                           toast.success("Clip separated at cursor");
                            return;
                         }
 
@@ -2920,11 +3020,78 @@ export default function Studio() {
                            return;
                         }
 
-                        if (activeTool === 'smart' && isTopHalf) {
-                          const clickX = e.clientX - rect.left;
-                          const clickRatio = clickX / rect.width;
-                          const newTime = (track.startTime || 0) + ((track.duration || 40) * clickRatio);
-                          updateCurrentTime(newTime);
+                        if (activeTool === 'smart' && !isTopHalf && (smartAtLeftEdge || smartAtRightEdge)) {
+                          // Smart Tool lower-corner zones trim the corresponding clip edge.
+                          const isLeft = smartAtLeftEdge;
+                          const startX = e.clientX;
+                          const initialStartTime = track.startTime || 0;
+                          const initialDuration = track.duration || 40;
+                          const initialClipStart = track.clipStart || 0;
+                          const fullDuration = track.fullDuration || initialDuration;
+                          const target = e.currentTarget;
+                          target.setPointerCapture(e.pointerId);
+                          const handleSmartTrim = (moveEvent) => {
+                            const delta = (moveEvent.clientX - startX) / (20 * zoom);
+                            setTracks(prev => prev.map(t => {
+                              if (t.id !== track.id) return t;
+                              if (isLeft) {
+                                // Extending left is limited by both available source media and
+                                // the session start, so startTime/duration/source offset stay coherent.
+                                const minAmount = Math.max(-initialClipStart, -initialStartTime);
+                                const amount = Math.max(minAmount, Math.min(initialDuration - 0.001, delta));
+                                return { ...t, startTime: initialStartTime + amount, duration: initialDuration - amount, clipStart: initialClipStart + amount };
+                              }
+                              const maxRestore = fullDuration - (initialClipStart + initialDuration);
+                              const amount = Math.max(-initialDuration + 0.001, Math.min(maxRestore, delta));
+                              return { ...t, duration: initialDuration + amount };
+                            }));
+                          };
+                          const finishSmartTrim = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleSmartTrim);
+                            target.removeEventListener('pointerup', finishSmartTrim);
+                            // Snapshot the final React state rather than relying on a ref update
+                            // racing the pointerup event.
+                            setTracksWithHistory(prev => prev);
+                          };
+                          target.addEventListener('pointermove', handleSmartTrim);
+                          target.addEventListener('pointerup', finishSmartTrim);
+                          return;
+                        }
+
+                        if (activeTool === 'selector' || (activeTool === 'smart' && isTopHalf)) {
+                          // Selector, and the Smart Tool upper zone, place the insertion point or drag an edit range.
+                          const clipStart = track.startTime || 0;
+                          const clipDuration = track.duration || 40;
+                          const timeFromClientX = (clientX) => {
+                            const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                            return clipStart + (x / rect.width) * clipDuration;
+                          };
+                          const anchorTime = timeFromClientX(e.clientX);
+                          updateCurrentTime(anchorTime);
+                          setSelectionStart(anchorTime);
+                          setSelectionEnd(anchorTime);
+                          const target = e.currentTarget;
+                          target.setPointerCapture(e.pointerId);
+                          let dragged = false;
+                          const handleSelectMove = (moveEvent) => {
+                            if (Math.abs(moveEvent.clientX - e.clientX) > 2) dragged = true;
+                            const current = timeFromClientX(moveEvent.clientX);
+                            setSelectionStart(Math.min(anchorTime, current));
+                            setSelectionEnd(Math.max(anchorTime, current));
+                            updateCurrentTime(current);
+                          };
+                          const finishSelect = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleSelectMove);
+                            target.removeEventListener('pointerup', finishSelect);
+                            if (!dragged) {
+                              setSelectionStart(null);
+                              setSelectionEnd(null);
+                            }
+                          };
+                          target.addEventListener('pointermove', handleSelectMove);
+                          target.addEventListener('pointerup', finishSelect);
                           return;
                         }
 
@@ -2944,7 +3111,23 @@ export default function Studio() {
                             }
                             const deltaTime = deltaX / (20 * zoom);
                             let newStartTime = Math.max(0, initialStartTime + deltaTime);
-                            if (editMode === 'grid') newStartTime = Math.round(newStartTime / gridSize) * gridSize;
+                            if (editMode === 'grid') {
+                              const secondsPerBeat = 60 / (bpmRef.current || 120);
+                              const beatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
+                              const gridSeconds = gridSize === 1
+                                ? secondsPerBeat * beatsPerBar
+                                : secondsPerBeat * 4 * gridSize;
+                              newStartTime = Math.round(newStartTime / gridSeconds) * gridSeconds;
+                            } else if (editMode === 'shuffle') {
+                              const laneKey = track.splitFrom || track.id;
+                              const otherClips = tracksRef.current.filter(t =>
+                                t.id !== track.id && (t.splitFrom || t.id) === laneKey && t.waveform?.length > 0
+                              );
+                              const boundaries = [0, ...otherClips.flatMap(t => [t.startTime || 0, (t.startTime || 0) + (t.duration || 0)])];
+                              newStartTime = boundaries.reduce((nearest, boundary) =>
+                                Math.abs(boundary - newStartTime) < Math.abs(nearest - newStartTime) ? boundary : nearest,
+                              boundaries[0]);
+                            }
                             target.style.left = `${newStartTime * 20 * zoom}px`;
                             target.dataset.newStartTime = newStartTime;
                             showEditTooltip(moveEvent.clientX, moveEvent.clientY, newStartTime);
@@ -2958,7 +3141,27 @@ export default function Studio() {
                             hideEditTooltip();
                             if (target.dataset.newStartTime !== undefined) {
                               const newStartTime = parseFloat(target.dataset.newStartTime);
-                              setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t));
+                              if (editMode === 'shuffle') {
+                                const laneKey = track.splitFrom || track.id;
+                                setTracksWithHistory(prev => {
+                                  const lane = prev
+                                    .filter(t => (t.splitFrom || t.id) === laneKey)
+                                    .map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t)
+                                    .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
+                                  if (lane.length <= 1) {
+                                    return prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t);
+                                  }
+                                  let cursor = Math.min(...lane.map(t => t.startTime || 0));
+                                  const positions = new Map();
+                                  lane.forEach(clip => {
+                                    positions.set(clip.id, cursor);
+                                    cursor += clip.duration || 0;
+                                  });
+                                  return prev.map(t => positions.has(t.id) ? { ...t, startTime: positions.get(t.id) } : t);
+                                });
+                              } else {
+                                setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t));
+                              }
                               delete target.dataset.newStartTime;
                             }
                           };
@@ -3003,9 +3206,9 @@ export default function Studio() {
                             const deltaTime = round(deltaX / (20 * zoom));
                             
                             if (deltaTime < initialDuration - MIN_CLIP_DURATION) { 
-                               // Don't allow left trim to go before the actual start of the audio file
-                               const maxLeftTrim = -initialClipStart;
-                               const trimAmount = Math.max(maxLeftTrim, deltaTime);
+                               // Don't allow an extension past source start or before session zero.
+                               const maxLeftExtension = Math.max(-initialClipStart, -initialStartTime);
+                               const trimAmount = Math.max(maxLeftExtension, deltaTime);
                                
                                setTracks(prev => prev.map(t => 
                                 t.id === track.id ? { 
@@ -3023,7 +3226,7 @@ export default function Studio() {
                                   target.releasePointerCapture(upEvent.pointerId);
                                   target.removeEventListener('pointermove', handleMove);
                                   target.removeEventListener('pointerup', handleUp);
-                                  pushToHistory(tracksRef.current);
+                                  setTracksWithHistory(prev => prev);
                                   hideEditTooltip();
                                   };
 
@@ -3076,7 +3279,7 @@ export default function Studio() {
                                   target.releasePointerCapture(upEvent.pointerId);
                                   target.removeEventListener('pointermove', handleMove);
                                   target.removeEventListener('pointerup', handleUp);
-                                  pushToHistory(tracksRef.current);
+                                  setTracksWithHistory(prev => prev);
                                   hideEditTooltip();
                                   };
                           
@@ -3182,8 +3385,8 @@ export default function Studio() {
                       <ClipGainLine
                         clipGain={track.clipGain || 0}
                         activeTool={activeTool}
-                        onChange={(newGain) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, clipGain: newGain } : t))}
-                        onCommit={() => pushToHistory(tracksRef.current)}
+                        onChange={(newGain) => setTracks(prev => prev.map(t => t.id === track.id ? { ...t, clipGain: newGain } : t))}
+                        onCommit={() => setTracksWithHistory(prev => prev)}
                       />
 
                       <div data-testid={`studio-waveform-${track.id}`} className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
@@ -3243,7 +3446,7 @@ export default function Studio() {
             <span className="w-7 text-right font-mono text-[10px]">{masterVolume}%</span>
           </div>
           <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
-          <NudgeValueSelector nudgeValue={nudgeValue} setNudgeValue={setNudgeValue} bpm={bpm} />
+          <NudgeValueSelector nudgeValue={nudgeValue} setNudgeValue={setNudgeValue} bpm={bpm} sampleRate={audioSettings.sampleRate} />
         </div>
         <div className="flex items-center gap-4 shrink-0">
           <span className="flex items-center gap-1.5">

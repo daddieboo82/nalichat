@@ -83,7 +83,7 @@ export default function MusicVideoGenerator() {
   const mediaRef = useRef(new Map());
   const exportGainsRef = useRef(null);
   const cancelExportRef = useRef(false);
-  const audioRef = useRef(null);
+  const audioElementsRef = useRef(new Map());
   const rafRef = useRef(0);
   const playingRef = useRef(false);
   const timeRef = useRef(0);
@@ -98,9 +98,10 @@ export default function MusicVideoGenerator() {
   const [assets, setAssets] = useState([]);
   const [clips, setClips] = useState([]);
   const [trackCount, setTrackCount] = useState(2);
-  const [music, setMusic] = useState(null);
+  const [music, setMusic] = useState([]);
   const [title, setTitle] = useState("");
   const [selected, setSelected] = useState(null);
+  const [selectedMusic, setSelectedMusic] = useState(null);
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [rendering, setRendering] = useState(false);
@@ -130,7 +131,7 @@ export default function MusicVideoGenerator() {
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
     const visible = clipsRef.current.filter((clip) => at >= clip.start && at < clip.start + clipLength(clip)).sort((a, b) => (a.track ?? 0) - (b.track ?? 0));
     const activeIds = new Set(visible.map((clip) => clip.id));
-    if (!exportGainsRef.current) syncSoundtrack(audioRef.current, at, musicRef.current, playingRef.current);
+    if (!exportGainsRef.current) for (const item of musicRef.current) syncSoundtrack(audioElementsRef.current.get(item.id), at, item, playingRef.current);
     for (const [id, element] of mediaRef.current) {
       if (element.tagName === "VIDEO" && !activeIds.has(id)) element.pause();
     }
@@ -180,7 +181,7 @@ export default function MusicVideoGenerator() {
     playingRef.current = false;
     setPlaying(false);
     cancelAnimationFrame(rafRef.current);
-    audioRef.current?.pause();
+    for (const audio of audioElementsRef.current.values()) audio.pause();
     for (const element of mediaRef.current.values()) if (element.tagName === "VIDEO") element.pause();
   }, []);
 
@@ -188,7 +189,7 @@ export default function MusicVideoGenerator() {
     const value = clamp(next, 0, Math.max(length, 0));
     timeRef.current = value;
     setTime(value);
-    syncSoundtrack(audioRef.current, value, musicRef.current, playingRef.current);
+    for (const item of musicRef.current) syncSoundtrack(audioElementsRef.current.get(item.id), value, item, playingRef.current);
     if (playingRef.current) startRef.current = performance.now() - value * 1000;
     draw(value);
   };
@@ -198,7 +199,7 @@ export default function MusicVideoGenerator() {
     (async () => {
       try {
         const saved = JSON.parse(localStorage.getItem(PROJECT_KEY) || "null");
-        if (!saved) { historyRef.current.current = JSON.stringify({ clips: [], music: null, title: "", trackCount: 2 }); restoredRef.current = true; return; }
+        if (!saved) { historyRef.current.current = JSON.stringify({ clips: [], music: [], title: "", trackCount: 2 }); restoredRef.current = true; return; }
         const restored = (await Promise.all((saved.assets || []).map(async (asset) => {
           const file = await loadFile(asset.id);
           return file ? { ...asset, url: URL.createObjectURL(file) } : null;
@@ -207,11 +208,12 @@ export default function MusicVideoGenerator() {
         const ids = new Set(restored.map((asset) => asset.id));
         setAssets(restored);
         setClips((saved.clips || []).filter((clip) => ids.has(clip.assetId)));
-        setMusic(saved.music && ids.has(saved.music.assetId) ? saved.music : null);
+        const restoredMusic = (Array.isArray(saved.music) ? saved.music : saved.music ? [saved.music] : []).filter((item) => ids.has(item.assetId)).map((item) => ({ ...item, id: item.id || crypto.randomUUID() }));
+        setMusic(restoredMusic);
         setTitle(saved.title || "");
         const count = Math.max(2, saved.trackCount || 2, ...(saved.clips || []).map((clip) => (clip.track ?? 0) + 1));
         setTrackCount(count);
-        historyRef.current.current = JSON.stringify({ clips: (saved.clips || []).filter((clip) => ids.has(clip.assetId)), music: saved.music && ids.has(saved.music.assetId) ? saved.music : null, title: saved.title || "", trackCount: count });
+        historyRef.current.current = JSON.stringify({ clips: (saved.clips || []).filter((clip) => ids.has(clip.assetId)), music: restoredMusic, title: saved.title || "", trackCount: count });
         restoredRef.current = true;
         setStatus("Saved project restored on this device.");
       } catch { restoredRef.current = true; setStatus("Saved project could not be restored. Import your media again."); }
@@ -318,7 +320,9 @@ export default function MusicVideoGenerator() {
 
   const addClip = (asset) => {
     if (asset.kind === "audio") {
-      setMusic({ assetId: asset.id, duration: asset.duration, volume: 1, start: 0, in: 0, out: asset.duration, fadeIn: 0, fadeOut: 0 });
+      const audioClip = { id: crypto.randomUUID(), assetId: asset.id, duration: asset.duration, volume: 1, start: 0, in: 0, out: asset.duration, fadeIn: 0, fadeOut: 0 };
+      setMusic((current) => [...current, audioClip]);
+      setSelectedMusic(audioClip.id);
       setStatus("Soundtrack loaded. It will play alongside audio from your video clips.");
       return;
     }
@@ -333,11 +337,11 @@ export default function MusicVideoGenerator() {
   const removeAsset = async (asset) => {
     stop();
     const remaining = clips.filter((clip) => clip.assetId !== asset.id);
-    const nextMusic = music?.assetId === asset.id ? null : music;
+    const nextMusic = music.filter((item) => item.assetId !== asset.id);
     historyRef.current = { current: JSON.stringify({ clips: remaining, music: nextMusic, title, trackCount }), past: [], future: [] };
     setHistoryVersion((version) => version + 1);
     setClips(remaining);
-    if (music?.assetId === asset.id) setMusic(null);
+    setMusic(nextMusic);
     setAssets((current) => current.filter((item) => item.id !== asset.id));
     await deleteFile(asset.id);
     URL.revokeObjectURL(asset.url);
@@ -350,7 +354,7 @@ export default function MusicVideoGenerator() {
     playingRef.current = true;
     setPlaying(true);
     startRef.current = performance.now() - timeRef.current * 1000;
-    syncSoundtrack(audioRef.current, timeRef.current, musicRef.current, true);
+    for (const item of musicRef.current) syncSoundtrack(audioElementsRef.current.get(item.id), timeRef.current, item, true);
     const tick = () => {
       if (!playingRef.current) return;
       const next = Math.min(projectLength(clipsRef.current), (performance.now() - startRef.current) / 1000);

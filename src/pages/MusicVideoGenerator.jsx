@@ -209,17 +209,20 @@ export default function MusicVideoGenerator() {
 
   useEffect(() => {
     const next = new Map();
-    assets.forEach((asset) => {
-      let element = mediaRef.current.get(asset.id);
+    clips.forEach((clip) => {
+      const asset = assets.find((item) => item.id === clip.assetId);
+      if (!asset) return;
+      let element = mediaRef.current.get(clip.id);
       if (!element) {
-        element = document.createElement(asset.kind === "image" ? "img" : asset.kind === "audio" ? "audio" : "video");
+        element = document.createElement(asset.kind === "image" ? "img" : "video");
         element.preload = "auto";
         if (asset.kind === "video") { element.playsInline = true; element.onseeked = () => draw(timeRef.current); element.onloadeddata = () => draw(timeRef.current); }
         if (asset.kind === "image") element.onload = () => draw(timeRef.current);
         element.src = asset.url;
       }
-      next.set(asset.id, element);
+      next.set(clip.id, element);
     });
+    for (const [id, element] of mediaRef.current) if (!next.has(id) && element.tagName === "VIDEO") element.pause();
     mediaRef.current = next;
     draw(timeRef.current);
   }, [assets, clips, title, draw]);
@@ -306,8 +309,9 @@ export default function MusicVideoGenerator() {
       setStatus("Soundtrack loaded. It will play alongside audio from your video clips.");
       return;
     }
-    const start = projectLength(clips);
-    const clip = { id: crypto.randomUUID(), assetId: asset.id, start, in: 0, out: asset.duration, sourceDuration: asset.duration, brightness: 100, contrast: 100, saturation: 100, volume: 1, fadeIn: .3, fadeOut: .3 };
+    const track = chosen?.track ?? 0;
+    const start = Math.max(0, ...clips.filter((clip) => (clip.track ?? 0) === track).map((clip) => clip.start + clipLength(clip)));
+    const clip = { id: crypto.randomUUID(), assetId: asset.id, track, start, in: 0, out: asset.duration, sourceDuration: asset.duration, brightness: 100, contrast: 100, saturation: 100, volume: 1, fadeIn: .3, fadeOut: .3 };
     setClips((current) => [...current, clip]);
     setSelected(clip.id);
   };
@@ -489,6 +493,7 @@ export default function MusicVideoGenerator() {
           <label className="block text-xs text-white/60">Video title<input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={55} placeholder="Optional title overlay" className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2 text-white" /></label>
           {chosen && <div className="mt-4 space-y-3 border-t border-white/10 pt-4 text-xs">
             <p className="truncate font-bold">{selectedAsset?.name}</p>
+            <label className="block">Video track<select value={chosen.track ?? 0} onChange={(e) => updateClip({ track: Number(e.target.value) })} className="mt-1 w-full rounded-lg border border-white/15 bg-[#171720] p-2"><option value="0">Video 1</option><option value="1">Video 2</option></select></label>
             <label className="block">Start (seconds)<input type="number" min="0" step=".1" value={chosen.start} onChange={(e) => updateClip({ start: Math.max(0, Number(e.target.value) || 0) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <label className="block">In point (seconds)<input type="number" min="0" max={chosen.out - .1} step=".1" value={chosen.in} onChange={(e) => setClips((current) => trimClip(current, selected, "left", chosen.start + Number(e.target.value) - chosen.in))} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <label className="block">Out point (seconds)<input type="number" min={chosen.in + .1} max={chosen.sourceDuration} step=".1" value={chosen.out} onChange={(e) => setClips((current) => trimClip(current, selected, "right", Number(e.target.value)))} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>

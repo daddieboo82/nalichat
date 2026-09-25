@@ -50,9 +50,10 @@ export function createStudioKeyHandler(deps) {
     else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === '5') { e.preventDefault(); setActiveTool('scrub'); }
     else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === '6') { e.preventDefault(); setActiveTool('pencil'); }
     else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === '7') { e.preventDefault(); setActiveTool('smart'); }
-    else if (e.shiftKey && e.key === '1') { e.preventDefault(); setEditMode('shuffle'); }
-    else if (e.shiftKey && e.key === '2') { e.preventDefault(); setEditMode('slip'); }
-    else if (e.shiftKey && e.key === '3') { e.preventDefault(); setEditMode('grid'); }
+    else if (e.altKey && !e.shiftKey && e.key === '1') { e.preventDefault(); setEditMode('shuffle'); }
+    else if (e.altKey && !e.shiftKey && e.key === '2') { e.preventDefault(); setEditMode('slip'); }
+    else if (e.altKey && !e.shiftKey && e.key === '3') { e.preventDefault(); setEditMode('spot'); }
+    else if (e.altKey && !e.shiftKey && e.key === '4') { e.preventDefault(); setEditMode('grid'); }
     else if (e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleSolo(id)); }
     else if (e.shiftKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleMute(id)); }
     else if ((e.key === 'm' || e.key === 'M') && !e.shiftKey) { e.preventDefault(); window.dispatchEvent(new CustomEvent('studio-add-marker')); }
@@ -63,7 +64,6 @@ export function createStudioKeyHandler(deps) {
     else if (!e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 'f' || e.key === 'F')) setActiveTool('fade');
     else if (!e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); setActiveTool('scrub'); }
     else if (!e.ctrlKey && !e.metaKey && (e.key === 'e' || e.key === 'E')) setActiveTool('smart');
-    else if (e.shiftKey && e.key === '4') { e.preventDefault(); setEditMode('spot'); }
     else if (e.key === 'Home') { e.preventDefault(); updateCurrentTime(0); }
     else if (e.key === 'i' || e.key === 'I') { e.preventDefault(); setSelectionStart(currentTimeRef.current); if (selectionEnd !== null && currentTimeRef.current >= selectionEnd) setSelectionEnd(null); }
     else if (e.key === 'o' || e.key === 'O') { e.preventDefault(); setSelectionEnd(currentTimeRef.current); if (selectionStart !== null && currentTimeRef.current <= selectionStart) setSelectionStart(null); }

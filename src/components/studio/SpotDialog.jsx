@@ -17,6 +17,7 @@ import { MapPin } from 'lucide-react';
  */
 export default function SpotDialog({ open, onOpenChange, clip, onSpot, bpm = 120, timeSignature = '4/4' }) {
   const [format, setFormat] = useState('minsec'); // 'minsec' or 'barsbeats'
+  const [reference, setReference] = useState('start'); // start, sync, or end
   const [minSec, setMinSec] = useState('0:00.000');
   const [barsBeats, setBarsBeats] = useState('1|1|000');
 
@@ -70,7 +71,10 @@ export default function SpotDialog({ open, onOpenChange, clip, onSpot, bpm = 120
     if (timeInSeconds === null || isNaN(timeInSeconds) || timeInSeconds < 0) {
       return;
     }
-    onSpot(timeInSeconds);
+    const duration = clip?.duration || 0;
+    const syncOffset = Math.max(0, Math.min(duration, clip?.syncPointOffset || 0));
+    const offset = reference === 'end' ? duration : reference === 'sync' ? syncOffset : 0;
+    onSpot(Math.max(0, timeInSeconds - offset), reference);
     onOpenChange(false);
   };
 
@@ -83,6 +87,12 @@ export default function SpotDialog({ open, onOpenChange, clip, onSpot, bpm = 120
             Spot Clip — {clip?.name || 'Selected Clip'}
           </DialogTitle>
         </DialogHeader>
+
+        <div className="flex gap-1 mb-3">
+          <Button variant={reference === 'start' ? 'default' : 'outline'} size="sm" onClick={() => setReference('start')} className="flex-1">Start</Button>
+          <Button variant={reference === 'sync' ? 'default' : 'outline'} size="sm" onClick={() => setReference('sync')} className="flex-1">Sync</Button>
+          <Button variant={reference === 'end' ? 'default' : 'outline'} size="sm" onClick={() => setReference('end')} className="flex-1">End</Button>
+        </div>
 
         <div className="flex gap-1 mb-4">
           <Button
@@ -106,7 +116,7 @@ export default function SpotDialog({ open, onOpenChange, clip, onSpot, bpm = 120
         <div className="space-y-2">
           {format === 'minsec' ? (
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Start Position (M:SS.mmm)</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{reference[0].toUpperCase() + reference.slice(1)} Position (M:SS.mmm)</label>
               <Input
                 value={minSec}
                 onChange={(e) => setMinSec(e.target.value)}
@@ -118,7 +128,7 @@ export default function SpotDialog({ open, onOpenChange, clip, onSpot, bpm = 120
             </div>
           ) : (
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Start Position (Bar|Beat|Tick)</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{reference[0].toUpperCase() + reference.slice(1)} Position (Bar|Beat|Tick)</label>
               <Input
                 value={barsBeats}
                 onChange={(e) => setBarsBeats(e.target.value)}

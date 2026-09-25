@@ -2795,7 +2795,10 @@ export default function Studio() {
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px)] opacity-30 pointer-events-none z-0" style={{ backgroundSize: `${(editMode === 'grid' ? (gridSize === 1 ? (60 / bpm) * (parseInt(timeSignature.split('/')[0]) || 4) : (60 / bpm) * 4 * gridSize) : (60 / bpm) * (parseInt(timeSignature.split('/')[0]) || 4)) * 20 * zoom}px 100%` }} />
                   
                   {/* Pro Tools-style Crossfade overlay between adjacent clips on this track */}
-                  <CrossfadeOverlay clips={tracks.filter(t => t.id === track.id || (t.splitFrom === track.id))} zoom={zoom} trackId={track.id} />
+                  <CrossfadeOverlay clips={tracks.filter(t => {
+                    const laneKey = track.splitFrom || track.id;
+                    return (t.splitFrom || t.id) === laneKey;
+                  })} zoom={zoom} trackId={track.splitFrom || track.id} />
 
                   {/* Pro Tools-style Volume Automation Lane */}
                   {track.showAutomation && (

@@ -100,14 +100,6 @@ const LiveTV = lazyWithReloadRecovery(() => import('@/pages/LiveTV'), 'live-tv')
 const MusicVideoGenerator = lazyWithReloadRecovery(() => import('@/pages/MusicVideoGenerator'), 'music-video-generator');
 const ArtistCareerOS = lazyWithReloadRecovery(() => import('@/pages/ArtistCareerOS'), 'artist-career-os');
 const ArtistReleaseCenter = lazyWithReloadRecovery(() => import('@/pages/ArtistReleaseCenter'), 'artist-release-center');
-const ArtistCreativeDirector = lazyWithReloadRecovery(() => import('@/pages/ArtistCreativeDirector'), 'artist-creative-director');
-const CollaborationRooms = lazyWithReloadRecovery(() => import('@/pages/CollaborationRooms'), 'collaboration-rooms');
-const ArtistMarketplace = lazyWithReloadRecovery(() => import('@/pages/ArtistMarketplace'), 'artist-marketplace');
-const ArtistBackstage = lazyWithReloadRecovery(() => import('@/pages/ArtistBackstage'), 'artist-backstage');
-const ReleaseWarRoom = lazyWithReloadRecovery(() => import('@/pages/ReleaseWarRoom'), 'release-war-room');
-const SongFeedbackLab = lazyWithReloadRecovery(() => import('@/pages/SongFeedbackLab'), 'song-feedback-lab');
-const LiveStudioSessions = lazyWithReloadRecovery(() => import('@/pages/LiveStudioSessions'), 'live-studio-sessions');
-const ArtistWorld = lazyWithReloadRecovery(() => import('@/pages/ArtistWorld'), 'artist-world');
 
 function safeLocalStorageGet(key) {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -372,14 +364,6 @@ const AuthenticatedApp = () => {
           <Route path="/music-video-generator" element={<MusicVideoGenerator />} />
           <Route path="/artist-career-os" element={<ArtistCareerOS />} />
           <Route path="/artist-release-center" element={<ArtistReleaseCenter />} />
-          <Route path="/artist-creative-director" element={<ArtistCreativeDirector />} />
-          <Route path="/collaboration-rooms" element={<CollaborationRooms />} />
-          <Route path="/artist-marketplace" element={<ArtistMarketplace />} />
-          <Route path="/artist-backstage" element={<ArtistBackstage />} />
-          <Route path="/release-war-room" element={<ReleaseWarRoom />} />
-          <Route path="/song-feedback-lab" element={<SongFeedbackLab />} />
-          <Route path="/live-studio-sessions" element={<LiveStudioSessions />} />
-          <Route path="/artist-world" element={<ArtistWorld />} />
           <Route path="/files" element={<Files />} />
 
           <Route path="/settings" element={<Settings />} />

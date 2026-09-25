@@ -28,7 +28,7 @@ const PLAZA_WORLD_DETAILS = Object.freeze({
   create: { subtitle: "NaliStudio", description: "Record in Studio, capture quick ideas, make cover art and organize playlists.", icon: Music },
   discover: { subtitle: "Creator World", description: "Browse music and creators, follow playlists, rankings and your analytics.", icon: Sparkles },
   share: { subtitle: "Files & Projects", description: "Find files and projects, message collaborators and import into Studio.", icon: FolderKanban },
-  visualize: { subtitle: "Visual World", description: "Make cover art and explore visual ideas. Music Video Lab is coming soon.", icon: Video },
+  visualize: { subtitle: "Visual World", description: "Edit your footage with a soundtrack, create cover art and export a music video.", icon: Video },
   compete: { subtitle: "Challenges", description: "Join or create challenges, check rankings and build a squad.", icon: Trophy },
 });
 

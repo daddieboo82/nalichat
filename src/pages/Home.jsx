@@ -241,7 +241,7 @@ export default function Home() {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-              className="relative z-10 flex items-center justify-center glow-primary shadow-2xl"
+              className="relative z-10 flex items-center justify-center shadow-2xl"
             >
               <Logo size={96} glow={false} />
             </motion.div>

@@ -277,7 +277,11 @@ export default function MusicVideoGenerator() {
   const updateClip = (patch) => setClips((current) => current.map((clip) => clip.id === selected ? { ...clip, ...patch } : clip));
   const removeAsset = async (asset) => {
     stop();
-    setClips((current) => current.filter((clip) => clip.assetId !== asset.id));
+    const remaining = clips.filter((clip) => clip.assetId !== asset.id);
+    const nextMusic = music?.assetId === asset.id ? null : music;
+    historyRef.current = { current: JSON.stringify({ clips: remaining, music: nextMusic, title }), past: [], future: [] };
+    setHistoryVersion((version) => version + 1);
+    setClips(remaining);
     if (music?.assetId === asset.id) setMusic(null);
     setAssets((current) => current.filter((item) => item.id !== asset.id));
     await deleteFile(asset.id);

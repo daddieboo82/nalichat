@@ -81,6 +81,7 @@ export default function MusicVideoGenerator() {
   const canvasRef = useRef(null);
   const mediaRef = useRef(new Map());
   const exportGainsRef = useRef(null);
+  const cancelExportRef = useRef(false);
   const audioRef = useRef(null);
   const rafRef = useRef(0);
   const playingRef = useRef(false);
@@ -353,6 +354,7 @@ export default function MusicVideoGenerator() {
     if (!mime) { setStatus(`${exportFormat.toUpperCase()} recording is unavailable in this browser. Select WebM or use a supported browser.`); return; }
     stop();
     seek(0);
+    cancelExportRef.current = false;
     setRendering(true);
     setStatus("Exporting in real time. Keep this tab open until the video finishes.");
     let context;
@@ -417,6 +419,7 @@ export default function MusicVideoGenerator() {
       const start = performance.now();
       const frame = () => {
         if (recorder.state === "inactive") return;
+        if (cancelExportRef.current) { recorder.stop(); return; }
         const next = Math.min(length, (performance.now() - start) / 1000);
         timeRef.current = next;
         draw(next);
@@ -427,9 +430,12 @@ export default function MusicVideoGenerator() {
       };
       rafRef.current = requestAnimationFrame(frame);
       const blob = await finished;
-      setOutput(URL.createObjectURL(blob));
-      setOutputFormat(exportFormat);
-      setStatus(`Export ready: ${(blob.size / 1048576).toFixed(1)} MB ${exportFormat.toUpperCase()}.`);
+      if (cancelExportRef.current) setStatus("Export canceled.");
+      else {
+        setOutput(URL.createObjectURL(blob));
+        setOutputFormat(exportFormat);
+        setStatus(`Export ready: ${(blob.size / 1048576).toFixed(1)} MB ${exportFormat.toUpperCase()}.`);
+      }
     } catch (error) {
       setStatus(`Export failed: ${error.message || "Unknown error"}`);
     } finally {
@@ -471,6 +477,7 @@ export default function MusicVideoGenerator() {
             <input aria-label="Playhead" type="range" min="0" max={Math.max(length, 0.1)} step=".01" value={Math.min(time, Math.max(length, .1))} onChange={(e) => seek(Number(e.target.value))} className="min-w-28 flex-1 accent-fuchsia-400" />
             <label className="text-xs text-white/70">Format <select aria-label="Export format" value={exportFormat} onChange={(e) => setExportFormat(e.target.value)} disabled={rendering} className="ml-1 rounded border border-white/20 bg-[#171720] p-2 text-white"><option value="webm">WebM</option><option value="mp4" disabled={!mp4Supported}>MP4{mp4Supported ? "" : " (unavailable)"}</option></select></label>
             <Button onClick={exportVideo} disabled={!length || rendering}><Film size={16} className="mr-2" />{rendering ? "Exporting..." : `Export ${exportFormat.toUpperCase()}`}</Button>
+            {rendering && <Button variant="outline" onClick={() => { cancelExportRef.current = true; setStatus("Canceling export..."); }}>Cancel export</Button>}
             {output && <a href={output} download={`nalibase-music-video.${outputFormat}`} className="inline-flex items-center gap-2 rounded-lg bg-fuchsia-500 px-3 py-2 text-sm font-bold"><Download size={16} /> Download</a>}
           </div>
           <audio ref={audioRef} src={assets.find((asset) => asset.id === music?.assetId)?.url || undefined} preload="auto" />

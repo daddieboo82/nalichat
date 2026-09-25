@@ -33,6 +33,10 @@ export function createStudioKeyHandler(deps) {
     else if (e.shiftKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); addTrack(); }
     else if (e.shiftKey && (e.altKey) && (e.key === 'v' || e.key === 'V')) { e.preventDefault(); addVcaTrack(); }
     else if (e.shiftKey && e.altKey && (e.key === 'b' || e.key === 'B')) { e.preventDefault(); addFolderTrack(); }
+    else if (e.key === 'F1') { e.preventDefault(); setEditMode('shuffle'); }
+    else if (e.key === 'F2') { e.preventDefault(); setEditMode('slip'); }
+    else if (e.key === 'F3') { e.preventDefault(); setEditMode('spot'); }
+    else if (e.key === 'F4') { e.preventDefault(); setEditMode('grid'); }
     else if (e.shiftKey && e.key === '1') { e.preventDefault(); setEditMode('shuffle'); }
     else if (e.shiftKey && e.key === '2') { e.preventDefault(); setEditMode('slip'); }
     else if (e.shiftKey && e.key === '3') { e.preventDefault(); setEditMode('grid'); }

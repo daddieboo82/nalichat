@@ -62,7 +62,7 @@ const worlds = {
     glow:'from-orange-500/40 via-rose-500/15 to-transparent', orb:'from-orange-400 via-rose-500 to-red-800', icon:Video,
     landmarks:['Cinema Core','Cover Gallery','Scene Forge','Inspiration Deck'], scene:['Cinema Core is ready for visual concepts.','Cover Gallery is open for new identities.','Scene Forge is preparing cinematic ideas.'],
     districts:[
-      ['Music Video Lab','Build visual concepts and music-video experiences.',Film],
+      ['Music Video Lab','Coming soon: animated music videos for your songs.',Film],
       ['Cover Art Lab','Shape the visual identity of a release.',Images],
       ['Studio','Return to the sound that drives the visual.',Music],
       ['Explore','See what other creators are releasing.',Compass],

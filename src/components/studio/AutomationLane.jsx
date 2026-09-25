@@ -12,7 +12,7 @@ import React, { useRef, useCallback } from 'react';
  * @param {number} zoom - Current zoom level
  * @param {number} trackDuration - Duration of the clip in seconds
  */
-export default function AutomationLane({ track, onPointsChange, onCommit, zoom, trackDuration = 40 }) {
+export default function AutomationLane({ track, onPointsChange, onCommit, zoom, trackDuration = 40, activeTool }) {
   const laneRef = useRef(null);
   const modes = ['volume', 'pan', 'send1', 'send2', 'send3', 'mute'];
   const writeModes = ['read', 'touch', 'latch', 'write'];
@@ -54,18 +54,52 @@ export default function AutomationLane({ track, onPointsChange, onCommit, zoom, 
     return Math.max(0, Math.min(100, 100 - (y / rect.height) * 100));
   }, []);
 
-  const handleLaneClick = (e) => {
-    if (e.target.closest('[data-automation-point]')) return; // Don't add when clicking existing point
+  const pointFromEvent = (event) => {
     const rect = laneRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left;
-    const time = clipStart + x / (20 * zoom);
-    let value = Math.max(0, Math.min(100, 100 - ((e.clientY - rect.top) / rect.height) * 100));
+    if (!rect) return null;
+    const x = event.clientX - rect.left;
+    const time = Math.max(clipStart, Math.min(clipStart + clipDuration, clipStart + x / (20 * zoom)));
+    let value = Math.max(0, Math.min(100, 100 - ((event.clientY - rect.top) / rect.height) * 100));
     if (autoMode === 'mute') value = value >= 50 ? 100 : 0;
-    const newPoint = { time: Math.max(clipStart, Math.min(clipStart + clipDuration, time)), value };
-    const sortedPoints = [...points, newPoint].sort((a, b) => a.time - b.time);
-    onPointsChange(sortedPoints, autoMode);
-    onCommit();
+    return { time, value };
+  };
+
+  const handleLanePointerDown = (e) => {
+    if (e.target.closest('[data-automation-point]')) return;
+    const firstPoint = pointFromEvent(e);
+    if (!firstPoint) return;
+
+    if (activeTool !== 'pencil') {
+      const sortedPoints = [...points, firstPoint].sort((a, b) => a.time - b.time);
+      onPointsChange(sortedPoints, autoMode);
+      onCommit();
+      return;
+    }
+
+    e.preventDefault();
+    const target = e.currentTarget;
+    target.setPointerCapture(e.pointerId);
+    let workingPoints = [...points];
+    const addOrReplacePoint = (event) => {
+      const point = pointFromEvent(event);
+      if (!point) return;
+      const tolerance = Math.max(0.002, 1 / (20 * zoom));
+      const nearbyIndex = workingPoints.findIndex(p => Math.abs(p.time - point.time) <= tolerance);
+      if (nearbyIndex >= 0) workingPoints[nearbyIndex] = point;
+      else workingPoints.push(point);
+      workingPoints.sort((a, b) => a.time - b.time);
+      onPointsChange([...workingPoints], autoMode);
+    };
+    addOrReplacePoint(e);
+    const handleDrawMove = (moveEvent) => addOrReplacePoint(moveEvent);
+    const finishDraw = (upEvent) => {
+      target.releasePointerCapture(upEvent.pointerId);
+      target.removeEventListener('pointermove', handleDrawMove);
+      target.removeEventListener('pointerup', finishDraw);
+      onCommit();
+    };
+    target.addEventListener('pointermove', handleDrawMove);
+    target.addEventListener('pointerup', finishDraw);
   };
 
   const handlePointDrag = (e, index) => {
@@ -144,9 +178,9 @@ export default function AutomationLane({ track, onPointsChange, onCommit, zoom, 
   return (
     <div
       ref={laneRef}
-      onPointerDown={handleLaneClick}
-      className="absolute bottom-0 left-0 right-0 h-16 border-t border-white/10 bg-black/40 cursor-crosshair group/auto"
-      title="Click to add automation points • Drag to move • Right-click to delete"
+      onPointerDown={handleLanePointerDown}
+      className={`absolute bottom-0 left-0 right-0 h-16 border-t border-white/10 bg-black/40 group/auto ${activeTool === 'pencil' ? 'cursor-crosshair' : 'cursor-default'}`}
+      title={activeTool === 'pencil' ? "Pencil: drag to draw automation" : "Click to add automation points • Drag points to move • Right-click to delete"}
     >
       {/* Grid lines */}
       <div className="absolute inset-0 opacity-20 pointer-events-none">

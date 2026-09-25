@@ -37,11 +37,19 @@ export function createStudioKeyHandler(deps) {
     else if (e.key === 'F2') { e.preventDefault(); setEditMode('slip'); }
     else if (e.key === 'F3') { e.preventDefault(); setEditMode('spot'); }
     else if (e.key === 'F4') { e.preventDefault(); setEditMode('grid'); }
+    else if (e.key === 'F5') { e.preventDefault(); setActiveTool('zoomer'); }
     else if (e.key === 'F6') { e.preventDefault(); setActiveTool('trim'); }
     else if (e.key === 'F7') { e.preventDefault(); setActiveTool('selector'); }
     else if (e.key === 'F8') { e.preventDefault(); setActiveTool('grab'); }
     else if (e.key === 'F9') { e.preventDefault(); setActiveTool('scrub'); }
-    else if ((e.ctrlKey || e.metaKey) && e.key === '7') { e.preventDefault(); setActiveTool('smart'); }
+    else if (e.key === 'F10') { e.preventDefault(); setActiveTool('pencil'); }
+    else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === '1') { e.preventDefault(); setActiveTool('zoomer'); }
+    else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === '2') { e.preventDefault(); setActiveTool('trim'); }
+    else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === '3') { e.preventDefault(); setActiveTool('selector'); }
+    else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === '4') { e.preventDefault(); setActiveTool('grab'); }
+    else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === '5') { e.preventDefault(); setActiveTool('scrub'); }
+    else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === '6') { e.preventDefault(); setActiveTool('pencil'); }
+    else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === '7') { e.preventDefault(); setActiveTool('smart'); }
     else if (e.shiftKey && e.key === '1') { e.preventDefault(); setEditMode('shuffle'); }
     else if (e.shiftKey && e.key === '2') { e.preventDefault(); setEditMode('slip'); }
     else if (e.shiftKey && e.key === '3') { e.preventDefault(); setEditMode('grid'); }
@@ -65,7 +73,7 @@ export function createStudioKeyHandler(deps) {
       if (e.shiftKey) {
         setSelectionStart(null); setSelectionEnd(null); setSelectedTrackIds([]);
       } else {
-        const tools = ['trim', 'selector', 'grab', 'scrub', 'smart'];
+        const tools = ['zoomer', 'trim', 'selector', 'grab', 'scrub', 'pencil', 'smart'];
         const index = tools.indexOf(activeTool);
         setActiveTool(tools[(index + 1 + tools.length) % tools.length]);
       }
@@ -120,11 +128,11 @@ export function createStudioKeyHandler(deps) {
     else if (e.shiftKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); handleSeparateStems(); }
     else if (e.shiftKey && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); handleGenerateMelody(); }
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) { e.preventDefault(); if (selectedTrackIds.length > 0) setShowBeatDetective(true); }
-    else if ((e.ctrlKey || e.metaKey) && e.key === '1') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 40 } : t)); }
-    else if ((e.ctrlKey || e.metaKey) && e.key === '2') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 64 } : t)); }
-    else if ((e.ctrlKey || e.metaKey) && e.key === '3') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 96 } : t)); }
-    else if ((e.ctrlKey || e.metaKey) && e.key === '4') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 160 } : t)); }
-    else if ((e.ctrlKey || e.metaKey) && e.key === '5') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 240 } : t)); }
+    else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === '1') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 40 } : t)); }
+    else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === '2') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 64 } : t)); }
+    else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === '3') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 96 } : t)); }
+    else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === '4') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 160 } : t)); }
+    else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === '5') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 240 } : t)); }
     else if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); setShowBigCounter(!showBigCounter); }
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); if (selectedTrackIds.length > 0) setShowAudioSuite(true); }
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); handleConsolidateClips(); }

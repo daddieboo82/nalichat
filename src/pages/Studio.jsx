@@ -190,12 +190,13 @@ export default function Studio() {
   const [newTrackMidiChannel, setNewTrackMidiChannel] = useState('1');
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
   const [pianoRollTrackId, setPianoRollTrackId] = useState(null);
+  const workspaceRef = useRef(null);
 
   const maxTracks = MAX_TRACKS;
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   
   const [editMode, setEditMode] = useState('slip'); // slip, grid, shuffle
-  const [activeTool, setActiveTool] = useState('grab'); // smart, trim, grab, fade
+  const [activeTool, setActiveTool] = useState('grab'); // zoomer, trim, selector, grab, scrub, pencil, smart (+ Nali cut/fade)
   const [gridSize, setGridSize] = useState(1);
 
   const [masterVolume, setMasterVolume] = useState(100);
@@ -2568,7 +2569,7 @@ export default function Studio() {
       />
 
       {/* Main Workspace */}
-      <div className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+      <div ref={workspaceRef} className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} roomId={roomId} />
         {/* Unified scroll — left pane + waveforms move together in one container */}
@@ -2749,6 +2750,7 @@ export default function Studio() {
                     <AutomationLane
                       track={track}
                       zoom={zoom}
+                      activeTool={activeTool}
                       onPointsChange={(newPoints, mode, meta = null) => setTracks(prev => prev.map(t => {
                         if (t.id !== track.id) return t;
                         if (meta) return { ...t, ...meta };
@@ -2763,7 +2765,7 @@ export default function Studio() {
                         const key = keys[mode];
                         return key ? { ...t, [key]: newPoints, automationMode: mode } : t;
                       }))}
-                      onCommit={() => pushToHistory(tracksRef.current)}
+                      onCommit={() => setTracksWithHistory(prev => prev)}
                     />
                   )}
 
@@ -2858,7 +2860,9 @@ export default function Studio() {
                       onPointerMove={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
-                        if (activeTool === 'smart') {
+                        if (activeTool === 'zoomer') {
+                           e.currentTarget.style.cursor = 'zoom-in';
+                         } else if (activeTool === 'smart') {
                            e.currentTarget.style.cursor = isTopHalf ? 'text' : 'grab';
                          } else if (activeTool === 'selector') {
                            e.currentTarget.style.cursor = 'text';
@@ -2874,7 +2878,58 @@ export default function Studio() {
                       }}
                       onPointerDown={(e) => {
                         e.stopPropagation();
-                        if (track.locked || activeTool === 'fade') return;
+                        if (activeTool === 'fade') return;
+                        if (track.locked && !['zoomer', 'selector', 'scrub'].includes(activeTool)) return;
+
+                        if (activeTool === 'zoomer') {
+                          const target = e.currentTarget;
+                          const rect = target.getBoundingClientRect();
+                          const clipStart = track.startTime || 0;
+                          const clipDuration = track.duration || 40;
+                          const timeFromClientX = (clientX) => {
+                            const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                            return clipStart + (x / rect.width) * clipDuration;
+                          };
+                          const anchorTime = timeFromClientX(e.clientX);
+                          let endTime = anchorTime;
+                          let dragged = false;
+                          target.setPointerCapture(e.pointerId);
+                          const handleZoomMove = (moveEvent) => {
+                            endTime = timeFromClientX(moveEvent.clientX);
+                            dragged = dragged || Math.abs(moveEvent.clientX - e.clientX) > 4;
+                            if (dragged) {
+                              setSelectionStart(Math.min(anchorTime, endTime));
+                              setSelectionEnd(Math.max(anchorTime, endTime));
+                            }
+                          };
+                          const finishZoom = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleZoomMove);
+                            target.removeEventListener('pointerup', finishZoom);
+                            const workspace = workspaceRef.current;
+                            const viewportWidth = Math.max(320, (workspace?.clientWidth || 1200) - 384);
+                            if (dragged && Math.abs(endTime - anchorTime) > 0.01) {
+                              const start = Math.min(anchorTime, endTime);
+                              const range = Math.abs(endTime - anchorTime);
+                              const nextZoom = Math.max(0.5, Math.min(5000, viewportWidth / (range * 20)));
+                              setZoom(nextZoom);
+                              setTimeout(() => {
+                                if (workspaceRef.current) workspaceRef.current.scrollLeft = Math.max(0, start * 20 * nextZoom);
+                              }, 0);
+                            } else {
+                              const nextZoom = e.altKey ? Math.max(0.5, zoom / 2) : Math.min(5000, zoom * 2);
+                              setZoom(nextZoom);
+                              setTimeout(() => {
+                                if (workspaceRef.current) workspaceRef.current.scrollLeft = Math.max(0, anchorTime * 20 * nextZoom - viewportWidth / 2);
+                              }, 0);
+                            }
+                            setSelectionStart(null);
+                            setSelectionEnd(null);
+                          };
+                          target.addEventListener('pointermove', handleZoomMove);
+                          target.addEventListener('pointerup', finishZoom);
+                          return;
+                        }
 
                         // Spot mode: open dialog to type exact timecode position
                         if (editMode === 'spot') {
@@ -3330,8 +3385,8 @@ export default function Studio() {
                       <ClipGainLine
                         clipGain={track.clipGain || 0}
                         activeTool={activeTool}
-                        onChange={(newGain) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, clipGain: newGain } : t))}
-                        onCommit={() => pushToHistory(tracksRef.current)}
+                        onChange={(newGain) => setTracks(prev => prev.map(t => t.id === track.id ? { ...t, clipGain: newGain } : t))}
+                        onCommit={() => setTracksWithHistory(prev => prev)}
                       />
 
                       <div data-testid={`studio-waveform-${track.id}`} className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>

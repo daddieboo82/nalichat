@@ -130,7 +130,7 @@ export default function PricingPlans({
     });
     try {
       if (sessionStorage.getItem(CHECKOUT_RETURN_KEY) === "1") {
-        sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+        try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}
         setCheckoutCanceled(true);
       }
     } catch {
@@ -201,7 +201,7 @@ export default function PricingPlans({
         requestKeys.current.set(sku, createCheckoutRequestKey());
       }
       try {
-        sessionStorage.setItem(CHECKOUT_RETURN_KEY, "1");
+        try { sessionStorage.setItem(CHECKOUT_RETURN_KEY, "1"); } catch {}
         sessionStorage.setItem(CHECKOUT_ATTRIBUTION_KEY, JSON.stringify({ source: upgradeSource || "pricing", feature: upgradeFeature || undefined, sku }));
       } catch {}
       const attribution = getMarketingAttribution();
@@ -226,7 +226,7 @@ export default function PricingPlans({
       });
     } catch (checkoutError) {
       try {
-        sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+        try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}
         sessionStorage.removeItem(CHECKOUT_ATTRIBUTION_KEY);
       } catch {}
       trackPaywallEvent("purchase_failed", {

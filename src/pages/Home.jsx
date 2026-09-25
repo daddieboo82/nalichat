@@ -544,6 +544,15 @@ export default function Home() {
           </div>
         </motion.div>
 
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {PLAZA_WORLDS.map(({ id, title, icon: WorldIcon, gradient }) => (
+            <Link key={id} to={WORLD_CONTEXTS[id].path} className="rounded-2xl border border-white/10 bg-card/40 p-5">
+              <div className={`mb-3 inline-flex rounded-xl bg-gradient-to-br ${gradient} p-3`}><WorldIcon className="h-5 w-5 text-white" /></div>
+              <h3 className="font-heading text-lg font-bold">{title}</h3>
+            </Link>
+          ))}
+        </div>
+
         {/* — Quick Start Guide — */}
         <QuickStartGuide />
 

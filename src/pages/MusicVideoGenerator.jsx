@@ -131,7 +131,9 @@ export default function MusicVideoGenerator() {
     }
     for (const [id, gain] of exportGainsRef.current || []) if (!activeIds.has(id)) gain.gain.value = 0;
     for (const clip of visible) {
-      const opacity = Math.min(1, (clip.fadeIn ?? .3) > 0 ? (at - clip.start) / clip.fadeIn : 1, (clip.fadeOut ?? .3) > 0 ? (clip.start + clipLength(clip) - at) / clip.fadeOut : 1);
+      const fadeIn = clip.fadeIn ?? .3;
+      const fadeOut = clip.fadeOut ?? .3;
+      const opacity = Math.min(1, fadeIn > 0 ? (at - clip.start) / fadeIn : 1, fadeOut > 0 ? (clip.start + clipLength(clip) - at) / fadeOut : 1);
       const source = mediaRef.current.get(clip.id);
       const asset = assetsRef.current.find((item) => item.id === clip.assetId);
       if (!source || !asset) continue;

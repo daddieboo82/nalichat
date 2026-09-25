@@ -1746,7 +1746,7 @@ export default function Studio() {
             duration: clipDuration - splitDuration,
             fullDuration: t.fullDuration || t.duration,
             clipStart: (t.clipStart || 0) + splitDuration,
-            splitFrom: t.id
+            splitFrom: t.splitFrom || t.id
           });
 
           return {
@@ -1754,7 +1754,7 @@ export default function Studio() {
             duration: splitDuration,
             fullDuration: t.fullDuration || t.duration,
             clipStart: t.clipStart || 0,
-            splitFrom: t.id
+            splitFrom: t.splitFrom || t.id
           };
         }
       }
@@ -1763,7 +1763,8 @@ export default function Studio() {
 
     if (splitCount > 0) {
       setTracksWithHistory([...updatedTracks, ...newTracksList]);
-      toast.success("Clip split at playhead");
+      setSelectedTrackIds(newTracksList.map(t => t.id));
+      toast.success(`${splitCount} clip${splitCount === 1 ? '' : 's'} separated at playhead`);
     } else {
       toast.error("Playhead is not positioned over the selected clip");
     }

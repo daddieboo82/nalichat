@@ -1461,7 +1461,7 @@ export default function Studio() {
   const duplicateSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
     sounds.success();
-    
+
     if (tracks.length + selectedTrackIds.length > maxTracks) {
       toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
       return;
@@ -1472,17 +1472,23 @@ export default function Studio() {
 
     tracks.forEach(t => {
       if (selectedTrackIds.includes(t.id)) {
+        const duration = t.duration || 40;
         newTracks.push({
           ...t,
           id: nextId++,
-          name: `${t.name} (Copy)`
+          name: `${t.name} (Copy)`,
+          // Pro Tools Duplicate places the new clip directly after the source
+          // instead of stacking a second clip at the same timeline position.
+          startTime: (t.startTime || 0) + duration,
+          armed: false,
+          splitFrom: t.splitFrom || t.id,
         });
       }
     });
 
     setTracksWithHistory([...tracks, ...newTracks]);
-    setSelectedTrackIds([]);
-    toast.success("Tracks duplicated");
+    setSelectedTrackIds(newTracks.map(t => t.id));
+    toast.success(`Duplicated ${newTracks.length} clip${newTracks.length === 1 ? '' : 's'}`);
   };
 
   const deleteTrack = (trackId) => {

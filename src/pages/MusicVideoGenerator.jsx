@@ -56,6 +56,18 @@ const metadata = (url, type) => new Promise((resolve, reject) => {
   element.src = url;
 });
 const kindOf = (file) => file.type.startsWith("video/") ? "video" : file.type.startsWith("image/") ? "image" : file.type.startsWith("audio/") ? "audio" : null;
+const syncSoundtrack = (audio, at, music, active) => {
+  if (!audio || !music) return;
+  const start = music.start ?? 0;
+  const pointIn = music.in ?? 0;
+  const pointOut = music.out ?? music.duration;
+  const audible = at >= start && at < start + pointOut - pointIn;
+  if (!audible || !active) audio.pause();
+  const target = clamp(pointIn + at - start, pointIn, pointOut);
+  if (Math.abs(audio.currentTime - target) > .2 && Number.isFinite(target)) audio.currentTime = target;
+  audio.volume = clamp(music.volume ?? 1, 0, 1);
+  if (audible && active && audio.paused) audio.play().catch(() => {});
+};
 
 export default function MusicVideoGenerator() {
   const navigate = useNavigate();
@@ -102,6 +114,7 @@ export default function MusicVideoGenerator() {
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
     const visible = clipsRef.current.filter((clip) => at >= clip.start && at < clip.start + clipLength(clip));
     const clip = visible.at(-1);
+    if (!exportGainsRef.current) syncSoundtrack(audioRef.current, at, musicRef.current, playingRef.current);
     const opacity = clip ? Math.min(1, (clip.fadeIn ?? .3) > 0 ? (at - clip.start) / clip.fadeIn : 1, (clip.fadeOut ?? .3) > 0 ? (clip.start + clipLength(clip) - at) / clip.fadeOut : 1) : 0;
     for (const [id, gain] of exportGainsRef.current || []) gain.gain.value = id === clip?.assetId ? clamp(clip.volume ?? 1, 0, 1) * opacity : 0;
     for (const [id, element] of mediaRef.current) {
@@ -153,7 +166,7 @@ export default function MusicVideoGenerator() {
     const value = clamp(next, 0, Math.max(length, 0));
     timeRef.current = value;
     setTime(value);
-    if (audioRef.current && musicRef.current) audioRef.current.currentTime = clamp(value, 0, musicRef.current.duration);
+    syncSoundtrack(audioRef.current, value, musicRef.current, playingRef.current);
     if (playingRef.current) startRef.current = performance.now() - value * 1000;
     draw(value);
   };
@@ -277,7 +290,7 @@ export default function MusicVideoGenerator() {
 
   const addClip = (asset) => {
     if (asset.kind === "audio") {
-      setMusic({ assetId: asset.id, duration: asset.duration, volume: 1 });
+      setMusic({ assetId: asset.id, duration: asset.duration, volume: 1, start: 0, in: 0, out: asset.duration });
       setStatus("Soundtrack loaded. It will play alongside audio from your video clips.");
       return;
     }
@@ -308,12 +321,7 @@ export default function MusicVideoGenerator() {
     playingRef.current = true;
     setPlaying(true);
     startRef.current = performance.now() - timeRef.current * 1000;
-    const soundtrack = audioRef.current;
-    if (soundtrack && musicRef.current) {
-      soundtrack.currentTime = clamp(timeRef.current, 0, musicRef.current.duration);
-      soundtrack.volume = musicRef.current.volume;
-      soundtrack.play().catch(() => setStatus("Tap Play again to allow audio playback."));
-    }
+    syncSoundtrack(audioRef.current, timeRef.current, musicRef.current, true);
     const tick = () => {
       if (!playingRef.current) return;
       const next = Math.min(projectLength(clipsRef.current), (performance.now() - startRef.current) / 1000);
@@ -392,7 +400,7 @@ export default function MusicVideoGenerator() {
       });
       playingRef.current = true;
       draw(0);
-      if (exportAudio) { exportAudio.currentTime = 0; await exportAudio.play(); }
+      if (exportAudio) syncSoundtrack(exportAudio, 0, music, true);
       recorder.start(1000);
       const start = performance.now();
       const frame = () => {
@@ -400,6 +408,7 @@ export default function MusicVideoGenerator() {
         const next = Math.min(length, (performance.now() - start) / 1000);
         timeRef.current = next;
         draw(next);
+        if (exportAudio) syncSoundtrack(exportAudio, next, music, true);
         setTime(next);
         if (next >= length) recorder.stop();
         else rafRef.current = requestAnimationFrame(frame);
@@ -468,7 +477,7 @@ export default function MusicVideoGenerator() {
             <Button variant="outline" onClick={() => { setClips((current) => splitClip(current, selected, time)); setStatus("Split at playhead when it falls inside the selected clip."); }}><Scissors size={15} className="mr-2"/> Split at playhead</Button>
             <Button variant="destructive" onClick={() => { setClips((current) => current.filter((clip) => clip.id !== selected)); setSelected(null); }}><Trash2 size={15} className="mr-2"/> Delete clip</Button>
           </div>}
-          {music && <div className="mt-4 border-t border-white/10 pt-3 text-xs"><p className="font-bold">Soundtrack: {assets.find((asset) => asset.id === music.assetId)?.name}</p><label className="mt-2 block">Volume {Math.round(music.volume * 100)}%<input type="range" min="0" max="1" step=".01" value={music.volume} onChange={(e) => { const volume = Number(e.target.value); setMusic({ ...music, volume }); if (audioRef.current) audioRef.current.volume = volume; }} className="w-full accent-fuchsia-400" /></label><button className="mt-2 text-rose-300" onClick={() => setMusic(null)}>Remove soundtrack</button></div>}
+          {music && <div className="mt-4 space-y-2 border-t border-white/10 pt-3 text-xs"><p className="font-bold">Soundtrack: {assets.find((asset) => asset.id === music.assetId)?.name}</p><label className="block">Timeline start (seconds)<input type="number" min="0" step=".1" value={music.start ?? 0} onChange={(e) => setMusic({ ...music, start: Math.max(0, Number(e.target.value) || 0) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label><label className="block">Song in point (seconds)<input type="number" min="0" max={(music.out ?? music.duration) - .1} step=".1" value={music.in ?? 0} onChange={(e) => setMusic({ ...music, in: clamp(Number(e.target.value) || 0, 0, (music.out ?? music.duration) - .1) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label><label className="block">Song out point (seconds)<input type="number" min={(music.in ?? 0) + .1} max={music.duration} step=".1" value={music.out ?? music.duration} onChange={(e) => setMusic({ ...music, out: clamp(Number(e.target.value) || 0, (music.in ?? 0) + .1, music.duration) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label><label className="mt-2 block">Volume {Math.round(music.volume * 100)}%<input type="range" min="0" max="1" step=".01" value={music.volume} onChange={(e) => { const volume = Number(e.target.value); setMusic({ ...music, volume }); if (audioRef.current) audioRef.current.volume = volume; }} className="w-full accent-fuchsia-400" /></label><button className="mt-2 text-rose-300" onClick={() => setMusic(null)}>Remove soundtrack</button></div>}
         </section>
       </div>
       <section className="rounded-2xl border border-white/10 bg-white/[.04] p-3">
@@ -476,7 +485,7 @@ export default function MusicVideoGenerator() {
         <div className="overflow-x-auto"><div style={{ width: Math.max(700, length * zoom + 120) }} className="relative min-h-40 rounded-lg bg-black/40 p-2">
           <div className="ml-20 h-5 border-b border-white/10 font-mono text-[10px] text-white/40">{Array.from({ length: Math.ceil(Math.max(length, 10) / 5) + 1 }, (_, i) => <span key={i} className="absolute" style={{ left: 90 + i * 5 * zoom }}>{i * 5}s</span>)}</div>
           <div className="mt-2 flex h-16 items-center"><span className="w-20 shrink-0 text-xs text-white/50">VIDEO</span><div className="relative h-14 flex-1 rounded bg-white/5" onClick={(e) => { if (e.target === e.currentTarget) seek((e.nativeEvent.offsetX) / zoom); }}>{clips.map((clip) => <button key={clip.id} draggable onDragStart={(e) => { e.dataTransfer.setData("text/plain", clip.id); }} onDragEnd={(e) => { const rail = e.currentTarget.parentElement.getBoundingClientRect(); setClips((current) => current.map((item) => item.id === clip.id ? { ...item, start: Math.max(0, Math.round((e.clientX - rail.left) / zoom * 10) / 10) } : item)); }} onClick={() => { setSelected(clip.id); seek(clip.start); }} style={{ left: clip.start * zoom, width: clipLength(clip) * zoom }} className={`absolute top-1 h-12 overflow-hidden rounded border px-2 text-left text-xs ${selected === clip.id ? "border-fuchsia-200 bg-fuchsia-600" : "border-fuchsia-500/70 bg-fuchsia-900"}`} title="Click to select; drag to move"><span className="block truncate font-bold">{assets.find((asset) => asset.id === clip.assetId)?.name}</span><span>{formatTime(clipLength(clip))}</span></button>)}</div></div>
-          <div className="flex h-12 items-center"><span className="w-20 shrink-0 text-xs text-white/50">MUSIC</span><div className="h-9 flex-1 rounded bg-white/5">{music && <div style={{ width: Math.min(music.duration, length) * zoom }} className="h-full truncate rounded border border-cyan-500 bg-cyan-900 px-2 py-2 text-xs">{assets.find((asset) => asset.id === music.assetId)?.name}</div>}</div></div>
+          <div className="flex h-12 items-center"><span className="w-20 shrink-0 text-xs text-white/50">MUSIC</span><div className="h-9 flex-1 rounded bg-white/5">{music && <div style={{ marginLeft: (music.start ?? 0) * zoom, width: Math.max(0, Math.min((music.out ?? music.duration) - (music.in ?? 0), length - (music.start ?? 0))) * zoom }} className="h-full truncate rounded border border-cyan-500 bg-cyan-900 px-2 py-2 text-xs">{assets.find((asset) => asset.id === music.assetId)?.name}</div>}</div></div>
           <div className="pointer-events-none absolute top-5 bottom-2 w-px bg-white" style={{ left: 90 + time * zoom }} />
         </div></div>
         <p className="mt-2 text-xs text-white/50">Import your own media. Drag a video clip to move it; use the Inspector to trim, split, fade, grade or delete it. Export plays in real time and mixes video clip audio with your imported soundtrack.</p>

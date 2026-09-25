@@ -2867,22 +2867,42 @@ export default function Studio() {
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
 
                         if (activeTool === 'cut') {
-                           // Cut removes the audio after the click point (unlike Split, which
-                           // keeps both halves as separate clips) — the clip is simply shortened.
-                           const target = e.currentTarget;
-                           const rect = target.getBoundingClientRect();
-                           const clickX = e.clientX - rect.left;
-                           const clickRatio = clickX / rect.width;
-                           
-                           const newDuration = track.duration * clickRatio;
-                           
-                           setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
-                             ...t,
-                             duration: newDuration,
-                             fullDuration: t.fullDuration || t.duration,
-                             clipStart: t.clipStart || 0
-                           } : t));
-                           toast.success("Audio after the cut point removed");
+                           // Behave like Pro Tools Separate-at-cursor: preserve both sides of
+                           // the source instead of destructively deleting everything to the right.
+                           const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                           const clipStartTime = track.startTime || 0;
+                           const clipDuration = track.duration || 40;
+                           const splitTime = clipStartTime + (clipDuration * clickRatio);
+                           const leftDuration = splitTime - clipStartTime;
+                           const rightDuration = clipDuration - leftDuration;
+                           if (leftDuration <= 0.001 || rightDuration <= 0.001) return;
+                           if (tracksRef.current.length >= maxTracks) {
+                             toast.error(`Track limit reached (${maxTracks}).`);
+                             return;
+                           }
+                           const rightId = nextTrackId(tracksRef.current);
+                           const rightClip = {
+                             ...track,
+                             id: rightId,
+                             name: `${track.name} (Cut)`,
+                             startTime: splitTime,
+                             duration: rightDuration,
+                             fullDuration: track.fullDuration || clipDuration,
+                             clipStart: (track.clipStart || 0) + leftDuration,
+                             splitFrom: track.splitFrom || track.id,
+                           };
+                           setTracksWithHistory(prev => [
+                             ...prev.map(t => t.id === track.id ? {
+                               ...t,
+                               duration: leftDuration,
+                               fullDuration: t.fullDuration || clipDuration,
+                               splitFrom: t.splitFrom || t.id,
+                             } : t),
+                             rightClip,
+                           ]);
+                           setSelectedTrackIds([rightId]);
+                           updateCurrentTime(splitTime);
+                           toast.success("Clip separated at cursor");
                            return;
                         }
 

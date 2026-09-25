@@ -112,24 +112,24 @@ export default function StudioToolbar2({
               <div><Button variant="ghost" size="sm" aria-label="Shuffle" onClick={() => setEditMode('shuffle')} aria-pressed={editMode === 'shuffle'} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'shuffle' && "bg-primary/20 text-primary")}>
                 <Shuffle className="w-3.5 h-3.5" /><span className="text-xs">Shuffle</span>
               </Button></div>
-            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Shuffle Mode <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+1</kbd></TooltipContent></Tooltip>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Shuffle Mode <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">F1</kbd></TooltipContent></Tooltip>
             
             <Tooltip><TooltipTrigger asChild>
               <div><Button variant="ghost" size="sm" aria-label="Slip" onClick={() => setEditMode('slip')} aria-pressed={editMode === 'slip'} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'slip' && "bg-primary/20 text-primary")}>
                 <MoveHorizontal className="w-3.5 h-3.5" /><span className="text-xs">Slip</span>
               </Button></div>
-            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Slip Mode <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+2</kbd></TooltipContent></Tooltip>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Slip Mode <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">F2</kbd></TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
               <div><Button variant="ghost" size="sm" aria-label="Grid" onClick={() => setEditMode('grid')} aria-pressed={editMode === 'grid'} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'grid' && "bg-primary/20 text-primary")}>
                 <Grid className="w-3.5 h-3.5" /><span className="text-xs">Grid</span>
               </Button></div>
-            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Grid Mode <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+3</kbd></TooltipContent></Tooltip>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Grid Mode <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">F4</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild>
               <div><Button variant="ghost" size="sm" aria-label="Spot" onClick={() => setEditMode('spot')} aria-pressed={editMode === 'spot'} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'spot' && "bg-primary/20 text-primary")}>
                 <MapPin className="w-3.5 h-3.5" /><span className="text-xs">Spot</span>
               </Button></div>
-            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Spot Mode — type exact position <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+4</kbd></TooltipContent></Tooltip>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Spot Mode — type exact position <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">F3</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -170,7 +170,7 @@ export default function StudioToolbar2({
                   <div className="flex gap-[1px]"><MoveHorizontal className="w-2 h-2"/><MousePointer2 className="w-2 h-2"/></div>
                 </div>
                 <span className="text-xs hidden lg:inline">Smart</span>
-             </Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex flex-col gap-1"><span>Smart Tool (Top: Edit, Bottom: Grab)</span><div className="flex items-center gap-1"><kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">E</kbd></div></TooltipContent></Tooltip>
+             </Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex flex-col gap-1"><span>Smart Tool (Top: Select, Lower body: Grab, Lower corners: Trim)</span><div className="flex items-center gap-1"><kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">E</kbd></div></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Scrub Tool (S)" onClick={() => setActiveTool('scrub')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'scrub' && "bg-primary/20 text-primary")}><Search className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Scrub</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Scrub Tool — drag to hear audio <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">S</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
@@ -185,7 +185,7 @@ export default function StudioToolbar2({
             }} disabled={selectedTrackIds.length === 0} className="min-w-[44px] min-h-[44px] px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5">{tracks.find(t => t.id === selectedTrackIds[0])?.locked ? <Unlock className="w-3.5 h-3.5"/> : <Link2 className="w-3.5 h-3.5"/>}<span className="text-xs hidden lg:inline">Lock</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Lock/Unlock Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">L</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Separate Clip (Ctrl+E)" onClick={splitSelectedTracks} disabled={selectedTrackIds.length === 0} className="min-w-[44px] min-h-[44px] px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5"><Scissors className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Split</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Separate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+E</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Duplicate Clip (Ctrl+D)" onClick={duplicateSelectedTracks} disabled={selectedTrackIds.length === 0} className="min-w-[44px] min-h-[44px] px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5"><Copy className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Copy</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Duplicate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+D</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Delete Clip (Del)" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="min-w-[44px] min-h-[44px] px-2 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50 gap-1.5"><Trash2 className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Del</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Delete <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Del</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Clear Clip (Del)" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="min-w-[44px] min-h-[44px] px-2 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50 gap-1.5"><Trash2 className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Del</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Clear Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Del</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
         

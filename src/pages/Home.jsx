@@ -24,12 +24,12 @@ import Logo from "@/components/branding/Logo";
 import { getLastVisitedWorld, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
 
 const PLAZA_WORLD_DETAILS = Object.freeze({
-  connect: { subtitle: "NaliChat", description: "Meet creators, message, share and collaborate.", icon: MessageSquare },
-  create: { subtitle: "NaliStudio", description: "Record, produce, mix and build your next idea.", icon: Music },
-  discover: { subtitle: "Creator World", description: "Explore creators, music, challenges and inspiration.", icon: Sparkles },
-  share: { subtitle: "Files & Projects", description: "Move creative files and keep projects connected.", icon: FolderKanban },
-  visualize: { subtitle: "Music Video Lab", description: "Turn songs and concepts into visual experiences.", icon: Video },
-  compete: { subtitle: "Challenges", description: "Enter challenges, climb leaderboards and get discovered.", icon: Trophy },
+  connect: { subtitle: "NaliChat", description: "Find creators, start chats, update your profile and manage collaborations.", icon: MessageSquare },
+  create: { subtitle: "NaliStudio", description: "Record in Studio, capture quick ideas, make cover art and organize playlists.", icon: Music },
+  discover: { subtitle: "Creator World", description: "Browse music and creators, follow playlists, rankings and your analytics.", icon: Sparkles },
+  share: { subtitle: "Files & Projects", description: "Find files and projects, message collaborators and import into Studio.", icon: FolderKanban },
+  visualize: { subtitle: "Music Video Lab", description: "Make cover art and explore visual ideas. Music Video Lab is coming soon.", icon: Video },
+  compete: { subtitle: "Challenges", description: "Join or create challenges, check rankings and build a squad.", icon: Trophy },
 });
 
 const NALIBASE_OS_URL = 'https://nali-base-os.base44.app';

@@ -223,7 +223,7 @@ export default function MusicVideoGenerator() {
         const ids = new Set(restored.map((asset) => asset.id));
         setAssets(restored);
         setClips((saved.clips || []).filter((clip) => ids.has(clip.assetId)));
-        const restoredMusic = (Array.isArray(saved.music) ? saved.music : saved.music ? [saved.music] : []).filter((item) => ids.has(item.assetId)).map((item) => ({ ...item, id: item.id || crypto.randomUUID() }));
+        const restoredMusic = (Array.isArray(saved.music) ? saved.music : saved.music ? [saved.music] : []).filter((item) => ids.has(item.assetId)).map((item) => ({ ...item, id: item.id || crypto.randomUUID(), duration: restored.find((asset) => asset.id === item.assetId)?.duration ?? item.duration ?? 0 }));
         setMusic(restoredMusic);
         setTitle(saved.title || "");
         const count = Math.max(2, saved.trackCount || 2, ...(saved.clips || []).map((clip) => (clip.track ?? 0) + 1));
@@ -352,7 +352,7 @@ export default function MusicVideoGenerator() {
       const audioClip = { id: crypto.randomUUID(), assetId: asset.id, duration: asset.duration, volume: 1, start: 0, in: 0, out: asset.duration, fadeIn: 0, fadeOut: 0 };
       setMusic((current) => [...current, audioClip]);
       setSelectedMusic(audioClip.id);
-      setStatus("Soundtrack loaded. It will play alongside audio from your video clips.");
+      setStatus("Audio clip added. Select it on the timeline to edit timing and volume.");
       return;
     }
     const track = chosen?.track ?? 0;
@@ -562,7 +562,7 @@ export default function MusicVideoGenerator() {
           {music.map((item, index) => <div key={item.id} className="flex h-12 items-center"><span className="w-20 shrink-0 text-xs text-white/50">AUDIO {index + 1}</span><div className="h-9 flex-1 rounded bg-white/5"><button onClick={() => { setSelectedMusic(item.id); seek(item.start ?? 0); }} style={{ marginLeft: (item.start ?? 0) * zoom, width: Math.max(0, Math.min((item.out ?? item.duration) - (item.in ?? 0), length - (item.start ?? 0))) * zoom }} className={`h-full truncate rounded border px-2 py-2 text-left text-xs ${selectedMusic === item.id ? "border-cyan-200 bg-cyan-700" : "border-cyan-500 bg-cyan-900"}`}>{assets.find((asset) => asset.id === item.assetId)?.name}</button></div></div>)}
           <div className="pointer-events-none absolute top-5 bottom-2 w-px bg-white" style={{ left: 90 + time * zoom }} />
         </div></div>
-        <p className="mt-2 text-xs text-white/50">Import your own media. Drag a video clip to move it; use the Inspector to trim, split, fade, grade or delete it. Export plays in real time and mixes video clip audio with your imported soundtrack.</p>
+        <p className="mt-2 text-xs text-white/50">Import your own media. Drag a video clip to move it; use the Inspector to trim, split, fade, grade or delete it. Export plays in real time and mixes video clip audio with all imported audio clips.</p>
       </section>
     </div>
   </div>;

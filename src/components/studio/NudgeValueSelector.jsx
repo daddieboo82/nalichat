@@ -6,6 +6,10 @@ import { Ruler } from 'lucide-react';
 
 const getNudgeValues = (bpm = 120, sampleRate = 44100) => {
   const safeBpm = Math.max(20, Number(bpm) || 120);
+  const rawSampleRate = typeof sampleRate === 'string' ? parseFloat(sampleRate) : Number(sampleRate);
+  const safeSampleRate = Number.isFinite(rawSampleRate) && rawSampleRate > 0
+    ? (rawSampleRate < 1000 ? rawSampleRate * 1000 : rawSampleRate)
+    : 44100;
   const beat = 60 / safeBpm;
   const tick = beat / 960;
   return [

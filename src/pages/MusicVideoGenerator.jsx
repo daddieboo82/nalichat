@@ -369,30 +369,30 @@ export default function MusicVideoGenerator() {
     let recorder;
     const previewMedia = mediaRef.current;
     try {
-      const videoAssets = assets.filter((asset) => asset.kind === "video" && clips.some((clip) => clip.assetId === asset.id));
+      const videoClips = clips.filter((clip) => assets.some((asset) => asset.id === clip.assetId && asset.kind === "video"));
       const exportMedia = new Map(previewMedia);
       const gains = new Map();
       context = new AudioContext();
       const mix = context.createMediaStreamDestination();
-      for (const asset of videoAssets) {
+      for (const clip of videoClips) {
+        const asset = assets.find((item) => item.id === clip.assetId);
         const video = document.createElement("video");
         video.src = asset.url;
         video.preload = "auto";
         video.playsInline = true;
         video.onseeked = () => draw(timeRef.current);
-        exportMedia.set(asset.id, video);
+        exportMedia.set(clip.id, video);
         const source = context.createMediaElementSource(video);
         const gain = context.createGain();
         gain.gain.value = 0;
         source.connect(gain).connect(mix);
-        gain.connect(context.destination);
-        gains.set(asset.id, gain);
+        gains.set(clip.id, gain);
       }
-      await Promise.all(videoAssets.map((asset) => new Promise((resolve, reject) => {
-        const video = exportMedia.get(asset.id);
+      await Promise.all(videoClips.map((clip) => new Promise((resolve, reject) => {
+        const video = exportMedia.get(clip.id);
         if (video.readyState >= 2) return resolve();
         video.onloadeddata = resolve;
-        video.onerror = () => reject(new Error(`Cannot decode ${asset.name} for export.`));
+        video.onerror = () => reject(new Error("Cannot decode video clip for export."));
       })));
       mediaRef.current = exportMedia;
       exportGainsRef.current = gains;
@@ -408,7 +408,7 @@ export default function MusicVideoGenerator() {
       }
       const canvasStream = canvasRef.current.captureStream(30);
       stream = new MediaStream(canvasStream.getVideoTracks());
-      if (videoAssets.length || soundtrackUrl) mix.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
+      if (videoClips.length || soundtrackUrl) mix.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
       await context.resume();
       recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
       const parts = [];

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Film, FolderOpen, Pause, Play, Plus, Save, Scissors, Trash2, Undo2, Redo2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { clamp, clipLength, formatTime, projectLength, splitClip, trimClip } from "@/lib/videoTimeline";
+import { removeTransformKeyframe, setTransformKeyframe, transformAt } from "@/lib/videoKeyframes";
 
 const PROJECT_KEY = "nalibase.videoEditor.v1";
 const DB_NAME = "nalibase-video-assets";
@@ -117,6 +118,9 @@ export default function MusicVideoGenerator() {
   const mp4Supported = typeof MediaRecorder !== "undefined" && ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=avc1.42E01E", "video/mp4"].some((type) => MediaRecorder.isTypeSupported(type));
   const chosen = clips.find((clip) => clip.id === selected);
   const selectedAsset = assets.find((asset) => asset.id === chosen?.assetId);
+  const currentTransform = chosen ? transformAt(chosen, time) : null;
+  const keyframeTime = chosen ? Math.round(clamp(time - chosen.start, 0, clipLength(chosen)) * 100) / 100 : 0;
+  const atKeyframe = chosen?.keyframes?.some((frame) => Math.abs(frame.time - keyframeTime) <= .01);
 
   const draw = useCallback((at) => {
     const canvas = canvasRef.current;
@@ -155,7 +159,10 @@ export default function MusicVideoGenerator() {
         ctx.save();
         ctx.globalAlpha = opacity;
         ctx.filter = `brightness(${clip.brightness ?? 100}%) contrast(${clip.contrast ?? 100}%) saturate(${clip.saturation ?? 100}%)`;
-        ctx.drawImage(source, (WIDTH - w * scale) / 2, (HEIGHT - h * scale) / 2, w * scale, h * scale);
+        const transform = transformAt(clip, at);
+        ctx.translate(WIDTH / 2 + transform.x * WIDTH / 100, HEIGHT / 2 + transform.y * HEIGHT / 100);
+        ctx.scale(transform.scale, transform.scale);
+        ctx.drawImage(source, -w * scale / 2, -h * scale / 2, w * scale, h * scale);
         ctx.restore();
       }
     }
@@ -505,6 +512,7 @@ export default function MusicVideoGenerator() {
             <label className="block">Out point (seconds)<input type="number" min={chosen.in + .1} max={chosen.sourceDuration} step=".1" value={chosen.out} onChange={(e) => setClips((current) => trimClip(current, selected, "right", Number(e.target.value)))} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <label className="block">Fade in (seconds)<input type="number" min="0" max={clipLength(chosen)} step=".1" value={chosen.fadeIn ?? .3} onChange={(e) => updateClip({ fadeIn: clamp(Number(e.target.value) || 0, 0, clipLength(chosen)) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
             <label className="block">Fade out (seconds)<input type="number" min="0" max={clipLength(chosen)} step=".1" value={chosen.fadeOut ?? .3} onChange={(e) => updateClip({ fadeOut: clamp(Number(e.target.value) || 0, 0, clipLength(chosen)) })} className="mt-1 w-full rounded-lg border border-white/15 bg-black/40 p-2" /></label>
+            <div className="rounded-lg border border-white/10 p-2"><p className="font-semibold">Transform at {formatTime(keyframeTime)} in clip</p><div className="mt-2 grid grid-cols-3 gap-2">{[["x", "X %", -100, 100, 1], ["y", "Y %", -100, 100, 1], ["scale", "Scale", .25, 4, .05]].map(([key, label, min, max, step]) => <label key={key}>{label}<input type="number" min={min} max={max} step={step} value={Math.round(currentTransform[key] * 100) / 100} onChange={(e) => setClips((current) => current.map((clip) => clip.id === selected ? setTransformKeyframe(clip, time, { [key]: clamp(Number(e.target.value) || 0, min, max) }) : clip))} className="mt-1 w-full rounded border border-white/15 bg-black/40 p-1" /></label>)}</div><div className="mt-2 flex gap-2"><Button size="sm" variant="outline" onClick={() => setClips((current) => current.map((clip) => clip.id === selected ? setTransformKeyframe(clip, time) : clip))}>{atKeyframe ? "Update keyframe" : "Add keyframe"}</Button>{atKeyframe && <Button size="sm" variant="outline" onClick={() => setClips((current) => current.map((clip) => clip.id === selected ? removeTransformKeyframe(clip, time) : clip))}>Remove keyframe</Button>}</div><p className="mt-2 text-white/50">Set the playhead, then change X, Y or scale. Values animate between keyframes.</p></div>
             {selectedAsset?.kind === "video" && <label className="block">Clip volume: {Math.round((chosen.volume ?? 1) * 100)}%<input type="range" min="0" max="1" step=".01" value={chosen.volume ?? 1} onChange={(e) => updateClip({ volume: Number(e.target.value) })} className="mt-1 w-full accent-fuchsia-400" /></label>}
             {["brightness", "contrast", "saturation"].map((key) => <label key={key} className="block capitalize">{key}: {chosen[key]}%<input type="range" min="0" max="200" value={chosen[key]} onChange={(e) => updateClip({ [key]: Number(e.target.value) })} className="mt-1 w-full accent-fuchsia-400" /></label>)}
             <Button variant="outline" onClick={() => { setClips((current) => splitClip(current, selected, time)); setStatus("Split at playhead when it falls inside the selected clip."); }}><Scissors size={15} className="mr-2"/> Split at playhead</Button>

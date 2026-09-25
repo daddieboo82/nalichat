@@ -5,6 +5,7 @@ const sessionKeyFor = (userId) => `nali_product_session:${userId || "anonymous"}
 let sessionStorageKey = sessionKeyFor(null);
 const FLUSH_INTERVAL_MS = 15_000;
 const RETURN_VISIT_KEY = "nali_product_last_visit_date";
+const ACQUISITION_KEY = "nali_product_acquisition";
 let initialized = false;
 let session = null;
 let flushTimer = null;
@@ -45,11 +46,42 @@ function ensureSession() {
   safeSet(session);
   return session;
 }
+function getAcquisition() {
+  if (typeof window === "undefined") return {};
+  try {
+    const saved = localStorage.getItem(ACQUISITION_KEY);
+    if (saved) return JSON.parse(saved);
+    const params = new URLSearchParams(window.location.search);
+    const referrer = document.referrer || "";
+    let referrerHost = "";
+    try { referrerHost = referrer ? new URL(referrer).hostname.replace(/^www\./, "") : ""; } catch {}
+    const acquisition = {
+      campaign_source: params.get("utm_source") || referrerHost || "direct",
+      campaign_medium: params.get("utm_medium") || (referrerHost ? "referral" : "direct"),
+      campaign_name: params.get("utm_campaign") || "",
+      campaign_content: params.get("utm_content") || "",
+      campaign_term: params.get("utm_term") || "",
+      landing_path: window.location.pathname,
+      referrer: referrer,
+      first_touch_at: new Date().toISOString(),
+    };
+    localStorage.setItem(ACQUISITION_KEY, JSON.stringify(acquisition));
+    return acquisition;
+  } catch { return {}; }
+}
 function track(name, properties = {}) {
   const currentSession = ensureSession();
+  const acquisition = getAcquisition();
+  const enrichedProperties = {
+    ...acquisition,
+    ...properties,
+    campaign_source: properties.campaign_source || acquisition.campaign_source || "",
+    campaign_medium: properties.campaign_medium || acquisition.campaign_medium || "",
+    campaign_name: properties.campaign_name || acquisition.campaign_name || "",
+  };
   if (supportsCredentialedAnalyticsTransport()) {
     try {
-      const result = base44.analytics?.track?.({ eventName: name, properties: { ...properties, product_session_id: currentSession.id } });
+      const result = base44.analytics?.track?.({ eventName: name, properties: { ...enrichedProperties, product_session_id: currentSession.id } });
       if (result?.catch) result.catch(() => {});
     } catch {}
   }
@@ -63,14 +95,14 @@ function track(name, properties = {}) {
     try {
       const record = {
         event_name: name,
-        source: properties.source || "product",
+        source: enrichedProperties.source || "product",
         session_id: currentSession.id,
-        user_id: properties.user_id || "",
-        route: properties.route || window.location.pathname,
-        campaign_source: properties.campaign_source || "",
-        campaign_medium: properties.campaign_medium || "",
-        campaign_name: properties.campaign_name || "",
-        metadata: properties,
+        user_id: enrichedProperties.user_id || "",
+        route: enrichedProperties.route || window.location.pathname,
+        campaign_source: enrichedProperties.campaign_source || "",
+        campaign_medium: enrichedProperties.campaign_medium || "",
+        campaign_name: enrichedProperties.campaign_name || "",
+        metadata: enrichedProperties,
       };
       const saved = base44.entities.ActivationFunnel.create(record);
       if (saved?.catch) saved.catch(() => {});

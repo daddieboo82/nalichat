@@ -282,6 +282,11 @@ export default function Home() {
                   <ArrowRight className="h-5 w-5 shrink-0 text-cyan-200/60 transition group-hover:translate-x-1 group-hover:text-cyan-100" />
                 </a>
               </div>
+              <Link to="/battles" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: "enter_battle_arena" })} className="group mx-auto mb-5 flex min-h-24 max-w-3xl items-center gap-4 rounded-2xl border border-fuchsia-400/35 bg-gradient-to-r from-fuchsia-700/25 via-purple-800/20 to-amber-500/15 px-5 py-4 text-left shadow-lg backdrop-blur-xl transition hover:border-fuchsia-300/60 hover:bg-white/[.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-300">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-fuchsia-400/20 text-fuchsia-200"><Trophy className="h-6 w-6" /></span>
+                <span className="min-w-0 flex-1"><span className="block text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-200">Live rap & singing</span><span className="mt-1 block font-heading text-lg font-black">Enter Battle Arena</span><span className="block text-xs text-foreground/70">Watch a live battle or challenge another artist with your track.</span></span>
+                <ArrowRight className="h-5 w-5 shrink-0 text-fuchsia-200 transition-transform group-hover:translate-x-1" />
+              </Link>
               {lastVisitedWorld && (
                 <div className="mb-4 flex justify-center">
                   <Link to={lastVisitedWorld.path} onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: `return_${lastVisitedWorld.id}` })} className={`group relative inline-flex items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br ${lastVisitedWorld.plazaGradient} px-4 py-3 text-left shadow-lg backdrop-blur-xl transition hover:border-white/25 hover:shadow-xl`}>

@@ -55,6 +55,9 @@
       "type": "string",
       "format": "date-time"
     },
+    "award_title": {
+      "type": "string"
+    },
     "winner_id": {
       "type": "string"
     },

@@ -39,7 +39,8 @@ Deno.serve(async req => {
       const secret = Deno.env.get('LIVEKIT_API_SECRET') || '';
       if (!url || !key || !secret) return Response.json({ error: 'Live audience unavailable.' }, { status: 503 });
       const service = new RoomServiceClient(url.replace(/^wss:/, 'https:'), key, secret);
-      const participants = await service.listParticipants(battle.video_room_id).catch(() => []);
+      const participants = await service.listParticipants(battle.video_room_id).catch(() => null);
+      if (!participants) return Response.json({ error: 'Audience connection could not be checked. Try again.' }, { status: 503 });
       if (!participants.some(participant => participant.identity === user.id)) {
         return Response.json({ error: 'Join the live audience before scoring.' }, { status: 403 });
       }

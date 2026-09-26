@@ -547,7 +547,7 @@ workflows:
       - name: Build Sauce Labs QA app
         script: |
           cat > capacitor.config.json << EOF
-          {"appId":"$BUNDLE_ID","appName":"$APP_NAME","webDir":"dist","ios":{"contentInset":"automatic","scheme":"NaliChat"}}
+          {"appId":"$BUNDLE_ID","appName":"$APP_NAME","webDir":"dist","server":{"url":"https://nalichat.org"},"ios":{"contentInset":"automatic","scheme":"NaliChat"}}
           EOF
           npm run build
           rm -rf ios assets
@@ -614,6 +614,7 @@ workflows:
             "appId": "$BUNDLE_ID",
             "appName": "$APP_NAME",
             "webDir": "dist",
+            "server": { "url": "https://nalichat.org" },
             "ios": {
               "contentInset": "automatic",
               "scheme": "NaliChat"

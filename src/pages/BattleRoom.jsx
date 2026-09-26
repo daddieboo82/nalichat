@@ -21,6 +21,9 @@ export default function BattleRoom() {
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [myVote, setMyVote] = useState('');
+  const [reportTarget, setReportTarget] = useState('');
+  const [reportReason, setReportReason] = useState('harassment');
+  const [reported, setReported] = useState(false);
   const refresh = useCallback(async () => {
     try {
       const response = await base44.functions.invoke('listLiveBattles', { battleId });
@@ -52,6 +55,13 @@ export default function BattleRoom() {
     } catch (e) { setError(e?.response?.data?.error || 'Action failed. Please retry.'); }
     finally { setBusy(false); }
   }
+  async function submitReport() {
+    if (!reportTarget || busy) return;
+    setBusy(true); setError('');
+    try { await base44.functions.invoke('reportBattle', { battleId, targetId: reportTarget, reason: reportReason }); setReported(true); }
+    catch (e) { setError(e?.response?.data?.error || 'Could not submit report.'); }
+    finally { setBusy(false); }
+  }
   return <div className="h-full overflow-y-auto bg-slate-950 px-4 py-6 pb-28 text-white">
     <div className="mx-auto max-w-6xl">
       <Link to="/battles" className="text-sm text-fuchsia-300 hover:underline">← Battles</Link>
@@ -79,7 +89,8 @@ export default function BattleRoom() {
       {battle?.status === 'completed' && !battle?.winner_id && <p className="mt-4 font-bold">Tie battle · no winner awarded</p>}
       {host && battle?.status === 'live' && <button disabled={busy} onClick={() => action('openVoting')} className="mt-5 min-h-11 rounded-xl border border-fuchsia-400 px-5 font-bold disabled:opacity-50">End performance · open 90-second vote</button>}
       {performer && battle?.status === 'voting' && !voting && <button disabled={busy} onClick={() => action('finish')} className="mt-5 min-h-11 rounded-xl bg-amber-500 px-5 font-bold text-black disabled:opacity-50">Finalize result</button>}
-      <p className="mt-6 text-xs text-slate-400">One vote per audience account. Performers cannot vote. Leave the room with the in-room control. Report abuse using NaliChat’s reporting tools.</p>
+      <section className="mt-7 rounded-xl border border-white/15 p-4"><h2 className="font-bold">Report a live performer</h2><div className="mt-3 flex flex-wrap gap-2"><select aria-label="Performer to report" value={reportTarget} onChange={e => setReportTarget(e.target.value)} className="min-h-11 rounded-lg bg-slate-800 p-2"><option value="">Choose performer</option>{battle?.creator_id !== user?.id && <option value={battle?.creator_id}>{battle?.creator_name || 'Artist one'}</option>}{battle?.opponent_id !== user?.id && <option value={battle?.opponent_id}>Artist two</option>}</select><select aria-label="Report reason" value={reportReason} onChange={e => setReportReason(e.target.value)} className="min-h-11 rounded-lg bg-slate-800 p-2"><option value="harassment">Harassment</option><option value="hate_speech">Hate speech</option><option value="sexual_content">Sexual content</option><option value="violence">Violence</option><option value="spam">Spam</option><option value="other">Other</option></select><button disabled={!reportTarget || busy || reported} onClick={submitReport} className="min-h-11 rounded-lg border border-white/30 px-4 disabled:opacity-50">{reported ? 'Report submitted' : 'Submit report'}</button></div><p className="mt-2 text-xs text-slate-400">Reports go to the moderation queue for review.</p></section>
+      <p className="mt-6 text-xs text-slate-400">One vote per audience account. Performers cannot vote. Leave the room with the in-room control.</p>
     </div>
   </div>;
 }

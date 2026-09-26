@@ -71,7 +71,14 @@ Deno.serve(async req => {
       if (!host) return error('Only the host can manage this meeting.', 403);
       if (body.action === 'start') {
         if (row.status !== 'scheduled') return error('This meeting cannot be started.', 409);
-        if (!Deno.env.get('LIVEKIT_URL') || !Deno.env.get('LIVEKIT_API_KEY') || !Deno.env.get('LIVEKIT_API_SECRET')) return error('Live video setup is unavailable.', 503);
+        const url = Deno.env.get('LIVEKIT_URL');
+        const key = Deno.env.get('LIVEKIT_API_KEY');
+        const secret = Deno.env.get('LIVEKIT_API_SECRET');
+        if (!url || !key || !secret || !/^wss:\/\/[a-z0-9.-]+(?::\d+)?\/?$/i.test(url)) return error('Live video setup is unavailable.', 503);
+        try {
+          const service = new RoomServiceClient(url.replace(/^wss:/, 'https:'), key, secret);
+          await service.listRooms([]);
+        } catch { return error('Could not reach live video. Try again shortly.', 503); }
         await entities.MeetingRoom.update(row.id, { status: 'live' });
         return Response.json({ success: true, status: 'live' });
       }

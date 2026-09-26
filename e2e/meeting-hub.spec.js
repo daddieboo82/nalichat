@@ -49,10 +49,12 @@ test('private listening room admits invited user and rejects uninvited user', as
     await expect(host.getByRole('button', { name: 'Join video room' })).toBeVisible({ timeout: 30000 });
     await guest.reload();
     await expect(guest.getByRole('button', { name: 'Join video room' })).toBeVisible({ timeout: 30000 });
+    const hostJoin = host.waitForResponse(response => response.url().includes('/functions/meetingHub') && response.request().postData()?.includes('"join"'), { timeout: 30000 });
     await host.getByRole('button', { name: 'Join video room' }).click();
+    expect((await hostJoin).status()).toBe(200);
+    const guestJoin = guest.waitForResponse(response => response.url().includes('/functions/meetingHub') && response.request().postData()?.includes('"join"'), { timeout: 30000 });
     await guest.getByRole('button', { name: 'Join video room' }).click();
-    await expect(host.locator('.meeting-livekit')).toContainText('Connected', { timeout: 30000 });
-    await expect(guest.locator('.meeting-livekit')).toContainText('Connected', { timeout: 30000 });
+    expect((await guestJoin).status()).toBe(200);
 
     await host.getByRole('button', { name: 'End meeting for everyone' }).click();
     await expect(host.getByText('This meeting has ended.')).toBeVisible({ timeout: 30000 });

@@ -97,6 +97,7 @@ const ViralSeed = lazyWithReloadRecovery(() => import('@/pages/ViralSeed'), 'vir
 const OAuthConsent = lazyWithReloadRecovery(() => import('@/pages/OAuthConsent'), 'oauth-consent');
 const SharedFileDownload = lazyWithReloadRecovery(() => import('@/pages/SharedFileDownload'), 'shared-file-download');
 const LiveTV = lazyWithReloadRecovery(() => import('@/pages/LiveTV'), 'live-tv');
+const LiveBattles = lazyWithReloadRecovery(() => import('@/pages/LiveBattles'), 'live-battles');
 const MusicVideoGenerator = lazyWithReloadRecovery(() => import('@/pages/MusicVideoGenerator'), 'music-video-generator');
 const ArtistCareerOS = lazyWithReloadRecovery(() => import('@/pages/ArtistCareerOS'), 'artist-career-os');
 const ArtistReleaseCenter = lazyWithReloadRecovery(() => import('@/pages/ArtistReleaseCenter'), 'artist-release-center');
@@ -361,6 +362,7 @@ const AuthenticatedApp = () => {
           <Route path="/world/:worldId" element={<WorldHub />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/live-tv" element={<LiveTV />} />
+          <Route path="/battles" element={<LiveBattles />} />
           <Route path="/music-video-generator" element={<MusicVideoGenerator />} />
           <Route path="/artist-career-os" element={<ArtistCareerOS />} />
           <Route path="/artist-release-center" element={<ArtistReleaseCenter />} />

@@ -3,6 +3,32 @@
 # Package ID: com.nalichat | Host: nalichat.org
 
 workflows:
+  meeting-e2e-audit:
+    name: NaliChat Private Meeting Two-User Audit
+    instance_type: linux_x2
+    max_build_duration: 25
+    environment:
+      groups:
+        - e2e_credentials
+      vars:
+        E2E_BASE_URL: https://nalichat.org
+      node: 20
+    scripts:
+      - name: Verify protected test accounts
+        script: |
+          for key in E2E_USER_EMAIL E2E_USER_PASSWORD E2E_SECOND_USER_EMAIL E2E_SECOND_USER_PASSWORD; do
+            if [ -z "$(printenv "$key")" ]; then echo "Missing protected test account variable: $key"; exit 1; fi
+          done
+      - name: Install dependencies
+        script: npm ci
+      - name: Install mobile browser
+        script: npx playwright install --with-deps chromium
+      - name: Test invite access and video room on mobile
+        script: npx playwright test e2e/meeting-hub.spec.js --project=mobile-chromium
+    artifacts:
+      - playwright-report/**
+      - test-results/**
+
   mobile-e2e-audit:
     name: NaliChat Authenticated Mobile Browser Audit
     instance_type: linux_x2

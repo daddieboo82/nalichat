@@ -112,6 +112,7 @@ describe('auth and onboarding flows', () => {
 
   afterEach(() => {
     cleanup();
+    delete window.Capacitor;
   });
 
   it('persists a successful email/password login before redirecting', async () => {
@@ -163,6 +164,21 @@ describe('auth and onboarding flows', () => {
     fireEvent.click(screen.getByRole('button', { name: /Join free with Google/i }));
     expect(sessionStorage.getItem('is_new_user')).toBe('true');
     expect(mockBase44.auth.loginWithProvider).toHaveBeenLastCalledWith('google', '/');
+  });
+
+  it('offers only email account access inside the iOS app', () => {
+    window.Capacitor = { isNativePlatform: () => true, getPlatform: () => 'ios' };
+
+    const { unmount } = renderInRouter(<Login />);
+    expect(screen.getByLabelText('Email')).toBeTruthy();
+    expect(screen.getByLabelText('Password')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Continue with Google/i })).toBeNull();
+    unmount();
+
+    renderInRouter(<Register />);
+    expect(screen.getByLabelText('Email')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Join free with Google/i })).toBeNull();
+    expect(screen.getByText(/Create your account with email/)).toBeTruthy();
   });
 
   it('blocks registration when passwords do not match', async () => {

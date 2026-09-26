@@ -15,7 +15,7 @@ Deno.serve(async req => {
     const secret = Deno.env.get('LIVEKIT_API_SECRET') || '';
     if (!url || !key || !secret) return Response.json({ error: 'Video unavailable.' }, { status: 503 });
     const room = new RoomServiceClient(url.replace(/^wss:/,'https:'), key, secret);
-    const participants = await room.listParticipants(battle.video_room_id).catch(() => []);
+    const participants = await room.listParticipants(battle.video_room_id);
     const performers = new Set([battle.creator_id, battle.opponent_id]);
     return Response.json({ success: true, audienceCount: participants.filter(p => !performers.has(p.identity)).length, performersOnline: participants.filter(p => performers.has(p.identity)).length });
   } catch (error) {

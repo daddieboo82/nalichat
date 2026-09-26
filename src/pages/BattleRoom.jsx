@@ -22,6 +22,7 @@ export default function BattleRoom() {
   const [now, setNow] = useState(Date.now());
   const [myVote, setMyVote] = useState('');
   const [reactions, setReactions] = useState({ count: 0, byKind: {} });
+  const [audienceCount, setAudienceCount] = useState(null);
   const [reactionBusy, setReactionBusy] = useState(false);
   const [reportTarget, setReportTarget] = useState('');
   const [reportReason, setReportReason] = useState('harassment');
@@ -36,6 +37,14 @@ export default function BattleRoom() {
   }, [battleId]);
   useEffect(() => { refresh(); const timer = setInterval(refresh, 10000); return () => clearInterval(timer); }, [refresh]);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  useEffect(() => {
+    if (!battleId || !['live','voting'].includes(battle?.status)) return undefined;
+    let active = true;
+    const load = () => base44.functions.invoke('getBattleAudienceCount', { battleId })
+      .then(r => { if (active && r?.data?.success) setAudienceCount(r.data.audienceCount); }).catch(() => { if (active) setAudienceCount(null); });
+    load(); const timer = setInterval(load, 10000);
+    return () => { active = false; clearInterval(timer); };
+  }, [battleId, battle?.status]);
   useEffect(() => {
     if (!battleId || battle?.status !== 'live') return undefined;
     let active = true;
@@ -87,7 +96,7 @@ export default function BattleRoom() {
     <div className="mx-auto max-w-6xl">
       <Link to="/battles" className="text-sm text-fuchsia-300 hover:underline">← Battles</Link>
       <h1 className="mt-4 text-3xl font-black">{battle?.title || 'Live battle'}</h1>
-      <p className="mt-1 text-sm capitalize text-slate-300">{battle?.category} · {battle?.status || 'Loading'} {voting && '· Voting ends in ' + seconds + 's'}</p>
+      <p className="mt-1 text-sm capitalize text-slate-300">{battle?.category} · {battle?.status || 'Loading'} {audienceCount !== null && '· ' + audienceCount + ' watching'} {voting && '· Voting ends in ' + seconds + 's'}</p>
       {error && <p role="alert" className="mt-4 rounded-xl bg-rose-950 p-4 text-rose-200">{error}</p>}
       {session?.ready && <div className="mt-5 rounded-2xl border border-fuchsia-400/30 bg-black/50 p-3">
         <LiveKitRoom serverUrl={session.serverUrl} token={session.token} connect={true}

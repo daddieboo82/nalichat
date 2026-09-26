@@ -96,7 +96,7 @@ export default function LiveBattles() {
         <div><p className="text-xs font-bold uppercase tracking-[.3em] text-fuchsia-300">NaliChat presents</p><h1 className="text-3xl font-black sm:text-5xl">Live Battles</h1><p className="mt-2 text-slate-300">Rap or sing. Bring your track. Own the stage.</p></div>
         <Link to="/explore" className="rounded-xl border border-white/20 px-4 py-2 text-sm hover:bg-white/10">Back to Explore</Link>
       </div>
-      <div role="status" className="mt-6 flex gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-100"><AlertCircle className="h-5 w-5 shrink-0" /><span>Stage preview is available. Public live video, audience voting, scoring and awards are being set up. Your camera and selected track stay on this device during preview.</span></div>
+      <div role="status" className="mt-6 flex gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-100"><AlertCircle className="h-5 w-5 shrink-0" /><span>Stage preview is available. Public live video, audience voting, scoring and awards are being set up. Camera preview stays on this device. Tracks are uploaded only when you choose Save battle and upload track.</span></div>
       <section aria-label="Battle stage preview" className={`relative mt-6 overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-br ${themes[theme]} p-4 shadow-2xl sm:p-8`}>
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 50% 20%, #fff 0, transparent 42%)' }} />
         <div className="relative">

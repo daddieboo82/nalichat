@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const audioTypes = new Set(['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/ogg', 'audio/flac']);
 const maxBytes = 50 * 1024 * 1024;
@@ -12,6 +13,8 @@ Deno.serve(async (req) => {
     if (user.is_banned || (user.timeout_until && Date.parse(user.timeout_until) > Date.now())) {
       return Response.json({ error: 'Account cannot create battles right now.' }, { status: 403 });
     }
+    const rate = await consumeHourlyLimit(client.asServiceRole.entities, user.id, 'battle_draft', 12);
+    if (!rate.allowed) return Response.json({ error: 'Too many drafts. Please try again later.' }, { status: 429 });
     const length = Number(req.headers.get('content-length') || 0);
     if (length > maxBytes + 1024 * 1024) return Response.json({ error: 'Audio file is too large.' }, { status: 413 });
     const form = await req.formData();

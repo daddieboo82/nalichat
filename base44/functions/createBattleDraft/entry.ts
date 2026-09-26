@@ -20,9 +20,10 @@ Deno.serve(async (req) => {
     const form = await req.formData();
     const title = String(form.get('title') || '').trim();
     const category = String(form.get('category') || '');
+    const stageTheme = String(form.get('stage_theme') || 'neon');
     const rights = form.get('rights_confirmed') === 'true';
     const file = form.get('file');
-    if (!title || title.length > 100 || !['rap', 'singing'].includes(category)) {
+    if (!title || title.length > 100 || !['rap', 'singing'].includes(category) || !['neon', 'gold', 'ice'].includes(stageTheme)) {
       return Response.json({ error: 'Provide a title and battle style.' }, { status: 400 });
     }
     if (!rights) return Response.json({ error: 'Confirm you have permission to use your track.' }, { status: 400 });
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
     const uploaded = await client.asServiceRole.integrations.Core.UploadFile({ file });
     if (!uploaded?.file_url) throw new Error('Audio upload returned no URL');
     const battle = await client.asServiceRole.entities.LiveBattle.create({
-      title, category, creator_id: user.id,
+      title, category, stage_theme: stageTheme, creator_id: user.id,
       creator_name: user.display_name || user.full_name || 'Artist',
       status: 'draft',
       creator_track_url: uploaded.file_url,

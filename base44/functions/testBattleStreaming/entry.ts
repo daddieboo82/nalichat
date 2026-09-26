@@ -1,0 +1,1 @@
+Deno.serve(() => Response.json({ error: 'Test endpoint disabled' }, { status: 410 }));

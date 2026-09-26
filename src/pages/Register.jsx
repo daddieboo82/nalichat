@@ -22,6 +22,7 @@ import {
 } from "@/lib/authErrorMessages";
 
 export default function Register() {
+  const isNativeIos = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === "ios";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -308,7 +309,7 @@ export default function Register() {
     <AuthLayout
       icon={UserPlus}
       title="Join NaliBase free"
-      subtitle="Start with Google in one tap, or use your email. No payment required."
+      subtitle={isNativeIos ? "Create your account with email. No payment required." : "Start with Google in one tap, or use your email. No payment required."}
       footer={
         <>
           Already have an account?{" "}
@@ -318,7 +319,7 @@ export default function Register() {
         </>
       }
     >
-      <Button
+      {!isNativeIos && <Button
         variant="outline"
         className="ui-hover mb-3 h-14 w-full rounded-xl bg-white text-sm font-bold text-black shadow-lg hover:bg-white/90"
         onClick={handleGoogle}
@@ -336,18 +337,18 @@ export default function Register() {
             Join free with Google
           </>
         )}
-      </Button>
+      </Button>}
 
-      <p className="mb-5 text-center text-xs font-medium text-muted-foreground">Fastest option · No password to create · Free core messaging + NaliStudio</p>
+      {!isNativeIos && <p className="mb-5 text-center text-xs font-medium text-muted-foreground">Fastest option · No password to create · Free core messaging + NaliStudio</p>}
 
-      <div className="relative mb-5">
+      {!isNativeIos && <div className="relative mb-5">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-card px-3 text-muted-foreground">or sign up with email</span>
         </div>
-      </div>
+      </div>}
 
       {error && (
         <div className="mb-4 rounded-2xl border border-destructive/20 bg-destructive/10 p-3.5 text-sm leading-relaxed text-destructive">

@@ -80,6 +80,7 @@ export default function LiveBattles() {
       const form = new FormData();
       form.append('title', title.trim());
       form.append('category', category);
+      form.append('stage_theme', theme);
       form.append('rights_confirmed', 'true');
       form.append('file', track);
       const response = await base44.functions.invoke('createBattleDraft', form);

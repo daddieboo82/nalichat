@@ -11,6 +11,6 @@ Deno.serve(async () => {
     return Response.json({ configured: true, reachable: true });
   } catch (error) {
     console.error('LiveKit connection check failed', error);
-    return Response.json({ configured: true, reachable: false });
+    return Response.json({ configured: true, reachable: false, errorType: String(error?.name || 'Error'), status: Number(error?.status || error?.statusCode || 0) || null });
   }
 });

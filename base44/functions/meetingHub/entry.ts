@@ -93,7 +93,7 @@ Deno.serve(async req => {
       const url = Deno.env.get('LIVEKIT_URL');
       if (!key || !secret || !url || !/^wss:\/\/[a-z0-9.-]+(?::\d+)?\/?$/i.test(url)) return error('Live video setup is unavailable.', 503);
       const token = new AccessToken(key, secret, {
-        identity: user.id, name: String(user.display_name || user.full_name || 'Guest').slice(0, 60), ttl: '2h'
+        identity: user.id, name: String(user.display_name || user.full_name || 'Guest').slice(0, 60), ttl: '10m'
       });
       token.addGrant({ roomJoin: true, room: row.room_name, canPublish: true, canPublishData: true, canSubscribe: true, roomAdmin: false, roomCreate: false, roomList: false });
       return Response.json({ serverUrl: url, token: await token.toJwt(), host });

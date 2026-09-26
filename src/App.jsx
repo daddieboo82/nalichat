@@ -98,6 +98,7 @@ const OAuthConsent = lazyWithReloadRecovery(() => import('@/pages/OAuthConsent')
 const SharedFileDownload = lazyWithReloadRecovery(() => import('@/pages/SharedFileDownload'), 'shared-file-download');
 const LiveTV = lazyWithReloadRecovery(() => import('@/pages/LiveTV'), 'live-tv');
 const LiveBattles = lazyWithReloadRecovery(() => import('@/pages/LiveBattles'), 'live-battles');
+const BattleRoom = lazyWithReloadRecovery(() => import('@/pages/BattleRoom'), 'battle-room');
 const MusicVideoGenerator = lazyWithReloadRecovery(() => import('@/pages/MusicVideoGenerator'), 'music-video-generator');
 const ArtistCareerOS = lazyWithReloadRecovery(() => import('@/pages/ArtistCareerOS'), 'artist-career-os');
 const ArtistReleaseCenter = lazyWithReloadRecovery(() => import('@/pages/ArtistReleaseCenter'), 'artist-release-center');
@@ -363,6 +364,7 @@ const AuthenticatedApp = () => {
           <Route path="/messages" element={<Messages />} />
           <Route path="/live-tv" element={<LiveTV />} />
           <Route path="/battles" element={<LiveBattles />} />
+          <Route path="/battles/:battleId" element={<BattleRoom />} />
           <Route path="/music-video-generator" element={<MusicVideoGenerator />} />
           <Route path="/artist-career-os" element={<ArtistCareerOS />} />
           <Route path="/artist-release-center" element={<ArtistReleaseCenter />} />

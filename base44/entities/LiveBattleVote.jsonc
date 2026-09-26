@@ -45,7 +45,12 @@
   "required": [
     "battle_id",
     "voter_id",
-    "performer_id"
+    "creator_musicality",
+    "creator_originality",
+    "creator_technique",
+    "opponent_musicality",
+    "opponent_originality",
+    "opponent_technique"
   ],
   "rls": {
     "create": {

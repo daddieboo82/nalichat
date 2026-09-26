@@ -8,6 +8,36 @@
     "voter_id": {
       "type": "string"
     },
+    "creator_musicality": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "creator_originality": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "creator_technique": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "opponent_musicality": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "opponent_originality": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "opponent_technique": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
     "performer_id": {
       "type": "string"
     }

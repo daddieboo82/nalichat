@@ -47,6 +47,14 @@
     "opponent_track_name": {
       "type": "string"
     },
+    "voting_end_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "winner_id": {
       "type": "string"
     },

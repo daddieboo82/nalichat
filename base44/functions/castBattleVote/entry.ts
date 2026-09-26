@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { withBattleLock } from '../../shared/liveBattleLock.ts';
+import { RoomServiceClient } from 'npm:livekit-server-sdk@2.19.1';
 
 const criteria = ['musicality', 'originality', 'technique'];
 function validRatings(value) {
@@ -32,6 +33,15 @@ Deno.serve(async req => {
       }
       if (!battle.opponent_id || user.id === battle.creator_id || user.id === battle.opponent_id) {
         return Response.json({ error: 'Performers cannot score their own battle.' }, { status: 403 });
+      }
+      const url = Deno.env.get('LIVEKIT_URL') || '';
+      const key = Deno.env.get('LIVEKIT_API_KEY') || '';
+      const secret = Deno.env.get('LIVEKIT_API_SECRET') || '';
+      if (!url || !key || !secret) return Response.json({ error: 'Live audience unavailable.' }, { status: 503 });
+      const service = new RoomServiceClient(url.replace(/^wss:/, 'https:'), key, secret);
+      const participants = await service.listParticipants(battle.video_room_id).catch(() => []);
+      if (!participants.some(participant => participant.identity === user.id)) {
+        return Response.json({ error: 'Join the live audience before scoring.' }, { status: 403 });
       }
       const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(battleId + ':' + user.id));
       const id = 'battle_vote_' + Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');

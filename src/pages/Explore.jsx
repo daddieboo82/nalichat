@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Sparkles } from "lucide-react";
+import { Plus, Search, Sparkles, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 import ArtPostCard from "@/components/explore/ArtPostCard";
@@ -201,6 +201,8 @@ export default function Explore() {
               Release Track
             </button>
           </div>
+
+          <button type="button" onClick={() => navigate('/battles')} className="mb-4 flex min-h-11 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-bold text-foreground hover:bg-primary/20"><Swords className="h-4 w-4" /> Enter Live Battles stage</button>
 
           {/* Search */}
           <div className="relative w-full max-w-md">

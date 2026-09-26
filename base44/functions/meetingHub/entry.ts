@@ -11,7 +11,7 @@ const newCode = () => {
 const hash = async value => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)))).map(n => n.toString(16).padStart(2, '0')).join('');
 const publicRoom = row => ({
   id: row.id, title: row.title, kind: row.kind, host_name: row.host_name,
-  artist_name: row.artist_name || '', agenda: row.agenda || '', starts_at: row.starts_at,
+  artist_name: row.artist_name || '', track_url: row.track_url || '', agenda: row.agenda || '', starts_at: row.starts_at,
   status: row.status, notes: undefined
 });
 const error = (message, status) => Response.json({ error: message }, { status });
@@ -33,6 +33,8 @@ Deno.serve(async req => {
       const title = String(body.title || '').trim().slice(0, 100);
       const artist = String(body.artistName || '').trim().slice(0, 80);
       const agenda = String(body.agenda || '').trim().slice(0, 1200);
+      const trackUrl = String(body.trackUrl || '').trim();
+      if (trackUrl && (trackUrl.length > 1000 || !/^https:\/\/[^\s/]+\//i.test(trackUrl) || /https:\/\/(localhost|127\.|0\.0\.0\.0|\[)/i.test(trackUrl))) return error('Use a public HTTPS track link.', 400);
       const kind = body.kind === 'listening' ? 'listening' : body.kind === 'business' ? 'business' : null;
       const start = new Date(body.startsAt);
       if (title.length < 3 || !kind || !Number.isFinite(start.getTime()) || start.getTime() < Date.now() - 3600000 || start.getTime() > Date.now() + 366 * 86400000) return error('Check the title, meeting type, and start time.', 400);
@@ -40,7 +42,7 @@ Deno.serve(async req => {
       if (!rate.allowed) return error('Meeting creation limit reached. Try again later.', 429);
       const code = newCode();
       const row = await entities.MeetingRoom.create({
-        title, kind, artist_name: artist, agenda, starts_at: start.toISOString(),
+        title, kind, artist_name: artist, track_url: trackUrl, agenda, starts_at: start.toISOString(),
         host_id: user.id, host_name: String(user.display_name || user.full_name || 'Host').slice(0, 60),
         status: 'scheduled', invite_hash: await hash(code), room_name: 'nali-meeting-' + crypto.randomUUID()
       });

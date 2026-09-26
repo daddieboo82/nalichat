@@ -1,5 +1,5 @@
 export const WORLD_CONTEXTS = Object.freeze({
-  connect: { label: 'CONNECT', name: 'NaliChat World', menuDescription: 'Messages, creator network, profile, projects', path: '/world/connect', plazaGradient: 'from-primary/35 to-pink-500/15', storefronts: [{label:'Messages',path:'/messages'},{label:'Creator Network',path:'/explore'},{label:'Profile',path:'/profile'},{label:'Projects',path:'/projects-summary'}], glow: 'from-pink-500/25 via-fuchsia-500/5 to-transparent' },
+  connect: { label: 'CONNECT', name: 'NaliChat World', menuDescription: 'Messages, creator network, profile, projects', path: '/world/connect', plazaGradient: 'from-primary/35 to-pink-500/15', storefronts: [{label:'Messages',path:'/messages'},{label:'Creator Network',path:'/explore'},{label:'Profile',path:'/profile'},{label:'Projects',path:'/projects-summary'},{label:'Meeting Hub',path:'/meetings'}], glow: 'from-pink-500/25 via-fuchsia-500/5 to-transparent' },
   create: { label: 'CREATE', name: 'NaliStudio World', menuDescription: 'Studio, quick record, cover art, playlists', path: '/world/create', plazaGradient: 'from-cyan-500/30 to-accent/15', storefronts: [{label:'Studio',path:'/studio'},{label:'Quick Record',path:'/record'},{label:'Cover Art',path:'/cover-art'},{label:'Playlists',path:'/playlists'}], glow: 'from-cyan-500/25 via-blue-500/5 to-transparent' },
   discover: { label: 'DISCOVER', name: 'Creator World', menuDescription: 'Explore, playlists, leaderboard, analytics', path: '/world/discover', plazaGradient: 'from-violet-500/30 to-fuchsia-500/15', storefronts: [{label:'Explore',path:'/explore'},{label:'Playlists',path:'/playlists'},{label:'Leaderboard',path:'/leaderboard'},{label:'Analytics',path:'/analytics'}], glow: 'from-violet-500/25 via-fuchsia-500/5 to-transparent' },
   share: { label: 'SHARE', name: 'Project World', menuDescription: 'Files, projects, messages, Studio import', path: '/world/share', plazaGradient: 'from-emerald-500/30 to-teal-500/15', storefronts: [{label:'File Vault',path:'/files'},{label:'Projects',path:'/projects-summary'},{label:'Messages',path:'/messages'},{label:'Studio Import',path:'/studio'}], glow: 'from-emerald-500/25 via-teal-500/5 to-transparent' },
@@ -10,7 +10,7 @@ export const WORLD_CONTEXTS = Object.freeze({
 export const WORLD_ORDER = Object.freeze(['connect', 'create', 'discover', 'share', 'visualize', 'compete']);
 
 const PATH_WORLD = [
-  [/^\/messages(?:\/|$)/, 'connect'], [/^\/profile(?:\/|$)/, 'connect'],
+  [/^\/messages(?:\/|$)/, 'connect'], [/^\/profile(?:\/|$)/, 'connect'], [/^\/meetings(?:\/|$)/, 'connect'],
   [/^\/studio(?:\/|$)/, 'create'], [/^\/record(?:\/|$)/, 'create'],
   [/^\/cover-art(?:\/|$)/, 'visualize'], [/^\/music-video-generator(?:\/|$)/, 'visualize'],
   [/^\/files(?:\/|$)/, 'share'], [/^\/projects-summary(?:\/|$)/, 'share'],

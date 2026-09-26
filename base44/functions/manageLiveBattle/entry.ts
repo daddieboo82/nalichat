@@ -49,9 +49,9 @@ Deno.serve(async req => {
         const host = String(Deno.env.get('LIVEKIT_URL') || '').replace(/^wss:/, 'https:').replace(/^ws:/, 'http:');
         const service = new RoomServiceClient(host, Deno.env.get('LIVEKIT_API_KEY')!, Deno.env.get('LIVEKIT_API_SECRET')!);
         const participants = await service.listParticipants(battle.video_room_id);
-        const present = new Set(participants.map(p => p.identity));
+        const present = new Set(participants.filter(p => Array.isArray(p.tracks) && p.tracks.length > 0).map(p => p.identity));
         if (!present.has(battle.creator_id) || !present.has(battle.opponent_id)) {
-          return Response.json({ error: 'Both performers must join before voting opens.' }, { status: 409 });
+          return Response.json({ error: 'Both performers must join and publish media before voting opens.' }, { status: 409 });
         }
         await entities.LiveBattle.update(battleId, { status: 'voting', voting_end_at: new Date(Date.now() + 90000).toISOString() });
       } else if (action === 'cancel') {

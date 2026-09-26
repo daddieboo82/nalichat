@@ -1,0 +1,49 @@
+{
+  "name": "LiveBattleVote",
+  "type": "object",
+  "properties": {
+    "battle_id": {
+      "type": "string"
+    },
+    "voter_id": {
+      "type": "string"
+    },
+    "performer_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "battle_id",
+    "voter_id",
+    "performer_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.voter_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

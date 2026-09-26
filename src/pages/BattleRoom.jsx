@@ -101,8 +101,15 @@ export default function BattleRoom() {
   return <div className="h-full overflow-y-auto bg-slate-950 px-4 py-6 pb-28 text-white">
     <div className="mx-auto max-w-6xl">
       <Link to="/battles" className="text-sm text-fuchsia-300 hover:underline">← Battles</Link>
-      <h1 className="mt-4 text-3xl font-black">{battle?.title || 'Live battle'}</h1>
-      <p className="mt-1 text-sm capitalize text-slate-300">{battle?.category} · {battle?.status || 'Loading'} {audienceCount !== null && '· ' + audienceCount + ' watching'} {voting && '· Voting ends in ' + seconds + 's'}</p>
+      <header className="relative mt-4 overflow-hidden rounded-3xl border border-fuchsia-400/30 bg-gradient-to-br from-fuchsia-950 via-slate-950 to-amber-950 p-5 text-center shadow-[0_0_50px_rgba(217,70,239,.12)] sm:p-8">
+        <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 25% 0%, #d946ef 0, transparent 35%), radial-gradient(circle at 75% 0%, #f59e0b 0, transparent 35%)' }} />
+        <div className="relative"><p className="text-xs font-bold uppercase tracking-[.25em] text-fuchsia-200">NaliChat battle arena</p><h1 className="mt-2 text-2xl font-black sm:text-4xl">{battle?.title || 'Live battle'}</h1>
+          <p className="mt-3 text-sm capitalize text-slate-200">{battle?.category} · {battle?.status || 'Loading'} {audienceCount !== null && '· ' + audienceCount + ' watching'}</p>
+          <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm font-bold sm:text-xl"><span className="truncate text-fuchsia-200">{battle?.creator_name || 'Artist one'}</span><span className="rounded-full border border-white/30 bg-white/10 px-3 py-2 text-xs font-black text-amber-300 sm:text-base">VS</span><span className="truncate text-amber-200">Artist two</span></div>
+          {voting && <p role="timer" className="mt-5 font-bold text-amber-300">Scorecards close in {seconds}s</p>}
+          {battle?.status === 'live' && <p className="mt-5 text-xs uppercase tracking-widest text-rose-300">● Live performance</p>}
+        </div>
+      </header>
       {error && <p role="alert" className="mt-4 rounded-xl bg-rose-950 p-4 text-rose-200">{error}</p>}
       {session?.ready && <div className="mt-5 rounded-2xl border border-fuchsia-400/30 bg-black/50 p-3">
         <LiveKitRoom serverUrl={session.serverUrl} token={session.token} connect={true}

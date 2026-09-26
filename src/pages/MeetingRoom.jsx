@@ -15,6 +15,7 @@ export default function MeetingRoom() {
   const [host, setHost] = useState(false);
   const [session, setSession] = useState(null);
   const [notes, setNotes] = useState('');
+  const [notesDirty, setNotesDirty] = useState(false);
   const [invite, setInvite] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -24,11 +25,11 @@ export default function MeetingRoom() {
     try {
       const { data } = await request('details');
       setRoom(data.room); setHost(data.host);
-      if (data.host) setNotes(data.room.notes || '');
+      if (data.host && !notesDirty) setNotes(data.room.notes || '');
       setError('');
       if (data.room.status === 'ended') setSession(null);
     } catch (e) { setError(message(e)); }
-  }, [request]);
+  }, [request, notesDirty]);
   useEffect(() => { refresh(); const timer = setInterval(refresh, 12000); return () => clearInterval(timer); }, [refresh]);
   async function act(action, extra = {}) {
     if (busy) return;
@@ -38,7 +39,7 @@ export default function MeetingRoom() {
       if (action === 'rotate') {
         setInvite(window.location.origin + '/meetings/' + roomId + '?invite=' + encodeURIComponent(data.inviteCode));
         setNotice('A new invitation is ready. Previous invitation links no longer work for new visitors.');
-      } else if (action === 'notes') setNotice('Private decision notes saved.');
+      } else if (action === 'notes') { setNotesDirty(false); setNotice('Private decision notes saved.'); }
       else { if (action === 'end') setSession(null); await refresh(); }
     } catch (e) { setError(message(e)); }
     finally { setBusy(false); }
@@ -78,7 +79,7 @@ export default function MeetingRoom() {
         </div>
         <aside className="space-y-4">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-emerald-300" /><h2 className="font-bold">Private session</h2></div><p className="mt-2 text-xs leading-relaxed text-slate-300">Only signed-in guests with the invitation link can join. Share it with your artist, team, and decision makers.</p>{host && room.status !== 'ended' && <button disabled={busy} onClick={() => act('rotate')} className="mt-4 min-h-11 w-full rounded-xl border border-violet-400/40 px-3 text-sm font-semibold">Create new invite link</button>}{invite && <div className="mt-3"><p className="break-all text-xs text-violet-200">{invite}</p><button onClick={async () => { try { await navigator.clipboard.writeText(invite); setNotice('Invite link copied.'); } catch { setError('Copy failed. Select and copy the link above.'); } }} className="mt-2 flex min-h-11 items-center gap-2 text-sm"><Copy className="h-4 w-4" />Copy invite</button></div>}</div>
-          {host && <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><h2 className="font-bold">Decision notes</h2><p className="mt-1 text-xs text-slate-400">Visible only to the host. Record feedback and signing next steps.</p><textarea aria-label="Private decision notes" rows={6} maxLength={4000} value={notes} onChange={e => setNotes(e.target.value)} className="mt-3 w-full rounded-xl border border-white/20 bg-slate-900 p-3 text-sm" placeholder="Strengths, questions, next meeting…" /><button disabled={busy} onClick={() => act('notes', { notes })} className="mt-2 min-h-11 w-full rounded-xl bg-white/10 text-sm font-semibold disabled:opacity-50">Save notes</button></div>}
+          {host && <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><h2 className="font-bold">Decision notes</h2><p className="mt-1 text-xs text-slate-400">Visible only to the host. Record feedback and signing next steps.</p><textarea aria-label="Private decision notes" rows={6} maxLength={4000} value={notes} onChange={e => { setNotes(e.target.value); setNotesDirty(true); }} className="mt-3 w-full rounded-xl border border-white/20 bg-slate-900 p-3 text-sm" placeholder="Strengths, questions, next meeting…" /><button disabled={busy} onClick={() => act('notes', { notes })} className="mt-2 min-h-11 w-full rounded-xl bg-white/10 text-sm font-semibold disabled:opacity-50">Save notes</button></div>}
           {host && room.status === 'live' && <button disabled={busy} onClick={() => act('end')} className="min-h-11 w-full rounded-xl border border-rose-400/40 p-3 text-sm font-bold text-rose-200">End meeting for everyone</button>}
         </aside>
       </div>}

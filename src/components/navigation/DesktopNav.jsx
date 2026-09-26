@@ -22,6 +22,7 @@ const NAV_GROUPS = [
     description: WORLD_CONTEXTS[id].menuDescription,
     path: WORLD_CONTEXTS[id].path,
   })) },
+  { label: "Meetings", items: [{ icon: Video, label: "Meetings", description: "Private business meetings and listening parties", path: "/meetings" }] },
 ];
 
 export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {

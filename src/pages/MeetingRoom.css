@@ -1,0 +1,5 @@
+.meeting-livekit { min-width: 0; overflow: hidden; }
+.meeting-livekit .lk-video-conference { height: min(72dvh, 740px); min-height: 380px; background: #020617; }
+.meeting-livekit .lk-control-bar { overflow-x: auto; flex-wrap: nowrap; justify-content: flex-start; -webkit-overflow-scrolling: touch; }
+.meeting-livekit .lk-control-bar button { min-height: 44px; min-width: 44px; }
+@media (max-width: 640px) { .meeting-livekit .lk-video-conference { height: min(68dvh, 600px); min-height: 350px; } }

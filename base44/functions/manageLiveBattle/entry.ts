@@ -27,6 +27,9 @@ Deno.serve(async req => {
       } else if (action === 'accept') {
         if (battle.status !== 'invited' || user.id !== battle.opponent_id) return Response.json({ error: 'Only the invited artist can accept.' }, { status: 403 });
         await entities.LiveBattle.update(battleId, { status: 'ready' });
+      } else if (action === 'decline') {
+        if (battle.status !== 'invited' || user.id !== battle.opponent_id) return Response.json({ error: 'Only the invited artist can decline.' }, { status: 403 });
+        await entities.LiveBattle.update(battleId, { status: 'cancelled' });
       } else if (action === 'start') {
         if (battle.status !== 'ready' || user.id !== battle.creator_id || !battle.opponent_id) return Response.json({ error: 'Battle is not ready.' }, { status: 409 });
         if (!Deno.env.get('LIVEKIT_URL') || !Deno.env.get('LIVEKIT_API_KEY') || !Deno.env.get('LIVEKIT_API_SECRET')) {

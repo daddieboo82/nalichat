@@ -23,6 +23,11 @@ Deno.serve(async req => {
         }
         const opponent = await entities.User.get(opponentId).catch(() => null);
         if (!opponent?.id || opponent.is_banned || !opponent.onboarding_completed) return Response.json({ error: 'Artist unavailable.' }, { status: 404 });
+        const [blockedByTarget, blockedByCreator] = await Promise.all([
+          entities.UserBlock.filter({ blocker_id: opponentId, blocked_user_id: user.id }, '-created_date', 1),
+          entities.UserBlock.filter({ blocker_id: user.id, blocked_user_id: opponentId }, '-created_date', 1),
+        ]);
+        if (blockedByTarget.length || blockedByCreator.length) return Response.json({ error: 'Artist unavailable.' }, { status: 403 });
         await entities.LiveBattle.update(battleId, { opponent_id: opponentId, status: 'invited' });
         await entities.Notification.create({ recipient_id: opponentId, type: 'session_invite', actor_id: user.id, actor_name: user.display_name || 'Artist', message: 'You were invited to a live battle: ' + battle.title, link: '/battles/lobby', read: false }).catch(error => console.error('Battle invite notification failed', error));
       } else if (action === 'accept') {

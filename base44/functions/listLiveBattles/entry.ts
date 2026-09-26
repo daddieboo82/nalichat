@@ -17,7 +17,9 @@ Deno.serve(async req => {
       opponent_id: b.opponent_id, creator_track_url: b.creator_track_url,
       creator_track_name: b.creator_track_name, opponent_track_url: b.opponent_track_url,
       opponent_track_name: b.opponent_track_name, voting_end_at: b.voting_end_at,
-      winner_id: b.winner_id, creator_votes: b.creator_votes, opponent_votes: b.opponent_votes,
+      winner_id: b.winner_id, creator_score: b.creator_score, opponent_score: b.opponent_score, ballots_count: b.ballots_count,
+      creator_musicality_score: b.creator_musicality_score, creator_originality_score: b.creator_originality_score, creator_technique_score: b.creator_technique_score,
+      opponent_musicality_score: b.opponent_musicality_score, opponent_originality_score: b.opponent_originality_score, opponent_technique_score: b.opponent_technique_score,
       award_title: b.award_title,
     }));
     return Response.json({ success: true, battles });

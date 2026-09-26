@@ -6,7 +6,7 @@ const validId = value => typeof value === 'string' && /^[a-z0-9_-]{10,80}$/i.tes
 const validCode = value => typeof value === 'string' && /^[a-zA-Z0-9_-]{30,80}$/.test(value);
 const newCode = () => {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes)).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');
+  return btoa(String.fromCharCode(...bytes)).split('+').join('-').split('/').join('_').replace(/=+$/, '');
 };
 const hash = async value => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)))).map(n => n.toString(16).padStart(2, '0')).join('');
 const publicRoom = row => ({

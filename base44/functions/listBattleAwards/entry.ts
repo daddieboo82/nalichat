@@ -21,7 +21,11 @@ Deno.serve(async req => {
     }
     const rank = category => [...winners.values()].filter(w => w.category === category)
       .sort((a,b) => b.wins - a.wins || b.votes - a.votes).slice(0, 20);
-    return Response.json({ success: true, rap: rank('rap'), singing: rank('singing'), scoring: 'Completed battle wins, then audience votes.' });
+    const decorate = async rows => Promise.all(rows.map(async row => {
+      const artist = await entities.User.get(row.id).catch(() => null);
+      return { ...row, artist_name: String(artist?.display_name || artist?.full_name || 'Artist').slice(0, 60) };
+    }));
+    return Response.json({ success: true, rap: await decorate(rank('rap')), singing: await decorate(rank('singing')), scoring: 'Completed battle wins, then audience votes.' });
   } catch (error) {
     console.error('listBattleAwards failed', error);
     return Response.json({ error: 'Could not load awards.' }, { status: 500 });

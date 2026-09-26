@@ -98,6 +98,8 @@ const OAuthConsent = lazyWithReloadRecovery(() => import('@/pages/OAuthConsent')
 const SharedFileDownload = lazyWithReloadRecovery(() => import('@/pages/SharedFileDownload'), 'shared-file-download');
 const LiveTV = lazyWithReloadRecovery(() => import('@/pages/LiveTV'), 'live-tv');
 const LiveBattles = lazyWithReloadRecovery(() => import('@/pages/LiveBattles'), 'live-battles');
+const MeetingHub = lazyWithReloadRecovery(() => import('@/pages/MeetingHub'), 'meeting-hub');
+const MeetingRoom = lazyWithReloadRecovery(() => import('@/pages/MeetingRoom'), 'meeting-room');
 const BattleRoom = lazyWithReloadRecovery(() => import('@/pages/BattleRoom'), 'battle-room');
 const BattleLobby = lazyWithReloadRecovery(() => import('@/pages/BattleLobby'), 'battle-lobby');
 const MusicVideoGenerator = lazyWithReloadRecovery(() => import('@/pages/MusicVideoGenerator'), 'music-video-generator');
@@ -365,6 +367,8 @@ const AuthenticatedApp = () => {
           <Route path="/messages" element={<Messages />} />
           <Route path="/live-tv" element={<LiveTV />} />
           <Route path="/battles" element={<LiveBattles />} />
+          <Route path="/meetings" element={<MeetingHub />} />
+          <Route path="/meetings/:roomId" element={<MeetingRoom />} />
           <Route path="/battles/lobby" element={<BattleLobby />} />
           <Route path="/battles/:battleId" element={<BattleRoom />} />
           <Route path="/music-video-generator" element={<MusicVideoGenerator />} />

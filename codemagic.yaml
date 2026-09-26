@@ -607,6 +607,31 @@ workflows:
             @capacitor/ios@^7 \
             @capacitor/assets@^3 \
             sharp@^0.34
+      - name: Verify hosted iOS authentication release
+        script: |
+          # The native WebView loads this hosted app. Refuse to ship an IPA while
+          # the production frontend still advertises Google sign-in on iOS.
+          python3 - << 'PY'
+          import re
+          import urllib.parse
+          import urllib.request
+
+          base = 'https://nalichat.org/'
+          html = urllib.request.urlopen(base, timeout=20).read().decode('utf-8')
+          scripts = re.findall(r'<script[^>]+src="([^"]+\.js)"', html)
+          if not scripts:
+              raise SystemExit('No hosted frontend scripts found')
+          sources = []
+          for src in scripts:
+              url = urllib.parse.urljoin(base, src)
+              if urllib.parse.urlparse(url).netloc != 'nalichat.org':
+                  continue
+              sources.append(urllib.request.urlopen(url, timeout=30).read().decode('utf-8'))
+          app = '\n'.join(sources)
+          if 'Create your account with email' not in app or 'isNativePlatform' not in app:
+              raise SystemExit('Publish the updated iOS email sign-in frontend before building the IPA')
+          print('Hosted iOS email sign-in frontend verified')
+          PY
       - name: Configure Capacitor
         script: |
           cat > capacitor.config.json << EOF

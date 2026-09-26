@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { base44 } from '@/api/base44Client';
 import { Camera, Mic, Music2, Trophy, Users, Volume2, AlertCircle } from 'lucide-react';
 
 const themes = {
@@ -11,6 +12,9 @@ const supported = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/webm', 'audio/
 
 export default function LiveBattles() {
   const [category, setCategory] = useState('rap');
+  const [title, setTitle] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [savedDraft, setSavedDraft] = useState('');
   const [theme, setTheme] = useState('neon');
   const [track, setTrack] = useState(null);
   const [trackUrl, setTrackUrl] = useState('');
@@ -56,11 +60,27 @@ export default function LiveBattles() {
     streamRef.current?.getAudioTracks().forEach(t => { t.enabled = !next; });
     setMuted(next);
   }
+  async function saveDraft() {
+    if (!consent || !track || !title.trim() || saving) return;
+    setSaving(true);
+    setMediaError('');
+    try {
+      const form = new FormData();
+      form.append('title', title.trim());
+      form.append('category', category);
+      form.append('rights_confirmed', 'true');
+      form.append('file', track);
+      const response = await base44.functions.invoke('createBattleDraft', form);
+      if (response?.data?.success !== true || !response?.data?.battleId) throw new Error(response?.data?.error || 'Saving draft failed.');
+      setSavedDraft(response.data.battleId);
+    } catch (error) { setMediaError(error?.response?.data?.error || error?.message || 'Saving draft failed.'); }
+    finally { setSaving(false); }
+  }
   function chooseTrack(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!supported.includes(file.type) || file.size > 100 * 1024 * 1024) {
-      setMediaError('Select an MP3, M4A, WAV, WebM, OGG or FLAC audio file under 100 MB.');
+    if (!supported.includes(file.type) || file.size > 50 * 1024 * 1024) {
+      setMediaError('Select an MP3, M4A, WAV, WebM, OGG or FLAC audio file under 50 MB.');
       event.target.value = '';
       return;
     }
@@ -92,12 +112,15 @@ export default function LiveBattles() {
       </section>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-white/15 bg-white/5 p-5"><h2 className="text-xl font-bold">Set up your performance</h2>
+          <label className="mt-4 block text-sm">Battle title<input value={title} maxLength={100} onChange={e => setTitle(e.target.value)} placeholder="Name your battle" className="mt-1 w-full rounded-xl border border-white/20 bg-slate-900 p-3" /></label>
           <label className="mt-4 block text-sm">Battle style<select value={category} onChange={e => setCategory(e.target.value)} className="mt-1 w-full rounded-xl border border-white/20 bg-slate-900 p-3"><option value="rap">Rap battle</option><option value="singing">Singing battle</option></select></label>
           <label className="mt-4 block text-sm">Stage look<select value={theme} onChange={e => setTheme(e.target.value)} className="mt-1 w-full rounded-xl border border-white/20 bg-slate-900 p-3"><option value="neon">Neon</option><option value="gold">Gold</option><option value="ice">Ice</option></select></label>
-          <label className="mt-4 block text-sm">Battle track · audio under 100 MB<input type="file" accept=".mp3,.m4a,.wav,.webm,.ogg,.flac,audio/*" onChange={chooseTrack} className="mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-fuchsia-500 file:px-4 file:py-2 file:font-bold file:text-white" /></label>
+          <label className="mt-4 block text-sm">Battle track · audio under 50 MB<input type="file" accept=".mp3,.m4a,.wav,.webm,.ogg,.flac,audio/*" onChange={chooseTrack} className="mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-fuchsia-500 file:px-4 file:py-2 file:font-bold file:text-white" /></label>
           <label className="mt-4 flex items-start gap-2 text-sm"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-1" />I own this track or have permission to use it in a public performance.</label>
           {track && <div className="mt-4 rounded-xl bg-black/30 p-3"><p className="mb-2 truncate text-sm"><Music2 className="mr-2 inline h-4 w-4" />{track.name} · local preview only</p><audio controls src={trackUrl} className="w-full" aria-label="Preview selected battle track" /><button type="button" onClick={() => { setTrack(null); setTrackUrl(''); }} className="mt-2 text-xs underline">Remove track</button></div>}
-          <p className="mt-3 text-xs text-slate-400">Tracks are not uploaded or shared until public battles are ready. Avoid playing a track on speakers during camera preview to prevent feedback.</p>
+          <button type="button" onClick={saveDraft} disabled={!title.trim() || !track || !consent || saving || Boolean(savedDraft)} className="mt-4 min-h-11 rounded-xl bg-fuchsia-600 px-4 font-bold disabled:opacity-50">{saving ? 'Uploading track…' : savedDraft ? 'Draft saved' : 'Save battle and upload track'}</button>
+          {savedDraft && <p role="status" className="mt-2 text-sm text-emerald-300">Battle draft saved. Public battles are not open yet.</p>}
+          <p className="mt-3 text-xs text-slate-400">A saved track is stored with your battle draft. Public live rooms are unavailable while broadcast setup is in progress. Avoid playing a track on speakers during camera preview to prevent feedback.</p>
         </section>
         <section className="rounded-2xl border border-white/15 bg-white/5 p-5"><h2 className="text-xl font-bold">Camera and accessibility</h2><p className="mt-2 text-sm text-slate-300">Check your setup before stepping on stage. Preview stays on your device.</p>
           <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={preview ? stopPreview : startPreview} className="min-h-11 rounded-xl bg-fuchsia-600 px-4 font-bold hover:bg-fuchsia-500">{preview ? 'Stop camera preview' : 'Test camera and microphone'}</button>{preview && <button type="button" onClick={toggleMic} className="min-h-11 rounded-xl border border-white/30 px-4">{muted ? 'Unmute microphone' : 'Mute microphone'}</button>}</div>

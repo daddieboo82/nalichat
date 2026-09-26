@@ -21,6 +21,8 @@ export default function BattleRoom() {
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [myVote, setMyVote] = useState('');
+  const [reactions, setReactions] = useState({ count: 0, byKind: {} });
+  const [reactionBusy, setReactionBusy] = useState(false);
   const [reportTarget, setReportTarget] = useState('');
   const [reportReason, setReportReason] = useState('harassment');
   const [reported, setReported] = useState(false);
@@ -34,6 +36,15 @@ export default function BattleRoom() {
   }, [battleId]);
   useEffect(() => { refresh(); const timer = setInterval(refresh, 10000); return () => clearInterval(timer); }, [refresh]);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  useEffect(() => {
+    if (!battleId || battle?.status !== 'live') return undefined;
+    let active = true;
+    const load = () => base44.functions.invoke('getBattleReactions', { battleId })
+      .then(r => { if (active && r?.data?.success) setReactions(r.data); }).catch(() => {});
+    load();
+    const timer = setInterval(load, 5000);
+    return () => { active = false; clearInterval(timer); };
+  }, [battleId, battle?.status]);
   useEffect(() => {
     let active = true;
     base44.functions.invoke('joinBattleRoom', { battleId })
@@ -54,6 +65,16 @@ export default function BattleRoom() {
       await refresh();
     } catch (e) { setError(e?.response?.data?.error || 'Action failed. Please retry.'); }
     finally { setBusy(false); }
+  }
+  async function react(reaction) {
+    if (reactionBusy) return;
+    setReactionBusy(true); setError('');
+    try {
+      await base44.functions.invoke('reactBattle', { battleId, reaction });
+      const result = await base44.functions.invoke('getBattleReactions', { battleId });
+      if (result?.data?.success) setReactions(result.data);
+    } catch (e) { setError(e?.response?.data?.error || 'Could not send reaction.'); }
+    finally { setTimeout(() => setReactionBusy(false), 3000); }
   }
   async function submitReport() {
     if (!reportTarget || busy) return;
@@ -77,6 +98,7 @@ export default function BattleRoom() {
           {session.role === 'performer' ? <VideoConference /> : <AudienceStage />}
         </LiveKitRoom>
       </div>}
+      {battle?.status === 'live' && <section className="mt-5 rounded-xl border border-fuchsia-400/25 bg-fuchsia-950/20 p-4" aria-label="Audience reactions"><div className="flex items-center justify-between gap-3"><div><h2 className="font-bold">Crowd energy</h2><p className="text-xs text-slate-300">{reactions.count} real reactions in the last minute</p></div><div className="flex gap-2">{[['fire','🔥'],['cheer','🙌'],['love','💜']].map(([kind, emoji]) => <button key={kind} type="button" aria-label={'React ' + kind} disabled={reactionBusy} onClick={() => react(kind)} className="min-h-11 min-w-11 rounded-xl border border-white/20 bg-black/30 text-xl disabled:opacity-50">{emoji}</button>)}</div></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-amber-400 transition-all" style={{ width: Math.min(100, reactions.count * 5) + '%' }} /></div></section>}
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         {[['creator', battle?.creator_id, battle?.creator_name || 'Artist one', battle?.creator_track_url, battle?.creator_track_name],
           ['opponent', battle?.opponent_id, 'Artist two', battle?.opponent_track_url, battle?.opponent_track_name]].map(([side, id, name, url, track]) =>

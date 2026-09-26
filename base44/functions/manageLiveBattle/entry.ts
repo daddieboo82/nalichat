@@ -24,9 +24,11 @@ Deno.serve(async req => {
         const opponent = await entities.User.get(opponentId).catch(() => null);
         if (!opponent?.id || opponent.is_banned || !opponent.onboarding_completed) return Response.json({ error: 'Artist unavailable.' }, { status: 404 });
         await entities.LiveBattle.update(battleId, { opponent_id: opponentId, status: 'invited' });
+        await entities.Notification.create({ recipient_id: opponentId, type: 'session_invite', actor_id: user.id, actor_name: user.display_name || 'Artist', message: 'You were invited to a live battle: ' + battle.title, link: '/battles/lobby', read: false }).catch(error => console.error('Battle invite notification failed', error));
       } else if (action === 'accept') {
         if (battle.status !== 'invited' || user.id !== battle.opponent_id) return Response.json({ error: 'Only the invited artist can accept.' }, { status: 403 });
         await entities.LiveBattle.update(battleId, { status: 'ready' });
+        await entities.Notification.create({ recipient_id: battle.creator_id, type: 'session_invite', actor_id: user.id, actor_name: user.display_name || 'Artist', message: 'Your live battle invitation was accepted: ' + battle.title, link: '/battles/lobby', read: false }).catch(error => console.error('Battle accept notification failed', error));
       } else if (action === 'decline') {
         if (battle.status !== 'invited' || user.id !== battle.opponent_id) return Response.json({ error: 'Only the invited artist can decline.' }, { status: 403 });
         await entities.LiveBattle.update(battleId, { status: 'cancelled' });

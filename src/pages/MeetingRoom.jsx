@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { LiveKitRoom, VideoConference, ConnectionState } from '@livekit/components-react';
 import '@livekit/components-styles';
@@ -14,6 +14,7 @@ export default function MeetingRoom() {
   const [room, setRoom] = useState(null);
   const [host, setHost] = useState(false);
   const [session, setSession] = useState(null);
+  const mediaConnected = useRef(false);
   const [notes, setNotes] = useState('');
   const [notesDirty, setNotesDirty] = useState(false);
   const [invite, setInvite] = useState('');
@@ -46,7 +47,7 @@ export default function MeetingRoom() {
   }
   async function join() {
     if (busy || session) return;
-    setBusy(true); setError(''); setMediaError('');
+    setBusy(true); setError(''); setMediaError(''); mediaConnected.current = false;
     try { const { data } = await request('join'); setSession(data); }
     catch (e) { setError(message(e)); }
     finally { setBusy(false); }
@@ -62,7 +63,7 @@ export default function MeetingRoom() {
         {room?.agenda && <p className="mt-3 max-w-3xl whitespace-pre-wrap text-sm text-slate-200">{room.agenda}</p>}
       </header>
       {error && <p role="alert" className="mt-4 rounded-xl border border-rose-500/30 bg-rose-950/60 p-3 text-sm text-rose-200">{error}</p>}
-      {mediaError && <p role="alert" className="mt-4 rounded-xl border border-amber-400/30 bg-amber-950/60 p-3 text-sm text-amber-100">Video connection failed: {mediaError} Check your connection and camera or microphone permissions, then tap Join video room to retry.</p>}
+      {mediaError && <p role="alert" className="mt-4 rounded-xl border border-amber-400/30 bg-amber-950/60 p-3 text-sm text-amber-100">Meeting video issue: {mediaError} Check your connection and camera or microphone permissions. If the call dropped, tap Join video room to retry.</p>}
       {notice && <p role="status" className="mt-4 rounded-xl bg-emerald-950/50 p-3 text-sm text-emerald-200">{notice}</p>}
       {!room && !error && <p className="mt-6 text-sm text-slate-300">Checking your invitation…</p>}
       {room && <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_18rem]">
@@ -75,7 +76,7 @@ export default function MeetingRoom() {
             {room.status === 'scheduled' && <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center"><Video className="h-9 w-9 text-violet-300" /><p className="font-semibold">The video room opens when the host starts the meeting.</p>{host && <button disabled={busy} onClick={() => act('start')} className="min-h-12 rounded-xl bg-violet-600 px-6 font-bold disabled:opacity-50">Start meeting</button>}</div>}
             {room.status === 'ended' && <div className="flex min-h-40 items-center justify-center text-center text-slate-300">This meeting has ended.</div>}
             {room.status === 'live' && !session && <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center"><p className="text-sm text-slate-300">Camera and microphone controls appear when you join. You can turn them off in the meeting.</p><button disabled={busy} onClick={join} className="min-h-12 rounded-xl bg-violet-600 px-6 font-bold disabled:opacity-50">{busy ? 'Connecting…' : 'Join video room'}</button></div>}
-            {room.status === 'live' && session && <div className="meeting-livekit min-h-[400px]"><LiveKitRoom token={session.token} serverUrl={session.serverUrl} connect={true} video={false} audio={false} onError={e => { setMediaError(e?.message || 'Unable to connect.'); setSession(null); }} onDisconnected={() => setSession(null)}><p className="mb-2 text-xs text-slate-300">Connection: <ConnectionState /></p><VideoConference /></LiveKitRoom></div>}
+            {room.status === 'live' && session && <div className="meeting-livekit min-h-[400px]"><LiveKitRoom token={session.token} serverUrl={session.serverUrl} connect={true} video={false} audio={false} onConnected={() => { mediaConnected.current = true; setMediaError(''); }} onError={e => { setMediaError(e?.message || 'Unable to connect.'); if (!mediaConnected.current) setSession(null); }} onDisconnected={() => { mediaConnected.current = false; setSession(null); }}><p className="mb-2 text-xs text-slate-300">Connection: <ConnectionState /></p><VideoConference /></LiveKitRoom></div>}
           </section>
         </div>
         <aside className="space-y-4">

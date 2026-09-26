@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { withBattleLock } from '../../shared/liveBattleLock.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async req => {
   try {
@@ -21,6 +22,8 @@ Deno.serve(async req => {
           || opponentId === user.id || !/^[a-z0-9_-]{10,80}$/i.test(opponentId)) {
           return Response.json({ error: 'Cannot send this invitation.' }, { status: 403 });
         }
+        const rate = await consumeHourlyLimit(entities, user.id, 'battle_invite', 12);
+        if (!rate.allowed) return Response.json({ error: 'Invitation limit reached. Try again later.' }, { status: 429 });
         const opponent = await entities.User.get(opponentId).catch(() => null);
         if (!opponent?.id || opponent.is_banned || !opponent.onboarding_completed) return Response.json({ error: 'Artist unavailable.' }, { status: 404 });
         const [blockedByTarget, blockedByCreator] = await Promise.all([

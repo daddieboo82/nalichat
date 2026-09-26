@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { LiveKitRoom, VideoConference, ConnectionState } from '@livekit/components-react';
 import '@livekit/components-styles';
+import './MeetingRoom.css';
 import { base44 } from '@/api/base44Client';
 import { Copy, Music2, Video, ShieldCheck } from 'lucide-react';
 

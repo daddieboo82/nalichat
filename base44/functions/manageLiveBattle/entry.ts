@@ -31,7 +31,7 @@ Deno.serve(async req => {
           entities.UserBlock.filter({ blocker_id: user.id, blocked_user_id: opponentId }, '-created_date', 1),
         ]);
         if (blockedByTarget.length || blockedByCreator.length) return Response.json({ error: 'Artist unavailable.' }, { status: 403 });
-        await entities.LiveBattle.update(battleId, { opponent_id: opponentId, status: 'invited' });
+        await entities.LiveBattle.update(battleId, { opponent_id: opponentId, opponent_name: String(opponent.display_name || opponent.full_name || 'Artist').slice(0, 60), status: 'invited' });
         await entities.Notification.create({ recipient_id: opponentId, type: 'session_invite', actor_id: user.id, actor_name: user.display_name || 'Artist', message: 'You were invited to a live battle: ' + battle.title, link: '/battles/lobby', read: false }).catch(error => console.error('Battle invite notification failed', error));
       } else if (action === 'accept') {
         if (battle.status !== 'invited' || user.id !== battle.opponent_id) return Response.json({ error: 'Only the invited artist can accept.' }, { status: 403 });

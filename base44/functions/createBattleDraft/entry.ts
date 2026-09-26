@@ -8,7 +8,7 @@ Deno.serve(async (req) => {
   try {
     if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
     const client = createClientFromRequest(req);
-    const user = await client.auth.me();
+    const user = await client.auth.me().catch(() => null);
     if (!user?.id) return Response.json({ error: 'Sign in first.' }, { status: 401 });
     if (user.is_banned || (user.timeout_until && Date.parse(user.timeout_until) > Date.now())) {
       return Response.json({ error: 'Account cannot create battles right now.' }, { status: 403 });

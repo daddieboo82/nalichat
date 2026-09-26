@@ -13,6 +13,7 @@ import { clearPersistedAuthTokens, markAuthActivity, persistAuthResult } from "@
 import { googleLoginErrorMessage, loginErrorMessage } from "@/lib/authErrorMessages";
 
 export default function Login() {
+  const isNativeIos = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === "ios";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -78,7 +79,7 @@ export default function Login() {
         </>
       }
     >
-      <Button
+      {!isNativeIos && <Button
         variant="outline"
         className="ui-hover mb-6 h-12 w-full rounded-xl text-sm font-semibold"
         onClick={handleGoogle}
@@ -96,22 +97,22 @@ export default function Login() {
             Continue with Google
           </>
         )}
-      </Button>
+      </Button>}
 
-      <div className="relative mb-6">
+      {!isNativeIos && <div className="relative mb-6">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-card px-3 text-muted-foreground">or</span>
         </div>
-      </div>
+      </div>}
 
       {error && (
         <div className="mb-4 space-y-1 rounded-2xl border border-destructive/20 bg-destructive/10 p-3.5 text-sm leading-relaxed text-destructive">
           <p>{error}</p>
           <p className="text-muted-foreground">
-            If you originally signed up with Google, use "Continue with Google" above instead of a password. Otherwise, try "Forgot password?" to set one.
+            {isNativeIos ? 'Check your email and password, or use "Forgot password?" to reset it.' : 'If you originally signed up with Google, use "Continue with Google" above instead of a password. Otherwise, try "Forgot password?" to set one.'}
           </p>
         </div>
       )}

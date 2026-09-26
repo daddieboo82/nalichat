@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { withBattleLock } from '../../shared/liveBattleLock.ts';
+import { tallyBattleScorecards } from '../../shared/battleScoring.ts';
 
 Deno.serve(async req => {
   try {
@@ -18,24 +19,13 @@ Deno.serve(async req => {
       if (battle.status !== 'voting' || !battle.video_room_id || !battle.opponent_id
         || !battle.voting_end_at || !Number.isFinite(Date.parse(battle.voting_end_at))
         || Date.parse(battle.voting_end_at) > Date.now()) return Response.json({ error: 'Scoring has not finished.' }, { status: 409 });
-      const totals = {
-        creator_musicality_score: 0, creator_originality_score: 0, creator_technique_score: 0,
-        opponent_musicality_score: 0, opponent_originality_score: 0, opponent_technique_score: 0,
-      };
-      let ballots = 0;
+      const scorecards = [];
       for (let skip = 0; ; skip += 200) {
         const votes = await entities.LiveBattleVote.filter({ battle_id: battleId }, '-created_date', 200, skip);
-        for (const vote of votes) {
-          const values = Object.keys(totals).map(key => Number(vote[key]));
-          if (values.every(v => Number.isInteger(v) && v >= 1 && v <= 5)) {
-            Object.keys(totals).forEach((key, i) => { totals[key] += values[i]; });
-            ballots++;
-          }
-        }
+        scorecards.push(...votes);
         if (votes.length < 200) break;
       }
-      const creatorScore = totals.creator_musicality_score + totals.creator_originality_score + totals.creator_technique_score;
-      const opponentScore = totals.opponent_musicality_score + totals.opponent_originality_score + totals.opponent_technique_score;
+      const { totals, ballots, creatorScore, opponentScore } = tallyBattleScorecards(scorecards);
       const winnerId = creatorScore === opponentScore ? '' : creatorScore > opponentScore ? battle.creator_id : battle.opponent_id;
       const awardTitle = winnerId ? battle.category === 'rap' ? 'Battle Winner · Rap' : 'Battle Winner · Singing' : '';
       await entities.LiveBattle.update(battleId, {

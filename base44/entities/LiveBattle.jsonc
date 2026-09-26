@@ -61,6 +61,30 @@
     "winner_id": {
       "type": "string"
     },
+    "creator_musicality_score": {
+      "type": "integer",
+      "default": 0
+    },
+    "creator_originality_score": {
+      "type": "integer",
+      "default": 0
+    },
+    "creator_technique_score": {
+      "type": "integer",
+      "default": 0
+    },
+    "opponent_musicality_score": {
+      "type": "integer",
+      "default": 0
+    },
+    "opponent_originality_score": {
+      "type": "integer",
+      "default": 0
+    },
+    "opponent_technique_score": {
+      "type": "integer",
+      "default": 0
+    },
     "creator_score": {
       "type": "integer",
       "default": 0

@@ -61,6 +61,18 @@
     "winner_id": {
       "type": "string"
     },
+    "creator_score": {
+      "type": "integer",
+      "default": 0
+    },
+    "opponent_score": {
+      "type": "integer",
+      "default": 0
+    },
+    "ballots_count": {
+      "type": "integer",
+      "default": 0
+    },
     "creator_votes": {
       "type": "integer",
       "default": 0

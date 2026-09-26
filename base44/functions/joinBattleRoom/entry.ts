@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const battleId = String(body?.battleId || '');
     if (!/^[a-z0-9_-]{10,80}$/i.test(battleId)) return Response.json({ error: 'Invalid battle.' }, { status: 400 });
     const battle = await client.asServiceRole.entities.LiveBattle.get(battleId).catch(() => null);
-    if (!battle || battle.status !== 'live' || !battle.opponent_id || !battle.video_room_id) {
+    if (!battle || !['live', 'voting'].includes(battle.status) || !battle.opponent_id || !battle.video_room_id) {
       return Response.json({ error: 'This battle is not live.' }, { status: 409 });
     }
     const performer = user.id === battle.creator_id || user.id === battle.opponent_id;

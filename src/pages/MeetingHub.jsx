@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { CalendarDays, Video, Music2, ArrowRight, Copy } from 'lucide-react';
+import { Video, Music2, ArrowRight, Copy } from 'lucide-react';
 
 const starterDate = () => {
   const d = new Date(Date.now() + 15 * 60000);

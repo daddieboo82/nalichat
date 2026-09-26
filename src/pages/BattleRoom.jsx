@@ -56,12 +56,16 @@ export default function BattleRoom() {
     return () => { active = false; clearInterval(timer); };
   }, [battleId, battle?.status]);
   useEffect(() => {
+    if (!battleId || !['live', 'voting'].includes(battle?.status)) {
+      setSession(null);
+      return undefined;
+    }
     let active = true;
     base44.functions.invoke('joinBattleRoom', { battleId })
-      .then(r => { if (active) setSession(r.data); })
+      .then(r => { if (active) { setSession(r.data); setError(''); } })
       .catch(e => { if (active) setError(e?.response?.data?.error || 'Could not join live video.'); });
     return () => { active = false; };
-  }, [battleId]);
+  }, [battleId, battle?.status]);
   useEffect(() => {
     if (battle?.status !== 'voting' || !user?.id) return;
     base44.entities.LiveBattleVote.filter({ battle_id: battleId, voter_id: user.id }, '-created_date', 1)
@@ -132,7 +136,7 @@ export default function BattleRoom() {
       {myVote && <p role="status" className="mt-4 text-emerald-300">Your scorecard was recorded.</p>}
       {battle?.status === 'completed' && !battle?.winner_id && <p className="mt-4 font-bold">Tie battle · no winner awarded</p>}
       {host && battle?.status === 'live' && <button disabled={busy} onClick={() => action('openVoting')} className="mt-5 min-h-11 rounded-xl border border-fuchsia-400 px-5 font-bold disabled:opacity-50">End performance · open 90-second scoring</button>}
-      {performer && battle?.status === 'voting' && !voting && <button disabled={busy} onClick={() => action('finish')} className="mt-5 min-h-11 rounded-xl bg-amber-500 px-5 font-bold text-black disabled:opacity-50">Finalize result</button>}
+      {battle?.status === 'voting' && !voting && <button disabled={busy} onClick={() => action('finish')} className="mt-5 min-h-11 rounded-xl bg-amber-500 px-5 font-bold text-black disabled:opacity-50">Reveal result</button>}
       <section className="mt-7 rounded-xl border border-white/15 p-4"><h2 className="font-bold">Report a live performer</h2><div className="mt-3 flex flex-wrap gap-2"><select aria-label="Performer to report" value={reportTarget} onChange={e => setReportTarget(e.target.value)} className="min-h-11 rounded-lg bg-slate-800 p-2"><option value="">Choose performer</option>{battle?.creator_id !== user?.id && <option value={battle?.creator_id}>{battle?.creator_name || 'Artist one'}</option>}{battle?.opponent_id !== user?.id && <option value={battle?.opponent_id}>Artist two</option>}</select><select aria-label="Report reason" value={reportReason} onChange={e => setReportReason(e.target.value)} className="min-h-11 rounded-lg bg-slate-800 p-2"><option value="harassment">Harassment</option><option value="hate_speech">Hate speech</option><option value="sexual_content">Sexual content</option><option value="violence">Violence</option><option value="spam">Spam</option><option value="other">Other</option></select><button disabled={!reportTarget || busy || reported} onClick={submitReport} className="min-h-11 rounded-lg border border-white/30 px-4 disabled:opacity-50">{reported ? 'Report submitted' : 'Submit report'}</button></div><p className="mt-2 text-xs text-slate-400">Reports go to the moderation queue for review.</p></section>
       <p className="mt-6 text-xs text-slate-400">One scorecard per audience account. Performers cannot score their own battle. Leave the room with the in-room control.</p>
     </div>

@@ -15,6 +15,7 @@ Deno.serve(async req => {
     const entities = client.asServiceRole.entities;
     const battle = await entities.LiveBattle.get(battleId).catch(() => null);
     if (!battle || battle.status !== 'live') return Response.json({ error: 'Reactions are closed.' }, { status: 409 });
+    if (user.id === battle.creator_id || user.id === battle.opponent_id) return Response.json({ error: 'Audience reactions are for viewers.' }, { status: 403 });
     const rate = await consumeHourlyLimit(entities, user.id, 'battle_reaction', 100);
     if (!rate.allowed) return Response.json({ error: 'Reaction limit reached.' }, { status: 429 });
     const bucket = Math.floor(Date.now() / 3000);

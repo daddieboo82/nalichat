@@ -12,9 +12,9 @@ Deno.serve(async req => {
       ? [await entities.LiveBattle.get(battleId).catch(() => null)].filter(Boolean)
       : await entities.LiveBattle.list('-created_date', 100);
     const battles = rows.filter(b => ['live', 'voting', 'completed'].includes(b.status)).map(b => ({
-      id: b.id, title: b.title, category: b.category, status: b.status,
+      id: b.id, title: b.title, category: b.category, stage_theme: b.stage_theme || 'neon', status: b.status,
       creator_id: b.creator_id, creator_name: b.creator_name,
-      opponent_id: b.opponent_id, creator_track_url: b.creator_track_url,
+      opponent_id: b.opponent_id, opponent_name: b.opponent_name, creator_track_url: b.creator_track_url,
       creator_track_name: b.creator_track_name, opponent_track_url: b.opponent_track_url,
       opponent_track_name: b.opponent_track_name, voting_end_at: b.voting_end_at,
       winner_id: b.winner_id, creator_score: b.creator_score, opponent_score: b.opponent_score, ballots_count: b.ballots_count,

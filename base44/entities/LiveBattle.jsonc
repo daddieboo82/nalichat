@@ -22,6 +22,18 @@
     "opponent_id": {
       "type": "string"
     },
+    "opponent_name": {
+      "type": "string"
+    },
+    "stage_theme": {
+      "type": "string",
+      "enum": [
+        "neon",
+        "gold",
+        "ice"
+      ],
+      "default": "neon"
+    },
     "status": {
       "type": "string",
       "enum": [

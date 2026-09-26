@@ -355,7 +355,7 @@ export default function Home() {
                 Message creators, record and produce in NaliStudio, share files, and build projects together — all in one place.
               </p>
               <p className="mx-auto mb-5 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base md:mb-6">
-                Join with Google in one tap. No card. No payment. Start creating immediately.
+                Create your account with email. No card. No payment. Start creating immediately.
               </p>
               <div className="mx-auto mb-5 hidden max-w-3xl rounded-3xl border border-primary/25 bg-card/55 p-4 text-left shadow-2xl backdrop-blur-xl sm:block sm:p-5">
                 <div className="flex items-start gap-3">
@@ -417,7 +417,7 @@ export default function Home() {
           <div className="mx-auto flex max-w-md items-center gap-3">
             <div className="min-w-0 flex-1 text-left">
               <p className="truncate text-xs font-black text-foreground">Start creating free</p>
-              <p className="truncate text-[11px] text-muted-foreground">No card · Google or email</p>
+              <p className="truncate text-[11px] text-muted-foreground">No card · Sign up with email</p>
             </div>
             <Button size="sm" className="min-h-11 shrink-0 rounded-xl bg-gradient-to-r from-primary to-pink-500 px-5 font-bold glow-primary" asChild>
               <Link

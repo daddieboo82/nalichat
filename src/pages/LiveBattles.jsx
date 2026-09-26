@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Camera, Mic, Music2, Trophy, Users, Volume2, AlertCircle } from 'lucide-react';
 
 const themes = {
@@ -11,6 +12,9 @@ const themes = {
 const supported = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/flac'];
 
 export default function LiveBattles() {
+  const { user } = useAuth();
+  const [drafts, setDrafts] = useState([]);
+  const [draftError, setDraftError] = useState('');
   const [category, setCategory] = useState('rap');
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
@@ -29,6 +33,14 @@ export default function LiveBattles() {
   useEffect(() => () => {
     streamRef.current?.getTracks().forEach(t => t.stop());
   }, []);
+  useEffect(() => {
+    let active = true;
+    if (!user?.id) return undefined;
+    base44.entities.LiveBattle.filter({ creator_id: user.id }, '-created_date', 30)
+      .then(rows => { if (active) setDrafts(rows.filter(row => row.status === 'draft')); })
+      .catch(() => { if (active) setDraftError('Could not load your saved battle drafts.'); });
+    return () => { active = false; };
+  }, [user?.id]);
   useEffect(() => () => { if (trackUrl) URL.revokeObjectURL(trackUrl); }, [trackUrl]);
   useEffect(() => { if (videoRef.current && streamRef.current) videoRef.current.srcObject = streamRef.current; }, [preview]);
 
@@ -73,6 +85,8 @@ export default function LiveBattles() {
       const response = await base44.functions.invoke('createBattleDraft', form);
       if (response?.data?.success !== true || !response?.data?.battleId) throw new Error(response?.data?.error || 'Saving draft failed.');
       setSavedDraft(response.data.battleId);
+      const rows = await base44.entities.LiveBattle.filter({ creator_id: user.id }, '-created_date', 30);
+      setDrafts(rows.filter(row => row.status === 'draft'));
     } catch (error) { setMediaError(error?.response?.data?.error || error?.message || 'Saving draft failed.'); }
     finally { setSaving(false); }
   }
@@ -130,6 +144,7 @@ export default function LiveBattles() {
           <button type="button" disabled className="mt-5 min-h-11 w-full rounded-xl bg-white/15 font-bold text-white/60" title="Live broadcast is not available yet">Start live battle · setup in progress</button>
         </section>
       </div>
+      <section className="mt-6 rounded-2xl border border-white/15 bg-white/5 p-5" aria-label="Your saved battle drafts"><h2 className="text-xl font-bold">Your saved battle drafts</h2>{draftError && <p role="alert" className="mt-2 text-rose-300">{draftError}</p>}{drafts.length === 0 && <p className="mt-2 text-sm text-slate-400">No saved drafts yet.</p>}<div className="mt-3 grid gap-3 sm:grid-cols-2">{drafts.map(draft => <article key={draft.id} className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="font-bold">{draft.title}</p><p className="mb-2 text-xs capitalize text-slate-400">{draft.category} · Draft</p>{draft.creator_track_url && <audio controls src={draft.creator_track_url} className="w-full" aria-label={`Play ${draft.creator_track_name || draft.title}`} />}</article>)}</div></section>
       <section className="mt-6 grid gap-3 sm:grid-cols-3"><div className="rounded-xl border border-white/10 p-4"><Users className="mb-2 text-fuchsia-300" /><strong>Live audience</strong><p className="text-sm text-slate-400">Watch and react when rooms launch.</p></div><div className="rounded-xl border border-white/10 p-4"><Volume2 className="mb-2 text-fuchsia-300" /><strong>Fair voting</strong><p className="text-sm text-slate-400">One verified audience vote per battle.</p></div><div className="rounded-xl border border-white/10 p-4"><Trophy className="mb-2 text-fuchsia-300" /><strong>Artist awards</strong><p className="text-sm text-slate-400">Best Rapper and Best Singer will reflect completed battles.</p></div></section>
       {!consent && track && <p className="mt-3 text-xs text-amber-300">Confirm track rights before a future public performance.</p>}
     </div>

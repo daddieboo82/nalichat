@@ -1,0 +1,82 @@
+{
+  "name": "MeetingRoom",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "business",
+        "listening"
+      ]
+    },
+    "host_id": {
+      "type": "string"
+    },
+    "host_name": {
+      "type": "string"
+    },
+    "artist_name": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "agenda": {
+      "type": "string",
+      "maxLength": 1200
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "live",
+        "ended"
+      ]
+    },
+    "room_name": {
+      "type": "string"
+    },
+    "invite_hash": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 4000
+    }
+  },
+  "required": [
+    "title",
+    "kind",
+    "host_id",
+    "status",
+    "invite_hash"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

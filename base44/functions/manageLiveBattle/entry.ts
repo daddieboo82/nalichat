@@ -32,6 +32,11 @@ Deno.serve(async req => {
         if (!Deno.env.get('LIVEKIT_URL') || !Deno.env.get('LIVEKIT_API_KEY') || !Deno.env.get('LIVEKIT_API_SECRET')) {
           return Response.json({ error: 'Live streaming is not configured.' }, { status: 503 });
         }
+        const { RoomServiceClient } = await import('npm:livekit-server-sdk@2.19.1');
+        const liveHost = String(Deno.env.get('LIVEKIT_URL')).replace(/^wss:/, 'https:').replace(/^ws:/, 'http:');
+        const liveService = new RoomServiceClient(liveHost, Deno.env.get('LIVEKIT_API_KEY')!, Deno.env.get('LIVEKIT_API_SECRET')!);
+        try { await liveService.listRooms([]); }
+        catch { return Response.json({ error: 'Live video connection could not be verified. Check the LiveKit project URL and key pair.' }, { status: 503 }); }
         const roomId = 'nali-battle-' + battleId + '-' + crypto.randomUUID();
         await entities.LiveBattle.update(battleId, { status: 'live', video_room_id: roomId });
       } else if (action === 'openVoting') {

@@ -23,6 +23,10 @@
       "type": "string",
       "maxLength": 80
     },
+    "track_url": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "agenda": {
       "type": "string",
       "maxLength": 1200

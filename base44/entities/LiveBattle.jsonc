@@ -1,0 +1,89 @@
+{
+  "name": "LiveBattle",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "rap",
+        "singing"
+      ]
+    },
+    "creator_id": {
+      "type": "string"
+    },
+    "creator_name": {
+      "type": "string"
+    },
+    "opponent_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "invited",
+        "ready",
+        "live",
+        "voting",
+        "completed",
+        "cancelled"
+      ],
+      "default": "draft"
+    },
+    "creator_track_url": {
+      "type": "string"
+    },
+    "creator_track_name": {
+      "type": "string"
+    },
+    "opponent_track_url": {
+      "type": "string"
+    },
+    "opponent_track_name": {
+      "type": "string"
+    },
+    "winner_id": {
+      "type": "string"
+    },
+    "creator_votes": {
+      "type": "integer",
+      "default": 0
+    },
+    "opponent_votes": {
+      "type": "integer",
+      "default": 0
+    },
+    "video_room_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "category",
+    "creator_id",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

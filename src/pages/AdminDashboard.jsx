@@ -274,12 +274,12 @@ export default function AdminDashboard() {
                       <td className="py-2 pr-3 font-mono">{row.subscriptionId || "—"}</td>
                       <td className="py-2 pr-3">{row.plan || "—"}</td>
                       <td className="py-2 pr-3">{row.status}{row.httpStatus ? ` (HTTP ${row.httpStatus})` : ""}{row.errorType ? ` (${row.errorType})` : ""}</td>
-                      <td className="py-2">{row.paymentRecorded ? "Yes" : "No confirmation"}</td>
+                      <td className="py-2">{row.paymentRecorded ? "Yes" : row.status === "ACTIVE" ? "No payment reported" : "Unknown"}</td>
                     </tr>
                   ))}</tbody>
                 </table>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">APPROVAL_PENDING requires the customer to finish PayPal approval. A status lookup alone is not proof of payment.</p>
+              <p className="mt-3 text-xs text-muted-foreground">PayPal HTTP 404 means the ID is unavailable to this live merchant account. The customer must complete a new checkout before payment can be collected. A status lookup alone is not proof of payment.</p>
             </div>
           )}
         </div>

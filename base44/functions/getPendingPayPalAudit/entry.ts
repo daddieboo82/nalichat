@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     const results = [];
     for (const record of pending) {
       if (!record.subscription_id || record.paypal_environment !== environment) {
-        results.push({ subscriptionId: record.subscription_id || null, status: 'environment_mismatch' });
+        results.push({ subscriptionId: record.subscription_id || null, plan: record.sku || record.plan, status: 'environment_mismatch' });
         continue;
       }
       try {
@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
           { headers },
         );
         if (!response.ok) {
-          results.push({ subscriptionId: record.subscription_id, status: 'lookup_failed', httpStatus: response.status });
+          results.push({ subscriptionId: record.subscription_id, plan: record.sku || record.plan, status: response.status === 404 ? 'not_found' : 'lookup_failed', httpStatus: response.status });
           continue;
         }
         const remote = await response.json();
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
           paymentRecorded: Boolean(remote.billing_info?.last_payment?.time),
         });
       } catch {
-        results.push({ subscriptionId: record.subscription_id, status: 'lookup_failed' });
+        results.push({ subscriptionId: record.subscription_id, plan: record.sku || record.plan, status: 'lookup_failed' });
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,

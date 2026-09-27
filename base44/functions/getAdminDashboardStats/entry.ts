@@ -20,6 +20,7 @@ async function aggregateSubscriptions(entities: any) {
     pendingSubscriptions: 0,
     pendingPayPalAttempts: 0,
     pendingStripeAttempts: 0,
+    pendingLegacyAttempts: 0,
     pendingAccounts: 0,
     canceledSubscriptions: 0,
     premiumSubscriptions: 0,
@@ -38,6 +39,7 @@ async function aggregateSubscriptions(entities: any) {
         counts.pendingSubscriptions += 1;
         if (subscription.provider === 'paypal') counts.pendingPayPalAttempts += 1;
         if (subscription.provider === 'stripe') counts.pendingStripeAttempts += 1;
+        if (!subscription.provider) counts.pendingLegacyAttempts += 1;
         if (typeof subscription.user_id === 'string') pendingUserIds.add(subscription.user_id);
         counts.pendingAccounts = pendingUserIds.size;
       }

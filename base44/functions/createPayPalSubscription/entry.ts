@@ -51,6 +51,26 @@ Deno.serve(async (req) => {
     if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
 
     const token = await accessToken();
+    const existing = await base44.asServiceRole.entities.Subscription.filter(
+      { user_id: user.id, provider: 'paypal', status: 'pending', sku }, '-created_date', 20,
+    );
+    for (const pending of existing) {
+      if (!pending.subscription_id || pending.paypal_plan_id !== planId ||
+          pending.paypal_environment !== (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase()) continue;
+      const lookup = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(pending.subscription_id), {
+        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+      });
+      if (!lookup.ok) continue;
+      const remote = await lookup.json();
+      if (remote.status !== 'APPROVAL_PENDING' || remote.plan_id !== planId ||
+          remote.custom_id !== user.id + ':' + sku) continue;
+      const approval = (Array.isArray(remote.links) ? remote.links.find((link: any) => link.rel === 'approve')?.href : '') || pending.checkout_url;
+      if (typeof approval !== 'string' || !/^https:\/\/www\.paypal\.com\//.test(approval)) continue;
+      return Response.json({
+        success: true, action: 'create_paypal_subscription', userId: user.id, sku,
+        checkoutUrl: approval, subscriptionId: pending.subscription_id, resumed: true,
+      });
+    }
     const successUrl = new URL('/ThankYou?subscription=1', APP_BASE_URL).toString();
     const cancelUrl = new URL('/pricing', APP_BASE_URL).toString();
     const res = await fetch(apiBase() + '/v1/billing/subscriptions', {

@@ -265,6 +265,7 @@ export default function AdminDashboard() {
           {paypalAudit && (
             <div className="mt-4">
               <p className="text-sm font-medium">Checked {paypalAudit.checked} PayPal attempts in {paypalAudit.environment} mode.</p>
+              {paypalAudit.referenceCheck && <p className="mt-1 text-sm text-muted-foreground">Known active subscription check: {paypalAudit.referenceCheck.status}{paypalAudit.referenceCheck.httpStatus ? ` (HTTP ${paypalAudit.referenceCheck.httpStatus})` : ""}.</p>}
               <div className="mt-3 overflow-x-auto">
                 <table className="w-full min-w-[480px] text-left text-sm">
                   <thead><tr className="border-b border-border"><th className="py-2 pr-3">PayPal ID</th><th className="py-2 pr-3">Plan</th><th className="py-2 pr-3">PayPal status</th><th className="py-2">Last payment reported</th></tr></thead>

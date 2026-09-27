@@ -266,6 +266,7 @@ export default function AdminDashboard() {
             <div className="mt-4">
               <p className="text-sm font-medium">Checked {paypalAudit.checked} PayPal attempts in {paypalAudit.environment} mode.</p>
               {paypalAudit.referenceCheck && <p className="mt-1 text-sm text-muted-foreground">Known active subscription check: {paypalAudit.referenceCheck.status}{paypalAudit.referenceCheck.httpStatus ? ` (HTTP ${paypalAudit.referenceCheck.httpStatus})` : ""}.</p>}
+              {paypalAudit.planChecks && <div className="mt-3 text-sm"><p className="font-medium">Live PayPal plans</p><ul className="mt-1 space-y-1">{paypalAudit.planChecks.map((plan) => <li key={plan.sku}>{plan.sku}: {plan.status}{plan.amount && plan.currency ? ` · ${plan.currency} ${plan.amount}/${plan.interval?.toLowerCase() || "cycle"}` : ""}{plan.matchesCatalog === false ? " · price or interval mismatch" : ""}{plan.httpStatus && plan.httpStatus !== 200 ? ` · HTTP ${plan.httpStatus}` : ""}</li>)}</ul></div>}
               <div className="mt-3 overflow-x-auto">
                 <table className="w-full min-w-[480px] text-left text-sm">
                   <thead><tr className="border-b border-border"><th className="py-2 pr-3">PayPal ID</th><th className="py-2 pr-3">Plan</th><th className="py-2 pr-3">PayPal status</th><th className="py-2">Last payment reported</th></tr></thead>

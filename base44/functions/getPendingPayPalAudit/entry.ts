@@ -50,6 +50,29 @@ Deno.serve(async (req) => {
         referenceCheck = { status: 'request_failed' };
       }
     }
+    const planCatalog = [
+      { sku: 'premium_monthly', secret: 'PAYPAL_PREMIUM_MONTHLY_PLAN_ID', amount: '7.99', interval: 'MONTH' },
+      { sku: 'premium_yearly', secret: 'PAYPAL_PREMIUM_YEARLY_PLAN_ID', amount: '59.99', interval: 'YEAR' },
+      { sku: 'premium_plus_monthly', secret: 'PAYPAL_PREMIUM_PLUS_MONTHLY_PLAN_ID', amount: '14.99', interval: 'MONTH' },
+      { sku: 'premium_plus_yearly', secret: 'PAYPAL_PREMIUM_PLUS_YEARLY_PLAN_ID', amount: '99.99', interval: 'YEAR' },
+    ];
+    const planChecks = [];
+    for (const item of planCatalog) {
+      const planId = secrets.get(item.secret);
+      if (!planId) { planChecks.push({ sku: item.sku, status: 'missing' }); continue; }
+      try {
+        const response = await fetch(apiBase(environment) + '/v1/billing/plans/' + encodeURIComponent(planId), { headers });
+        if (!response.ok) { planChecks.push({ sku: item.sku, status: 'lookup_failed', httpStatus: response.status }); continue; }
+        const plan = await response.json();
+        const cycle = Array.isArray(plan.billing_cycles) ? plan.billing_cycles.find((entry: any) => entry.tenure_type === 'REGULAR') : null;
+        const price = cycle?.pricing_scheme?.fixed_price;
+        const matchesCatalog = price?.currency_code === 'USD' && Number(price.value) === Number(item.amount) &&
+          cycle?.frequency?.interval_unit === item.interval && cycle?.frequency?.interval_count === 1;
+        planChecks.push({ sku: item.sku, status: plan.status || 'unknown', amount: price?.value || null,
+          currency: price?.currency_code || null, interval: cycle?.frequency?.interval_unit || null,
+          matchesCatalog, httpStatus: response.status });
+      } catch { planChecks.push({ sku: item.sku, status: 'request_failed' }); }
+    }
     const pending = await base44.asServiceRole.entities.Subscription.filter(
       { provider: 'paypal', status: 'pending' }, '-created_date', 100,
     );
@@ -80,7 +103,7 @@ Deno.serve(async (req) => {
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
-      environment, referenceCheck, checked: results.length, results });
+      environment, referenceCheck, planChecks, checked: results.length, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

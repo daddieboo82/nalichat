@@ -26,6 +26,10 @@ const EMPTY_STATS = {
   activeSubscriptions: 0,
   trialSubscriptions: 0,
   pendingSubscriptions: 0,
+  pendingPayPalAttempts: 0,
+  pendingStripeAttempts: 0,
+  pendingLegacyAttempts: 0,
+  pendingAccounts: 0,
   canceledSubscriptions: 0,
   premiumSubscriptions: 0,
   premiumPlusSubscriptions: 0,
@@ -217,7 +221,8 @@ export default function AdminDashboard() {
               <div className="bg-card border border-border rounded-xl p-5">
                 <p className="text-sm text-muted-foreground">Pending checkout attempts</p>
                 <p className="text-2xl font-bold">{stats.pendingSubscriptions ?? 0}</p>
-                <p className="text-xs text-muted-foreground mt-2">Created before payment approval. May include repeat attempts; this is not revenue.</p>
+                <p className="text-xs text-muted-foreground mt-2">{stats.pendingPayPalAttempts ?? 0} PayPal · {stats.pendingStripeAttempts ?? 0} Stripe · {stats.pendingLegacyAttempts ?? 0} legacy · {stats.pendingAccounts ?? 0} accounts</p>
+                <p className="text-xs text-muted-foreground mt-1">Created before payment approval. Repeat attempts are counted; this is not revenue.</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-5">
                 <p className="text-sm text-muted-foreground">Canceled / ended</p>

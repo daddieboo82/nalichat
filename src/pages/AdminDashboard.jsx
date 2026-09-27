@@ -215,8 +215,9 @@ export default function AdminDashboard() {
                 <p className="text-2xl font-bold">{stats.premiumSubscriptions ?? 0}</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-5">
-                <p className="text-sm text-muted-foreground">Pending checkout</p>
+                <p className="text-sm text-muted-foreground">Pending checkout attempts</p>
                 <p className="text-2xl font-bold">{stats.pendingSubscriptions ?? 0}</p>
+                <p className="text-xs text-muted-foreground mt-2">Created before payment approval. May include repeat attempts; this is not revenue.</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-5">
                 <p className="text-sm text-muted-foreground">Canceled / ended</p>

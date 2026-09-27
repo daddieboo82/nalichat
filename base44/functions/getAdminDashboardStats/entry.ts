@@ -18,10 +18,14 @@ async function aggregateSubscriptions(entities: any) {
     activeSubscriptions: 0,
     trialSubscriptions: 0,
     pendingSubscriptions: 0,
+    pendingPayPalAttempts: 0,
+    pendingStripeAttempts: 0,
+    pendingAccounts: 0,
     canceledSubscriptions: 0,
     premiumSubscriptions: 0,
     premiumPlusSubscriptions: 0,
   };
+  const pendingUserIds = new Set<string>();
   for (let skip = 0; ; skip += PAGE_SIZE) {
     const page = await entities.Subscription.filter({}, '-created_date', PAGE_SIZE, skip);
     counts.totalSubscriptions += page.length;
@@ -30,7 +34,13 @@ async function aggregateSubscriptions(entities: any) {
       if (subscription.status === 'trial' || subscription.status === 'trialing') {
         counts.trialSubscriptions += 1;
       }
-      if (subscription.status === 'pending') counts.pendingSubscriptions += 1;
+      if (subscription.status === 'pending') {
+        counts.pendingSubscriptions += 1;
+        if (subscription.provider === 'paypal') counts.pendingPayPalAttempts += 1;
+        if (subscription.provider === 'stripe') counts.pendingStripeAttempts += 1;
+        if (typeof subscription.user_id === 'string') pendingUserIds.add(subscription.user_id);
+        counts.pendingAccounts = pendingUserIds.size;
+      }
       if (subscription.status === 'canceled' || subscription.status === 'ended') {
         counts.canceledSubscriptions += 1;
       }

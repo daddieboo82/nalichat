@@ -41,6 +41,9 @@ export default function AdminDashboard() {
   const [isMakingAdmin, setIsMakingAdmin] = useState(false);
   const [testSku, setTestSku] = useState("premium_monthly");
   const [isStartingTestPurchase, setIsStartingTestPurchase] = useState(false);
+  const [paypalAudit, setPaypalAudit] = useState(null);
+  const [paypalAuditLoading, setPaypalAuditLoading] = useState(false);
+  const [paypalAuditError, setPaypalAuditError] = useState("");
 
   const {
     data: stats = EMPTY_STATS,
@@ -126,6 +129,24 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  const checkPendingPayPal = async () => {
+    setPaypalAuditLoading(true);
+    setPaypalAuditError("");
+    try {
+      const res = await base44.functions.invoke("getPendingPayPalAudit", {});
+      const data = res?.data ?? res;
+      if (data?.success !== true || data?.action !== "pending_paypal_audit" ||
+          data?.adminUserId !== currentUser?.id || !Array.isArray(data.results)) {
+        throw new Error(data?.error || "PayPal audit was not confirmed");
+      }
+      setPaypalAudit(data);
+    } catch (error) {
+      setPaypalAuditError(error?.response?.data?.error || error?.message || "Could not check PayPal");
+    } finally {
+      setPaypalAuditLoading(false);
+    }
+  };
 
   const handleTestPurchase = async () => {
     if (!billingTestStatus?.testMode || !billingTestStatus?.priceCatalogReady) return;
@@ -231,6 +252,36 @@ export default function AdminDashboard() {
             </div>
           </>
         )}
+
+        <div className="bg-card border border-border rounded-xl p-6 mb-8">
+          <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-primary" /> Pending PayPal status
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">Check PayPal directly for approval status. This check does not charge customers or change their access.</p>
+          <Button type="button" variant="outline" onClick={checkPendingPayPal} disabled={paypalAuditLoading}>
+            {paypalAuditLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Check pending attempts
+          </Button>
+          {paypalAuditError && <p role="alert" className="mt-3 text-sm text-destructive">{paypalAuditError}</p>}
+          {paypalAudit && (
+            <div className="mt-4">
+              <p className="text-sm font-medium">Checked {paypalAudit.checked} PayPal attempts in {paypalAudit.environment} mode.</p>
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-[480px] text-left text-sm">
+                  <thead><tr className="border-b border-border"><th className="py-2 pr-3">PayPal ID</th><th className="py-2 pr-3">Plan</th><th className="py-2 pr-3">PayPal status</th><th className="py-2">Last payment reported</th></tr></thead>
+                  <tbody>{paypalAudit.results.map((row, index) => (
+                    <tr key={row.subscriptionId || index} className="border-b border-border/50">
+                      <td className="py-2 pr-3 font-mono">{row.subscriptionId || "—"}</td>
+                      <td className="py-2 pr-3">{row.plan || "—"}</td>
+                      <td className="py-2 pr-3">{row.status}</td>
+                      <td className="py-2">{row.paymentRecorded ? "Yes" : "No confirmation"}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">APPROVAL_PENDING requires the customer to finish PayPal approval. A status lookup alone is not proof of payment.</p>
+            </div>
+          )}
+        </div>
 
         <div className="bg-card border border-border rounded-xl p-6 mb-8">
           <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">

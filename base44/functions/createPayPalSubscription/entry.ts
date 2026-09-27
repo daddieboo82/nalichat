@@ -65,7 +65,10 @@ Deno.serve(async (req) => {
       if (remote.status !== 'APPROVAL_PENDING' || remote.plan_id !== planId ||
           remote.custom_id !== user.id + ':' + sku) continue;
       const approval = (Array.isArray(remote.links) ? remote.links.find((link: any) => link.rel === 'approve')?.href : '') || pending.checkout_url;
-      if (typeof approval !== 'string' || !/^https:\/\/www\.paypal\.com\//.test(approval)) continue;
+      const expectedHost = pending.paypal_environment === 'sandbox' ? 'www.sandbox.paypal.com' : 'www.paypal.com';
+      let approvalUrl: URL;
+      try { approvalUrl = new URL(approval); } catch { continue; }
+      if (approvalUrl.protocol !== 'https:' || approvalUrl.hostname !== expectedHost) continue;
       return Response.json({
         success: true, action: 'create_paypal_subscription', userId: user.id, sku,
         checkoutUrl: approval, subscriptionId: pending.subscription_id, resumed: true,

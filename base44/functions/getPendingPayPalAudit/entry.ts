@@ -34,6 +34,22 @@ Deno.serve(async (req) => {
     const credentials = await auth.json();
     if (!auth.ok || !credentials.access_token) return Response.json({ error: 'PayPal authentication failed' }, { status: 502 });
 
+    const headers = { Authorization: 'Bearer ' + credentials.access_token, Accept: 'application/json' };
+    const active = await base44.asServiceRole.entities.Subscription.filter(
+      { provider: 'paypal', status: 'active' }, '-created_date', 30,
+    );
+    const reference = active.find((record) => record.subscription_id && record.paypal_environment === environment);
+    let referenceCheck: { status: string; httpStatus?: number } = { status: 'unavailable' };
+    if (reference) {
+      try {
+        const response = await fetch(apiBase(environment) + '/v1/billing/subscriptions/' + encodeURIComponent(reference.subscription_id), { headers });
+        referenceCheck = response.ok
+          ? { status: String((await response.json()).status || 'unknown').toUpperCase(), httpStatus: response.status }
+          : { status: 'lookup_failed', httpStatus: response.status };
+      } catch {
+        referenceCheck = { status: 'request_failed' };
+      }
+    }
     const pending = await base44.asServiceRole.entities.Subscription.filter(
       { provider: 'paypal', status: 'pending' }, '-created_date', 100,
     );
@@ -46,7 +62,7 @@ Deno.serve(async (req) => {
       try {
         const response = await fetch(
           apiBase(environment) + '/v1/billing/subscriptions/' + encodeURIComponent(record.subscription_id),
-          { headers: { Authorization: 'Bearer ' + credentials.access_token, Accept: 'application/json' } },
+          { headers },
         );
         if (!response.ok) {
           results.push({ subscriptionId: record.subscription_id, status: 'lookup_failed', httpStatus: response.status });
@@ -64,7 +80,7 @@ Deno.serve(async (req) => {
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
-      environment, checked: results.length, results });
+      environment, referenceCheck, checked: results.length, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

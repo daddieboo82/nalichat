@@ -13,6 +13,10 @@ services:
       # Vite >= 6.1 appends this to its allowedHosts; the platform sets it to
       # the preview's external hostname so HMR/dev assets load in the iframe.
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+      # Point /api requests and OAuth redirects at the Base44 cloud backend.
+      # Without this the vite-plugin has no proxy target and loginWithProvider
+      # hits the dev server's non-existent /api route → 404.
+      - VITE_BASE44_APP_BASE_URL=https://base44.app
     command: sh -c "npm install && npx vite --host 0.0.0.0 --port 5173"
     restart: on-failure
     healthcheck:

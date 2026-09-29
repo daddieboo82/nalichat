@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     // Security: always verify the JWT signature — no test bypass
-    const WEBHOOK_PUBLIC_KEY = secrets.get('WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY')?.replace(/\\n/g, '\n');
+    const WEBHOOK_PUBLIC_KEY = (secrets.get('WIX_CHECKOUT_WEBHOOK_PUBLIC_KEY') || secrets.get('WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY'))?.replace(/\\n/g, '\n');
     if (!WEBHOOK_PUBLIC_KEY) {
       console.error('Missing WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY');
       return Response.json({ error: 'Server misconfigured' }, { status: 500 });

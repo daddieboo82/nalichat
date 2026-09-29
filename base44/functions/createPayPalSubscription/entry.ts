@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
+import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
 
 const CATALOG: Record<string, { plan: string; billingPeriod: string; secret: string }> = {
   premium_monthly: { plan: 'premium', billingPeriod: 'monthly', secret: 'PAYPAL_PREMIUM_MONTHLY_PLAN_ID' },
@@ -49,6 +50,24 @@ Deno.serve(async (req) => {
     if (!item) return Response.json({ error: 'Unknown subscription plan' }, { status: 400 });
     const planId = secrets.get(item.secret);
     if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
+
+    // Block duplicate checkout if the user already has active paid access.
+    const allSubs = await base44.asServiceRole.entities.Subscription.filter(
+      { user_id: user.id }, '-created_date', 100,
+    );
+    const now = new Date().toISOString();
+    const alreadyPaid = allSubs.some((sub: any) => {
+      const plan = normalizePlan(sub.plan);
+      const status = normalizeStatus(sub.status);
+      return plan !== 'free' && hasPaidTierAccess(status, {
+        currentPeriodEnd: typeof sub.current_period_end === 'string' ? sub.current_period_end : null,
+        trialEndDate: typeof sub.trial_end_date === 'string' ? sub.trial_end_date : null,
+        now,
+      });
+    });
+    if (alreadyPaid) {
+      return Response.json({ error: 'This account already has a paid subscription; use the billing portal' }, { status: 409 });
+    }
 
     const token = await accessToken();
     const existing = await base44.asServiceRole.entities.Subscription.filter(

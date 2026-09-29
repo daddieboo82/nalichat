@@ -175,7 +175,7 @@ export default function Studio() {
   const audioChunksRef = useRef([]);
   const midiActiveNotesRef = useRef(new Map());
   const midiRecordingRef = useRef(false);
-  const midiSustainRef = useRef(new Map());
+  const midiSustainRef = useRef(new Map()), midiAccessRef = useRef(null);
   const audioElementsRef = useRef({});
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
@@ -937,7 +937,7 @@ export default function Studio() {
   // Hardware Detection - Refined and Optimized
   useEffect(() => {
     let mounted = true;
-    let midiAccessRef = null;
+    let midiAccess = null;
 
     const checkDevices = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
@@ -965,16 +965,16 @@ export default function Studio() {
         let hasMidi = false;
         if (navigator.requestMIDIAccess) {
           try {
-            if (!midiAccessRef) {
-              midiAccessRef = await navigator.requestMIDIAccess({ sysex: false });
-              midiAccessRef.onstatechange = (e) => {
+            if (!midiAccess) {
+              midiAccessRef.current = midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+              midiAccess.onstatechange = (e) => {
                 if (mounted) {
                    setHardware(prev => ({ ...prev, midi: e.currentTarget.inputs.size > 0 }));
                 }
               };
             }
-            hasMidi = midiAccessRef.inputs.size > 0;
-            midiAccessRef.inputs.forEach(input => {
+            hasMidi = midiAccess.inputs.size > 0;
+            midiAccess.inputs.forEach(input => {
               input.onmidimessage = (event) => {
                 if (!midiRecordingRef.current) return;
                 const [status, note, velocity] = event.data || [];
@@ -1052,8 +1052,8 @@ export default function Studio() {
       if (navigator.mediaDevices) {
         navigator.mediaDevices.removeEventListener('devicechange', checkDevices);
       }
-      if (midiAccessRef) {
-        midiAccessRef.onstatechange = null;
+      if (midiAccess) {
+        midiAccess.onstatechange = null;
       }
     };
   }, []);
@@ -1243,7 +1243,7 @@ export default function Studio() {
     if (!isRecording) {
       const armedMidiOnly = tracks.some(t => t.armed && ['midi', 'instrument'].includes(t.type)) && !tracks.some(t => t.armed && !['midi', 'instrument'].includes(t.type));
       if (armedMidiOnly) {
-        if (!midiAccessRef || midiAccessRef.inputs.size === 0) {
+        if (!midiAccessRef.current || midiAccessRef.current.inputs.size === 0) {
           toast.error('No MIDI input detected. Connect a MIDI controller and refresh MIDI devices.');
           return;
         }
@@ -1307,7 +1307,7 @@ export default function Studio() {
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
 
         const hasArmedMidi = tracks.some(t => t.armed && ['midi', 'instrument'].includes(t.type));
-        if (hasArmedMidi && midiAccessRef?.inputs?.size > 0) {
+        if (hasArmedMidi && midiAccessRef.current?.inputs?.size > 0) {
           midiActiveNotesRef.current.clear();
           midiRecordingRef.current = true;
         }

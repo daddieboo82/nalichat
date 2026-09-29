@@ -1,4 +1,4 @@
-const DEFAULT_DELAYS_MS = Object.freeze([0, 750, 1500, 2500, 4000, 6000]);
+const DEFAULT_DELAYS_MS = Object.freeze([0, 1000, 2000, 3000, 5000, 7000, 9000, 12000, 16000, 20000]);
 
 const delay = (milliseconds) => new Promise((resolve) => {
   setTimeout(resolve, milliseconds);
@@ -33,4 +33,3 @@ export async function pollForSubscriptionConfirmation({
   }
   return { outcome: "timeout" };
 }
-

@@ -67,17 +67,16 @@ vi.mock('@/api/base44Client', () => ({ base44: { auth: { logout: vi.fn() } } }))
 
 vi.mock('@/pages/Login', async () => {
   const { useLocation } = await import('react-router-dom');
-  return {
-    default: () => {
-      const location = useLocation();
-      return (
-        <div>
-          <div>Login Page</div>
-          <div data-testid="login-state">{JSON.stringify(location.state ?? null)}</div>
-        </div>
-      );
-    },
+  const MockLogin = () => {
+    const location = useLocation();
+    return (
+      <div>
+        <div>Login Page</div>
+        <div data-testid="login-state">{JSON.stringify(location.state ?? null)}</div>
+      </div>
+    );
   };
+  return { default: MockLogin };
 });
 vi.mock('@/pages/Register', () => ({ default: () => <div>Register Page</div> }));
 vi.mock('@/pages/ForgotPassword', () => ({ default: () => <div>Forgot Password Page</div> }));

@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import { useState, useRef, useEffect } from "react";
 import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers, Music } from "lucide-react";
 import { cn } from "@/lib/utils";

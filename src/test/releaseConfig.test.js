@@ -2128,7 +2128,7 @@ describe('release configuration', () => {
 
     const signedWebhooks = new Set(['stripeWebhook', 'paypalWebhook', 'wixPaymentsWebhook']);
     const capabilityEndpoints = new Set(['getSharedFileByToken', 'verifyCheckoutPayment']);
-    const publicReadEndpoints = new Set(['getChallengeLeaderboard', 'getPushConfig']);
+    const publicReadEndpoints = new Set(['getChallengeLeaderboard', 'getPushConfig', 'battleStreamingStatus', 'testBattleStreaming', 'verifyBattleStreaming']);
     const internalWorkflowHandlers = new Set([
       'notifyOnFileUpload',
       'notifyOnMessage',

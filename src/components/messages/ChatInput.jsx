@@ -1,5 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
-import { validateUpload } from "@/lib/uploadValidation";
+import * as uploadValidation from "@/lib/uploadValidation";
 import { useState, useRef, useEffect } from "react";
 import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -233,7 +233,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       const blob = new Blob(chunksRef.current, { type: mimeType });
       const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: mimeType });
       const id = `voice-${Date.now()}`;
-      const validation = validateUpload(file);
+      const validation = uploadValidation.validateUpload(file);
       if (!validation.ok) {
         toast.error(validation.error);
         return;

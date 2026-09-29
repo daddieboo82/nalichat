@@ -394,6 +394,7 @@ export default function Home() {
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
+                <p className="mt-3 text-center text-sm text-muted-foreground sm:text-left">No card · Google or email</p>
                 <Button size="lg" variant="outline" className="ui-hover min-h-12 w-full rounded-xl border-white/20 bg-card/30 px-7 text-base font-semibold backdrop-blur-xl sm:w-auto" asChild>
                   <a
                     href="#studio-demo"

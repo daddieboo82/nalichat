@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { AccessToken, RoomServiceClient } from 'npm:livekit-server-sdk@2.19.1';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { getLiveKitConfig } from '../../shared/livekitConfig.ts';
 
 const validId = value => typeof value === 'string' && /^[a-z0-9_-]{10,80}$/i.test(value);
 const validCode = value => typeof value === 'string' && /^[a-zA-Z0-9_-]{30,80}$/.test(value);
@@ -71,12 +72,10 @@ Deno.serve(async req => {
       if (!host) return error('Only the host can manage this meeting.', 403);
       if (body.action === 'start') {
         if (row.status !== 'scheduled') return error('This meeting cannot be started.', 409);
-        const url = Deno.env.get('LIVEKIT_URL');
-        const key = Deno.env.get('LIVEKIT_API_KEY');
-        const secret = Deno.env.get('LIVEKIT_API_SECRET');
-        if (!url || !key || !secret || !/^wss:\/\/[a-z0-9.-]+(?::\d+)?\/?$/i.test(url)) return error('Live video setup is unavailable.', 503);
+        const { url, key, secret, urlValid, httpHost } = getLiveKitConfig();
+        if (!url || !key || !secret || !urlValid) return error('Live video setup is unavailable.', 503);
         try {
-          const service = new RoomServiceClient(url.replace(/^wss:/, 'https:'), key, secret);
+          const service = new RoomServiceClient(httpHost, key, secret);
           await service.listRooms([]);
         } catch { return error('Could not reach live video. Try again shortly.', 503); }
         await entities.MeetingRoom.update(row.id, { status: 'live' });
@@ -84,21 +83,17 @@ Deno.serve(async req => {
       }
       if (row.status === 'ended') return error('This meeting has already ended.', 409);
       await entities.MeetingRoom.update(row.id, { status: 'ended' });
-      const url = Deno.env.get('LIVEKIT_URL');
-      const key = Deno.env.get('LIVEKIT_API_KEY');
-      const secret = Deno.env.get('LIVEKIT_API_SECRET');
-      if (url && key && secret) {
-        const service = new RoomServiceClient(url.replace(/^wss:/, 'https:'), key, secret);
+      const { configured, httpHost, key, secret } = getLiveKitConfig();
+      if (configured) {
+        const service = new RoomServiceClient(httpHost, key, secret);
         await service.deleteRoom(row.room_name).catch(() => {});
       }
       return Response.json({ success: true, status: 'ended' });
     }
     if (body.action === 'join') {
       if (row.status !== 'live') return error('The host has not opened this room.', 409);
-      const key = Deno.env.get('LIVEKIT_API_KEY');
-      const secret = Deno.env.get('LIVEKIT_API_SECRET');
-      const url = Deno.env.get('LIVEKIT_URL');
-      if (!key || !secret || !url || !/^wss:\/\/[a-z0-9.-]+(?::\d+)?\/?$/i.test(url)) return error('Live video setup is unavailable.', 503);
+      const { key, secret, url, urlValid } = getLiveKitConfig();
+      if (!key || !secret || !url || !urlValid) return error('Live video setup is unavailable.', 503);
       const token = new AccessToken(key, secret, {
         identity: user.id, name: String(user.display_name || user.full_name || 'Guest').slice(0, 60), ttl: '10m'
       });

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { withBattleLock } from '../../shared/liveBattleLock.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { getLiveKitConfig } from '../../shared/livekitConfig.ts';
 
 Deno.serve(async req => {
   try {
@@ -42,12 +43,12 @@ Deno.serve(async req => {
         await entities.LiveBattle.update(battleId, { status: 'cancelled' });
       } else if (action === 'start') {
         if (battle.status !== 'ready' || user.id !== battle.creator_id || !battle.opponent_id) return Response.json({ error: 'Battle is not ready.' }, { status: 409 });
-        if (!Deno.env.get('LIVEKIT_URL') || !Deno.env.get('LIVEKIT_API_KEY') || !Deno.env.get('LIVEKIT_API_SECRET')) {
+        const liveKit = getLiveKitConfig();
+        if (!liveKit.configured) {
           return Response.json({ error: 'Live streaming is not configured.' }, { status: 503 });
         }
         const { RoomServiceClient } = await import('npm:livekit-server-sdk@2.19.1');
-        const liveHost = String(Deno.env.get('LIVEKIT_URL')).replace(/^wss:/, 'https:').replace(/^ws:/, 'http:');
-        const liveService = new RoomServiceClient(liveHost, Deno.env.get('LIVEKIT_API_KEY')!, Deno.env.get('LIVEKIT_API_SECRET')!);
+        const liveService = new RoomServiceClient(liveKit.httpHost, liveKit.key, liveKit.secret);
         try { await liveService.listRooms([]); }
         catch { return Response.json({ error: 'Live video connection could not be verified. Check the LiveKit project URL and key pair.' }, { status: 503 }); }
         const roomId = 'nali-battle-' + battleId + '-' + crypto.randomUUID();
@@ -59,8 +60,8 @@ Deno.serve(async req => {
         // A live room alone is not proof of a performance. Both performers must
         // actually have connected before any audience vote or award can be issued.
         const { RoomServiceClient } = await import('npm:livekit-server-sdk@2.19.1');
-        const host = String(Deno.env.get('LIVEKIT_URL') || '').replace(/^wss:/, 'https:').replace(/^ws:/, 'http:');
-        const service = new RoomServiceClient(host, Deno.env.get('LIVEKIT_API_KEY')!, Deno.env.get('LIVEKIT_API_SECRET')!);
+        const liveKit = getLiveKitConfig();
+        const service = new RoomServiceClient(liveKit.httpHost, liveKit.key, liveKit.secret);
         const participants = await service.listParticipants(battle.video_room_id);
         const present = new Set(participants.filter(p => Array.isArray(p.tracks) && p.tracks.length > 0).map(p => p.identity));
         if (!present.has(battle.creator_id) || !present.has(battle.opponent_id)) {

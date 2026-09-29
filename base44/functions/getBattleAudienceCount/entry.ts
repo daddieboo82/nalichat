@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { RoomServiceClient } from 'npm:livekit-server-sdk@2.19.1';
+import { getLiveKitConfig } from '../../shared/livekitConfig.ts';
 Deno.serve(async req => {
   try {
     if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
@@ -10,11 +11,9 @@ Deno.serve(async req => {
     if (typeof battleId !== 'string' || !/^[a-z0-9_-]{10,80}$/i.test(battleId)) return Response.json({ error: 'Invalid battle.' }, { status: 400 });
     const battle = await client.asServiceRole.entities.LiveBattle.get(battleId).catch(() => null);
     if (!battle?.video_room_id || !['live','voting'].includes(battle.status)) return Response.json({ error: 'Battle is not live.' }, { status: 409 });
-    const url = Deno.env.get('LIVEKIT_URL') || '';
-    const key = Deno.env.get('LIVEKIT_API_KEY') || '';
-    const secret = Deno.env.get('LIVEKIT_API_SECRET') || '';
-    if (!url || !key || !secret) return Response.json({ error: 'Video unavailable.' }, { status: 503 });
-    const room = new RoomServiceClient(url.replace(/^wss:/,'https:'), key, secret);
+    const { configured, httpHost, key, secret } = getLiveKitConfig();
+    if (!configured) return Response.json({ error: 'Video unavailable.' }, { status: 503 });
+    const room = new RoomServiceClient(httpHost, key, secret);
     const participants = await room.listParticipants(battle.video_room_id);
     const performers = new Set([battle.creator_id, battle.opponent_id]);
     return Response.json({ success: true, audienceCount: participants.filter(p => !performers.has(p.identity)).length, performersOnline: participants.filter(p => performers.has(p.identity)).length });

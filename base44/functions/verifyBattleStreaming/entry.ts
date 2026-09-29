@@ -1,12 +1,10 @@
 import { RoomServiceClient } from 'npm:livekit-server-sdk@2.19.1';
+import { getLiveKitConfig } from '../../shared/livekitConfig.ts';
 Deno.serve(async () => {
-  const url = Deno.env.get('LIVEKIT_URL') || '';
-  const key = Deno.env.get('LIVEKIT_API_KEY') || '';
-  const secret = Deno.env.get('LIVEKIT_API_SECRET') || '';
-  if (!url || !key || !secret) return Response.json({ configured: false, reachable: false });
+  const { configured, httpHost, key, secret } = getLiveKitConfig();
+  if (!configured) return Response.json({ configured: false, reachable: false });
   try {
-    const host = url.replace(/^wss:/, 'https:').replace(/^ws:/, 'http:');
-    const service = new RoomServiceClient(host, key, secret);
+    const service = new RoomServiceClient(httpHost, key, secret);
     await service.listRooms([]);
     return Response.json({ configured: true, reachable: true });
   } catch (error) {

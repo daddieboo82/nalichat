@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { AccessToken } from 'npm:livekit-server-sdk@2.19.1';
+import { getLiveKitConfig } from '../../shared/livekitConfig.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -10,10 +11,8 @@ Deno.serve(async (req) => {
     if (user.is_banned || (user.timeout_until && Date.parse(user.timeout_until) > Date.now())) {
       return Response.json({ error: 'You cannot join a battle right now.' }, { status: 403 });
     }
-    const key = Deno.env.get('LIVEKIT_API_KEY');
-    const secret = Deno.env.get('LIVEKIT_API_SECRET');
-    const url = Deno.env.get('LIVEKIT_URL');
-    if (!key || !secret || !url || !/^wss:\/\/[a-z0-9.-]+(?::\d+)?\/?$/i.test(url)) {
+    const { key, secret, url, urlValid } = getLiveKitConfig();
+    if (!key || !secret || !url || !urlValid) {
       return Response.json({ ready: false, error: 'Live broadcast setup in progress.' }, { status: 503 });
     }
     const body = await req.json();

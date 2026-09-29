@@ -40,7 +40,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
         {(post.image_url || post.file_url) && (
           <div className="relative overflow-hidden">
             <img
-              src={post.image_url || "https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=600&auto=format&fit=crop"}
+              src={post.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231a1a2e'/%3E%3Cstop offset='100%25' stop-color='%2316213e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='600' height='400' fill='url(%23g)'/%3E%3Ctext x='300' y='210' font-size='100' text-anchor='middle' fill='%237c3aed' opacity='0.4'%3E%E2%99%AA%3C/text%3E%3C/svg%3E"}
               alt={post.title}
               loading="lazy"
               decoding="async"
@@ -48,7 +48,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
               style={{ maxHeight: large ? 280 : 220 }}
               onError={(e) => {
                 e.currentTarget.onerror = null;
-                e.currentTarget.src = "https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=600&auto=format&fit=crop";
+                e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231a1a2e'/%3E%3Cstop offset='100%25' stop-color='%2316213e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='600' height='400' fill='url(%23g)'/%3E%3Ctext x='300' y='210' font-size='100' text-anchor='middle' fill='%237c3aed' opacity='0.4'%3E%E2%99%AA%3C/text%3E%3C/svg%3E";
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-primary/40 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

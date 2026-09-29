@@ -224,7 +224,13 @@ export function initProductAnalytics(userId = null) {
   window.addEventListener("pagehide", onPageHide);
   flushTimer = window.setInterval(() => flush("heartbeat"), FLUSH_INTERVAL_MS);
   return () => {
-    flush("cleanup");
+    // Skip flushing for very short sessions (< 3s) — these are almost always
+    // anonymous-to-authenticated transitions or hard redirects, not real
+    // visits. Flushing them pollutes the average visit duration metric.
+    const s = ensureSession();
+    if (s.engagedMs > 1000 || (now() - s.startedAt) > 3000) {
+      flush("cleanup");
+    }
     clearInterval(flushTimer);
     window.removeEventListener("popstate", onPop);
     window.removeEventListener("pointerdown", onActivity);

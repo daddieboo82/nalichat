@@ -22,6 +22,7 @@ import PullToRefresh from "@/components/layout/PullToRefresh";
 import SubscriptionSettings from "@/components/settings/SubscriptionSettings";
 import ChatThemeSettings from "@/components/settings/ChatThemeSettings";
 import LockedChatSettings from "@/components/settings/LockedChatSettings";
+import LanguageSettings from "@/components/settings/LanguageSettings";
 import { Switch } from "@/components/ui/switch";
 import { useReducedMotionPreference } from "@/hooks/useReducedMotionPreference";
 
@@ -272,6 +273,11 @@ export default function Settings() {
               await checkUserAuth();
             }}
           />
+        </div>
+
+        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Language</h2>
+          <LanguageSettings />
         </div>
 
         <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">

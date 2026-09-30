@@ -9,6 +9,7 @@ import { useReducedMotionPreference } from '@/hooks/useReducedMotionPreference';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLoader from '@/components/layout/AppLoader';
@@ -510,6 +511,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClientInstance}>
         <AuthProvider>
+          <LanguageProvider>
           <LockedChatsProvider>
             <NaliPresenceProvider>
               <AudioPlayerProvider>
@@ -531,6 +533,7 @@ function App() {
               </AudioPlayerProvider>
             </NaliPresenceProvider>
           </LockedChatsProvider>
+          </LanguageProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

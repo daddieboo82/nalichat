@@ -93,8 +93,24 @@ Deno.serve(async (req) => {
         checkoutUrl: approval, subscriptionId: pending.subscription_id, resumed: true,
       });
     }
-    const successUrl = new URL('/ThankYou?subscription=1', APP_BASE_URL).toString();
-    const cancelUrl = new URL('/pricing', APP_BASE_URL).toString();
+    // Build return URLs from the request's X-Base44-App-Url header (set by the
+    // platform on genuine app requests), falling back to APP_BASE_URL. Never
+    // trust the request Origin header — it is caller-controlled and wrong in
+    // PWAs and the builder preview.
+    const headerAppUrl = req.headers.get('X-Base44-App-Url');
+    let appBaseUrl = APP_BASE_URL;
+    if (headerAppUrl) {
+      try {
+        const parsed = new URL(headerAppUrl);
+        if (parsed.protocol === 'https:' && !parsed.username && !parsed.password && parsed.pathname === '/' && !parsed.search && !parsed.hash) {
+          appBaseUrl = parsed.origin;
+        }
+      } catch {
+        // Invalid header — fall back to APP_BASE_URL
+      }
+    }
+    const successUrl = new URL('/ThankYou?subscription=1', appBaseUrl).toString();
+    const cancelUrl = new URL('/pricing', appBaseUrl).toString();
     const res = await fetch(apiBase() + '/v1/billing/subscriptions', {
       method: 'POST',
       headers: {

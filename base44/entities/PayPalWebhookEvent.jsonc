@@ -1,0 +1,65 @@
+{
+  "name": "PayPalWebhookEvent",
+  "type": "object",
+  "properties": {
+    "paypal_event_id": {
+      "type": "string",
+      "description": "PayPal webhook event ID used as the durable idempotency key"
+    },
+    "event_type": {
+      "type": "string"
+    },
+    "event_time": {
+      "type": "string",
+      "description": "PayPal event create_time (ISO 8601)"
+    },
+    "processing_state": {
+      "type": "string",
+      "enum": [
+        "processing",
+        "processed",
+        "failed",
+        "ignored"
+      ]
+    },
+    "attempt_count": {
+      "type": "number",
+      "default": 1
+    },
+    "last_error": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "processed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "paypal_event_id",
+    "event_type",
+    "processing_state"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

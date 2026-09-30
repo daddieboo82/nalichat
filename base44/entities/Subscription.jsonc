@@ -150,6 +150,15 @@
       "type": "string",
       "description": "Latest Stripe event applied to this record"
     },
+    "paypal_event_id": {
+      "type": "string",
+      "description": "Latest PayPal webhook event applied to this record"
+    },
+    "paypal_event_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Creation time of the latest PayPal webhook event applied to this record"
+    },
     "trial_target_plan": {
       "type": "string",
       "enum": [

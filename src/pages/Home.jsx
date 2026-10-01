@@ -33,6 +33,7 @@ const PLAZA_WORLD_DETAILS = Object.freeze({
 });
 
 const NALIBASE_OS_URL = 'https://nali-base-os.base44.app';
+const BROWSERCLEAN_PRO_URL = 'https://clean-web-pulse.base44.app';
 
 const PLAZA_WORLDS = WORLD_ORDER.map((id) => ({
   id,
@@ -325,6 +326,11 @@ export default function Home() {
                   );
                 })}
               </div>
+              <a href={BROWSERCLEAN_PRO_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: "open_browserclean_pro" })} className="group mx-auto mb-5 flex max-w-3xl items-center gap-4 rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-cyan-500/15 px-5 py-4 shadow-lg backdrop-blur-xl transition hover:border-emerald-300/40 hover:bg-white/[.08]">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-200"><Shield className="h-6 w-6" /></span>
+                <span className="min-w-0 flex-1"><span className="block text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200/70">Our other app</span><span className="mt-1 block font-heading text-lg font-black">BrowserClean Pro</span><span className="block text-xs text-foreground/55">Clean up your browser and reclaim your privacy.</span></span>
+                <ArrowRight className="h-5 w-5 shrink-0 text-emerald-200/60 transition group-hover:translate-x-1 group-hover:text-emerald-100" />
+              </a>
               <div className="mt-5 flex flex-col items-center gap-2 text-center">
                 <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/50">
                   <MapPin className="h-3 w-3" />
@@ -867,6 +873,7 @@ export default function Home() {
               <Link to="/register" className="min-h-10 inline-flex items-center hover:text-foreground">Create Account</Link>
               <Link to="/pricing" className="min-h-10 inline-flex items-center hover:text-foreground">Compare Plans</Link>
               <a href="mailto:support@nalichat.org" className="min-h-10 inline-flex items-center hover:text-foreground">Contact Support</a>
+              <a href={BROWSERCLEAN_PRO_URL} target="_blank" rel="noopener noreferrer" className="min-h-10 inline-flex items-center hover:text-foreground">BrowserClean Pro</a>
             </div>
             <p className="mt-2">NaliBase · Six connected worlds for creativity, entertainment, collaboration, and discovery</p>
           </footer>

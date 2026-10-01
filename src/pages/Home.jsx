@@ -7,7 +7,7 @@ import {
   MessageSquare, Music, BarChart3, Sparkles,
   Trophy, ArrowRight, Zap, Shield, Star,
   Headphones, Wand2, FileAudio, ChevronRight, UserCircle, Video, Layers, ShoppingCart,
-  SlidersHorizontal, Tag, FolderKanban, MapPin, Monitor
+  SlidersHorizontal, Tag, FolderKanban, MapPin
 } from "lucide-react";
 import { motion } from "framer-motion";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
@@ -32,8 +32,7 @@ const PLAZA_WORLD_DETAILS = Object.freeze({
   compete: { subtitle: "Challenges", description: "Join or create challenges, check rankings and build a squad.", icon: Trophy },
 });
 
-const NALIBASE_OS_URL = 'https://nali-base-os.base44.app';
-const BROWSERCLEAN_PRO_URL = 'https://clean-web-pulse.base44.app';
+
 
 const PLAZA_WORLDS = WORLD_ORDER.map((id) => ({
   id,
@@ -276,13 +275,6 @@ export default function Home() {
                   <motion.span className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 rounded-full bg-white/70 shadow-[0_0_12px_rgba(255,255,255,.55)]" animate={{ y: [0, 12, 0], opacity: [.45, 1, .45] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} />
                 </div>
               </div>
-              <div className="mx-auto mb-5 max-w-3xl">
-                <a href={NALIBASE_OS_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: "open_nalibase_os" })} className="group flex items-center gap-4 rounded-2xl border border-cyan-400/20 bg-gradient-to-r from-cyan-500/15 via-blue-500/10 to-violet-500/15 px-5 py-4 shadow-lg backdrop-blur-xl transition hover:border-cyan-300/40 hover:bg-white/[.08]">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-400/15 text-cyan-200"><Monitor className="h-6 w-6" /></span>
-                  <span className="min-w-0 flex-1"><span className="block text-[10px] font-black uppercase tracking-[0.2em] text-cyan-200/70">NaliBase System</span><span className="mt-1 block font-heading text-lg font-black">Launch NaliBase OS</span><span className="block text-xs text-foreground/55">Open the Aurora Pro desktop environment.</span></span>
-                  <ArrowRight className="h-5 w-5 shrink-0 text-cyan-200/60 transition group-hover:translate-x-1 group-hover:text-cyan-100" />
-                </a>
-              </div>
               <Link to="/meetings" className="group mx-auto mb-5 flex min-h-24 max-w-3xl items-center gap-4 rounded-2xl border border-violet-400/35 bg-gradient-to-r from-violet-700/25 via-slate-800/20 to-cyan-500/15 px-5 py-4 text-left shadow-lg transition hover:border-violet-300/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-400/20 text-violet-200"><Video className="h-6 w-6" /></span>
                 <span className="min-w-0 flex-1"><span className="block text-[10px] font-black uppercase tracking-[.2em] text-violet-200">Private video rooms</span><span className="mt-1 block font-heading text-lg font-black">Meeting Hub</span><span className="block text-xs text-foreground/70">Host business meetings and artist listening parties.</span></span>
@@ -326,11 +318,6 @@ export default function Home() {
                   );
                 })}
               </div>
-              <a href={BROWSERCLEAN_PRO_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: "open_browserclean_pro" })} className="group mx-auto mb-5 flex max-w-3xl items-center gap-4 rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-cyan-500/15 px-5 py-4 shadow-lg backdrop-blur-xl transition hover:border-emerald-300/40 hover:bg-white/[.08]">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-200"><Shield className="h-6 w-6" /></span>
-                <span className="min-w-0 flex-1"><span className="block text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200/70">Our other app</span><span className="mt-1 block font-heading text-lg font-black">BrowserClean Pro</span><span className="block text-xs text-foreground/55">Clean up your browser and reclaim your privacy.</span></span>
-                <ArrowRight className="h-5 w-5 shrink-0 text-emerald-200/60 transition group-hover:translate-x-1 group-hover:text-emerald-100" />
-              </a>
               <div className="mt-5 flex flex-col items-center gap-2 text-center">
                 <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/50">
                   <MapPin className="h-3 w-3" />
@@ -873,7 +860,6 @@ export default function Home() {
               <Link to="/register" className="min-h-10 inline-flex items-center hover:text-foreground">Create Account</Link>
               <Link to="/pricing" className="min-h-10 inline-flex items-center hover:text-foreground">Compare Plans</Link>
               <a href="mailto:support@nalichat.org" className="min-h-10 inline-flex items-center hover:text-foreground">Contact Support</a>
-              <a href={BROWSERCLEAN_PRO_URL} target="_blank" rel="noopener noreferrer" className="min-h-10 inline-flex items-center hover:text-foreground">BrowserClean Pro</a>
             </div>
             <p className="mt-2">NaliBase · Six connected worlds for creativity, entertainment, collaboration, and discovery</p>
           </footer>

@@ -49,9 +49,10 @@
         "paypal",
         "wix",
         "manual",
+        "apple",
         "unknown"
       ],
-      "description": "Billing system of record; Wix is legacy"
+      "description": "Billing system of record; Wix is legacy; apple is App Store IAP"
     },
     "subscription_id": {
       "type": "string",

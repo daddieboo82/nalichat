@@ -25,6 +25,7 @@ import {
   createCheckoutRequestKey,
   startSubscriptionCheckout,
 } from "@/lib/subscriptionBilling";
+import { useAppleIAP } from "@/hooks/useAppleIAP";
 
 function PlanCard({
   plan,
@@ -100,6 +101,7 @@ export default function PricingPlans({
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const { subscription, isLoading, isError, error, refetch } = useSubscription();
+  const appleIAP = useAppleIAP();
   const [period, setPeriod] = useState("monthly");
   const [startingPlan, setStartingPlan] = useState(null);
   const [checkoutCanceled, setCheckoutCanceled] = useState(false);
@@ -191,6 +193,13 @@ export default function PricingPlans({
 
     if (!isAuthenticated) {
       navigate(`/register?returnTo=${encodeURIComponent("/pricing")}`);
+      return;
+    }
+
+    // On iOS native, use Apple In-App Purchase instead of PayPal checkout.
+    if (appleIAP.available) {
+      setStartingPlan(planId);
+      appleIAP.purchase(sku);
       return;
     }
 
@@ -346,7 +355,7 @@ export default function PricingPlans({
               cta={period === "monthly" ? (planId === "premium" ? "Upgrade to Premium" : "Go Premium Plus") : paidCta}
               isCurrent={paidSubscriber && subscription.plan === planId}
               isPaidSubscriber={paidSubscriber}
-              isStarting={startingPlan === planId || isLoading}
+              isStarting={startingPlan === planId || isLoading || appleIAP.purchasingProductId === subscriptionSku(planId, period)}
               onSelect={startCheckout}
               onContinueFree={continueFree}
             />
@@ -359,6 +368,20 @@ export default function PricingPlans({
           </p>
         )}
         <div className="mt-8 text-center">
+          {appleIAP.available && (
+            <div className="mb-4">
+              <Button
+                className="ui-hover min-h-11 rounded-xl px-5"
+                variant="outline"
+                disabled={appleIAP.restoring}
+                onClick={appleIAP.restore}
+              >
+                {appleIAP.restoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+                Restore Purchases
+              </Button>
+              <p className="mt-2 text-xs text-muted-foreground">Already subscribed on this device? Restore your purchase to unlock access.</p>
+            </div>
+          )}
           <Button className="ui-hover min-h-11 rounded-xl px-5" variant="ghost" onClick={continueFree}>Maybe later</Button>
           <p className="mt-2 text-sm text-muted-foreground">Paid subscriptions can be canceled in Settings. Your current access remains available afterward.</p>
         </div>

@@ -216,7 +216,7 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.auth.resendOtp).not.toHaveBeenCalled();
   });
 
-  it('requires display name and birthdate before onboarding can complete', async () => {
+  it('requires display name before onboarding can complete', async () => {
     mockAuthState.current = {
       ...mockAuthState.current,
       user: { id: '507f1f77bcf86cd799439011', display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
@@ -227,7 +227,7 @@ describe('auth and onboarding flows', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
 
     await waitFor(() => {
-      expect(mockToast.error).toHaveBeenCalledWith('Please fill in your name and birthdate');
+      expect(mockToast.error).toHaveBeenCalledWith('Please enter your display name');
     });
     expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
   });

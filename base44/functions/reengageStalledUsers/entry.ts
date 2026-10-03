@@ -122,7 +122,7 @@ export default async function(req) {
               <h2 style="color: #9d50bb; margin-bottom: 16px;">Hey ${displayName}! 👋</h2>
               <p style="color: #333; line-height: 1.6;">
                 We noticed you haven't finished setting up your NaliBase profile yet.
-                It only takes a minute — just add your display name and birthdate to unlock
+                It only takes a minute — just add your display name to unlock
                 the NaliBase worlds for creating, connecting, discovering, sharing, visualizing, and competing.
               </p>
               <div style="text-align: center; margin: 32px 0;">

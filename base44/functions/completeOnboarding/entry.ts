@@ -39,19 +39,27 @@ Deno.serve(async (req) => {
 
     const body = await readJsonBodyLimited(req, 16 * 1024);
     const displayName = String(body?.display_name || '').trim().slice(0, 120);
-    const birthdate = validBirthdate(body?.birthdate);
 
-    if (!displayName || !birthdate) {
-      return Response.json({ error: 'A display name and valid birthdate are required' }, { status: 400 });
+    if (!displayName) {
+      return Response.json({ error: 'A display name is required' }, { status: 400 });
+    }
+
+    // Birthdate is optional (not required for app functionality). Validate only if provided.
+    const rawBirthdate = String(body?.birthdate || '').trim();
+    const birthdate = rawBirthdate ? validBirthdate(rawBirthdate) : '';
+    if (rawBirthdate && !birthdate) {
+      return Response.json({ error: 'Invalid birthdate' }, { status: 400 });
     }
 
     const patch = {
       display_name: displayName,
-      birthdate,
       bio: String(body?.bio || '').trim().slice(0, 2000),
       location: String(body?.location || '').trim().slice(0, 200),
       onboarding_completed: true,
     };
+    if (birthdate) {
+      patch.birthdate = birthdate;
+    }
 
     await base44.asServiceRole.entities.User.update(user.id, patch);
     return Response.json({

@@ -45,8 +45,8 @@ export default function Onboarding() {
       toast.error("Your account changed. Please wait for setup to reload.");
       return;
     }
-    if (!form.display_name || !form.birthdate) {
-      toast.error("Please fill in your name and birthdate");
+    if (!form.display_name) {
+      toast.error("Please enter your display name");
       return;
     }
     setLoading(true);
@@ -95,7 +95,7 @@ export default function Onboarding() {
     );
   }
 
-  const profileComplete = !!(form.display_name && form.birthdate);
+  const profileComplete = !!form.display_name;
 
   return (
     <>
@@ -122,7 +122,7 @@ export default function Onboarding() {
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />Birthdate <span className="text-primary">*</span></label>
+            <label className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />Birthdate <span className="font-normal text-muted-foreground">(optional)</span></label>
             <Input
               type="date"
               value={form.birthdate}
@@ -146,7 +146,7 @@ export default function Onboarding() {
               placeholder="City, Country"
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
-          <p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Only your display name and birthdate are required. Bio and location are optional and can be added later in Settings.</p><Button onClick={handleSave} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
+          <p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Only your display name is required. Birthdate, bio, and location are optional and can be added later in Settings.</p><Button onClick={handleSave} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
             {loading ? "Saving..." : "Enter NaliBase"}
           </Button>

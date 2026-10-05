@@ -349,6 +349,15 @@ async function processCheckout(
         paid_at: new Date().toISOString(),
       });
     }
+    // Confirm any pending tips associated with this checkout session
+    try {
+      const tips = await entities.Tip.filter({ checkout_session_id: session.id, status: 'pending' }, '-created_date', 10);
+      for (const tip of tips) {
+        await entities.Tip.update(tip.id, { status: 'paid', paid_at: new Date().toISOString() });
+      }
+    } catch (tipError) {
+      console.error('Failed to confirm tip(s) for checkout', session.id, tipError);
+    }
     return;
   }
 

@@ -12,6 +12,7 @@ import ArtPostCard from "@/components/explore/ArtPostCard";
 import AchievementsPanel from "@/components/profile/AchievementsPanel";
 import LevelBadge from "@/components/profile/LevelBadge";
 import TopWorksGallery from "@/components/profile/TopWorksGallery";
+import TipButton from "@/components/profile/TipButton";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
 import PullToRefresh from "@/components/layout/PullToRefresh";
@@ -343,6 +344,9 @@ export default function Profile() {
               {editing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
               {editing ? "Save" : "Edit"}
             </button>
+          )}
+          {!isMe && user && (
+            <TipButton creatorId={user.id} creatorName={user.display_name || user.full_name} />
           )}
           <div className="flex w-full flex-col items-start gap-2 pb-1 sm:ml-auto sm:w-auto sm:items-end sm:pb-2">
             <NaliPresenceIndicator surface="profile" size="md" greeting={`Tell me about ${user.display_name || user.full_name || "this artist"} — help me understand their sound and suggest ways to grow their audience.`} />

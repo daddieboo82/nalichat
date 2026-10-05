@@ -1,0 +1,67 @@
+{
+  "name": "AffiliateLink",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Display name of the affiliate offer"
+    },
+    "url": {
+      "type": "string",
+      "description": "Affiliate URL (includes tracking parameter)"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Short description shown to users"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "gear",
+        "plugins",
+        "distribution",
+        "education",
+        "services",
+        "other"
+      ],
+      "default": "other"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "Optional logo image URL"
+    },
+    "display_order": {
+      "type": "number",
+      "default": 0,
+      "description": "Sort order (lower appears first)"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title",
+    "url",
+    "category"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

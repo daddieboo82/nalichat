@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
+import DonationButton from "@/components/home/DonationButton";
+import AffiliateLinksSection from "@/components/home/AffiliateLinksSection";
 import StudioTutorial from "@/components/home/StudioTutorial";
 import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
@@ -410,6 +412,12 @@ export default function Home() {
           )}
         </motion.div>
       </section>
+
+      {user && (
+        <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+          <AffiliateLinksSection />
+        </section>
+      )}
 
       {!user && authChecked && (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-background/90 px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(0,0,0,.28)] backdrop-blur-xl sm:hidden">
@@ -847,6 +855,12 @@ export default function Home() {
             </div>
           </div>
         </motion.div>
+
+        {!user && (
+          <div className="mb-10 text-center">
+            <DonationButton variant="hero" />
+          </div>
+        )}
 
         </section>
       </>}

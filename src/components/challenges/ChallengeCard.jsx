@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import CountdownTimer from "./CountdownTimer";
+import SponsorBadge from "./SponsorBadge";
 import { Trophy } from "lucide-react";
 
 const STATUS_LABEL = { upcoming: "Upcoming", active: "Live", voting: "Voting Open", completed: "Completed" };
@@ -20,6 +21,11 @@ export default function ChallengeCard({ challenge, winner, dimmed }) {
         <Badge className="absolute top-2 left-2 bg-black/60 text-white border-none">
           {STATUS_LABEL[challenge.status] || challenge.status}
         </Badge>
+        {challenge.is_sponsored && (
+          <div className="absolute top-2 right-2">
+            <SponsorBadge challenge={challenge} />
+          </div>
+        )}
         {winner && (
           <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-yellow-500/90 text-black text-xs font-bold px-2 py-1 rounded-full">
             <Trophy className="w-3 h-3" /> {winner.producer_name}

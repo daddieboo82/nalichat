@@ -8,6 +8,7 @@ import { Download, Trophy, ListOrdered, Square, Gavel } from "lucide-react";
 import CountdownTimer from "@/components/challenges/CountdownTimer";
 import SubmissionCard from "@/components/challenges/SubmissionCard";
 import SubmitRemixModal from "@/components/challenges/SubmitRemixModal";
+import SponsorBadge from "@/components/challenges/SponsorBadge";
 import { toast } from "sonner";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import LoadError from "@/components/layout/LoadError";
@@ -188,8 +189,13 @@ export default function ChallengeDetail() {
                   </AvatarFallback>
                 </Avatar>
                 <p className="text-sm text-muted-foreground">Hosted by {challenge.host_artist_name}</p>
-              </div>
-            </div>
+                {challenge.is_sponsored && (
+                  <div className="mt-2">
+                    <SponsorBadge challenge={challenge} size="lg" />
+                  </div>
+                )}
+                </div>
+                </div>
             <Button variant="outline" size="sm" className="ui-hover min-h-11 w-full gap-1.5 rounded-xl focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-auto" asChild>
               <Link to={`/challenge/${challengeId}/leaderboard`}><ListOrdered className="w-4 h-4" /> Leaderboard</Link>
             </Button>

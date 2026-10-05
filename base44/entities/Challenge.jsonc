@@ -59,7 +59,7 @@
       "items": {
         "type": "string"
       },
-      "description": "Legacy multi-stem uploads — kept for backward compatibility, no longer used by the UI",
+      "description": "Legacy multi-stem uploads \u2014 kept for backward compatibility, no longer used by the UI",
       "rls": {
         "read": true,
         "write": {
@@ -74,7 +74,7 @@
       "items": {
         "type": "string"
       },
-      "description": "Legacy stem names — kept for backward compatibility, no longer used by the UI",
+      "description": "Legacy stem names \u2014 kept for backward compatibility, no longer used by the UI",
       "rls": {
         "read": true,
         "write": {
@@ -160,6 +160,55 @@
       "type": "string",
       "format": "date-time",
       "description": "Server-managed challenge schedule",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "is_sponsored": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this challenge is sponsored by a brand",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "sponsor_name": {
+      "type": "string",
+      "description": "Sponsor brand name",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "sponsor_logo_url": {
+      "type": "string",
+      "description": "Sponsor brand logo URL",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "sponsor_url": {
+      "type": "string",
+      "description": "Sponsor brand website URL",
       "rls": {
         "read": true,
         "write": {

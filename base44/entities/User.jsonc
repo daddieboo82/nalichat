@@ -145,6 +145,19 @@
         }
       }
     },
+    "inactive_reengagement_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Server-managed timestamp of the last two-week inactivity follow-up email sent to this user (null = never sent). Locked so users cannot suppress the reminder workflow by marking themselves as already contacted.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
     "violation_count": {
       "type": "number",
       "default": 0,

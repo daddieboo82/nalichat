@@ -1,0 +1,43 @@
+{
+  "name": "Re-engage Two-Week Inactive Users",
+  "description": "Sends a follow-up email to users who completed onboarding but haven't been active in two weeks. Runs daily at 5pm UTC; each user gets at most one email (tracked via inactive_reengagement_sent_at).",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 17 * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "reengage_two_week_inactive_users",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "reengageInactiveUsers",
+            "args": {
+              "workflow_key": "nali-inactive-reengagement-key-2026-qjo66aaa5j"
+            }
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}

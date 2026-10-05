@@ -1,60 +1,21 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { stripeRequest } from '../../shared/stripe.ts';
-import { APP_ORIGIN } from '../../shared/appConfig.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import {
+  checkoutErrorMessage as errorMessage,
+  isCheckoutClientError as isClientError,
+  randomVerifier,
+  sha256Hex,
+  anonymousCheckoutScope,
+  allowedCheckoutOrigins,
+  validateCallbackUrl,
+} from '../../shared/checkoutHelpers.ts';
 
 // Server-side price catalog — never trust client-supplied prices
 const DONATION_PRESETS = [5, 10, 25, 50];
 const MAX_CHECKOUT_ITEMS = 10;
 const MAX_TOTAL_DONATION_CENTS = 500_000;
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Failed to create checkout session';
-}
-
-function isClientError(message: string): boolean {
-  return message === 'Invalid checkout callback URL'
-    || message === 'Checkout callback URL is not allowed';
-}
-
-function randomVerifier(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-async function anonymousCheckoutScope(req: Request): Promise<string> {
-  const forwarded = String(
-    req.headers.get('cf-connecting-ip')
-    || req.headers.get('x-real-ip')
-    || req.headers.get('x-forwarded-for')
-    || '',
-  ).split(',')[0].trim().slice(0, 128);
-  const userAgent = String(req.headers.get('user-agent') || '').slice(0, 256);
-  const source = `${forwarded || 'unknown'}:${userAgent || 'unknown'}`;
-  return 'anon_checkout_' + await sha256Hex(source);
-}
-
-function allowedCheckoutOrigins(): Set<string> {
-  return new Set([APP_ORIGIN]);
-}
-
-function validateCallbackUrl(raw: unknown, allowedOrigins: Set<string>): string {
-  if (typeof raw !== 'string' || !raw) throw new Error('Invalid checkout callback URL');
-  const url = new URL(raw);
-  if (url.protocol !== 'https:' || !allowedOrigins.has(url.origin)) {
-    throw new Error('Checkout callback URL is not allowed');
-  }
-  return url.toString();
-}
 
 
 Deno.serve(async (req) => {

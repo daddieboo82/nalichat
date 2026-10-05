@@ -9,14 +9,14 @@ vi.mock("@/api/base44Client", () => ({
 }));
 
 describe("subscription billing client", () => {
-  it("invokes PayPal checkout with only an approved SKU", async () => {
+  it("invokes Base44 checkout with only an approved SKU", async () => {
     const invoke = vi.fn().mockResolvedValue({
       data: {
         success: true,
-        action: "create_paypal_subscription",
+        action: "create_checkout",
         userId: "user-123",
         sku: "premium_plus_yearly",
-        checkoutUrl: "https://www.paypal.com/checkoutnow?token=test",
+        redirectUrl: "https://checkout.wix.com/pay/session-test",
       },
     });
     const redirect = vi.fn();
@@ -29,21 +29,21 @@ describe("subscription billing client", () => {
       redirect,
     });
 
-    expect(invoke).toHaveBeenCalledWith("createPayPalSubscription", {
+    expect(invoke).toHaveBeenCalledWith("create-checkout", {
       sku: "premium_plus_yearly",
       idempotencyKey: "checkout_request_1234",
     });
-    expect(redirect).toHaveBeenCalledWith("https://www.paypal.com/checkoutnow?token=test");
+    expect(redirect).toHaveBeenCalledWith("https://checkout.wix.com/pay/session-test");
   });
 
   it("rejects a checkout response for another account", async () => {
     const invoke = vi.fn().mockResolvedValue({
       data: {
         success: true,
-        action: "create_paypal_subscription",
+        action: "create_checkout",
         userId: "other-user",
         sku: "premium_plus_yearly",
-        checkoutUrl: "https://www.paypal.com/checkoutnow?token=test",
+        redirectUrl: "https://checkout.wix.com/pay/session-test",
       },
     });
     const redirect = vi.fn();

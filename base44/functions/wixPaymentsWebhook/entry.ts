@@ -100,13 +100,74 @@ Deno.serve(async (req) => {
 
     console.log('Wix webhook received:', eventType || 'unknown');
 
-    // New subscription checkout is Stripe-only. Do not activate or mutate
-    // entitlements from legacy Wix order-approved events. We still accept the
-    // signed webhook so Wix does not retry forever, while cancellation/expiry
-    // events below continue to retire existing legacy Wix subscriptions.
+    // Activate subscriptions created via Wix (Base44 Payments) checkout.
+    // The order_approved webhook is the first time we see subscriptionInfo.id,
+    // so we correlate via order.checkoutId → our pending Subscription record,
+    // attach the subscription ID, and flip the status to active.
     if (eventType === 'wix.ecom.v1.order_approved') {
-      console.warn('Ignoring legacy Wix order approval; Stripe is the subscription system of record');
-      return Response.json({ success: true, ignored: true });
+      try {
+        const order = eventData.actionEvent?.body?.order;
+        const checkoutId = order?.checkoutId;
+        if (!checkoutId) {
+          console.warn('No checkoutId in order approved event');
+          return Response.json({ success: true });
+        }
+
+        // Extract subscription ID from line items
+        let subscriptionId: string | null = null;
+        if (Array.isArray(order?.lineItems)) {
+          for (const lineItem of order.lineItems) {
+            if (lineItem?.subscriptionInfo?.id) {
+              subscriptionId = lineItem.subscriptionInfo.id;
+              break;
+            }
+          }
+        }
+
+        // Find the Subscription by checkout_id
+        const subs = await base44.asServiceRole.entities.Subscription.filter(
+          { checkout_id: checkoutId }, '-created_date', 1,
+        );
+        const sub = subs[0];
+
+        if (sub) {
+          if (sub.provider && sub.provider !== 'wix') {
+            console.warn('Ignoring Wix order approval for non-Wix subscription:', checkoutId);
+            return Response.json({ success: true });
+          }
+          // Idempotent: only activate if not already active
+          if (sub.status !== 'active') {
+            await base44.asServiceRole.entities.Subscription.update(sub.id, {
+              status: 'active',
+              provider: 'wix',
+              subscription_id: subscriptionId || sub.subscription_id,
+            });
+            console.log('Subscription activated via Wix:', sub.id, 'checkoutId:', checkoutId, 'subscriptionId:', subscriptionId);
+          }
+        } else {
+          console.warn('No subscription found for Wix checkoutId:', checkoutId);
+        }
+
+        // Mark the Base44Purchase as paid (idempotent)
+        try {
+          const purchases = await base44.asServiceRole.entities.Base44Purchase.filter(
+            { checkoutSessionId: checkoutId }, '-created_date', 1,
+          );
+          if (purchases[0] && purchases[0].status !== 'paid') {
+            await base44.asServiceRole.entities.Base44Purchase.update(purchases[0].id, {
+              status: 'paid',
+              paid_at: new Date().toISOString(),
+            });
+          }
+        } catch (purchaseError) {
+          console.error('Failed to mark Base44Purchase as paid for Wix checkout:', checkoutId, purchaseError);
+        }
+
+        return Response.json({ success: true });
+      } catch (err) {
+        console.error('Wix order approved handler error:', err);
+        throw err;
+      }
     }
 
     // Handle subscription canceled

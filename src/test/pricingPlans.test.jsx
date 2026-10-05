@@ -39,6 +39,15 @@ vi.mock("@/lib/subscriptionBilling", () => ({
 vi.mock("@/lib/paywallAnalytics", () => ({
   trackPaywallEvent: mockTrack,
 }));
+vi.mock("@/hooks/useAppleIAP", () => ({
+  useAppleIAP: () => ({
+    available: false,
+    purchasingProductId: null,
+    restoring: false,
+    purchase: vi.fn(),
+    restore: vi.fn(),
+  }),
+}));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 function renderPricing(props = {}) {

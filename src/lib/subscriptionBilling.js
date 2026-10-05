@@ -27,19 +27,19 @@ export async function startSubscriptionCheckout({
   invoke = base44.functions.invoke,
   redirect = (url) => window.location.assign(url),
 }) {
-  const response = await invoke("createPayPalSubscription", { sku, idempotencyKey });
+  const response = await invoke("create-checkout", { sku, idempotencyKey });
   const payload = responsePayload(response);
   if (
     payload?.success !== true ||
-    payload?.action !== "create_paypal_subscription" ||
+    payload?.action !== "create_checkout" ||
     (expectedUserId && payload?.userId !== expectedUserId) ||
     payload?.sku !== sku ||
-    typeof payload?.checkoutUrl !== "string" ||
-    !payload.checkoutUrl.trim()
+    typeof payload?.redirectUrl !== "string" ||
+    !payload.redirectUrl.trim()
   ) {
     throw new Error("Subscription checkout response was not confirmed");
   }
-  redirect(payload.checkoutUrl);
+  redirect(payload.redirectUrl);
   return payload;
 }
 

@@ -790,8 +790,8 @@ describe('release configuration', () => {
     expect(checkout).toContain('status: 429');
     expect(portal).toContain("'billing_portal'");
     expect(portal).toContain('status: 429');
-    expect(wix).toContain('Ignoring legacy Wix order approval');
-    expect(wix).not.toContain("status: 'active',\n          provider: 'wix'");
+    expect(wix).toContain('wix.ecom.v1.order_approved');
+    expect(wix).toContain("status: 'active'");
   });
 
 
@@ -2530,14 +2530,14 @@ describe('liked-post state response contract', () => {
 describe('billing session response contracts', () => {
   it('redirects only after explicit checkout or portal success', async () => {
     const client = await readText('src/lib/subscriptionBilling.js');
-    const checkout = await readText('base44/functions/createPayPalSubscription/entry.ts');
+    const checkout = await readText('base44/functions/create-checkout/entry.ts');
     const portal = await readText('base44/functions/createBillingPortal/entry.ts');
-    expect(client).toContain('payload?.action !== "create_paypal_subscription"');
+    expect(client).toContain('payload?.action !== "create_checkout"');
     expect(client).toContain('payload?.action !== "create_billing_portal"');
     expect(client).toContain('payload?.userId !== expectedUserId');
     expect(client).toContain('payload?.sku !== sku');
     expect(client).toContain('payload?.returnDestination !== returnDestination');
-    expect(checkout).toContain("action: 'create_paypal_subscription'");
+    expect(checkout).toContain("action: 'create_checkout'");
     expect(checkout).toContain("'/ThankYou?subscription=1'");
     expect(portal).toContain("action: 'create_billing_portal'");
   });

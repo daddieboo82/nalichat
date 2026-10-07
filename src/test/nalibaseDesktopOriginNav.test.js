@@ -1,6 +1,7 @@
-// @vitest-environment node
-import { describe,expect,it } from 'vitest'; import { readFile } from 'node:fs/promises';
+import { describe, expect, it } from 'vitest';
+import { readFile } from 'node:fs/promises';
 const read=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
-describe('NaliBase desktop mall origin navigation',()=>{
- it('keeps the originating mall active while inside shared storefronts',async()=>{ const s=await read('components/navigation/DesktopNav.jsx'); expect(s).toContain('resolveWorldForLocation(location.pathname, location.state?.fromWorld)'); expect(s).toContain('activeWorld?.id === worldId'); });
+describe('NaliBase desktop simple navigation',()=>{
+ it('uses direct path matching for active link detection',async()=>{ const s=await read('components/navigation/DesktopNav.jsx'); expect(s).toContain('isActive'); expect(s).toContain('pathname.startsWith'); });
+ it('keeps a More dropdown for secondary features',async()=>{ const s=await read('components/navigation/DesktopNav.jsx'); expect(s).toContain('DESKTOP_MORE_LINKS'); expect(s).toContain('MoreHorizontal'); });
 });

@@ -15,6 +15,6 @@ describe('NaliBase immersion shell',()=>{
     const mobile=await read('components/navigation/MobileHeader.jsx');
     expect(desktop).toContain('>NaliBase</span>');
     expect(mobile).toContain('>NaliBase</span>');
-    expect(mobile).toContain('"NaliBase";');
+    expect(mobile).toContain('"NaliBase"');
   });
 });

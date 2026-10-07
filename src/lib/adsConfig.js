@@ -11,7 +11,7 @@
 // the site looks exactly as it does now. The moment you add the ID and
 // redeploy, tasteful ad units appear in the Explore feed and page footers.
 
-export const ADSENSE_CLIENT_ID = "";
+export const ADSENSE_CLIENT_ID = "ca-pub-5082975841765206";
 
 export const ADS_ENABLED = Boolean(
   ADSENSE_CLIENT_ID && ADSENSE_CLIENT_ID.startsWith("ca-pub-")

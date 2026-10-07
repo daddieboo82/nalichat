@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  ChevronLeft, Music, AudioLines, LogIn, LogOut, Menu, Wand2, FileText, Trophy, Settings, Gem, BarChart3, Compass, MessageSquare, Users
+  ChevronLeft, AudioLines, LogIn, LogOut, Menu, Settings, Gem, BarChart3, User
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import NotificationBell from "@/components/notifications/NotificationBell";
@@ -10,14 +10,12 @@ import { sounds } from "@/hooks/use-sound";
 import { cn } from "@/lib/utils";
 import RecentlyVisited from "@/components/navigation/RecentlyVisited";
 import Logo from "@/components/branding/Logo";
-import { resolveWorldForLocation, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { trackProductEvent } from "@/lib/productAnalytics";
-
-const SUBPAGE_PREFIXES = ["/playlist/", "/record", "/settings", "/analytics"];
+import { NAV_GROUPS } from "@/lib/navigationConfig";
 
 const TITLES = {
-  "/": "NaliBase Plaza",
+  "/": "NaliBase",
   "/explore": "Explore",
   "/messages": "Messages",
   "/profile": "Profile",
@@ -26,20 +24,20 @@ const TITLES = {
   "/leaderboard": "Leaderboard",
   "/settings": "Settings",
   "/analytics": "Analytics",
-  "/record": "Record",
+  "/record": "Quick Record",
   "/studio": "Studio",
-  "/cover-art": "AI Cover Art",
+  "/cover-art": "Cover Art",
+  "/music-video-generator": "Video Lab",
+  "/challenges": "Challenges",
+  "/squad": "Squads",
+  "/battles": "Live Battles",
+  "/meetings": "Meetings",
+  "/projects-summary": "Projects",
+  "/pricing": "Pricing",
+  "/admin": "Admin",
 };
 
-const WORLD_MENU_ICONS = { connect: MessageSquare, create: Music, discover: Compass, share: FileText, visualize: Wand2, compete: Trophy };
-const MENU_GROUPS = [
-  { label: "Enter a NaliBase Mall", items: WORLD_ORDER.map((id) => ({
-    icon: WORLD_MENU_ICONS[id],
-    label: WORLD_CONTEXTS[id].label,
-    path: WORLD_CONTEXTS[id].path,
-    desc: WORLD_CONTEXTS[id].menuDescription,
-  })) },
-];
+const ROOT_PATHS = new Set(Object.keys(TITLES));
 
 export default function MobileHeader() {
   const navigate = useNavigate();
@@ -48,6 +46,13 @@ export default function MobileHeader() {
   const { hasPaidAccess, isLoading: subscriptionLoading } = useSubscription();
   const [menuOpen, setMenuOpen] = useState(false);
   const lastUserIdRef = useRef(user?.id || null);
+
+  // "More" tab in the bottom bar dispatches this event to open the menu.
+  useEffect(() => {
+    const openMenu = () => setMenuOpen(true);
+    window.addEventListener("open-mobile-menu", openMenu);
+    return () => window.removeEventListener("open-mobile-menu", openMenu);
+  }, []);
 
   useEffect(() => {
     const nextUserId = user?.id || null;
@@ -58,21 +63,13 @@ export default function MobileHeader() {
 
   const path = location.pathname;
 
-  const ROOT_PATHS = new Set([
-    "/", "/explore", "/messages", "/profile", "/files", "/leaderboard",
-    "/playlists", "/settings", "/record", "/studio", "/cover-art",
-    "/analytics", "/pricing", "/projects-summary", "/challenges", "/squad",
-    "/admin", "/create-challenge", "/viral-seed",
-  ]);
   const hasDynamicSegment = path.split("/").filter(Boolean).length > 1 && !ROOT_PATHS.has(path);
   const isSubPage = location.state?.from || hasDynamicSegment || !ROOT_PATHS.has(path) || location.search.length > 0;
 
-  const activeWorld = resolveWorldForLocation(path, location.state?.fromWorld);
   const baseTitle =
     TITLES[path] ||
     Object.entries(TITLES).find(([k]) => k !== "/" && path.startsWith(k))?.[1] ||
     "NaliBase";
-  const title = activeWorld && !path.startsWith('/world/') ? `${activeWorld.label} · ${baseTitle}` : baseTitle;
 
   const handleBack = () => {
     if (location.state?.from) {
@@ -84,10 +81,10 @@ export default function MobileHeader() {
     }
   };
 
-  const handleNavigate = (dest, fromWorld = '') => {
+  const handleNavigate = (dest) => {
     sounds.nav();
     setMenuOpen(false);
-    navigate(dest, fromWorld ? { state: { fromWorld } } : undefined);
+    navigate(dest);
   };
 
   const handleLogout = async () => {
@@ -125,7 +122,7 @@ export default function MobileHeader() {
               </button>
             )}
             <Logo size={30} className="mr-1" />
-            <h1 className="font-heading font-extrabold text-base truncate tracking-tight">{title}</h1>
+            <h1 className="font-heading font-extrabold text-base truncate tracking-tight">{baseTitle}</h1>
           </div>
 
           {/* Right Section */}
@@ -171,14 +168,15 @@ export default function MobileHeader() {
               <Logo size={30} />
               <span className="font-heading font-extrabold text-gradient-animate tracking-tight">NaliBase</span>
             </SheetTitle>
-            <SheetDescription className="sr-only">NaliBase malls and account navigation</SheetDescription>
+            <SheetDescription className="sr-only">NaliBase features and account navigation</SheetDescription>
           </SheetHeader>
 
           <div className="p-4 space-y-5">
             {/* Recently Visited */}
-            <RecentlyVisited onNavigate={handleNavigate} currentPath={path} currentWorldId={activeWorld?.id || ''} />
+            <RecentlyVisited onNavigate={handleNavigate} currentPath={path} currentWorldId="" />
 
-            {MENU_GROUPS.map((group) => (
+            {/* Feature categories — clear, direct links with descriptions */}
+            {NAV_GROUPS.map((group) => (
               <div key={group.label}>
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2 px-1">
                   {group.label}
@@ -214,53 +212,22 @@ export default function MobileHeader() {
               </div>
             ))}
 
-            {/* Account actions — always reachable on iPhone/mobile. */}
+            {/* Account section */}
             <div className="pt-3 border-t border-white/[0.06] space-y-1">
-              {isAuthenticated ? (
+              {isAuthenticated && (
                 <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-destructive/10 text-left transition-all"
+                  onClick={() => handleNavigate("/profile")}
+                  className="ui-hover min-h-[58px] w-full rounded-xl p-2.5 text-left transition-all hover:bg-secondary/50 flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
-                    <LogOut className="w-4.5 h-4.5 text-destructive" style={{ width: 18, height: 18 }} />
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <User className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-destructive">Log out</p>
-                    <p className="text-[11px] text-muted-foreground">Sign out of this device</p>
+                    <p className="text-sm font-semibold">Profile</p>
+                    <p className="text-[11px] text-muted-foreground">Your public page</p>
                   </div>
                 </button>
-              ) : (
-                <>
-                  <button
-                    onClick={() => handleNavigate("/login")}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-primary/10 text-left transition-all"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <LogIn className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">Log in</p>
-                      <p className="text-[11px] text-muted-foreground">Access your NaliBase account</p>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavigate("/register")}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-primary/10 text-left transition-all"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Users className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">Sign up</p>
-                      <p className="text-[11px] text-muted-foreground">Create your NaliBase account</p>
-                    </div>
-                  </button>
-                </>
               )}
-            </div>
-
-            {/* Footer items */}
-            <div className="pt-3 border-t border-white/[0.06] space-y-1">
               <button
                 onClick={() => handleNavigate("/pricing")}
                 className="ui-hover min-h-[58px] w-full rounded-xl p-2.5 text-left transition-all hover:bg-secondary/50 flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-primary/40"
@@ -298,6 +265,51 @@ export default function MobileHeader() {
                     <p className="text-[11px] text-muted-foreground">Manage platform</p>
                   </div>
                 </button>
+              )}
+            </div>
+
+            {/* Auth actions */}
+            <div className="pt-3 border-t border-white/[0.06] space-y-1">
+              {isAuthenticated ? (
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-destructive/10 text-left transition-all"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                    <LogOut className="w-4.5 h-4.5 text-destructive" style={{ width: 18, height: 18 }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-destructive">Log out</p>
+                    <p className="text-[11px] text-muted-foreground">Sign out of this device</p>
+                  </div>
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleNavigate("/login")}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-primary/10 text-left transition-all"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <LogIn className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Log in</p>
+                      <p className="text-[11px] text-muted-foreground">Access your NaliBase account</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleNavigate("/register")}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-primary/10 text-left transition-all"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <User className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Sign up</p>
+                      <p className="text-[11px] text-muted-foreground">Create your NaliBase account</p>
+                    </div>
+                  </button>
+                </>
               )}
             </div>
           </div>

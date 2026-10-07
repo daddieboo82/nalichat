@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 const read=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
-describe('NaliBase desktop world registry',()=>{
- it('builds desktop world entrances from the canonical registry',async()=>{ const s=await read('components/navigation/DesktopNav.jsx'); expect(s).toContain('WORLD_CONTEXTS, WORLD_ORDER'); expect(s).toContain('items: WORLD_ORDER.map'); expect(s).toContain('path: WORLD_CONTEXTS[id].path'); });
- it('keeps active storefront identity on the shared resolver',async()=>{ const s=await read('components/navigation/DesktopNav.jsx'); expect(s).toContain('resolveWorldForLocation(location.pathname, location.state?.fromWorld)'); });
+describe('NaliBase desktop simple navigation registry',()=>{
+ it('builds desktop nav from the canonical navigation config',async()=>{ const s=await read('components/navigation/DesktopNav.jsx'); expect(s).toContain('DESKTOP_MAIN_LINKS'); expect(s).toContain('DESKTOP_MORE_LINKS'); expect(s).toContain('navigationConfig'); });
+ it('keeps a More dropdown for secondary features',async()=>{ const s=await read('components/navigation/DesktopNav.jsx'); expect(s).toContain('MoreHorizontal'); expect(s).toContain('DropdownMenuContent'); });
 });

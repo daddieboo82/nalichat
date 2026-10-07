@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 const read=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
-describe('NaliBase mobile mall origin navigation',()=>{
- it('uses originating mall state for active tab and stack ownership',async()=>{ const s=await read('components/navigation/MobileNav.jsx'); expect(s).toContain('resolveWorldForLocation(path, location.state?.fromWorld)'); expect(s).toContain('getTabForPath(path, location.state?.fromWorld)'); expect(s).toContain('getWorldForPath(pathname, preferredWorld)'); });
+describe('NaliBase mobile simple tab navigation',()=>{
+ it('uses direct path matching for active tab detection',async()=>{ const s=await read('components/navigation/MobileNav.jsx'); expect(s).toContain('getActiveTab'); expect(s).toContain('pathname.startsWith'); });
+ it('keeps five simple feature tabs from the canonical config',async()=>{ const s=await read('components/navigation/MobileNav.jsx'); expect(s).toContain('PRIMARY_TABS'); expect(s).toContain('SECONDARY_PATHS'); expect(s).toContain('__more__'); });
 });

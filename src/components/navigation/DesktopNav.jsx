@@ -2,28 +2,18 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import { MessageSquare, Compass, Music, FileText, BarChart3, Trophy,
-  Settings, LogOut, LogIn, HelpCircle, UserPlus, Film, AudioLines, Plus, Gem, Video
+import {
+  Settings, LogOut, LogIn, HelpCircle, UserPlus, AudioLines, Plus, Gem, MoreHorizontal,
+  BarChart3
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import Logo from "@/components/branding/Logo";
 import { Button } from "@/components/ui/button";
-import { resolveWorldForLocation, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { trackProductEvent } from "@/lib/productAnalytics";
-
-const WORLD_ICONS = { connect: MessageSquare, create: Music, discover: Compass, share: FileText, visualize: Film, compete: Trophy };
-const NAV_GROUPS = [
-  { label: "NaliBase Worlds", items: WORLD_ORDER.map((id) => ({
-    icon: WORLD_ICONS[id],
-    label: WORLD_CONTEXTS[id].label[0] + WORLD_CONTEXTS[id].label.slice(1).toLowerCase(),
-    description: WORLD_CONTEXTS[id].menuDescription,
-    path: WORLD_CONTEXTS[id].path,
-  })) },
-  { label: "Meetings", items: [{ icon: Video, label: "Meetings", description: "Private business meetings and listening parties", path: "/meetings" }] },
-];
+import { DESKTOP_MAIN_LINKS, DESKTOP_MORE_LINKS } from "@/lib/navigationConfig";
 
 export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {
   const location = useLocation();
@@ -36,11 +26,9 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
     navigate("/", { replace: true });
   };
 
-
-  const activeWorld = resolveWorldForLocation(location.pathname, location.state?.fromWorld);
   const isActive = (path) => {
-    const worldId = path.match(/^\/world\/([^/]+)/)?.[1];
-    return location.pathname === path || (path !== "/" && location.pathname.startsWith(path)) || Boolean(worldId && activeWorld?.id === worldId);
+    if (path === "/") return location.pathname === "/";
+    return location.pathname === path || location.pathname.startsWith(path);
   };
 
   return (
@@ -57,48 +45,74 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           </div>
         </Link>
 
-        {/* NaliBase world entrances */}
+        {/* Direct feature links — clear names, no abstract "world" labels */}
         <div className="flex items-center justify-center flex-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-0.5 px-1">
-          {NAV_GROUPS.map((group, gi) => (
-            <div key={group.label} className="flex items-center gap-0.5 shrink-0">
-              {gi > 0 && <div className="w-px h-5 bg-white/[0.08] mx-1 shrink-0" />}
-              {group.items.map(({ icon: Icon, label, description, path }) => {
-                const active = isActive(path);
-                return (
+          {DESKTOP_MAIN_LINKS.map(({ icon: Icon, label, path }) => {
+            const active = isActive(path);
+            return (
+              <Link
+                key={path}
+                to={path}
+                title={label}
+                aria-label={label}
+                onClick={() => sounds.nav()}
+                className={cn(
+                  "ui-hover group relative flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary/40",
+                  active
+                    ? "bg-primary/15 text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                )}
+              >
+                {active && (
+                  <div className="absolute top-0 inset-x-2 h-0.5 bg-primary rounded-b-full shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
+                )}
+                <Icon className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", active && "text-primary")} />
+                <span className="hidden 2xl:inline">{label}</span>
+              </Link>
+            );
+          })}
+
+          {/* More dropdown — secondary features grouped by category */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                title="More features"
+                aria-label="More features"
+                className={cn(
+                  "ui-hover group relative flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary/40",
+                  DESKTOP_MORE_LINKS.some(item => isActive(item.path))
+                    ? "bg-primary/15 text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                )}
+              >
+                <MoreHorizontal className="w-4 h-4 shrink-0" />
+                <span className="hidden 2xl:inline">More</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-64 rounded-2xl border-border/50 bg-card/95 p-1.5 backdrop-blur-xl">
+              {DESKTOP_MORE_LINKS.map(({ icon: Icon, label, path }, idx) => (
+                <DropdownMenuItem key={path} asChild>
                   <Link
-                    key={path}
                     to={path}
-                    title={`${label}: ${description}`}
-                    aria-label={`${label}: ${description}`}
                     onClick={() => sounds.nav()}
                     className={cn(
-                      "ui-hover group relative flex min-h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary/40",
-                      active
-                        ? "bg-primary/15 text-primary shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      "min-h-10 cursor-pointer rounded-xl flex items-center gap-2.5",
+                      isActive(path) && "text-primary"
                     )}
                   >
-                    {active && (
-                      <div className="absolute top-0 inset-x-2 h-0.5 bg-primary rounded-b-full shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
-                    )}
-                    <Icon className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", active && "text-primary")} />
-                    <span className="hidden 2xl:inline">{label}</span>
+                    <Icon className="w-4 h-4 shrink-0" /> {label}
                   </Link>
-                );
-              })}
-            </div>
-          ))}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Right Section */}
         <div className="flex items-center gap-1 shrink-0">
           <div className="border-l border-white/[0.08] h-6 mr-1" />
 
-          {/* Auth CTAs — the only login/signup entry point was previously a
-              single "Log in" item buried in the Account dropdown behind a
-              generic gear icon, with no signup option at all. Mirror the
-              mobile header's visible pill so anonymous visitors have an
-              obvious way in. */}
+          {/* Auth CTAs */}
           {!isAuthenticated && (
             <div className="flex items-center gap-1.5 mr-1 shrink-0">
               <Link
@@ -128,13 +142,15 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           )}
 
           {/* New Project */}
-          <Link
-            to="/projects-summary?new=true"
-            title="New Project"
-            className="ui-hover mr-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-pink-500 text-white shadow-lg shadow-primary/20 transition-all hover:opacity-90 focus-visible:ring-2 focus-visible:ring-primary/50"
-          >
-            <Plus className="w-5 h-5" />
-          </Link>
+          {isAuthenticated && (
+            <Link
+              to="/projects-summary?new=true"
+              title="New Project"
+              className="ui-hover mr-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-pink-500 text-white shadow-lg shadow-primary/20 transition-all hover:opacity-90 focus-visible:ring-2 focus-visible:ring-primary/50"
+            >
+              <Plus className="w-5 h-5" />
+            </Link>
+          )}
 
           {/* System */}
           <div className="border-l border-white/[0.08] pl-1.5 ml-1 flex items-center gap-1.5 shrink-0">
@@ -160,8 +176,15 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52 rounded-2xl border-border/50 bg-card/95 p-1.5 backdrop-blur-xl">
+                {isAuthenticated && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="min-h-10 cursor-pointer rounded-xl">
+                      <UserPlus className="w-4 h-4 mr-2" /> Profile
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={onInviteClick} className="min-h-10 cursor-pointer rounded-xl">
-                  <UserPlus className="w-4 h-4 mr-2" /> Invite Friends
+                  <HelpCircle className="w-4 h-4 mr-2" /> Invite Friends
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onHelpClick} className="min-h-10 cursor-pointer rounded-xl">
                   <HelpCircle className="w-4 h-4 mr-2" /> Help

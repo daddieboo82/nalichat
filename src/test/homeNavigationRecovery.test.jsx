@@ -195,16 +195,16 @@ describe('home, navigation, and recovery flows', () => {
     expect(screen.getByRole('link', { name: 'Sign up' })).toBeTruthy();
   });
 
-  it('moves between the NaliBase plaza and world malls on mobile', async () => {
+  it('moves between simple feature tabs on mobile', async () => {
     renderWithProviders(<MobileNavHarness />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/world/connect'));
+    fireEvent.click(screen.getByRole('button', { name: 'Messages' }));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/messages'));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Discover' }));
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/world/discover'));
+    fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/explore'));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Plaza' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Home' }));
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/'));
   });
 
@@ -217,8 +217,8 @@ describe('home, navigation, and recovery flows', () => {
 
     expect(screen.getAllByRole('button', { name: /Log in/i }).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
-    expect(screen.getByText('DISCOVER')).toBeTruthy();
-    expect(screen.getByText('CREATE')).toBeTruthy();
+    expect(screen.getByText('Discover')).toBeTruthy();
+    expect(screen.getByText('Create')).toBeTruthy();
   });
 
   it('completes the welcome tour and navigates to challenges', async () => {

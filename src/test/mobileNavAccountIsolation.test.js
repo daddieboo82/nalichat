@@ -1,18 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
 
-describe("mobile navigation account isolation", () => {
-  it("scopes tab stacks to the authenticated account", async () => {
+describe("mobile navigation simple design", () => {
+  it("uses direct path-based navigation without per-account tab stacks", async () => {
     const source = await readFile(
       new URL("../../src/components/navigation/MobileNav.jsx", import.meta.url),
       "utf8",
     );
 
-    expect(source).toContain('const { user } = useAuth();');
-    expect(source).toContain('mobile_nav_stacks:${userId || "anonymous"}');
-    expect(source).toContain('loadStacks(storageKey, user?.id)');
-    expect(source).toContain('saveStacks(storageKey, next)');
-    expect(source).toContain('if (!userId)');
-    expect(source).toContain('sessionStorage.removeItem(LEGACY_STORAGE_KEY)');
+    // The simplified nav no longer maintains per-user tab stacks or session storage.
+    // Navigation is direct: tap a tab, go to that feature.
+    expect(source).toContain("PRIMARY_TABS");
+    expect(source).toContain("getActiveTab");
+    expect(source).not.toContain("mobile_nav_stacks");
+    expect(source).not.toContain("loadStacks");
+    expect(source).not.toContain("saveStacks");
   });
 });

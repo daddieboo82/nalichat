@@ -32,6 +32,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import Home from '@/pages/Home';
 import AskNaliHint from '@/components/AskNaliHint';
 import PwaUpdatePrompt from '@/components/PwaUpdatePrompt';
+import AdSenseLoader from '@/components/ads/AdSenseLoader';
 
 function lazyWithReloadRecovery(importer, key) {
   return lazy(async () => {
@@ -526,6 +527,7 @@ function App() {
                       <AiAssistant />
                     </Suspense>
                   )}
+                  <AdSenseLoader />
                   <PwaUpdatePrompt />
                   <Toaster />
                   <SonnerToaster />

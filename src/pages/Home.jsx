@@ -23,6 +23,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import Logo from "@/components/branding/Logo";
+import AdSlot from "@/components/ads/AdSlot";
 import { getLastVisitedWorld, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
 
 const PLAZA_WORLD_DETAILS = Object.freeze({
@@ -864,6 +865,12 @@ export default function Home() {
 
         </section>
       </>}
+
+      {!user && (
+          <div className="mx-auto max-w-3xl px-4 pb-6">
+            <AdSlot slot="home-footer" />
+          </div>
+        )}
 
       {!user && (
           <footer className="pb-4 text-center text-sm text-muted-foreground">

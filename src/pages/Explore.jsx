@@ -13,6 +13,7 @@ import TrackCommentsDialog from "@/components/explore/TrackCommentsDialog";
 import { sounds } from "@/hooks/use-sound";
 import { toast } from "sonner";
 import { getLikeCount } from "@/lib/engagement";
+import AdSlot from "@/components/ads/AdSlot";
 
 const MEDIUMS = ["all", "original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 
@@ -253,6 +254,10 @@ export default function Explore() {
           </div>
         )}
 
+        {/* In-feed ad — sits between Trending and Recent so it never
+            interrupts the hero or the masonry flow */}
+        <AdSlot slot="explore-feed" className="mb-6" />
+
         {/* All posts masonry grid */}
         <div>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
@@ -307,9 +312,12 @@ export default function Explore() {
             </div>
           )}
         </div>
-      </div>
+        </div>
 
-      <UploadArtDialog sourceFile={publishFile} open={showUpload} onClose={() => { setShowUpload(false); setPublishFile(null); }} currentUser={currentUser} onSuccess={() => {
+        {/* Footer ad — last thing in the content stream, never on the hero */}
+        <AdSlot slot="explore-footer" className="mx-auto max-w-5xl px-4 sm:px-8 pb-4" />
+
+        <UploadArtDialog sourceFile={publishFile} open={showUpload} onClose={() => { setShowUpload(false); setPublishFile(null); }} currentUser={currentUser} onSuccess={() => {
         setShowUpload(false);
         setPublishFile(null);
         queryClient.invalidateQueries({ queryKey: ["artposts"] });

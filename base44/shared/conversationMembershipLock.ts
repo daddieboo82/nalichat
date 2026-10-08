@@ -4,37 +4,36 @@ export async function acquireConversationMembershipLock(
   entities: any,
   conversationId: string,
 ) {
-  const id = `conversation_membership_lock_${conversationId}`;
   const now = new Date();
   const expiresAt = new Date(now.getTime() + CONVERSATION_MEMBERSHIP_LOCK_TTL_MS).toISOString();
 
-  const create = () => entities.ConversationMembershipLock.create({
-    id,
+  // Base44 generates the entity record ID even when an id is supplied in the
+  // create payload. The previous implementation returned a synthetic ID,
+  // so release() could never delete the actual lock record. That caused
+  // repeated live-session recordings to be blocked for the full TTL.
+  const existingRows = await entities.ConversationMembershipLock.filter(
+    { conversation_id: conversationId },
+    '-created_date',
+    20,
+    0,
+  );
+  const active = existingRows.find(
+    (row: any) => Date.parse(row.expires_at || '') > now.getTime(),
+  );
+  if (active) return null;
+
+  for (const row of existingRows) {
+    if (row?.id) {
+      await entities.ConversationMembershipLock.delete(row.id).catch(() => {});
+    }
+  }
+
+  const created = await entities.ConversationMembershipLock.create({
     conversation_id: conversationId,
     claimed_at: now.toISOString(),
     expires_at: expiresAt,
   });
-
-  try {
-    await create();
-    return id;
-  } catch (createError) {
-    const existing = await entities.ConversationMembershipLock.get(id).catch(() => null);
-    if (!existing) throw createError;
-
-    const expired = Date.parse(existing.expires_at || '') <= now.getTime();
-    if (!expired) return null;
-
-    await entities.ConversationMembershipLock.delete(id);
-    try {
-      await create();
-      return id;
-    } catch (retryError) {
-      const raced = await entities.ConversationMembershipLock.get(id).catch(() => null);
-      if (raced) return null;
-      throw retryError;
-    }
-  }
+  return created?.id || null;
 }
 
 export async function releaseConversationMembershipLock(

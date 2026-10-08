@@ -13,10 +13,10 @@ describe("subscription billing client", () => {
     const invoke = vi.fn().mockResolvedValue({
       data: {
         success: true,
-        action: "create_checkout",
+        action: "create_paypal_subscription",
         userId: "user-123",
         sku: "premium_plus_yearly",
-        redirectUrl: "https://checkout.wix.com/pay/session-test",
+        checkoutUrl: "https://www.paypal.com/webapps/billing/subscriptions?ba_token=test",
       },
     });
     const redirect = vi.fn();
@@ -29,11 +29,11 @@ describe("subscription billing client", () => {
       redirect,
     });
 
-    expect(invoke).toHaveBeenCalledWith("create-checkout", {
+    expect(invoke).toHaveBeenCalledWith("createPayPalSubscription", {
       sku: "premium_plus_yearly",
       idempotencyKey: "checkout_request_1234",
     });
-    expect(redirect).toHaveBeenCalledWith("https://checkout.wix.com/pay/session-test");
+    expect(redirect).toHaveBeenCalledWith("https://www.paypal.com/webapps/billing/subscriptions?ba_token=test");
   });
 
   it("rejects a checkout response for another account", async () => {

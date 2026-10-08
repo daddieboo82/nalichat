@@ -44,8 +44,8 @@
     },
     "description": {
       "type": "string",
-      "description": "Optional description (up to 1000 characters)",
-      "maxLength": 1000
+      "maxLength": 1000,
+      "description": "Optional description (up to 1000 characters)"
     }
   },
   "required": [

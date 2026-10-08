@@ -115,7 +115,7 @@ describe('ChatSessionViewer browser recording flow', () => {
       file_url: 'https://cdn.example/recorded.webm',
       type: 'vocal',
     }));
-    await waitFor(() => expect(screen.getByTestId('track-count')).toHaveTextContent('1'));
+    await waitFor(() => expect(screen.getByTestId('track-count').textContent).toBe('1'));
     expect(streamTrack.stop).toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
   });

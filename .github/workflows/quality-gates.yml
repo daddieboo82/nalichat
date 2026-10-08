@@ -57,10 +57,18 @@ jobs:
           cache: npm
       - name: Require production E2E credentials
         run: |
-          test -n "$E2E_USER_EMAIL"
-          test -n "$E2E_USER_PASSWORD"
-          test -n "$E2E_SECOND_USER_EMAIL"
-          test -n "$E2E_SECOND_USER_PASSWORD"
+          missing=0
+          for key in E2E_USER_EMAIL E2E_USER_PASSWORD E2E_SECOND_USER_EMAIL E2E_SECOND_USER_PASSWORD; do
+            if [ -z "${!key}" ]; then
+              echo "AUTHENTICATED E2E NOT EXECUTED — protected credential unavailable: $key"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Production authenticated E2E gate is blocked until protected credentials are injected."
+            exit 1
+          fi
+          echo "Protected production E2E credentials are available; authenticated tests will execute."
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e -- e2e/authenticated-smoke.spec.js --project=mobile-chromium --project=iphone-16-simulation

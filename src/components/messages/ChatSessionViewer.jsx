@@ -13,6 +13,14 @@ function recordingExtension(mimeType = "") {
   return "webm";
 }
 
+// BounceDialog and renderMasteredMix key off `audioUrl`, but Track entities
+// store the media under `file_url`. Normalize every track so the studio export
+// pipeline sees the same shape it does in the Studio page.
+function normalizeSessionTrack(track) {
+  if (!track) return track;
+  return { ...track, audioUrl: track.audioUrl || track.file_url || "" };
+}
+
 async function listSessionTracks(projectId) {
   const rows = [];
   const pageSize = 200;
@@ -24,7 +32,7 @@ async function listSessionTracks(projectId) {
       skip,
     );
     rows.push(...page);
-    if (page.length < pageSize) return rows;
+    if (page.length < pageSize) return rows.map(normalizeSessionTrack);
   }
 }
 
@@ -140,9 +148,10 @@ export default function ChatSessionViewer({ message, currentUser }) {
             track?.uploaded_by !== currentUser?.id
           ) throw new Error("Track was not created");
           if (mountedRef.current) {
+            const normalized = normalizeSessionTrack(track);
             setTracks((current) => [
-              ...current.filter((existing) => existing.id !== track.id),
-              track,
+              ...current.filter((existing) => existing.id !== normalized.id),
+              normalized,
             ]);
           }
         } catch (e) {
@@ -215,7 +224,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
                 updated?.project_id !== message.id
               ) throw new Error("Track was not updated");
               setTracks((current) => current.map((track) => (
-                track.id === id ? { ...track, ...updated } : track
+                track.id === id ? normalizeSessionTrack({ ...track, ...updated }) : track
               )));
               return updated;
             } catch (error) {

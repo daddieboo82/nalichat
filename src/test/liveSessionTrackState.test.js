@@ -16,6 +16,8 @@ describe('live session track state', () => {
     expect(source).toContain('toast.error("Couldn\'t add the recorded track. Please try again.")');
     expect(source).toContain('toast.error("Couldn\'t update the track. Please try again.")');
     expect(source).toContain('toast.error("Couldn\'t delete the track. Please try again.")');
-    expect(source).toContain('toast.error("Couldn\'t start recording. Check microphone access and try again.")');
+    expect(source).toContain('e?.name === "NotAllowedError"');
+    expect(source).toContain('e?.name === "NotFoundError"');
+    expect(source).toContain('e?.message || "Couldn\'t start recording. Check microphone access and try again."');
   });
 });

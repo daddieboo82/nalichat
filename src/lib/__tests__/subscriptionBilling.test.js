@@ -40,10 +40,10 @@ describe("subscription billing client", () => {
     const invoke = vi.fn().mockResolvedValue({
       data: {
         success: true,
-        action: "create_checkout",
+        action: "create_paypal_subscription",
         userId: "other-user",
         sku: "premium_plus_yearly",
-        redirectUrl: "https://checkout.wix.com/pay/session-test",
+        checkoutUrl: "https://www.paypal.com/webapps/billing/subscriptions?ba_token=test",
       },
     });
     const redirect = vi.fn();

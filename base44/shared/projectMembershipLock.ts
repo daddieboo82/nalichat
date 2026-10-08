@@ -4,37 +4,34 @@ export async function acquireProjectMembershipLock(
   entities: any,
   projectId: string,
 ) {
-  const id = `project_membership_lock_${projectId}`;
   const now = new Date();
   const expiresAt = new Date(now.getTime() + MEMBERSHIP_LOCK_TTL_MS).toISOString();
 
-  const create = () => entities.ProjectMembershipLock.create({
-    id,
+  // Base44 generates the entity record ID even when an id is supplied in the
+  // create payload. Return the real record ID so release() deletes the lock.
+  const existingRows = await entities.ProjectMembershipLock.filter(
+    { project_id: projectId },
+    '-created_date',
+    20,
+    0,
+  );
+  const active = existingRows.find(
+    (row: any) => Date.parse(row.expires_at || '') > now.getTime(),
+  );
+  if (active) return null;
+
+  for (const row of existingRows) {
+    if (row?.id) {
+      await entities.ProjectMembershipLock.delete(row.id).catch(() => {});
+    }
+  }
+
+  const created = await entities.ProjectMembershipLock.create({
     project_id: projectId,
     claimed_at: now.toISOString(),
     expires_at: expiresAt,
   });
-
-  try {
-    await create();
-    return id;
-  } catch (createError) {
-    const existing = await entities.ProjectMembershipLock.get(id).catch(() => null);
-    if (!existing) throw createError;
-
-    const expired = Date.parse(existing.expires_at || '') <= now.getTime();
-    if (!expired) return null;
-
-    await entities.ProjectMembershipLock.delete(id);
-    try {
-      await create();
-      return id;
-    } catch (retryError) {
-      const raced = await entities.ProjectMembershipLock.get(id).catch(() => null);
-      if (raced) return null;
-      throw retryError;
-    }
-  }
+  return created?.id || null;
 }
 
 export async function releaseProjectMembershipLock(

@@ -2530,15 +2530,18 @@ describe('liked-post state response contract', () => {
 describe('billing session response contracts', () => {
   it('redirects only after explicit checkout or portal success', async () => {
     const client = await readText('src/lib/subscriptionBilling.js');
-    const checkout = await readText('base44/functions/create-checkout/entry.ts');
+    const checkout = await readText('base44/functions/createPayPalSubscription/entry.ts');
     const portal = await readText('base44/functions/createBillingPortal/entry.ts');
-    expect(client).toContain('payload?.action !== "create_checkout"');
+    expect(client).toContain('payload?.action !== "create_paypal_subscription"');
     expect(client).toContain('payload?.action !== "create_billing_portal"');
     expect(client).toContain('payload?.userId !== expectedUserId');
     expect(client).toContain('payload?.sku !== sku');
     expect(client).toContain('payload?.returnDestination !== returnDestination');
-    expect(checkout).toContain("action: 'create_checkout'");
+    expect(client).toContain('checkoutUrl');
+    expect(client).toContain('www.paypal.com');
+    expect(checkout).toContain("action: 'create_paypal_subscription'");
     expect(checkout).toContain("'/ThankYou?subscription=1'");
+    expect(checkout).toContain("paypal_environment");
     expect(portal).toContain("action: 'create_billing_portal'");
   });
 });

@@ -22,12 +22,46 @@ export default function AdSlot({
   const insRef = useRef(null);
 
   useEffect(() => {
-    if (!ADS_ENABLED || !insRef.current) return;
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch {
-      // AdSense library not loaded yet — it'll pick up the ins tag
-      // automatically once the script finishes loading.
+    if (!ADS_ENABLED) return;
+    const ins = insRef.current;
+    if (!ins) return;
+
+    // AdSense marks initialized <ins> elements with data-adsbygoogle-status="done".
+    // Don't push again for an already-initialized slot.
+    const isInitialized = () =>
+      ins.getAttribute("data-adsbygoogle-status") === "done";
+
+    const pushAd = () => {
+      // Guard: component may have unmounted or AdSense may have already
+      // initialized this slot by the time the script fires.
+      if (!ins.isConnected || isInitialized()) return;
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // Library not ready — the script's auto-init will pick up the ins tag.
+      }
+    };
+
+    // If the library is already loaded, push immediately. Otherwise wait for
+    // the loader script to fire its load event so the push doesn't queue up
+    // and outlive this component (the cause of the "no_div" console error).
+    if (typeof window.adsbygoogle !== "undefined") {
+      pushAd();
+      return;
+    }
+
+    const loader = document.getElementById("adsbygoogle-loader");
+    if (loader) {
+      if (loader.readyState === "complete" || loader.dataset.loaded === "1") {
+        pushAd();
+      } else {
+        const onLoad = () => {
+          loader.dataset.loaded = "1";
+          pushAd();
+        };
+        loader.addEventListener("load", onLoad, { once: true });
+        return () => loader.removeEventListener("load", onLoad);
+      }
     }
   }, []);
 

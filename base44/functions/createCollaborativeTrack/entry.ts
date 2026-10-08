@@ -8,8 +8,6 @@ import {
   releaseConversationMembershipLock,
 } from '../../shared/conversationMembershipLock.ts';
 
-const MAX_TRACK_BYTES = 100 * 1024 * 1024;
-
 const TRUSTED_MEDIA_HOSTS = [
   'storage.googleapis.com',
   'base44-user-files.s3.amazonaws.com',
@@ -30,39 +28,6 @@ function isTrustedMediaUrl(url: string) {
   } catch {
     return false;
   }
-}
-
-async function resolveStoredFileSize(url: string): Promise<number | null> {
-  // Base44 file URLs can redirect to the backing object store. Follow only
-  // redirects that remain inside our trusted media allowlist.
-  try {
-    const head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
-    if (head.ok && isTrustedMediaUrl(head.url || url)) {
-      const length = Number(head.headers.get('content-length'));
-      if (Number.isFinite(length) && length >= 0) return length;
-    }
-  } catch {}
-
-  try {
-    const probe = await fetch(url, {
-      method: 'GET',
-      headers: { Range: 'bytes=0-0' },
-      redirect: 'follow',
-    });
-    if ((probe.ok || probe.status === 206) && isTrustedMediaUrl(probe.url || url)) {
-      const range = probe.headers.get('content-range') || '';
-      const match = range.match(/\/(\d+)$/);
-      if (match) {
-        const total = Number(match[1]);
-        if (Number.isFinite(total) && total >= 0) return total;
-      }
-      const length = Number(probe.headers.get('content-length'));
-      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
-    }
-    try { await probe.body?.cancel(); } catch {}
-  } catch {}
-
-  return null;
 }
 
 function cleanUploadedMediaUrl(value: unknown) {

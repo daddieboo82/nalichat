@@ -19,9 +19,13 @@ export default defineConfig(({ mode }) => ({
     __NALI_BUILD_SHA__: JSON.stringify(resolveBuildSha()),
   },
   logLevel: 'warn',
-  // Use an app-specific optimization cache so Base44 preview cannot reuse
-  // stale pre-bundled dependencies across dependency/toolchain upgrades.
-  cacheDir: 'node_modules/.vite-nalichat-v2',
+  // Keep the pre-bundled dependency cache OUTSIDE node_modules. When the
+  // preview reinstalls packages while the dev server is running, a cache
+  // inside node_modules is wiped and every lazy route then fails with
+  // "Failed to fetch dynamically imported module" (504 on deps). The root
+  // `.vite` folder is already gitignored and survives reinstalls; Vite still
+  // re-optimizes on startup whenever the lockfile changes.
+  cacheDir: '.vite',
   test: {
     environment: 'node',
     include: ['src/**/*.{test,spec}.{js,jsx}'],

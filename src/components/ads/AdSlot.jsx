@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { ADSENSE_CLIENT_ID, ADS_ENABLED } from "@/lib/adsConfig";
+import { useSubscription } from "@/hooks/useSubscription";
 
 /**
  * A single AdSense ad unit wrapped in a container that blends with the
@@ -20,9 +21,10 @@ export default function AdSlot({
   className,
 }) {
   const insRef = useRef(null);
+  const { hasPaidAccess } = useSubscription();
 
   useEffect(() => {
-    if (!ADS_ENABLED) return;
+    if (!ADS_ENABLED || hasPaidAccess) return;
     const ins = insRef.current;
     if (!ins) return;
 
@@ -65,7 +67,7 @@ export default function AdSlot({
     }
   }, []);
 
-  if (!ADS_ENABLED) return null;
+  if (!ADS_ENABLED || hasPaidAccess) return null;
 
   return (
     <div

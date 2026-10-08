@@ -1,6 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const remoteBaseURL = process.env.E2E_BASE_URL?.replace(/\/$/, '');
+const fakeMediaArgs = process.env.E2E_FAKE_MEDIA === '1'
+  ? [
+      '--use-fake-device-for-media-stream',
+      `--use-file-for-fake-audio-capture=${process.env.E2E_FAKE_AUDIO_FILE || '/tmp/nalichat-e2e-audio.wav'}`,
+    ]
+  : [];
 
 export default defineConfig({
   testDir: './e2e',
@@ -12,6 +18,7 @@ export default defineConfig({
   use: {
     baseURL: remoteBaseURL || 'http://127.0.0.1:4173',
     trace: 'on-first-retry',
+    launchOptions: fakeMediaArgs.length ? { args: fakeMediaArgs } : undefined,
   },
   projects: [
     {

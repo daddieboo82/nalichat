@@ -151,7 +151,18 @@ Deno.serve(async (req) => {
     // under the lock immediately before creating the track.
     const fileUrl = body?.file_url ? cleanUploadedMediaUrl(body.file_url) : '';
     if (body?.file_url && !fileUrl) {
-      return Response.json({ error: 'Track media must come from trusted upload storage' }, { status: 400 });
+      let rejectedHost = 'invalid-url';
+      let rejectedProtocol = 'unknown';
+      try {
+        const rejectedUrl = new URL(body.file_url);
+        rejectedHost = rejectedUrl.hostname.toLowerCase() || 'missing-host';
+        rejectedProtocol = rejectedUrl.protocol;
+      } catch {
+        // Do not expose the full uploaded URL or its query parameters.
+      }
+      return Response.json({
+        error: `Track media upload host rejected (${rejectedProtocol} ${rejectedHost})`,
+      }, { status: 400 });
     }
     if (fileUrl) {
       // Track media is created through secureUploadFile in the supported client

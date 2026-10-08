@@ -11,7 +11,7 @@ describe('live session track state', () => {
     const source = await readText('src/components/messages/ChatSessionViewer.jsx');
 
     expect(source).toContain('setTracks((current) => [');
-    expect(source).toContain('track.id === id ? { ...track, ...updated } : track');
+    expect(source).toContain('track.id === id ? normalizeSessionTrack({ ...track, ...updated }) : track');
     expect(source).toContain('current.filter((track) => track.id !== id)');
     expect(source).toContain('toast.error("Couldn\'t add the recorded track. Please try again.")');
     expect(source).toContain('toast.error("Couldn\'t update the track. Please try again.")');

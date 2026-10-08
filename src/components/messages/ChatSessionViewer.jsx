@@ -165,9 +165,14 @@ export default function ChatSessionViewer({ message, currentUser }) {
             ]);
           }
         } catch (e) {
-          console.error(e);
+          console.error("Live session track creation failed:", e);
           if (mountedRef.current) {
-            toast.error("Couldn't add the recorded track. Please try again.");
+            const backendError =
+              e?.response?.data?.error ||
+              e?.data?.error ||
+              e?.message ||
+              "Couldn't add the recorded track. Please try again.";
+            toast.error(String(backendError));
           }
         } finally {
           if (mountedRef.current) setUploading(false);

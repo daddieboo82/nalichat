@@ -10,8 +10,8 @@ describe('dynamic import recovery', () => {
     expect(source).toContain('window.location.reload()');
   });
 
-  it('uses an app-specific Vite optimization cache for Base44 preview', async () => {
+  it('uses a persistent Vite optimization cache outside node_modules for Base44 preview', async () => {
     const source = await readFile('vite.config.js', 'utf8');
-    expect(source).toContain("cacheDir: 'node_modules/.vite-nalichat-v2'");
+    expect(source).toContain("cacheDir: '.vite'");
   });
 });

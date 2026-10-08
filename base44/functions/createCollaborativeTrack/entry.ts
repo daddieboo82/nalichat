@@ -188,13 +188,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Track media must come from trusted upload storage' }, { status: 400 });
     }
     if (fileUrl) {
-      const storedSize = await resolveStoredFileSize(fileUrl);
-      if (storedSize === null) {
-        return Response.json({ error: 'Could not verify track media size' }, { status: 400 });
-      }
-      if (storedSize <= 0 || storedSize > MAX_TRACK_BYTES) {
-        return Response.json({ error: 'Track media must be 100MB or smaller' }, { status: 413 });
-      }
+      // Track media is created through secureUploadFile in the supported client
+      // flows. That upload endpoint already enforces the server-side media size
+      // limits before returning the URL. Do not perform a second HEAD/range
+      // verification here: Base44 object-store URLs may legitimately reject
+      // HEAD or omit Content-Range, which would make valid recordings fail with
+      // a generic "couldn't add the recorded track" error.
     }
 
     const allowedTypes = new Set(['vocal', 'instrument', 'beat', 'sample', 'fx', 'master']);

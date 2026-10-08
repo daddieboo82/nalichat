@@ -4,6 +4,7 @@ export const TRUSTED_MEDIA_HOSTS = [
   'base44-user-files.s3.us-east-1.amazonaws.com',
   'files.base44.com',
   'cdn.base44.com',
+  'base44.app',
 ];
 
 export function isTrustedStoredMediaUrl(value: unknown): boolean {

@@ -18,6 +18,11 @@ export default class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      // When a custom fallback is provided (e.g. null for non-critical components
+      // like the AI assistant), render it instead of the full-screen error page.
+      if (this.props.fallback !== undefined) {
+        return this.props.fallback;
+      }
       return (
         <div className="min-h-screen flex items-center justify-center bg-background px-6">
           <div className="text-center max-w-md">

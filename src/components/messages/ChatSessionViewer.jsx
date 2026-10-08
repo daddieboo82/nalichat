@@ -89,28 +89,38 @@ export default function ChatSessionViewer({ message, currentUser }) {
   }, [message.id]);
 
   const startRecording = async () => {
+    if (isRecording || uploading) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+        throw new Error("Media recording is not supported in this browser");
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
       if (!mountedRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         return;
       }
+
       streamRef.current = stream;
-      if (typeof MediaRecorder === "undefined") {
-        stream.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-        throw new Error("MediaRecorder is not supported");
-      }
       const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
       const mimeType = mimeTypes.find((type) => MediaRecorder.isTypeSupported?.(type)) || "";
-      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       const recordingMimeType = recorder.mimeType || mimeType || "audio/webm";
+
       chunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data?.size) chunksRef.current.push(e.data);
+      recorder.ondataavailable = (event) => {
+        if (event.data?.size > 0) chunksRef.current.push(event.data);
+      };
+      recorder.onerror = (event) => {
+        console.error("Live session recorder error:", event?.error || event);
+        try { if (recorder.state !== "inactive") recorder.stop(); } catch {}
       };
       recorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
+        stream.getTracks().forEach((track) => track.stop());
         if (streamRef.current === stream) streamRef.current = null;
         if (mediaRecorderRef.current === recorder) mediaRecorderRef.current = null;
         if (!mountedRef.current) {

@@ -21,10 +21,10 @@ export default function AdSlot({
   className,
 }) {
   const insRef = useRef(null);
-  const { hasPaidAccess } = useSubscription();
+  const { hasPaidAccess, isLoading } = useSubscription();
 
   useEffect(() => {
-    if (!ADS_ENABLED || hasPaidAccess) return;
+    if (!ADS_ENABLED || hasPaidAccess || isLoading) return;
     const ins = insRef.current;
     if (!ins) return;
 
@@ -67,7 +67,7 @@ export default function AdSlot({
     }
   }, []);
 
-  if (!ADS_ENABLED || hasPaidAccess) return null;
+  if (!ADS_ENABLED || hasPaidAccess || isLoading) return null;
 
   return (
     <div

@@ -11,9 +11,9 @@ let scriptInjected = false;
  * Paying subscribers never load the AdSense library at all.
  */
 export default function AdSenseLoader() {
-  const { hasPaidAccess } = useSubscription();
+  const { hasPaidAccess, isLoading } = useSubscription();
   useEffect(() => {
-    if (!ADS_ENABLED || hasPaidAccess || scriptInjected || typeof window === "undefined") return;
+    if (!ADS_ENABLED || hasPaidAccess || isLoading || scriptInjected || typeof window === "undefined") return;
     scriptInjected = true;
 
     const script = document.createElement("script");

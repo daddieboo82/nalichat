@@ -175,7 +175,7 @@
   "app_user_connector_configs": [],
   "selected_skill_names": [],
   "selected_workspace_skill_ids": [],
-  "model": "claude_opus_5",
+  "model": "claude_opus_5_5",
   "whatsapp_greeting": "",
   "telegram_greeting": "",
   "line_greeting": "",

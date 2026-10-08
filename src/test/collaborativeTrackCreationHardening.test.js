@@ -16,6 +16,7 @@ describe('collaborative track creation hardening', () => {
     );
     expect(source).toContain('MAX_TRACK_BYTES = 100 * 1024 * 1024');
     expect(source).toContain('Could not verify track media size');
+    expect(source).toContain("'base44.app'");
     expect(source).toContain('Track media must be 100MB or smaller');
     expect(source).toContain("typeof body?.project_id !== 'string'");
     expect(source).toContain('name.length > 200');

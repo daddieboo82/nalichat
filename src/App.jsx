@@ -523,9 +523,11 @@ function App() {
                     <AuthenticatedApp />
                   </Router>
                   {loaded && (
-                    <Suspense fallback={null}>
-                      <AiAssistant />
-                    </Suspense>
+                    <ErrorBoundary fallback={null}>
+                      <Suspense fallback={null}>
+                        <AiAssistant />
+                      </Suspense>
+                    </ErrorBoundary>
                   )}
                   <AdSenseLoader />
                   <PwaUpdatePrompt />

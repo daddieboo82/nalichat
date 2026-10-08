@@ -38,3 +38,28 @@ E2E_BASE_URL="${E2E_BASE_URL:-https://nalichat.org}" \
   npx playwright test e2e/authenticated-smoke.spec.js \
   --project=mobile-chromium \
   --project=iphone-16-simulation
+
+echo "==> Creating protected fake microphone fixture"
+python3 - << 'PY'
+import math
+import wave
+path = '/tmp/nalichat-e2e-audio.wav'
+sample_rate = 48000
+duration = 3
+with wave.open(path, 'wb') as wav:
+    wav.setnchannels(1)
+    wav.setsampwidth(2)
+    wav.setframerate(sample_rate)
+    for i in range(sample_rate * duration):
+        sample = int(12000 * math.sin(2 * math.pi * 440 * i / sample_rate))
+        wav.writeframesraw(sample.to_bytes(2, 'little', signed=True))
+PY
+test -s /tmp/nalichat-e2e-audio.wav
+
+echo "==> Running authenticated production live-session recording E2E"
+E2E_BASE_URL="${E2E_BASE_URL:-https://nalichat.org}" \
+E2E_FAKE_MEDIA=1 \
+E2E_FAKE_AUDIO_FILE=/tmp/nalichat-e2e-audio.wav \
+  npx playwright test e2e/live-session-recording.spec.js \
+  --project=mobile-chromium \
+  --project=iphone-16-simulation

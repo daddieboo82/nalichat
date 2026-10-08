@@ -17,19 +17,6 @@ const TRUSTED_MEDIA_HOSTS = [
   'base44.app',
 ];
 
-function isTrustedMediaUrl(url: string) {
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== 'https:') return false;
-    const hostname = parsed.hostname.toLowerCase();
-    return TRUSTED_MEDIA_HOSTS.some(
-      (host) => hostname === host || hostname.endsWith('.' + host),
-    );
-  } catch {
-    return false;
-  }
-}
-
 function cleanUploadedMediaUrl(value: unknown) {
   const raw = String(value || '').trim();
   if (!raw) return '';

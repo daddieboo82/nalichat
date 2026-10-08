@@ -174,11 +174,29 @@ export default function ChatSessionViewer({ message, currentUser }) {
         }
       };
       mediaRecorderRef.current = recorder;
-      recorder.start(1000);
+      try {
+        recorder.start(1000);
+      } catch (startError) {
+        mediaRecorderRef.current = null;
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        throw startError;
+      }
       if (mountedRef.current) setIsRecording(true);
     } catch (e) {
-      console.error(e);
-      toast.error("Couldn't start recording. Check microphone access and try again.");
+      console.error("Couldn't start live session recording:", e);
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      mediaRecorderRef.current = null;
+      if (mountedRef.current) {
+        setIsRecording(false);
+        const message = e?.name === "NotAllowedError"
+          ? "Microphone access was denied. Allow microphone access for NaliChat and try again."
+          : e?.name === "NotFoundError"
+            ? "No microphone was found. Connect a microphone and try again."
+            : e?.message || "Couldn't start recording. Check microphone access and try again.";
+        toast.error(message);
+      }
     }
   };
 
@@ -188,8 +206,19 @@ export default function ChatSessionViewer({ message, currentUser }) {
       setIsRecording(false);
       return;
     }
-    try { recorder.requestData?.(); } catch {}
-    recorder.stop();
+    try {
+      recorder.requestData?.();
+    } catch {}
+    try {
+      recorder.stop();
+    } catch (error) {
+      console.error("Couldn't stop live session recording:", error);
+      recorder.stream?.getTracks().forEach((track) => track.stop());
+      mediaRecorderRef.current = null;
+      streamRef.current = null;
+      setIsRecording(false);
+      toast.error("Couldn't finish the recording. Please try again.");
+    }
     setIsRecording(false);
   };
 

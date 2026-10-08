@@ -8,6 +8,19 @@ import {
   releaseConversationMembershipLock,
 } from '../../shared/conversationMembershipLock.ts';
 
+async function acquireMembershipLockWithRetry(acquire: () => Promise<string | null>) {
+  // Membership updates legitimately hold the lock briefly. Recording should
+  // wait through short contention instead of surfacing a generic track error.
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const lockId = await acquire();
+    if (lockId) return lockId;
+    if (attempt < 7) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  }
+  return null;
+}
+
 const TRUSTED_MEDIA_HOSTS = [
   'storage.googleapis.com',
   'base44-user-files.s3.amazonaws.com',
@@ -177,7 +190,7 @@ Deno.serve(async (req) => {
     }
 
     const projectLockId = initialProject
-      ? await acquireProjectMembershipLock(entities, projectId)
+      ? await acquireMembershipLockWithRetry(() => acquireProjectMembershipLock(entities, projectId))
       : null;
     if (initialProject && !projectLockId) {
       return Response.json(
@@ -186,7 +199,7 @@ Deno.serve(async (req) => {
       );
     }
     const conversationLockId = sessionConversationId
-      ? await acquireConversationMembershipLock(entities, sessionConversationId)
+      ? await acquireMembershipLockWithRetry(() => acquireConversationMembershipLock(entities, sessionConversationId))
       : null;
     if (sessionConversationId && !conversationLockId) {
       await releaseProjectMembershipLock(entities, projectLockId);

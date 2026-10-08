@@ -13,6 +13,7 @@ import AchievementsPanel from "@/components/profile/AchievementsPanel";
 import LevelBadge from "@/components/profile/LevelBadge";
 import TopWorksGallery from "@/components/profile/TopWorksGallery";
 import TipButton from "@/components/profile/TipButton";
+import SponsoredChallengesSection from "@/components/profile/SponsoredChallengesSection";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
 import PullToRefresh from "@/components/layout/PullToRefresh";
@@ -421,6 +422,7 @@ export default function Profile() {
         {/* Bio display */}
         {!editing && (
           <div className="mb-6">
+            <SponsoredChallengesSection userId={user.id} />
             {user.bio && <p className="text-sm text-muted-foreground mb-2">{user.bio}</p>}
             {Array.isArray(user.genres) && user.genres.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">

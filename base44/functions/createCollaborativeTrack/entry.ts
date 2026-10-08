@@ -18,10 +18,25 @@ const TRUSTED_MEDIA_HOSTS = [
   'cdn.base44.com',
 ];
 
-async function resolveStoredFileSize(url: string): Promise<number | null> {
+function isTrustedMediaUrl(url: string) {
   try {
-    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
-    if (head.ok) {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    const hostname = parsed.hostname.toLowerCase();
+    return TRUSTED_MEDIA_HOSTS.some(
+      (host) => hostname === host || hostname.endsWith('.' + host),
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function resolveStoredFileSize(url: string): Promise<number | null> {
+  // Base44 file URLs can redirect to the backing object store. Follow only
+  // redirects that remain inside our trusted media allowlist.
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+    if (head.ok && isTrustedMediaUrl(head.url || url)) {
       const length = Number(head.headers.get('content-length'));
       if (Number.isFinite(length) && length >= 0) return length;
     }
@@ -31,9 +46,9 @@ async function resolveStoredFileSize(url: string): Promise<number | null> {
     const probe = await fetch(url, {
       method: 'GET',
       headers: { Range: 'bytes=0-0' },
-      redirect: 'manual',
+      redirect: 'follow',
     });
-    if (probe.ok || probe.status === 206) {
+    if ((probe.ok || probe.status === 206) && isTrustedMediaUrl(probe.url || url)) {
       const range = probe.headers.get('content-range') || '';
       const match = range.match(/\/(\d+)$/);
       if (match) {

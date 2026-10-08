@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 
 describe('chat-session collaborative track authorization', () => {
-  it('authorizes from current Conversation membership under the membership lock', async () => {
+  it('authorizes from current Conversation membership with retryable membership locking', async () => {
     const s = await readFile('base44/functions/createCollaborativeTrack/entry.ts', 'utf8');
     const previewMessage = s.indexOf('const messagePreview = await entities.Message.get(projectId)');
     const previewConversation = s.indexOf('const conversationPreview = await entities.Conversation', previewMessage);
-    const lock = s.indexOf('await acquireConversationMembershipLock(entities, sessionConversationId)', previewConversation);
+    const lock = s.indexOf('acquireMembershipLockWithRetry(() => acquireConversationMembershipLock(entities, sessionConversationId))', previewConversation);
     const recheckMessage = s.indexOf('entities.Message.get(projectId)', lock);
     const recheckConversation = s.indexOf('entities.Conversation.get(sessionConversationId)', lock);
     const participant = s.indexOf('participantIds.includes(user.id)', recheckConversation);

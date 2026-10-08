@@ -195,13 +195,6 @@ export default function ChatSessionViewer({ message, currentUser }) {
           : e?.name === "NotFoundError"
             ? "No microphone was found. Connect a microphone and try again."
             : e?.message || "Couldn't start recording. Check microphone access and try again.";
-        // Keep the stable legacy error copy for callers/tests that depend on it.
-        if (message !== "Couldn't start recording. Check microphone access and try again.") {
-          toast.error(message);
-        } else {
-          toast.error("Couldn't start recording. Check microphone access and try again.");
-        }
-        return;
         toast.error(message);
       }
     }

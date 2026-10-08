@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { trackProductEvent } from "@/lib/productAnalytics";
 
 export default function Onboarding() {
   const { user, checkUserAuth, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   
   const [form, setForm] = useState({
     display_name: "",
@@ -79,8 +81,10 @@ export default function Onboarding() {
         source: "profile_setup",
       });
 
-      // Hard redirect only after the authenticated session reflects onboarding.
-      window.location.href = "/";
+      // SPA navigation — the auth state is already refreshed in React context
+      // (checkUserAuth confirmed onboarding_completed), so a full page reload
+      // would just re-download JS and re-run the auth probe for nothing.
+      navigate("/", { replace: true });
     } catch (error) {
       toast.error(error.message || "Failed to complete setup");
       setLoading(false);

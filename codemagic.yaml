@@ -53,6 +53,24 @@ workflows:
         script: npm ci
       - name: Install mobile browser engines
         script: npx playwright install --with-deps chromium webkit
+      - name: Create protected fake microphone fixture
+        script: |
+          python3 - << 'PY'
+          import math
+          import wave
+          path = '/tmp/nalichat-e2e-audio.wav'
+          sample_rate = 48000
+          duration = 3
+          with wave.open(path, 'wb') as wav:
+              wav.setnchannels(1)
+              wav.setsampwidth(2)
+              wav.setframerate(sample_rate)
+              for i in range(sample_rate * duration):
+                  sample = int(12000 * math.sin(2 * math.pi * 440 * i / sample_rate))
+                  wav.writeframesraw(sample.to_bytes(2, 'little', signed=True))
+          print(f'Created fake microphone fixture: {path}')
+          PY
+          test -s /tmp/nalichat-e2e-audio.wav
       - name: Run authenticated Android and iPhone browser audit
         script: |
           npx playwright test e2e/authenticated-smoke.spec.js e2e/studio-track-drag.spec.js \

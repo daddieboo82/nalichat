@@ -16,6 +16,18 @@ export default class ErrorBoundary extends React.Component {
     console.error("Error Boundary caught:", error, errorInfo);
   }
 
+  // Clear all lazy-import retry flags and force a hard reload so the browser
+  // re-fetches all chunks fresh — the most reliable recovery from a stale or
+  // wedged dev server that served a broken dynamically imported module.
+  handleTryAgain = () => {
+    try {
+      Object.keys(sessionStorage)
+        .filter((key) => key.startsWith('nali:lazy-retry:'))
+        .forEach((key) => sessionStorage.removeItem(key));
+    } catch {}
+    window.location.reload();
+  };
+
   render() {
     if (this.state.hasError) {
       // When a custom fallback is provided (e.g. null for non-critical components
@@ -32,7 +44,7 @@ export default class ErrorBoundary extends React.Component {
             <h1 className="font-heading font-bold text-2xl mb-2">Something went wrong</h1>
             <p className="text-muted-foreground mb-6">An unexpected error occurred. Please try again.</p>
             <div className="flex gap-3 justify-center">
-              <Button variant="outline" onClick={() => this.setState({ hasError: false, error: null })}>Try Again</Button>
+              <Button variant="outline" onClick={this.handleTryAgain}>Try Again</Button>
               <Button onClick={() => window.location.href = "/"}>Back to Home</Button>
             </div>
           </div>

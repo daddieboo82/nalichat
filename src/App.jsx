@@ -44,11 +44,19 @@ function lazyWithReloadRecovery(importer, key) {
     } catch (error) {
       const message = String(error?.message || error || '');
       const isDynamicImportFailure = /failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed/i.test(message);
+      // The retry flag expires after 15 seconds so a user who clicks "Try Again"
+      // on the error page gets a fresh reload attempt instead of being stuck
+      // forever by a stale flag from a previous failed reload.
       let alreadyRetried = false;
-      try { alreadyRetried = sessionStorage.getItem(retryKey) === '1'; } catch {}
+      try {
+        const retryAt = Number(sessionStorage.getItem(retryKey));
+        if (Number.isFinite(retryAt) && Date.now() - retryAt < 15_000) {
+          alreadyRetried = true;
+        }
+      } catch {}
 
       if (isDynamicImportFailure && !alreadyRetried && typeof window !== 'undefined') {
-        try { sessionStorage.setItem(retryKey, '1'); } catch {}
+        try { sessionStorage.setItem(retryKey, String(Date.now())); } catch {}
         window.location.reload();
         return new Promise(() => {});
       }
@@ -60,7 +68,10 @@ function lazyWithReloadRecovery(importer, key) {
 // The assistant pulls in the whole react-markdown/unified stack, which added
 // ~150 kB to the entry chunk even though the panel only renders once the user
 // opens it. Load it after first paint instead.
-const AiAssistant = lazyWithReloadRecovery(() => import('@/components/AiAssistant'), 'ai-assistant');
+// Unlike routes, the assistant is non-critical: if its chunk fails to load
+// (e.g. a stale dep cache), the local ErrorBoundary below silently swallows
+// the error instead of crashing the page or triggering a full reload.
+const AiAssistant = lazy(() => import('@/components/AiAssistant'));
 
 // Lazily-loaded routes — each downloads on demand so initial load & tab-switching are fastest.
 const Messages = lazyWithReloadRecovery(() => import('@/pages/Messages'), 'messages');

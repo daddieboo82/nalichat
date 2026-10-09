@@ -282,7 +282,7 @@ describe('release configuration', () => {
     const plusAgent = await readJson('base44/agents/studio_ai_plus.jsonc');
 
     expect(standardAgent.model).toBe('automatic');
-    expect(plusAgent.model).toBe('claude_opus_5');
+    expect(plusAgent.model).toBe('claude_opus_5_5');
 
     const standardFunctions = (standardAgent.tool_configs || [])
       .map((tool) => tool.function_name)

@@ -139,6 +139,20 @@ const AuthenticatedApp = () => {
     isInitialMount.current = false;
   }, []);
 
+  // Base44 may inject legacy route titles (for example, "Login | NaliChat")
+  // after the static HTML loads. Keep the public auth screens aligned with the
+  // current NaliBase brand and restore the page-specific title on navigation.
+  useEffect(() => {
+    const authPageTitles = {
+      '/login': 'Log In | NaliBase',
+      '/register': 'Register | NaliBase',
+      '/forgot-password': 'Reset Password | NaliBase',
+      '/reset-password': 'Reset Password | NaliBase',
+    };
+    const title = authPageTitles[location.pathname];
+    if (title) document.title = title;
+  }, [location.pathname]);
+
   // First-party product analytics: SPA page views plus active/engaged session time.
   // This lets us distinguish a true 28-second visit from analytics undercounting.
   useEffect(() => initProductAnalytics(user?.id || null), [user?.id]);

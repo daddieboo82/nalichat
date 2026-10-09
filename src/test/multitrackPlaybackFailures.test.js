@@ -6,5 +6,8 @@ describe('multitrack playback failures', () => {
     expect(s).toContain('const handlePlay = async () => {');
     expect(s).toContain('if (!started.some(Boolean))');
     expect(s).toContain("Couldn't start track playback. Please try again.");
+    expect(s).toContain('if (attempts.length === 0)');
+    expect(s).toContain('const hasSoloTrack = tracks.some((track) => track.solo && !track.muted)');
+    expect(s).toContain('ref.ontimeupdate = () => setCurrentTime(ref.currentTime || 0)');
   });
 });

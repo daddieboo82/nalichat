@@ -13,7 +13,8 @@ describe('live session track state', () => {
     expect(source).toContain('setTracks((current) => [');
     expect(source).toContain('track.id === id ? normalizeSessionTrack({ ...track, ...updated }) : track');
     expect(source).toContain('current.filter((track) => track.id !== id)');
-    expect(source).toContain('toast.error("Couldn\'t add the recorded track. Please try again.")');
+    expect(source).toContain('toast.error(String(backendError))');
+    expect(source).toContain('const backendError =');
     expect(source).toContain('toast.error("Couldn\'t update the track. Please try again.")');
     expect(source).toContain('toast.error("Couldn\'t delete the track. Please try again.")');
     expect(source).toContain('e?.name === "NotAllowedError"');

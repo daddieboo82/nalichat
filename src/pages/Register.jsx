@@ -95,6 +95,7 @@ export default function Register() {
       trackPaywallEvent("registration_failed", {
         source: "email",
         outcome: "register_error",
+        reason: safeReason,
         campaign_source: attribution?.utm_source || undefined,
         campaign_medium: attribution?.utm_medium || undefined,
         campaign_name: attribution?.utm_campaign || undefined,

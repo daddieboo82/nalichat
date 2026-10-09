@@ -215,6 +215,50 @@ export default function Home() {
 
   const lastVisitedWorld = user ? getLastVisitedWorld(user.id) : null;
 
+  // A focused public landing page; the authenticated home below remains unchanged.
+  if (!user && authChecked) {
+    return (
+      <main className="relative min-h-[100dvh] overflow-hidden bg-background text-foreground">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-primary/15 blur-[100px]" />
+          <div className="absolute -bottom-48 -left-40 h-[28rem] w-[28rem] rounded-full bg-accent/10 blur-[100px]" />
+        </div>
+        <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
+          <Link to="/" aria-label="NaliBase home" className="flex items-center gap-3"><Logo size={42} glow={false} /><span className="font-heading text-xl font-black tracking-tight">NaliBase</span></Link>
+          <nav className="flex items-center gap-2 sm:gap-3" aria-label="Main navigation">
+            <Button variant="ghost" className="rounded-xl px-3" asChild><Link to="/login">Log in</Link></Button>
+            <Button className="rounded-xl px-4 font-semibold" asChild><Link to="/register">Get started <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+          </nav>
+        </header>
+        <section className="relative z-10 mx-auto grid min-h-[72vh] max-w-7xl items-center gap-12 px-5 pb-16 pt-8 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:pb-24">
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3.5 py-2 text-xs font-semibold text-muted-foreground shadow-sm"><Sparkles className="h-4 w-4 text-primary" /> Your space to create, connect, and discover</span>
+            <h1 className="mt-6 font-heading text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">Everything you create.<br /><span className="text-primary">One creative universe.</span></h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">Make music, connect with artists, share your work, and explore new creative worlds—all in one place.</p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button size="lg" className="min-h-12 rounded-xl px-6 text-base font-bold" asChild><Link to="/register" onClick={() => trackProductEvent("signup_click", { source: "public_landing_hero", cta: "start_free" })}>Create your free account <ArrowRight className="ml-2 h-5 w-5" /></Link></Button>
+              <Button size="lg" variant="outline" className="min-h-12 rounded-xl border-border bg-card/60 px-6 text-base" asChild><Link to="/login">I already have an account</Link></Button>
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">Start free. Explore at your own pace.</p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {[
+              { icon: MessageSquare, title: "Connect", text: "Chat and collaborate with your people.", tone: "text-primary bg-primary/10" },
+              { icon: Music, title: "Create", text: "Bring musical ideas into the Studio.", tone: "text-pink-400 bg-pink-400/10" },
+              { icon: Sparkles, title: "Discover", text: "Find creators, sounds, and inspiration.", tone: "text-cyan-400 bg-cyan-400/10" },
+              { icon: FolderKanban, title: "Share", text: "Keep creative files and projects together.", tone: "text-violet-400 bg-violet-400/10" },
+            ].map((item) => {
+              const ItemIcon = item.icon;
+              return <div key={item.title} className="rounded-2xl border border-border/80 bg-card/65 p-5 shadow-sm backdrop-blur-sm transition-colors hover:border-primary/30"><span className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ${item.tone}`}><ItemIcon className="h-5 w-5" /></span><h2 className="font-heading text-lg font-bold">{item.title}</h2><p className="mt-1.5 text-sm leading-6 text-muted-foreground">{item.text}</p></div>;
+            })}
+            <div className="col-span-1 flex items-center gap-3 rounded-2xl border border-border/80 bg-card/40 px-4 py-3 sm:col-span-2"><Shield className="h-5 w-5 shrink-0 text-primary" /><p className="text-sm text-muted-foreground">One home for your creative life, with room to grow.</p></div>
+          </div>
+        </section>
+        <footer className="relative z-10 border-t border-border/70 px-5 py-5 text-center text-xs text-muted-foreground sm:px-8">NaliBase · A hub for entertainment and creativity</footer>
+      </main>
+    );
+  }
+
   return (
     <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">
 

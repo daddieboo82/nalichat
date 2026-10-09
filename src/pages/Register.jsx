@@ -220,9 +220,11 @@ export default function Register() {
       await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()));
     } catch (err) {
       const attribution = getMarketingAttribution();
+      const msg = googleLoginErrorMessage(err);
       trackPaywallEvent("registration_failed", {
         source: "google",
         outcome: "oauth_launch_error",
+        reason: msg,
         campaign_source: attribution?.utm_source || undefined,
         campaign_medium: attribution?.utm_medium || undefined,
         campaign_name: attribution?.utm_campaign || undefined,
@@ -231,7 +233,6 @@ export default function Register() {
         campaign_landing_path: attribution?.landing_path || undefined,
         google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
       });
-      const msg = googleLoginErrorMessage(err);
       setError(msg);
       setGoogleLoading(false);
     }

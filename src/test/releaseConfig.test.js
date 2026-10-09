@@ -1226,7 +1226,7 @@ describe('release configuration', () => {
     expect(session).toContain('async function listSessionTracks(projectId)');
     expect(session).toContain('const next = await listSessionTracks(message.id)');
     expect(session).toContain('for (let skip = 0; ; skip += pageSize)');
-    expect(session).toContain('setInterval(refreshTracks, 5000)');
+    expect(session).toContain('setInterval(refreshTracks, 10000)');
 
     expect(bell).not.toContain('entities.Notification.subscribe');
     expect(bell).toContain('Notification.filter({ recipient_id: user.id }');

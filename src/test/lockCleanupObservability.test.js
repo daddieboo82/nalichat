@@ -16,8 +16,13 @@ describe('lock cleanup observability', () => {
   for (const [path, entity, label] of lockFiles) {
     it(`${path} does not swallow expired-lock deletion and logs release failures`, async () => {
       const source = await readText(path);
-      expect(source).toContain(`await entities.${entity}.delete(id);`);
-      expect(source).not.toContain(`entities.${entity}.delete(id).catch(() => {})`);
+      if (entity === 'ProjectMembershipLock') {
+        expect(source).toContain('await entities.ProjectMembershipLock.delete(row.id);');
+        expect(source).toContain('Failed to clean expired project membership lock:');
+      } else {
+        expect(source).toContain(`await entities.${entity}.delete(id);`);
+        expect(source).not.toContain(`entities.${entity}.delete(id).catch(() => {})`);
+      }
       expect(source).toContain(`Failed to release ${label} lock:`);
       expect(source).toContain('return false;');
     });

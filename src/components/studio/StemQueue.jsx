@@ -41,6 +41,8 @@ export default function StemQueue({ queue, onRemove, onClear, open, onToggle }) 
     <>
       {/* Toggle button */}
       <button
+        type="button"
+        aria-label={open ? "Close stem queue" : "Open stem queue"}
         onClick={onToggle}
         className={cn(
           "relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors",
@@ -63,7 +65,7 @@ export default function StemQueue({ queue, onRemove, onClear, open, onToggle }) 
             <Layers className="w-4 h-4 text-primary" />
             <p className="font-heading font-bold text-sm flex-1">Stem Queue</p>
             <span className="text-xs text-muted-foreground">{queue.length} stem{queue.length !== 1 ? "s" : ""}</span>
-            <button onClick={onToggle} className="text-muted-foreground hover:text-foreground p-1">
+            <button type="button" aria-label="Close stem queue" onClick={onToggle} className="text-muted-foreground hover:text-foreground p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -82,7 +84,7 @@ export default function StemQueue({ queue, onRemove, onClear, open, onToggle }) 
                     <div className={cn("w-2 h-2 rounded-full shrink-0", trackTypeColors[track.type] || "bg-muted")} />
                     <span className="text-xs flex-1 truncate">{track.name}</span>
                     {!track.file_url && <span className="text-[9px] text-muted-foreground">no audio</span>}
-                    <button onClick={() => onRemove(track.id)} className="text-muted-foreground hover:text-destructive p-0.5">
+                    <button type="button" aria-label={`Remove ${track.name || "stem"} from queue`} onClick={() => onRemove(track.id)} className="text-muted-foreground hover:text-destructive p-0.5">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -94,12 +96,16 @@ export default function StemQueue({ queue, onRemove, onClear, open, onToggle }) 
           {queue.length > 0 && (
             <div className="p-3 border-t border-border flex gap-2">
               <button
+                type="button"
+                aria-label="Clear stem queue"
                 onClick={onClear}
                 className="px-3 py-2 rounded-xl bg-secondary text-muted-foreground hover:text-foreground text-xs font-medium flex items-center gap-1.5 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Clear
               </button>
               <button
+                type="button"
+                aria-label={`Export ${exportable.length} queued stems`}
                 onClick={handleExport}
                 disabled={exporting || exportable.length === 0}
                 className="flex-1 px-3 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"

@@ -158,7 +158,7 @@ describe('home, navigation, and recovery flows', () => {
     renderWithProviders(<Home />);
 
     expect(screen.queryByRole('button', { name: 'Immersive Onboarding' })).toBeNull();
-    expect(screen.getAllByRole('link', { name: /Start Free/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /Get started|Create your free account/i }).length).toBeGreaterThan(0);
     expect(screen.getByText('Quick Start Guide')).toBeTruthy();
   });
 

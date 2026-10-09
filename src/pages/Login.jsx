@@ -25,6 +25,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
+      try { sessionStorage.setItem("login_pending_method", "email_password"); } catch {}
       const result = await base44.auth.loginViaEmailPassword(email, password);
       const token = persistAuthResult(result);
       if (token) {
@@ -38,6 +39,7 @@ export default function Login() {
       toast.success("Logged in successfully! Welcome back.");
       window.location.href = safeReturnTo();
     } catch (err) {
+      try { sessionStorage.removeItem("login_pending_method"); } catch {}
       const msg = loginErrorMessage(err);
       setError(msg);
       toast.error(msg);
@@ -51,13 +53,17 @@ export default function Login() {
     setError("");
     try {
       // Login must not inherit a pending registration marker from an abandoned Google signup.
-      try { sessionStorage.removeItem("registration_pending_method"); } catch {}
+      try {
+        sessionStorage.removeItem("registration_pending_method");
+        sessionStorage.setItem("login_pending_method", "google_oauth");
+      } catch {}
       // A stale bearer token can override a fresh cookie-backed Google session
       // on the callback and make auth.me() report the user as logged out.
       clearPersistedAuthTokens();
       markAuthActivity();
       await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()));
     } catch (err) {
+      try { sessionStorage.removeItem("login_pending_method"); } catch {}
       const msg = googleLoginErrorMessage(err);
       setError(msg);
       toast.error(msg);

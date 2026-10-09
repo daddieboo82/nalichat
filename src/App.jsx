@@ -150,7 +150,17 @@ const AuthenticatedApp = () => {
       '/reset-password': 'Reset Password | NaliBase',
     };
     const title = authPageTitles[location.pathname];
-    if (title) document.title = title;
+    if (!title) return undefined;
+
+    // The hosting shell can rewrite document.title after React mounts. Observe
+    // head/title mutations so the route brand stays correct even after that rewrite.
+    const enforceTitle = () => {
+      if (document.title !== title) document.title = title;
+    };
+    enforceTitle();
+    const observer = new MutationObserver(enforceTitle);
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
   }, [location.pathname]);
 
   // First-party product analytics: SPA page views plus active/engaged session time.

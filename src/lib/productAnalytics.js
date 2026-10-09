@@ -7,6 +7,7 @@ const FLUSH_INTERVAL_MS = 15_000;
 const RETURN_VISIT_KEY = "nali_product_last_visit_date";
 const ACQUISITION_KEY = "nali_product_acquisition";
 let initialized = false;
+let analyticsUserId = null;
 let session = null;
 let flushTimer = null;
 let lastRoute = null;
@@ -76,6 +77,7 @@ function track(name, properties = {}) {
   const acquisition = getAcquisition();
   const enrichedProperties = {
     ...acquisition,
+    user_id: properties.user_id || analyticsUserId || "",
     ...properties,
     campaign_source: properties.campaign_source || acquisition.campaign_source || "",
     campaign_medium: properties.campaign_medium || acquisition.campaign_medium || "",
@@ -89,7 +91,8 @@ function track(name, properties = {}) {
   }
   const funnelEvents = new Set([
     "homepage_view", "homepage_demo_click", "signup_click", "registration_view", "registration_started",
-    "registration_completed", "registration_failed", "otp_resend_success", "onboarding_complete", "post_login_action", "messenger_discovery_view",
+    "registration_completed", "registration_failed", "login_completed", "product_session_started", "product_session_engagement",
+    "otp_resend_success", "onboarding_complete", "post_login_action", "messenger_discovery_view",
     "contact_added", "messenger_discovery_message_click", "first_message", "studio_open", "first_upload", "activation_complete", "return_visit",
     "upgrade_click", "paywall_view", "paywall_tier_select", "paywall_primary_cta", "checkout_started", "purchase_completed", "purchase_failed"
   ]);
@@ -99,7 +102,7 @@ function track(name, properties = {}) {
         event_name: name,
         source: enrichedProperties.source || "product",
         session_id: currentSession.id,
-        user_id: enrichedProperties.user_id || "",
+        user_id: enrichedProperties.user_id || analyticsUserId || "",
         route: enrichedProperties.route || window.location.pathname,
         campaign_source: enrichedProperties.campaign_source || "",
         campaign_medium: enrichedProperties.campaign_medium || "",
@@ -138,8 +141,8 @@ function flush(reason = "heartbeat") {
   const s = ensureSession();
   track("product_session_engagement", {
     reason,
-    engaged_seconds: Math.round(s.engagedMs / 1000),
-    elapsed_seconds: Math.round((now() - s.startedAt) / 1000),
+    engaged_seconds: Math.round((s.engagedMs / 1000) * 10) / 10,
+    elapsed_seconds: Math.round(((now() - s.startedAt) / 1000) * 10) / 10,
     route: window.location.pathname,
     visibility: document.visibilityState,
   });
@@ -165,6 +168,7 @@ export function markActivationComplete(userId, source, properties = {}) {
 export function initProductAnalytics(userId = null) {
   if (initialized || typeof window === "undefined") return () => {};
   sessionStorageKey = sessionKeyFor(userId);
+  analyticsUserId = userId || null;
   session = null;
   lastRoute = null;
   foregroundSince = document.visibilityState === "visible" ? now() : null;
@@ -205,8 +209,8 @@ export function initProductAnalytics(userId = null) {
       safeSet(s);
       track("product_session_engagement", {
         reason: "hidden",
-        engaged_seconds: Math.round(s.engagedMs / 1000),
-        elapsed_seconds: Math.round((t - s.startedAt) / 1000),
+        engaged_seconds: Math.round((s.engagedMs / 1000) * 10) / 10,
+        elapsed_seconds: Math.round(((t - s.startedAt) / 1000) * 10) / 10,
         route: window.location.pathname,
         visibility: document.visibilityState,
       });

@@ -51,7 +51,6 @@ export default function Register() {
   useEffect(() => {
     captureMarketingAttribution();
     const attribution = getMarketingAttribution();
-    trackProductEvent("registration_view", { source: "register" });
     trackPaywallEvent("registration_view", {
       source: "register",
       campaign_source: attribution?.utm_source || undefined,
@@ -149,6 +148,7 @@ export default function Register() {
       trackPaywallEvent("registration_failed", {
         source: "email_otp",
         outcome: otpOutcome,
+        reason: otpReason,
         campaign_source: attribution?.utm_source || undefined,
         campaign_medium: attribution?.utm_medium || undefined,
         campaign_name: attribution?.utm_campaign || undefined,
@@ -181,6 +181,7 @@ export default function Register() {
       trackPaywallEvent("registration_failed", {
         source: "email_otp",
         outcome: "otp_resend_error",
+        reason: resendOtpErrorMessage(err),
         campaign_source: attribution?.utm_source || undefined,
         campaign_medium: attribution?.utm_medium || undefined,
         campaign_name: attribution?.utm_campaign || undefined,

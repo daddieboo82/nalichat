@@ -23,8 +23,12 @@ export async function acquireConversationMembershipLock(
   if (active) return null;
 
   for (const row of existingRows) {
-    if (row?.id) {
-      await entities.ConversationMembershipLock.delete(row.id).catch(() => {});
+    if (!row?.id) continue;
+    try {
+      await entities.ConversationMembershipLock.delete(row.id);
+    } catch (error) {
+      console.error('Failed to clean expired conversation membership lock:', { lockId: row.id, error });
+      throw error;
     }
   }
 

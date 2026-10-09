@@ -41,10 +41,12 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   const handlePlay = async () => {
     if (!isPlaying) {
       const attempts = [];
-      // Key audio elements by track.id — find matching track to check muted state
+      const hasSoloTrack = tracks.some((track) => track.solo && !track.muted);
+      // A soloed track takes precedence; muted and soloed-away tracks must stay silent.
       Object.entries(audioElements.current).forEach(([trackId, el]) => {
         const track = tracks.find(t => t.id === trackId);
-        if (el && !track?.muted) {
+        const shouldPlay = track && !track.muted && (!hasSoloTrack || track.solo);
+        if (el && track?.file_url && shouldPlay) {
           el.currentTime = currentTime;
           attempts.push(
             el.play().then(() => true).catch((error) => {
@@ -52,15 +54,20 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
               return false;
             })
           );
+        } else if (el) {
+          el.pause();
         }
       });
-      if (attempts.length > 0) {
-        const started = await Promise.all(attempts);
-        if (!started.some(Boolean)) {
-          setIsPlaying(false);
-          toast.error("Couldn't start track playback. Please try again.");
-          return;
-        }
+      if (attempts.length === 0) {
+        setIsPlaying(false);
+        toast.error("Add a playable audio track, or unmute a track, before pressing Play.");
+        return;
+      }
+      const started = await Promise.all(attempts);
+      if (!started.some(Boolean)) {
+        setIsPlaying(false);
+        toast.error("Couldn't start track playback. Please try again.");
+        return;
       }
       setIsPlaying(true);
     } else {
@@ -111,6 +118,8 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
         {/* Play/Stop/Rewind */}
         <div className="flex items-center gap-1.5">
           <button
+            type="button"
+            aria-label="Rewind to start"
             onClick={() => handleTimelineClick(0)}
             className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all hover:scale-105 active:scale-95"
             title="Rewind"
@@ -118,6 +127,8 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
           <button
+            type="button"
+            aria-label={isPlaying ? "Pause playback" : "Play tracks"}
             onClick={handlePlay}
             className={cn(
               "w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg",
@@ -129,6 +140,8 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
             {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
           </button>
           <button
+            type="button"
+            aria-label="Stop playback"
             onClick={handleStop}
             className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all hover:scale-105 active:scale-95"
             title="Stop"
@@ -299,12 +312,24 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                     audioRef={(ref) => {
                       if (ref) {
                         audioElements.current[track.id] = ref;
-                        if (!duration && ref.duration && !isNaN(ref.duration)) {
-                          setDuration(Math.max(duration, ref.duration));
+                        if (Number.isFinite(ref.duration) && ref.duration > 0) {
+                          setDuration((d) => Math.max(d, ref.duration));
                         }
-                        ref.onloadedmetadata = () => setDuration(d => Math.max(d, ref.duration));
+                        ref.onloadedmetadata = () => {
+                          if (Number.isFinite(ref.duration) && ref.duration > 0) {
+                            setDuration((d) => Math.max(d, ref.duration));
+                          }
+                        };
+                        ref.ontimeupdate = () => setCurrentTime(ref.currentTime || 0);
+                        ref.onended = () => {
+                          const audio = Object.values(audioElements.current);
+                          if (audio.length && audio.every((item) => !item || item.ended || item.paused)) {
+                            setIsPlaying(false);
+                          }
+                        };
+                      } else {
+                        delete audioElements.current[track.id];
                       }
-                      else delete audioElements.current[track.id];
                     }}
                     masterVolume={masterVolume}
                     inQueue={queueIds.has(track.id)}

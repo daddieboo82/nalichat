@@ -27,7 +27,7 @@ function collectErrors(page) {
 function filterNoise(errors) {
   return errors.filter(
     (x) =>
-      !/favicon|Failed to load resource.*(?:401|404)|Public settings check failed:.*404|ERR_ABORTED|NS_BINDING_ABORTED|Load request cancelled|bat\.bing\.com|gtag|googletagmanager|livekit|socket|websocket|403 Forbidden|ERR_CONNECTION|net::ERR|Network request failed|Failed to fetch dynamically imported/i.test(
+      !/Viewport argument key "interactive-widget" not recognized and ignored\.|favicon|Failed to load resource.*(?:401|404)|Public settings check failed:.*404|ERR_ABORTED|NS_BINDING_ABORTED|Load request cancelled|bat\.bing\.com|gtag|googletagmanager|livekit|socket|websocket|403 Forbidden|ERR_CONNECTION|net::ERR|Network request failed|Failed to fetch dynamically imported/i.test(
         x,
       ),
   );

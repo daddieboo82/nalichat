@@ -21,8 +21,12 @@ export async function acquireProjectMembershipLock(
   if (active) return null;
 
   for (const row of existingRows) {
-    if (row?.id) {
-      await entities.ProjectMembershipLock.delete(row.id).catch(() => {});
+    if (!row?.id) continue;
+    try {
+      await entities.ProjectMembershipLock.delete(row.id);
+    } catch (error) {
+      console.error('Failed to clean expired project membership lock:', { lockId: row.id, error });
+      throw error;
     }
   }
 

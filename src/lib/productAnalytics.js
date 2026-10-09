@@ -96,7 +96,9 @@ function track(name, properties = {}) {
     "contact_added", "messenger_discovery_message_click", "first_message", "studio_open", "first_upload", "activation_complete", "return_visit",
     "upgrade_click", "paywall_view", "paywall_tier_select", "paywall_primary_cta", "checkout_started", "purchase_completed", "purchase_failed"
   ]);
-  if (funnelEvents.has(name)) {
+  const shouldPersistEvent = funnelEvents.has(name) &&
+    (name !== "product_session_engagement" || properties.reason !== "heartbeat");
+  if (shouldPersistEvent) {
     try {
       const record = {
         event_name: name,

@@ -3,16 +3,9 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
+import { TRUSTED_MEDIA_HOSTS } from '../../shared/mediaSecurity.ts';
 
 const MAX_TRACK_VERSION_BYTES = 100 * 1024 * 1024;
-
-const TRUSTED_MEDIA_HOSTS = [
-  'storage.googleapis.com',
-  'base44-user-files.s3.amazonaws.com',
-  'base44-user-files.s3.us-east-1.amazonaws.com',
-  'files.base44.com',
-  'cdn.base44.com',
-];
 
 async function resolveStoredFileSize(url: string): Promise<number | null> {
   try {

@@ -18,6 +18,7 @@ describe('paywall campaign analytics', () => {
       campaign_name: 'google_ads_campaign_2',
       campaign_term: 'music collaboration',
       google_ads_click: true,
+      reason: 'That verification code is invalid. Check the code and try again.',
       email: 'must-not-forward@example.com',
     });
 
@@ -28,6 +29,7 @@ describe('paywall campaign analytics', () => {
       campaign_name: 'google_ads_campaign_2',
       campaign_term: 'music collaboration',
       google_ads_click: true,
+      reason: 'That verification code is invalid. Check the code and try again.',
     });
   });
 });

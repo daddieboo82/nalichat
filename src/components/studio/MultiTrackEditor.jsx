@@ -184,7 +184,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           <button
             type="button"
             aria-label="Zoom out timeline"
-            onClick={() => setZoom(Math.max(0.5, zoom - 0.2))
+            onClick={() => setZoom(Math.max(0.5, zoom - 0.2))}
             className="w-7 h-7 rounded-lg flex items-center justify-center bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
           >
             <ZoomOut className="w-3.5 h-3.5" />
@@ -193,7 +193,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           <button
             type="button"
             aria-label="Zoom in timeline"
-            onClick={() => setZoom(Math.min(3, zoom + 0.2))
+            onClick={() => setZoom(Math.min(3, zoom + 0.2))}
             className="w-7 h-7 rounded-lg flex items-center justify-center bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
           >
             <ZoomIn className="w-3.5 h-3.5" />

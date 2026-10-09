@@ -16,8 +16,10 @@ describe('project invite membership serialization', () => {
     expect(source).toContain('releaseProjectMembershipLock');
     expect(lock).toContain('MEMBERSHIP_LOCK_TTL_MS = 5 * 60 * 1000');
     expect(lock).toContain('ProjectMembershipLock.create');
-    expect(lock).toContain('ProjectMembershipLock.get');
+    expect(lock).toContain('ProjectMembershipLock.filter');
+    expect(lock).toContain('ProjectMembershipLock.delete(row.id)');
     expect(lock).toContain('ProjectMembershipLock.delete(lockId)');
+    expect(lock).toContain('Failed to clean expired project membership lock:');
     expect(source).toContain("req.method !== 'POST'");
     expect(source).toContain('status: 409');
     expect(schema.rls.read?.user_condition?.role).toBe('admin');

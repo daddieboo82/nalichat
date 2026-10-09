@@ -212,6 +212,8 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
 
                 <div className="flex items-center gap-1 shrink-0">
                   <button
+                    type="button"
+                    aria-label={playingId === v.id ? `Pause version ${v.version_number}` : `Preview version ${v.version_number}`}
                     onClick={() => handlePlay(v)}
                     className={cn(
                       "w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
@@ -225,6 +227,8 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
                   {canEdit && (
                     <>
                       <button
+                        type="button"
+                        aria-label={`Revert to version ${v.version_number}`}
                         onClick={() => handleRevert(v)}
                         className="w-7 h-7 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-colors"
                         title="Revert to this version"
@@ -232,6 +236,9 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
                         <RotateCcw className="w-3 h-3" />
                       </button>
                       <button
+                        type="button"
+                        aria-label={`Delete version ${v.version_number}`}
+                        disabled={deleteVersion.isPending}
                         onClick={() => deleteVersion.mutate(v.id)}
                         className="w-7 h-7 rounded-lg hover:bg-destructive/20 hover:text-destructive text-muted-foreground flex items-center justify-center transition-colors"
                         title="Delete version"

@@ -1,5 +1,8 @@
 function normalized(error) {
-  return String(error?.message || error?.response?.data?.error || error?.data?.error || '').toLowerCase();
+  const message = typeof error === 'string'
+    ? error
+    : error?.message || error?.response?.data?.error || error?.response?.data?.message || error?.data?.error || error?.data?.message || '';
+  return String(message).toLowerCase();
 }
 
 export function loginErrorMessage(error) {
@@ -50,11 +53,13 @@ export function registrationErrorMessage(error) {
 export function otpErrorMessage(error) {
   const msg = normalized(error);
   if (/expired/.test(msg)) return 'That verification code expired. Request a new code.';
+  // Check throttling before generic "verification" wording so rate-limit errors
+  // are not incorrectly presented as invalid codes.
+  if (/too many|rate limit|429|too many attempts/.test(msg)) {
+    return 'Too many verification attempts. Please try again shortly.';
+  }
   if (/invalid|incorrect|code|otp|verification/.test(msg)) {
     return 'That verification code is invalid. Check the code and try again.';
-  }
-  if (/too many|rate limit|429/.test(msg)) {
-    return 'Too many verification attempts. Please try again shortly.';
   }
   return 'Could not verify the code. Please try again.';
 }

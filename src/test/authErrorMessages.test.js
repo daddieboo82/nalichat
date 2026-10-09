@@ -13,6 +13,8 @@ describe('safe auth error messages', () => {
     expect(loginErrorMessage(new Error('401 invalid credentials'))).toBe('Invalid email or password.');
     expect(registrationErrorMessage(new Error('user already exists'))).toContain('already exists');
     expect(otpErrorMessage(new Error('otp expired'))).toContain('expired');
+    expect(otpErrorMessage(new Error('Too many verification attempts'))).toContain('Too many verification attempts');
+    expect(otpErrorMessage({ response: { data: { message: '429 rate limit' } } })).toContain('Too many verification attempts');
     expect(resendOtpErrorMessage(new Error('429 rate limit'))).toContain('wait');
     expect(googleLoginErrorMessage(new Error('popup closed'))).toContain('canceled');
     expect(resetPasswordErrorMessage(new Error('reset token expired'))).toContain('expired');

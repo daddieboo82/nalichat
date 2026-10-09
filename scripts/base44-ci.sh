@@ -28,16 +28,24 @@ for name in "${required_vars[@]}"; do
 done
 
 if (( ${#missing[@]} > 0 )); then
-  echo "==> Authenticated E2E skipped: runner variables are not available"
+  echo "ERROR: Authenticated production E2E cannot run; required runner variables are missing."
   printf '    missing: %s\n' "${missing[@]}"
-  exit 0
+  echo "Configure these in the Base44 CI runner's protected environment, then rerun."
+  exit 1
 fi
 
-echo "==> Running authenticated production E2E"
+echo "==> Running authenticated production E2E (desktop, Android-sized mobile, iPhone-sized mobile)"
 E2E_BASE_URL="${E2E_BASE_URL:-https://nalichat.org}" \
   npx playwright test e2e/authenticated-smoke.spec.js \
+  --project=chromium \
   --project=mobile-chromium \
   --project=iphone-16-simulation
+
+echo "==> Running authenticated Studio visual and clip-drag E2E"
+E2E_BASE_URL="${E2E_BASE_URL:-https://nalichat.org}" \
+  npx playwright test e2e/studio-track-drag.spec.js e2e/studio-visual-integrity.spec.js \
+  --project=chromium \
+  --project=mobile-chromium
 
 echo "==> Creating protected fake microphone fixture"
 python3 - << 'PY'

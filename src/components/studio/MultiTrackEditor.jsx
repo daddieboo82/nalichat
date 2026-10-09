@@ -160,6 +160,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           <Headphones className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             type="range"
+            aria-label="Master playback volume"
             min="0"
             max="100"
             value={masterVolume}
@@ -181,14 +182,18 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
         {/* Zoom controls */}
         <div className="flex items-center gap-1 ml-auto">
           <button
-            onClick={() => setZoom(Math.max(0.5, zoom - 0.2))}
+            type="button"
+            aria-label="Zoom out timeline"
+            onClick={() => setZoom(Math.max(0.5, zoom - 0.2))
             className="w-7 h-7 rounded-lg flex items-center justify-center bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
           <span className="text-[11px] text-muted-foreground/70 w-10 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
           <button
-            onClick={() => setZoom(Math.min(3, zoom + 0.2))}
+            type="button"
+            aria-label="Zoom in timeline"
+            onClick={() => setZoom(Math.min(3, zoom + 0.2))
             className="w-7 h-7 rounded-lg flex items-center justify-center bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
           >
             <ZoomIn className="w-3.5 h-3.5" />
@@ -212,7 +217,8 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
         )}
 
         {tracks.length > 0 && (
-          <Button 
+          <Button
+            type="button"
             variant="outline" 
             size="sm" 
             className="h-8 gap-1.5 text-xs bg-secondary/50 border-border/50 hover:bg-secondary hover:text-foreground" 
@@ -228,6 +234,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
               }
             }}
             disabled={zipping}
+            aria-label="Export all stems as ZIP"
             title="Download all stems as ZIP"
           >
             {zipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FolderArchive className="w-3.5 h-3.5" />}
@@ -241,11 +248,11 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
         <div className="px-4 py-2 border-b border-border/50 bg-primary/8 flex items-center gap-3">
           <CheckSquare className="w-4 h-4 text-primary" />
           <span className="text-sm font-semibold text-primary">{selectedTrackIds.length} track{selectedTrackIds.length > 1 ? "s" : ""} selected</span>
-          <Button size="sm" className="rounded-lg bg-primary hover:bg-primary/90 h-7 text-xs ml-2 shadow-sm" onClick={handleDownloadTracksZip} disabled={zipping}>
+          <Button type="button" size="sm" aria-label="Export selected tracks as ZIP" className="rounded-lg bg-primary hover:bg-primary/90 h-7 text-xs ml-2 shadow-sm" onClick={handleDownloadTracksZip} disabled={zipping || selectedTrackIds.length === 0}>
             {zipping ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <FolderArchive className="w-3 h-3 mr-1" />}
             Export ZIP
           </Button>
-          <Button size="sm" variant="ghost" className="rounded-lg h-7 text-xs text-muted-foreground" onClick={clearTrackSelection}>
+          <Button type="button" size="sm" aria-label="Clear selected tracks" variant="ghost" className="rounded-lg h-7 text-xs text-muted-foreground" onClick={clearTrackSelection}>
             <X className="w-3 h-3 mr-1" /> Clear
           </Button>
         </div>
@@ -296,6 +303,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                   style={{ padding: "10px 12px" }}
                 >
                   <Checkbox
+                    aria-label={`Select ${track.name || "track"} for export`}
                     checked={selectedTrackIds.includes(track.id)}
                     onCheckedChange={() => toggleTrackSelect(track.id)}
                     className="mt-3 shrink-0"

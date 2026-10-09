@@ -18,7 +18,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { AudioPlayerProvider } from '@/lib/AudioPlayerContext';
 import { NaliPresenceProvider } from '@/lib/NaliPresenceContext';
 import { LockedChatsProvider } from '@/lib/LockedChatsContext';
-import { initProductAnalytics } from '@/lib/productAnalytics';
+import { initProductAnalytics, trackProductEvent } from '@/lib/productAnalytics';
 import { getMarketingAttribution } from '@/lib/adAttribution';
 import { trackPaywallEvent } from '@/lib/paywallAnalytics';
 import { base44 } from '@/api/base44Client';
@@ -166,6 +166,23 @@ const AuthenticatedApp = () => {
   // First-party product analytics: SPA page views plus active/engaged session time.
   // This lets us distinguish a true 28-second visit from analytics undercounting.
   useEffect(() => initProductAnalytics(user?.id || null), [user?.id]);
+
+  // Record successful sign-ins only after the auth provider confirms a user.
+  // The pending marker is written by the login form and is cleared on failures.
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return;
+    let method = null;
+    try {
+      method = sessionStorage.getItem('login_pending_method');
+      if (method) sessionStorage.removeItem('login_pending_method');
+    } catch {}
+    if (!method) return;
+    trackProductEvent('login_completed', {
+      user_id: user.id,
+      source: method,
+      route: location.pathname,
+    });
+  }, [user?.id, location.pathname]);
 
   // Presence is app-wide, not Messages-only. A user actively working in Studio,
   // Files, Explore, etc. should still appear online to their chat partners.

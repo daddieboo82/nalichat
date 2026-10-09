@@ -96,9 +96,12 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = ((track.volume || 75) / 100) * ((masterVolume ?? 100) / 100);
+      // Zero is a valid volume value; don't replace it with the default.
+      audioRef.current.volume = ((track.volume ?? 75) / 100) * ((masterVolume ?? 100) / 100);
+      // Apply mute/solo changes immediately, including while playback is running.
+      audioRef.current.muted = Boolean(track.muted || isSoloedAway);
     }
-  }, [masterVolume, track.volume]);
+  }, [masterVolume, track.volume, track.muted, isSoloedAway]);
 
   // Mute and Solo are mutually exclusive — enabling one clears the other.
   const toggleMute = () => canEdit && onUpdate({ muted: !track.muted, ...(!track.muted ? { solo: false } : {}) });
@@ -110,11 +113,11 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
       track.muted && "opacity-40",
       track.solo && "border-accent ring-1 ring-accent/20"
     )}>
-      {track.file_url && (
+      {(track.audioUrl || track.file_url) && (
         <audio
           ref={setAudioRef}
-          src={track.file_url}
-          onTimeUpdate={() => {}}
+          src={track.audioUrl || track.file_url}
+          preload="metadata"
         />
       )}
 
@@ -240,6 +243,8 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
               <TooltipTrigger asChild>
                 <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
                   <button
+                    type="button"
+                    aria-label={track.muted ? "Unmute track" : "Mute track"}
                     onClick={toggleMute}
                     className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px]",
                       track.muted ? "bg-destructive/20 text-destructive" : "bg-secondary hover:bg-secondary/80"
@@ -256,6 +261,8 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
               <TooltipTrigger asChild>
                 <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
                   <button
+                    type="button"
+                    aria-label={track.solo ? "Disable solo" : "Solo track"}
                     onClick={toggleSolo}
                     className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px] font-bold",
                       track.solo ? "bg-accent/20 text-accent" : "bg-secondary hover:bg-secondary/80"
@@ -271,7 +278,7 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
 
           <div className="flex-1">
             <Slider
-              value={[track.volume || 75]}
+              value={[track.volume ?? 75]}
               max={100}
               step={1}
               onValueChange={([v]) => canEdit && onUpdate({ volume: v })}
@@ -279,13 +286,15 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
               disabled={!canEdit}
             />
           </div>
-          <span className="text-[9px] text-muted-foreground w-6 text-right">{track.volume || 75}%</span>
+          <span className="text-[9px] text-muted-foreground w-6 text-right">{track.volume ?? 75}%</span>
 
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
                   <button
+                    type="button"
+                    aria-label="Toggle pan control"
                     onClick={() => setShowPan(!showPan)}
                     className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
                       showPan ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
@@ -303,6 +312,8 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
                 <TooltipTrigger asChild>
                   <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
                     <button
+                      type="button"
+                      aria-label={inQueue ? "Remove track from stem queue" : "Add track to stem queue"}
                       onClick={onToggleQueue}
                       className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
                         inQueue ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
@@ -320,6 +331,8 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
               <TooltipTrigger asChild>
                 <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
                   <button
+                    type="button"
+                    aria-label="Open track version history"
                     onClick={() => setShowVersionHistory(true)}
                     className="w-7 h-7 rounded-lg bg-secondary hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-colors"
                   >
@@ -335,6 +348,8 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
                 <TooltipTrigger asChild>
                   <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
                     <button
+                      type="button"
+                      aria-label="Delete track"
                       onClick={onDelete}
                       className="w-7 h-7 rounded-lg bg-secondary hover:bg-destructive/20 hover:text-destructive flex items-center justify-center transition-colors"
                     >

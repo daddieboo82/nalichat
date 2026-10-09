@@ -13,6 +13,7 @@ import {
   Clock3,
   CreditCard,
   ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
   const {
     data: stats = EMPTY_STATS,
     isLoading: isLoadingStats,
+    isFetching: isFetchingStats,
     isError: statsError,
     refetch,
   } = useQuery({
@@ -67,6 +69,8 @@ export default function AdminDashboard() {
     },
     enabled: currentUser?.role === "admin",
     retry: false,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 
   const {
@@ -201,14 +205,20 @@ export default function AdminDashboard() {
   return (
     <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] w-full">
       <div className="max-w-6xl mx-auto p-4 sm:p-8 flex flex-col min-h-max pb-32 md:pb-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-heading font-black flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-primary" />
-            Business Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Server-authoritative account and subscription health metrics for NaliBase.
-          </p>
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-heading font-black flex items-center gap-3">
+              <BarChart3 className="w-8 h-8 text-primary" />
+              Business Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Server-authoritative account and subscription health metrics for NaliBase. User totals refresh automatically every 30 seconds.
+            </p>
+          </div>
+          <Button type="button" variant="outline" onClick={() => refetch()} disabled={isFetchingStats} className="shrink-0">
+            <RefreshCw className={`mr-2 h-4 w-4 ${isFetchingStats ? "animate-spin" : ""}`} />
+            {isFetchingStats ? "Refreshing…" : "Refresh user count"}
+          </Button>
         </div>
 
         <NaliMaintenancePanel />

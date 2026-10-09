@@ -159,7 +159,7 @@ describe('home, navigation, and recovery flows', () => {
 
     expect(screen.queryByRole('button', { name: 'Immersive Onboarding' })).toBeNull();
     expect(screen.getAllByRole('link', { name: /Get started|Create your free account/i }).length).toBeGreaterThan(0);
-    expect(screen.getByText('Quick Start Guide')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Everything you create.*One creative universe/i })).toBeTruthy();
   });
 
   it('renders the logged-in NaliBase world hub after onboarding', async () => {

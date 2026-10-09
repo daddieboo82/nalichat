@@ -240,8 +240,11 @@ export default function Home() {
               <Button size="lg" variant="outline" className="min-h-12 rounded-xl border-border bg-card/60 px-6 text-base" asChild><Link to="/login">I already have an account</Link></Button>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">Start free. Explore at your own pace.</p>
-            <div className="mt-5">
+            <div className="mt-5 flex flex-wrap items-center gap-3">
               <DonationButton variant="hero" />
+              <Button variant="outline" className="min-h-12 rounded-xl border-border bg-card/60 px-5" asChild>
+                <a href="mailto:bossglop43@gmail.com?subject=NaliBase%20Website%20Feedback&body=Hi%20NaliBase%20team%2C%0A%0AMy%20feedback%3A%0A%0A">Send Feedback <MessageSquare className="ml-2 h-4 w-4" /></a>
+              </Button>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

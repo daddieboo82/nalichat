@@ -37,7 +37,6 @@ export default function Register() {
   const markEmailRegistrationStarted = () => {
     if (emailStartedTracked) return;
     setEmailStartedTracked(true);
-    trackProductEvent("registration_started", { source: "email", stage: "form_interaction" });
   };
 
   useEffect(() => {
@@ -74,10 +73,7 @@ export default function Register() {
     }
     setLoading(true);
     const attribution = getMarketingAttribution();
-    if (!emailStartedTracked) {
-      setEmailStartedTracked(true);
-      trackProductEvent("registration_started", { source: "email", stage: "submit" });
-    }
+    if (!emailStartedTracked) setEmailStartedTracked(true);
     trackPaywallEvent("registration_started", {
       source: "email",
       campaign_source: attribution?.utm_source || undefined,
@@ -97,7 +93,6 @@ export default function Register() {
       setShowOtp(true);
     } catch (err) {
       const safeReason = registrationErrorMessage(err);
-      trackProductEvent("registration_failed", { source: "email", outcome: "register_error", reason: safeReason });
       trackPaywallEvent("registration_failed", {
         source: "email",
         outcome: "register_error",
@@ -129,7 +124,6 @@ export default function Register() {
       }
       markAuthActivity();
       const attribution = getMarketingAttribution();
-      trackProductEvent("registration_completed", { source: "email_otp" });
       trackPaywallEvent("registration_completed", {
         source: "email_otp",
         campaign_source: attribution?.utm_source || undefined,
@@ -152,7 +146,6 @@ export default function Register() {
           : /too many/i.test(otpReason)
             ? "otp_rate_limited"
             : "otp_unknown_error";
-      trackProductEvent("registration_failed", { source: "email_otp", outcome: otpOutcome });
       trackPaywallEvent("registration_failed", {
         source: "email_otp",
         outcome: otpOutcome,
@@ -206,7 +199,6 @@ export default function Register() {
     setError("");
     try {
       const attribution = getMarketingAttribution();
-      trackProductEvent("registration_started", { source: "google" });
       trackPaywallEvent("registration_started", {
         source: "google",
         campaign_source: attribution?.utm_source || undefined,
@@ -226,7 +218,6 @@ export default function Register() {
       await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()));
     } catch (err) {
       const attribution = getMarketingAttribution();
-      trackProductEvent("registration_failed", { source: "google", outcome: "oauth_launch_error" });
       trackPaywallEvent("registration_failed", {
         source: "google",
         outcome: "oauth_launch_error",

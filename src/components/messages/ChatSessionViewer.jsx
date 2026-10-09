@@ -21,6 +21,18 @@ function normalizeSessionTrack(track) {
   return { ...track, audioUrl: track.audioUrl || track.file_url || "" };
 }
 
+// Avoid resetting the multitrack editor (and its audio element refs) on every
+// polling tick when the server-side track list has not actually changed.
+function sessionTrackListsEqual(current, next) {
+  if (current === next) return true;
+  if (!Array.isArray(current) || !Array.isArray(next) || current.length !== next.length) return false;
+  const fields = ["id", "updated_date", "created_date", "file_url", "audioUrl", "name", "type", "volume", "muted", "solo", "pan"];
+  return current.every((track, index) => {
+    const candidate = next[index];
+    return !!candidate && fields.every((field) => track?.[field] === candidate?.[field]);
+  });
+}
+
 async function listSessionTracks(projectId) {
   const rows = [];
   const pageSize = 200;
@@ -70,7 +82,8 @@ export default function ChatSessionViewer({ message, currentUser }) {
       try {
         const next = await listSessionTracks(message.id);
         if (!cancelled) {
-          setTracks(next || []);
+          const safeNext = next || [];
+          setTracks((current) => sessionTrackListsEqual(current, safeNext) ? current : safeNext);
           setTracksError(false);
         }
       } catch {
@@ -81,7 +94,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
     };
 
     refreshTracks();
-    const poll = window.setInterval(refreshTracks, 5000);
+    const poll = window.setInterval(refreshTracks, 10000);
     return () => {
       cancelled = true;
       window.clearInterval(poll);

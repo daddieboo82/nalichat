@@ -29,6 +29,8 @@ const ALLOWED_FIELDS = new Set([
   "entitlement",
   "source",
   "outcome",
+  // Sanitized, user-safe failure reason used to diagnose signup and checkout friction.
+  "reason",
   // Non-PII campaign context used to connect ad acquisition with funnel outcomes.
   "campaign_source",
   "campaign_medium",

@@ -240,6 +240,9 @@ export default function Home() {
               <Button size="lg" variant="outline" className="min-h-12 rounded-xl border-border bg-card/60 px-6 text-base" asChild><Link to="/login">I already have an account</Link></Button>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">Start free. Explore at your own pace.</p>
+            <div className="mt-5">
+              <DonationButton variant="hero" />
+            </div>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[

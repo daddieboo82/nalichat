@@ -18,11 +18,18 @@ describe("product analytics account isolation", () => {
     expect(analytics).toContain('return !/iPad|iPhone|iPod/.test(navigator.userAgent || "");');
     expect(analytics).toContain("if (supportsCredentialedAnalyticsTransport())");
     expect(analytics).toContain('"product_session_started", "product_session_engagement"');
+    expect(analytics).toContain('"login_started", "login_completed", "login_failed"');
     expect(analytics).toContain('user_id: properties.user_id || analyticsUserId || ""');
     expect(analytics).toContain('name !== "product_session_engagement" || properties.reason !== "heartbeat"');
     expect(analytics).toContain('Math.round((s.engagedMs / 1000) * 10) / 10');
     expect(app).toContain("useEffect(() => initProductAnalytics(user?.id || null), [user?.id]);");
     expect(app).toContain("trackProductEvent('login_completed'");
+    expect(app).toContain("duration_ms: durationMs");
+    expect(app).toContain("duration_seconds: Math.max(0.1");
+    const loginSource = await readText("src/pages/Login.jsx");
+    expect(loginSource).toContain('trackProductEvent("login_started"');
+    expect(loginSource).toContain('trackProductEvent("login_failed"');
+    expect(loginSource).toContain("login_pending_started_at");
     const login = await readText("src/pages/Login.jsx");
     expect(login).toContain('sessionStorage.setItem("login_pending_method", "email_password")');
     expect(login).toContain('sessionStorage.setItem("login_pending_method", "google_oauth")');

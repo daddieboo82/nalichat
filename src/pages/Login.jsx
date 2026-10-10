@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { clearPersistedAuthTokens, markAuthActivity, persistAuthResult } from "@/lib/authSession";
 import { googleLoginErrorMessage, loginErrorMessage } from "@/lib/authErrorMessages";
+import { trackProductEvent } from "@/lib/productAnalytics";
 
 export default function Login() {
   const isNativeIos = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === "ios";
@@ -24,8 +25,13 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    const startedAt = Date.now();
     try {
-      try { sessionStorage.setItem("login_pending_method", "email_password"); } catch {}
+      try {
+        sessionStorage.setItem("login_pending_method", "email_password");
+        sessionStorage.setItem("login_pending_started_at", String(startedAt));
+      } catch {}
+      trackProductEvent("login_started", { source: "email_password", route: window.location.pathname });
       const result = await base44.auth.loginViaEmailPassword(email, password);
       const token = persistAuthResult(result);
       if (token) {
@@ -39,8 +45,19 @@ export default function Login() {
       toast.success("Logged in successfully! Welcome back.");
       window.location.href = safeReturnTo();
     } catch (err) {
-      try { sessionStorage.removeItem("login_pending_method"); } catch {}
+      const durationMs = Math.max(0, Date.now() - startedAt);
+      try {
+        sessionStorage.removeItem("login_pending_method");
+        sessionStorage.removeItem("login_pending_started_at");
+      } catch {}
       const msg = loginErrorMessage(err);
+      trackProductEvent("login_failed", {
+        source: "email_password",
+        route: window.location.pathname,
+        duration_ms: durationMs,
+        duration_seconds: Math.max(0.1, Math.round((durationMs / 1000) * 10) / 10),
+        reason: msg,
+      });
       setError(msg);
       toast.error(msg);
       setLoading(false);
@@ -51,20 +68,34 @@ export default function Login() {
     if (googleLoading) return;
     setGoogleLoading(true);
     setError("");
+    const startedAt = Date.now();
     try {
       // Login must not inherit a pending registration marker from an abandoned Google signup.
       try {
         sessionStorage.removeItem("registration_pending_method");
         sessionStorage.setItem("login_pending_method", "google_oauth");
+        sessionStorage.setItem("login_pending_started_at", String(startedAt));
       } catch {}
+      trackProductEvent("login_started", { source: "google_oauth", route: window.location.pathname });
       // A stale bearer token can override a fresh cookie-backed Google session
       // on the callback and make auth.me() report the user as logged out.
       clearPersistedAuthTokens();
       markAuthActivity();
       await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()));
     } catch (err) {
-      try { sessionStorage.removeItem("login_pending_method"); } catch {}
+      const durationMs = Math.max(0, Date.now() - startedAt);
+      try {
+        sessionStorage.removeItem("login_pending_method");
+        sessionStorage.removeItem("login_pending_started_at");
+      } catch {}
       const msg = googleLoginErrorMessage(err);
+      trackProductEvent("login_failed", {
+        source: "google_oauth",
+        route: window.location.pathname,
+        duration_ms: durationMs,
+        duration_seconds: Math.max(0.1, Math.round((durationMs / 1000) * 10) / 10),
+        reason: msg,
+      });
       setError(msg);
       toast.error(msg);
       setGoogleLoading(false);

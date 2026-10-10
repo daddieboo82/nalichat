@@ -91,7 +91,7 @@ function track(name, properties = {}) {
   }
   const funnelEvents = new Set([
     "homepage_view", "homepage_demo_click", "signup_click", "registration_view", "registration_started",
-    "registration_completed", "registration_failed", "login_completed", "product_session_started", "product_session_engagement",
+    "registration_completed", "registration_failed", "login_started", "login_completed", "login_failed", "product_session_started", "product_session_engagement",
     "otp_resend_success", "onboarding_complete", "post_login_action", "messenger_discovery_view",
     "contact_added", "messenger_discovery_message_click", "first_message", "studio_open", "first_upload", "activation_complete", "return_visit",
     "upgrade_click", "paywall_view", "paywall_tier_select", "paywall_primary_cta", "checkout_started", "purchase_completed", "purchase_failed"

@@ -72,7 +72,23 @@ function getAcquisition() {
     return acquisition;
   } catch { return {}; }
 }
+// Base44's native Analytics dashboard uses appLogs for in-app activity;
+// custom analytics.track events alone do not populate its route activity.
+function logDashboardActivity(route) {
+  if (typeof window === "undefined" || typeof base44?.appLogs?.logUserInApp !== "function") return;
+  const pageName = String(route || window.location.pathname || "/").split("?")[0].slice(0, 120);
+  try {
+    const result = base44.appLogs.logUserInApp(pageName);
+    if (result?.catch) result.catch(() => {});
+  } catch {}
+}
 function track(name, properties = {}) {
+  if (
+    name === "product_page_view" ||
+    (name === "product_session_engagement" && properties.reason !== "heartbeat")
+  ) {
+    logDashboardActivity(properties.route);
+  }
   const currentSession = ensureSession();
   const acquisition = getAcquisition();
   const enrichedProperties = {

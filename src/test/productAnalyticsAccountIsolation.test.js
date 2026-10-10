@@ -21,6 +21,8 @@ describe("product analytics account isolation", () => {
     expect(analytics).toContain('"login_started", "login_completed", "login_failed"');
     expect(analytics).toContain('user_id: properties.user_id || analyticsUserId || ""');
     expect(analytics).toContain('name !== "product_session_engagement" || properties.reason !== "heartbeat"');
+    expect(analytics).toContain("base44.appLogs.logUserInApp(pageName)");
+    expect(analytics).toContain('name === "product_page_view"');
     expect(analytics).toContain('Math.round((s.engagedMs / 1000) * 10) / 10');
     expect(app).toContain("useEffect(() => initProductAnalytics(user?.id || null), [user?.id]);");
     expect(app).toContain("trackProductEvent('login_completed'");

@@ -27,7 +27,7 @@ function collectErrors(page) {
 function filterNoise(errors) {
   return errors.filter(
     (x) =>
-      !/favicon|Failed to load resource.*(?:401|404)|Public settings check failed:.*404|ERR_ABORTED|NS_BINDING_ABORTED|Load request cancelled|bat\.bing\.com|gtag|googletagmanager|livekit|socket|websocket|403 Forbidden|ERR_CONNECTION|net::ERR|Network request failed|Failed to fetch dynamically imported/i.test(
+      !/favicon|Failed to load resource.*(?:401|404)|Public settings check failed:.*404|ERR_ABORTED|NS_BINDING_ABORTED|Load request cancelled|bat\.bing\.com|gtag|googletagmanager|livekit|socket|websocket|403 Forbidden|ERR_CONNECTION|net::ERR|Network request failed|Failed to fetch dynamically imported|Viewport argument key .* not recognized and ignored/i.test(
         x,
       ),
   );
@@ -66,8 +66,8 @@ test.describe('shared file public route', () => {
     await page.goto('/shared-file', { waitUntil: 'domcontentloaded' });
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 15000 }).toBe('/shared-file');
     await expect(page.locator('body')).toBeVisible({ timeout: 10000 });
-    const hasContent = await page.getByRole('heading').first().isVisible({ timeout: 10000 }).catch(() => false);
-    expect(hasContent).toBeTruthy();
+    await expect(page.getByRole('heading', { name: /share link unavailable/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/invalid, expired, or has been replaced/i)).toBeVisible();
     expect(filterNoise(errors)).toEqual([]);
   });
 
@@ -75,8 +75,8 @@ test.describe('shared file public route', () => {
     const errors = collectErrors(page);
     await page.goto('/shared-file?token=invalid-token-12345', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('body')).toBeVisible({ timeout: 10000 });
-    const hasContent = await page.getByRole('heading').first().isVisible({ timeout: 10000 }).catch(() => false);
-    expect(hasContent).toBeTruthy();
+    await expect(page.getByRole('heading', { name: /share link unavailable/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/invalid, expired, or has been replaced/i)).toBeVisible();
     expect(filterNoise(errors)).toEqual([]);
   });
 });

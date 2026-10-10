@@ -172,15 +172,26 @@ const AuthenticatedApp = () => {
   useEffect(() => {
     if (!user?.id || typeof window === 'undefined') return;
     let method = null;
+    let startedAt = null;
     try {
       method = sessionStorage.getItem('login_pending_method');
+      const rawStartedAt = sessionStorage.getItem('login_pending_started_at');
+      startedAt = rawStartedAt ? Number(rawStartedAt) : null;
       if (method) sessionStorage.removeItem('login_pending_method');
+      sessionStorage.removeItem('login_pending_started_at');
     } catch {}
     if (!method) return;
+    const durationMs = Number.isFinite(startedAt) && startedAt > 0
+      ? Math.max(0, Date.now() - startedAt)
+      : null;
     trackProductEvent('login_completed', {
       user_id: user.id,
       source: method,
       route: location.pathname,
+      ...(durationMs == null ? {} : {
+        duration_ms: durationMs,
+        duration_seconds: Math.max(0.1, Math.round((durationMs / 1000) * 10) / 10),
+      }),
     });
   }, [user?.id, location.pathname]);
 

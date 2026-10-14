@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@base44/sdk": "^0.8.53",
-    "@base44/vite-plugin": "^1.0.44",
+    "@base44/vite-plugin": "^1.0.45",
     "@capacitor/cli": "^6.2.2",
     "@capacitor/core": "^6.2.2",
     "@capacitor/ios": "^6.2.2",

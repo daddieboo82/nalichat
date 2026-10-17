@@ -18,6 +18,7 @@ import {
   PAYWALL_CONFIG,
 } from "@/lib/paywallConfig";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
+import { trackProductEvent } from "@/lib/productAnalytics";
 import { captureMarketingAttribution, getMarketingAttribution } from "@/lib/adAttribution";
 import {
   CHECKOUT_RETURN_KEY,
@@ -192,6 +193,7 @@ export default function PricingPlans({
     });
 
     if (!isAuthenticated) {
+      trackProductEvent("signup_click", { source: "pricing_plan", cta: "select_paid_plan", plan: planId, billing_period: period });
       navigate(`/register?returnTo=${encodeURIComponent("/pricing")}`);
       return;
     }

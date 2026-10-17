@@ -110,7 +110,7 @@ export default function Login() {
       footer={
         <>
           Don't have an account?{" "}
-          <Link to={`/register?returnTo=${encodeURIComponent(safeReturnTo())}`} className="ui-hover min-h-9 rounded-lg px-2 py-1 font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
+          <Link to={`/register?returnTo=${encodeURIComponent(safeReturnTo())}`} onClick={() => trackProductEvent("signup_click", { source: "login_footer", cta: "create_free_account" })} className="ui-hover min-h-9 rounded-lg px-2 py-1 font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
             Create a free account
           </Link>
         </>

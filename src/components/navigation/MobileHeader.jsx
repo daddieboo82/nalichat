@@ -83,6 +83,9 @@ export default function MobileHeader() {
 
   const handleNavigate = (dest) => {
     sounds.nav();
+    if (dest === "/register" || dest.startsWith("/register?")) {
+      trackProductEvent("signup_click", { source: "mobile_header", cta: "sign_up" });
+    }
     setMenuOpen(false);
     navigate(dest);
   };

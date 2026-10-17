@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { MessageSquare, Music, Sparkles, FileAudio, ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { captureMarketingAttribution, getMarketingAttribution } from "@/lib/adAttribution";
+import { trackProductEvent } from "@/lib/productAnalytics";
 
 function attributedPath(path) {
   const attribution = getMarketingAttribution();
@@ -59,7 +60,7 @@ export default function MusicCollaborationLanding() {
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg" className="min-h-12 w-full rounded-xl px-7 font-semibold sm:w-auto">
-              <Link to={attributedPath("/register")}>
+              <Link to={attributedPath("/register")} onClick={() => trackProductEvent("signup_click", { source: "music_collaboration_landing", cta: "start_free" })}>
                 Start Free <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>

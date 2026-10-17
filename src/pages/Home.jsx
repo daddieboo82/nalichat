@@ -227,7 +227,7 @@ export default function Home() {
           <Link to="/" aria-label="NaliBase home" className="flex items-center gap-3"><Logo size={42} glow={false} /><span className="font-heading text-xl font-black tracking-tight">NaliBase</span></Link>
           <nav className="flex items-center gap-2 sm:gap-3" aria-label="Main navigation">
             <Button variant="ghost" className="rounded-xl px-3" asChild><Link to="/login">Log in</Link></Button>
-            <Button className="rounded-xl px-4 font-semibold" asChild><Link to="/register">Get started <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+            <Button className="rounded-xl px-4 font-semibold" asChild><Link to="/register" onClick={() => trackProductEvent("signup_click", { source: "public_header", cta: "get_started" })}>Get started <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
           </nav>
         </header>
         <section className="relative z-10 mx-auto grid min-h-[72vh] max-w-7xl items-center gap-12 px-5 pb-16 pt-8 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:pb-24">
@@ -928,7 +928,7 @@ export default function Home() {
               <Link to="/privacy" className="min-h-10 inline-flex items-center hover:text-foreground">Privacy Policy</Link>
               <Link to="/terms" className="min-h-10 inline-flex items-center hover:text-foreground">Terms of Service</Link>
               <Link to="/login" className="min-h-10 inline-flex items-center hover:text-foreground">Sign In</Link>
-              <Link to="/register" className="min-h-10 inline-flex items-center hover:text-foreground">Create Account</Link>
+              <Link to="/register" className="min-h-10 inline-flex items-center hover:text-foreground" onClick={() => trackProductEvent("signup_click", { source: "public_footer", cta: "create_account" })}>Create Account</Link>
               <Link to="/pricing" className="min-h-10 inline-flex items-center hover:text-foreground">Compare Plans</Link>
               <a href="mailto:support@nalichat.org" className="min-h-10 inline-flex items-center hover:text-foreground">Contact Support</a>
             </div>

@@ -8,6 +8,7 @@ import {
   Headphones, Star, Zap
 } from "lucide-react";
 import { sounds } from "@/hooks/use-sound";
+import { trackProductEvent } from "@/lib/productAnalytics";
 
 export const VISITOR_ONBOARDING_STORAGE_KEY = "nali_onboarding_seen";
 
@@ -121,6 +122,7 @@ export default function ImmersiveOnboarding({ onDismiss }) {
     sounds.success();
     try { sessionStorage.setItem(VISITOR_ONBOARDING_STORAGE_KEY, "1"); } catch {}
     onDismiss?.();
+    trackProductEvent("signup_click", { source: "immersive_onboarding", cta: "join_free" });
     navigate("/register");
   };
 

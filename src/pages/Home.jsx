@@ -630,7 +630,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <Link to={user ? "/messages" : "/register"}>
+          <Link to={user ? "/messages" : "/register"} onClick={() => { if (!user) trackProductEvent("signup_click", { source: "home_messaging_card", cta: "open_messages" }); }}>
             <div className="ui-surface ui-hover group relative cursor-pointer overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40 sm:p-8 md:p-12">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/8 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors duration-500" />

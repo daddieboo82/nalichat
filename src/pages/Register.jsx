@@ -37,6 +37,12 @@ export default function Register() {
   const markEmailRegistrationStarted = () => {
     if (emailStartedTracked) return;
     setEmailStartedTracked(true);
+    // Distinguish visitors who begin interacting with the form from people
+    // who only view the registration page and leave before submitting.
+    trackProductEvent("registration_form_interaction", {
+      source: "email_form",
+      stage: "first_field_interaction",
+    });
   };
 
   useEffect(() => {
@@ -383,6 +389,7 @@ export default function Register() {
               required
             />
           </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">Choose a unique password. If it is rejected, try a longer one with a mix of letters, numbers, and symbols.</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="confirm">Confirm Password</Label>

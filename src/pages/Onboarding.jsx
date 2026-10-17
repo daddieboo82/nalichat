@@ -140,7 +140,7 @@ export default function Onboarding() {
             <label className="flex items-center gap-2 text-sm font-semibold"><UserRound className="h-4 w-4 text-primary" aria-hidden="true" />Display Name <span className="text-primary">*</span></label>
             <Input
               value={form.display_name}
-              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, display_name: e.target.value })); }
+              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, display_name: e.target.value })); }}
               placeholder="What should we call you?"
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
@@ -149,14 +149,14 @@ export default function Onboarding() {
             <Input
               type="date"
               value={form.birthdate}
-              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, birthdate: e.target.value })); }
+              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, birthdate: e.target.value })); }}
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold">Bio <span className="font-normal text-muted-foreground">(optional)</span></label>
             <Textarea
               value={form.bio}
-              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, bio: e.target.value })); }
+              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, bio: e.target.value })); }}
               placeholder="A short bio about your music (optional)"
               rows={3}
             className="min-h-[88px] resize-y rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
@@ -165,7 +165,7 @@ export default function Onboarding() {
             <label className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-primary" aria-hidden="true" />Location <span className="font-normal text-muted-foreground">(optional)</span></label>
             <Input
               value={form.location}
-              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, location: e.target.value })); }
+              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, location: e.target.value })); }}
               placeholder="City, Country"
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>

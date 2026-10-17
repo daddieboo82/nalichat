@@ -122,7 +122,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               >
                 Log in
               </Link>
-              <Link to="/register" onClick={() => sounds.nav()}>
+              <Link to="/register" onClick={() => { sounds.nav(); trackProductEvent("signup_click", { source: "desktop_nav", cta: "sign_up" }); }}>
                 <Button size="sm" className="ui-hover min-h-10 whitespace-nowrap rounded-xl bg-gradient-to-r from-primary to-pink-500 text-xs font-bold shadow-lg shadow-primary/20 hover:opacity-90">
                   Sign up
                 </Button>

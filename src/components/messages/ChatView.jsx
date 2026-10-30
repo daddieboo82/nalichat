@@ -127,6 +127,14 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     };
   }, []);
 
+  // When the mobile keyboard opens, the composer lifts over the list. Keep the
+  // newest message visible instead of letting the last bubbles slide underneath.
+  useEffect(() => {
+    if (keyboardOffset > 0 && isNearBottomRef.current && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [keyboardOffset]);
+
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const isNearBottom = scrollRef.current.scrollHeight - scrollRef.current.scrollTop - scrollRef.current.clientHeight < 200;
@@ -378,7 +386,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} onScroll={handleScroll} className="chat-theme-messages flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] [touch-action:pan-y] bg-gradient-to-b from-primary/[0.025] via-transparent to-accent/[0.025] px-3 sm:px-6 pt-2 sm:pt-4 pb-4 space-y-0.5 custom-scrollbar">
+      <div ref={scrollRef} onScroll={handleScroll} className="chat-theme-messages flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] [touch-action:pan-y] bg-gradient-to-b from-primary/[0.025] via-transparent to-accent/[0.025] px-3 sm:px-6 pt-2 sm:pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] space-y-0.5 custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />

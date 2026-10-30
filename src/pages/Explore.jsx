@@ -297,7 +297,7 @@ export default function Explore() {
               </button>
             </div>
           ) : (
-            <div className="columns-1 gap-4 space-y-4 sm:columns-2 lg:columns-3">
+            <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 lg:grid-cols-3">
               {recent.map(post => (
                 <ArtPostCard 
                   key={post.id} 
@@ -312,10 +312,12 @@ export default function Explore() {
             </div>
           )}
         </div>
-        </div>
 
-        {/* Footer ad — last thing in the content stream, never on the hero */}
-        <AdSlot slot="explore-footer" className="mx-auto max-w-5xl px-4 sm:px-8 pb-4" />
+        {/* Footer ad — kept inside the padded content stream so the page can
+            always scroll past it, with clear space under the last card */}
+        <AdSlot slot="explore-footer" className="mt-8" />
+        <div className="h-12" aria-hidden="true" />
+        </div>
 
         <UploadArtDialog sourceFile={publishFile} open={showUpload} onClose={() => { setShowUpload(false); setPublishFile(null); }} currentUser={currentUser} onSuccess={() => {
         setShowUpload(false);

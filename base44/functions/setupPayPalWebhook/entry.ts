@@ -40,10 +40,12 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user || user.role !== 'admin') return Response.json({ error: 'Admin required' }, { status: 403 });
     const existing = secrets.get('PAYPAL_WEBHOOK_ID');
-    if (existing) return Response.json({ success: true, reused: true, webhookId: existing });
+    if (existing && !existing.startsWith('REPLACE_')) return Response.json({ success: true, reused: true, webhookId: existing });
 
     const accessToken = await token();
-    const webhookUrl = 'https://base44-dispatcher-production.base44.workers.dev/api/apps/6a1f5ee134147461560c2b37/functions/paypalWebhook';
+    const appId = secrets.get('BASE44_APP_ID') || 'cbef744a8545c389ef439ea6';
+    const webhookUrl = secrets.get('PAYPAL_WEBHOOK_URL') ||
+      `https://base44-dispatcher-production.base44.workers.dev/api/apps/${appId}/functions/paypalWebhook`;
     const r = await fetch(apiBase() + '/v1/notifications/webhooks', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },

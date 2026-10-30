@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
+import { paypalPeriodEndForStatus } from '../../shared/paypalSubscription.ts';
 import { paypalWebhookLedgerAction, shouldApplyPayPalEvent } from '../../shared/paypalWebhookLedger.ts';
 
 const HANDLED = new Set([
@@ -162,16 +163,16 @@ Deno.serve(async (req) => {
 
     const records = await entities.Subscription.filter({ provider: 'paypal', subscription_id: subscriptionId }, '-created_date', 2);
     if (records.length === 0) {
-      // Race: webhook arrived before Subscription.create completed. Return 200
-      // so PayPal does not redeliver aggressively; the reconcilePendingPayPal
-      // fallback in checkSubscriptionStatus will catch up once the record exists.
+      // The local row can land a moment after PayPal emits the event. A 200
+      // with ignored state would permanently drop the payment, so ask PayPal
+      // to retry until the subscription record exists.
       console.warn('PayPal webhook: no subscription record yet for', subscriptionId);
       await entities.PayPalWebhookEvent.update(ledger.id, {
-        processing_state: 'ignored',
+        processing_state: 'failed',
         processed_at: new Date().toISOString(),
-        last_error: 'No subscription record found; reconcile will catch up',
+        last_error: 'No subscription record found yet; PayPal should retry',
       });
-      return Response.json({ received: true, ignored: true });
+      return Response.json({ error: 'Subscription record not ready' }, { status: 503 });
     }
     if (records.length > 1) {
       console.error('PayPal webhook: multiple subscription records for', subscriptionId, records.length);
@@ -216,12 +217,12 @@ Deno.serve(async (req) => {
       // not the sale resource — fetch it to get next_billing_time.
       if (event.event_type.startsWith('PAYMENT.')) {
         const billingInfo = await fetchSubscriptionBillingInfo(token, subscriptionId);
-        if (billingInfo?.nextBillingTime) {
-          update.current_period_end = billingInfo.nextBillingTime;
-        }
+        const periodEnd = paypalPeriodEndForStatus(newStatus, billingInfo?.nextBillingTime);
+        if (periodEnd !== undefined) update.current_period_end = periodEnd;
       } else {
         const end = event.resource?.billing_info?.next_billing_time || event.resource?.billing_info?.final_payment_time;
-        if (typeof end === 'string') update.current_period_end = end;
+        const periodEnd = paypalPeriodEndForStatus(newStatus, end);
+        if (periodEnd !== undefined) update.current_period_end = periodEnd;
       }
 
       await entities.Subscription.update(record.id, update);

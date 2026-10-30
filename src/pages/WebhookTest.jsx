@@ -119,7 +119,7 @@ export default function WebhookTest() {
               </div>
               <div className="flex items-start gap-2">
                 <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">2</span>
-                <p>Add endpoint: <code className="text-primary bg-secondary px-1.5 py-0.5 rounded text-xs">https://nalichat.base44.app/functions/stripeWebhook</code></p>
+                <p>Add endpoint: <code className="text-primary bg-secondary px-1.5 py-0.5 rounded text-xs">https://base44-dispatcher-production.base44.workers.dev/api/apps/cbef744a8545c389ef439ea6/functions/stripeWebhook</code></p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">3</span>

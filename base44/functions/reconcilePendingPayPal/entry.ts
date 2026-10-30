@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
+import { paypalPeriodEndForStatus, resolvePayPalSubscriptionStatus } from '../../shared/paypalSubscription.ts';
 
 const WORKFLOW_KEY = 'nali-paypal-reconcile-v1-20260925';
 
@@ -65,15 +66,16 @@ Deno.serve(async (req) => {
         continue;
       }
       const remote = await response.json();
-      const status = localStatus(remote?.status);
+      const remoteStatus = await resolvePayPalSubscriptionStatus(apiBase(), token, subscriptionId, remote);
+      const status = localStatus(remoteStatus);
       if (!status) {
-        results.push({ subscriptionId, result: 'unchanged', paypalStatus: remote?.status || null });
+        results.push({ subscriptionId, result: 'unchanged', paypalStatus: remoteStatus || remote?.status || null });
         continue;
       }
 
       const update: Record<string, unknown> = { status };
-      const nextBilling = remote?.billing_info?.next_billing_time;
-      if (typeof nextBilling === 'string') update.current_period_end = nextBilling;
+      const periodEnd = paypalPeriodEndForStatus(status, remote?.billing_info?.next_billing_time);
+      if (periodEnd !== undefined) update.current_period_end = periodEnd;
       if (status === 'canceled') update.cancel_at_period_end = false;
       await base44.asServiceRole.entities.Subscription.update(subscription.id, update);
       results.push({ subscriptionId, result: 'updated', status, paypalStatus: remote?.status || null });

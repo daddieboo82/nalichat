@@ -4,6 +4,11 @@ import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 import { sounds } from '@/hooks/use-sound'
+import { redirectLegacyHost } from '@/lib/canonicalHost'
+
+if (typeof window !== 'undefined') {
+  redirectLegacyHost(window.location);
+}
 
 // Expose a non-sensitive build fingerprint for production deployment checks.
 // This lets operations verify that the live site matches the commit that was

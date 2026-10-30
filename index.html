@@ -1,6 +1,14 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      (function () {
+        var host = location.hostname.toLowerCase();
+        if (host === "nalichat.base44.app" || host === "www.nalichat.org") {
+          location.replace("https://nalichat.org" + location.pathname + location.search + location.hash);
+        }
+      })();
+    </script>
     <!-- Google Tag Manager: defer third-party analytics until after first paint. -->
     <script>
       (function (w, d, s, l, i) {

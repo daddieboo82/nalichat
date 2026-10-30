@@ -31,10 +31,11 @@ Deno.serve(async (req) => {
     ];
     const missingSecrets = requiredSecrets.filter((name) => {
       const value = secrets.get(name);
-      return typeof value !== 'string' || !value.trim();
+      return typeof value !== 'string' || !value.trim() || value.startsWith('REPLACE_');
     });
     const sandboxMode = environment === 'sandbox';
-    const webhookConfigured = Boolean(String(secrets.get('PAYPAL_WEBHOOK_ID') || '').trim());
+    const rawWebhookId = String(secrets.get('PAYPAL_WEBHOOK_ID') || '').trim();
+    const webhookConfigured = Boolean(rawWebhookId && !rawWebhookId.startsWith('REPLACE_'));
 
     return Response.json({
       success: true,

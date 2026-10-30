@@ -48,7 +48,10 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user || user.role !== 'admin') return Response.json({ error: 'Admin required' }, { status: 403 });
-    const existingPlanIds = Object.fromEntries(PLANS.map((p) => [p.sku, secrets.get('PAYPAL_' + p.sku.toUpperCase() + '_PLAN_ID')]).filter(([, id]) => Boolean(id)));
+    const existingPlanIds = Object.fromEntries(
+      PLANS.map((p) => [p.sku, secrets.get('PAYPAL_' + p.sku.toUpperCase() + '_PLAN_ID')])
+        .filter(([, id]) => Boolean(id) && typeof id === 'string' && !id.startsWith('REPLACE_'))
+    );
     if (Object.keys(existingPlanIds).length === PLANS.length) {
       return Response.json({ success: true, reused: true, plans: existingPlanIds });
     }

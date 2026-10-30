@@ -21,7 +21,9 @@ Deno.serve(async (req) => {
     const environment = (secrets.get('PAYPAL_ENVIRONMENT') || 'live').trim().toLowerCase();
     const clientId = secrets.get('PAYPAL_CLIENT_ID');
     const clientSecret = secrets.get('PAYPAL_CLIENT_SECRET');
-    if (!clientId || !clientSecret) return Response.json({ error: 'PayPal is not configured' }, { status: 503 });
+    if (!clientId || !clientSecret || clientId.startsWith('REPLACE_') || clientSecret.startsWith('REPLACE_')) {
+      return Response.json({ error: 'PayPal is not configured' }, { status: 503 });
+    }
 
     const auth = await fetch(apiBase(environment) + '/v1/oauth2/token', {
       method: 'POST',
@@ -59,7 +61,7 @@ Deno.serve(async (req) => {
     const planChecks = [];
     for (const item of planCatalog) {
       const planId = secrets.get(item.secret);
-      if (!planId) { planChecks.push({ sku: item.sku, status: 'missing' }); continue; }
+      if (!planId || planId.startsWith('REPLACE_')) { planChecks.push({ sku: item.sku, status: 'missing' }); continue; }
       try {
         const response = await fetch(apiBase(environment) + '/v1/billing/plans/' + encodeURIComponent(planId), { headers });
         if (!response.ok) { planChecks.push({ sku: item.sku, status: 'lookup_failed', httpStatus: response.status }); continue; }

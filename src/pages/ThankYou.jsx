@@ -18,6 +18,7 @@ export default function ThankYou() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const checkoutId = urlParams.get("checkout_id");
+  const subscriptionId = urlParams.get("subscription_id");
   const purchaseToken = urlParams.get("purchase_token");
   const isSubscriptionCheckout = urlParams.get("subscription") === "1";
 
@@ -47,7 +48,7 @@ export default function ThankYou() {
 
       setSubscriptionConfirmation(result.outcome);
       if (result.outcome === "confirmed") {
-        const analyticsKey = `nalichat_subscription_confirmation:${checkoutId || "unknown"}`;
+        const analyticsKey = `nalichat_subscription_confirmation:${checkoutId || subscriptionId || "unknown"}`;
         let alreadyTracked = false;
         try {
           alreadyTracked = localStorage.getItem(analyticsKey) === "1";
@@ -207,6 +208,11 @@ export default function ThankYou() {
           {(timedOut || failed) && (
             <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
               <Button size="lg" onClick={() => window.location.reload()}>Try again</Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link to={`/login?returnTo=${encodeURIComponent(`${window.location.pathname}${window.location.search}`)}`}>
+                  Sign in to confirm access
+                </Link>
+              </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link to="/pricing">Back to plans</Link>
               </Button>

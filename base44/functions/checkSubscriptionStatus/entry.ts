@@ -6,6 +6,7 @@ import {
   normalizeStatus,
   resolveEntitlements,
 } from '../../shared/subscription.ts';
+import { paypalPeriodEndForStatus, resolvePayPalSubscriptionStatus } from '../../shared/paypalSubscription.ts';
 import { trialEligibility } from '../../shared/stripeBilling.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -101,11 +102,18 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       });
       if (!response.ok) continue;
       const remote = await response.json();
-      const status = paypalStatus(remote?.status);
+      const remoteStatus = await resolvePayPalSubscriptionStatus(
+        paypalApiBase(),
+        token,
+        subscription.subscription_id as string,
+        remote,
+      );
+      const status = paypalStatus(remoteStatus);
       if (!status) continue;
       const update: Record<string, unknown> = { status };
-      const nextBilling = remote?.billing_info?.next_billing_time;
-      if (typeof nextBilling === 'string') update.current_period_end = nextBilling;
+      const periodEnd = paypalPeriodEndForStatus(status, remote?.billing_info?.next_billing_time);
+      if (periodEnd !== undefined) update.current_period_end = periodEnd;
+      if (status === 'canceled') update.cancel_at_period_end = false;
       await subscriptionEntity.update(subscription.id as string, update);
       Object.assign(subscription, update);
     }

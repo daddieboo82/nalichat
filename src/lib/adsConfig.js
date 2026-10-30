@@ -2,7 +2,7 @@
 //
 // To turn on ads and start earning from site visits:
 // 1. Sign up at https://www.google.com/adsense/start/
-// 2. Add your site URL (https://nalichat.base44.app or your custom domain)
+// 2. Add your site URL (https://nalichat.org)
 // 3. Wait for Google to approve your site (can take days to weeks)
 // 4. Copy your publisher ID — it looks like: ca-pub-1234567890123456
 // 5. Paste it below as the ADSENSE_CLIENT_ID value

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
+import { paypalPeriodEndForStatus, resolvePayPalSubscriptionStatus } from '../../shared/paypalSubscription.ts';
 import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
 
 const CATALOG: Record<string, { plan: string; billingPeriod: string; secret: string }> = {
@@ -81,7 +82,15 @@ Deno.serve(async (req) => {
       });
       if (!lookup.ok) continue;
       const remote = await lookup.json();
-      if (remote.status !== 'APPROVAL_PENDING' || remote.plan_id !== planId ||
+      const remoteStatus = await resolvePayPalSubscriptionStatus(apiBase(), token, pending.subscription_id, remote);
+      if (remoteStatus === 'ACTIVE') {
+        const update: Record<string, unknown> = { status: 'active' };
+        const periodEnd = paypalPeriodEndForStatus('active', remote?.billing_info?.next_billing_time);
+        if (periodEnd !== undefined) update.current_period_end = periodEnd;
+        await base44.asServiceRole.entities.Subscription.update(pending.id, update);
+        return Response.json({ error: 'This account already has a paid subscription; use the billing portal' }, { status: 409 });
+      }
+      if (remoteStatus !== 'APPROVAL_PENDING' || remote.plan_id !== planId ||
           remote.custom_id !== user.id + ':' + sku) continue;
       const approval = (Array.isArray(remote.links) ? remote.links.find((link: any) => link.rel === 'approve')?.href : '') || pending.checkout_url;
       const expectedHost = pending.paypal_environment === 'sandbox' ? 'www.sandbox.paypal.com' : 'www.paypal.com';
@@ -93,24 +102,11 @@ Deno.serve(async (req) => {
         checkoutUrl: approval, subscriptionId: pending.subscription_id, resumed: true,
       });
     }
-    // Build return URLs from the request's X-Base44-App-Url header (set by the
-    // platform on genuine app requests), falling back to APP_BASE_URL. Never
-    // trust the request Origin header — it is caller-controlled and wrong in
-    // PWAs and the builder preview.
-    const headerAppUrl = req.headers.get('X-Base44-App-Url');
-    let appBaseUrl = APP_BASE_URL;
-    if (headerAppUrl) {
-      try {
-        const parsed = new URL(headerAppUrl);
-        if (parsed.protocol === 'https:' && !parsed.username && !parsed.password && parsed.pathname === '/' && !parsed.search && !parsed.hash) {
-          appBaseUrl = parsed.origin;
-        }
-      } catch {
-        // Invalid header — fall back to APP_BASE_URL
-      }
-    }
-    const successUrl = new URL('/ThankYou?subscription=1', appBaseUrl).toString();
-    const cancelUrl = new URL('/pricing', appBaseUrl).toString();
+    // Always return buyers to the canonical site. The platform app URL can still
+    // be the old Base44 host, and a session on nalichat.org cannot confirm a
+    // payment that lands on a different origin.
+    const successUrl = new URL('/ThankYou?subscription=1', APP_BASE_URL).toString();
+    const cancelUrl = new URL('/pricing', APP_BASE_URL).toString();
     const res = await fetch(apiBase() + '/v1/billing/subscriptions', {
       method: 'POST',
       headers: {

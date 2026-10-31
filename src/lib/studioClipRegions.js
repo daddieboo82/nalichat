@@ -86,6 +86,9 @@ export function remapClipRegionSources(regions, newDuration, transform = 'none',
         ...region,
         sourceStart: Math.max(0, Math.min(duration, sourceStart)),
         sourceEnd: Math.max(0, Math.min(duration, sourceEnd)),
+        ...(transform === 'reverse'
+          ? { fadeIn: region.fadeOut, fadeOut: region.fadeIn }
+          : {}),
       }, region.id);
     })
     .filter(Boolean);

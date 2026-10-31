@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { getTrackClipRegions, healTrackRegions, moveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, getTrackClipRegions, healTrackRegions, moveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -2507,38 +2507,37 @@ export default function Studio() {
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
 
                         if (activeTool === 'cut') {
-                           // Cut is one-sided: clicking in the left half removes the audio
-                           // before the click; clicking in the right half removes audio after it.
-                           const target = e.currentTarget;
-                           const clipRect = target.getBoundingClientRect();
+                           // Cut only the region under the pointer. The removed side is no
+                           // longer referenced by the timeline, but the remaining audio stays
+                           // on this track and keeps its original timeline position.
+                           const clipRect = e.currentTarget.getBoundingClientRect();
+                           if (clipRect.width <= 0) return;
                            const clickX = e.clientX - clipRect.left;
                            const clickRatio = Math.max(0, Math.min(1, clickX / clipRect.width));
-                           const clipDuration = track.duration || 40;
-                           const trimAmount = clipDuration * clickRatio;
-                           const fullDuration = track.fullDuration || track.duration || 40;
-                           const sourceStart = track.clipStart || 0;
+                           const timelineCut = (track.startTime || 0) + ((track.duration || 40) * clickRatio);
+                           const regions = getTrackClipRegions(track);
+                           const targetRegion = regions.find(region => {
+                             const regionEnd = region.timelineStart + region.sourceEnd - region.sourceStart;
+                             return timelineCut >= region.timelineStart && timelineCut < regionEnd;
+                           });
 
-                           if (clickRatio < 0.5) {
-                             // Keep the right-hand portion and advance both its timeline and
-                             // source-audio start so playback stays aligned with the waveform.
-                             setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
-                               ...t,
-                               startTime: (t.startTime || 0) + trimAmount,
-                               duration: clipDuration - trimAmount,
-                               fullDuration,
-                               clipStart: sourceStart + trimAmount
-                             } : t));
-                             toast.success("Audio before the cut point removed");
-                           } else {
-                             // Keep the left-hand portion and trim the source's right edge.
-                             setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
-                               ...t,
-                               duration: trimAmount,
-                               fullDuration,
-                               clipStart: sourceStart
-                             } : t));
-                             toast.success("Audio after the cut point removed");
+                           if (!targetRegion) {
+                             toast.error("Place the Cut tool inside an audio region.");
+                             return;
                            }
+
+                           const regionDuration = targetRegion.sourceEnd - targetRegion.sourceStart;
+                           const keepsRight = timelineCut - targetRegion.timelineStart < regionDuration / 2;
+                           setTracksWithHistory(previous => previous.map(item => {
+                             if (item.id !== track.id) return item;
+                             const result = cutClipRegionSide(item, targetRegion.id, timelineCut);
+                             const { removed, ...updatedTrack } = result;
+                             return updatedTrack;
+                           }));
+                           setSelectedClipRegion(`${track.id}:${targetRegion.id}`);
+                           toast.success(keepsRight
+                             ? "Audio before the cut point removed"
+                             : "Audio after the cut point removed");
                            return;
                         }
 
@@ -2980,9 +2979,35 @@ export default function Studio() {
                       />
 
                       <div className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
-                        <div style={{ position: 'absolute', left: `${-(track.clipStart || 0) * 20 * zoom}px`, width: `${(track.fullDuration || track.duration || 40) * 20 * zoom}px`, height: '100%' }}>
-                          <TrackWaveformSVG track={track} />
-                        </div>
+                        {getTrackClipRegions(track).map((region) => {
+                          const regionDuration = region.sourceEnd - region.sourceStart;
+                          const waveformDuration = Math.max(
+                            Number(track.fullDuration) || 0,
+                            Number(track.duration) || 0,
+                            region.sourceEnd,
+                            0.001
+                          );
+                          const waveformLength = track.waveform?.length || 0;
+                          const firstPoint = Math.max(0, Math.min(waveformLength - 1,
+                            Math.floor((region.sourceStart / waveformDuration) * waveformLength)));
+                          const endPoint = Math.max(firstPoint + 1, Math.min(waveformLength,
+                            Math.ceil((region.sourceEnd / waveformDuration) * waveformLength)));
+                          const regionWaveform = track.waveform.slice(firstPoint, endPoint);
+                          const timelineOffset = region.timelineStart - (track.startTime || 0);
+                          return (
+                            <div
+                              key={`waveform-region-${track.id}-${region.id}`}
+                              className="absolute top-0 bottom-0 overflow-hidden"
+                              style={{
+                                left: `${timelineOffset * 20 * zoom}px`,
+                                width: `${regionDuration * 20 * zoom}px`,
+                                height: '100%',
+                              }}
+                            >
+                              <TrackWaveformSVG track={{ ...track, waveform: regionWaveform }} />
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

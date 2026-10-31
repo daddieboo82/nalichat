@@ -615,16 +615,9 @@ export default function Studio() {
   };
 
   const handleTrackDragUpdate = (update) => {
-    if (!update.destination) return;
-    const sourceIndex = update.source.index;
-    const destinationIndex = update.destination.index;
-    if (sourceIndex === destinationIndex) { setDraggedTrackOffsetY(0); return; }
-    const rowHeight = (t) => t.trackType === 'vca' ? 96 : t.trackType === 'folder' ? 48 : (t.height || (t.showAutomation ? 176 : 112));
-    const low = Math.min(sourceIndex, destinationIndex);
-    const high = Math.max(sourceIndex, destinationIndex);
-    const crossed = tracks.slice(low, high + 1).filter((_, i) => i !== (sourceIndex - low));
-    const distance = crossed.reduce((sum, t) => sum + rowHeight(t), 0);
-    setDraggedTrackOffsetY(destinationIndex > sourceIndex ? distance : -distance);
+    // Follow the pointer 1:1 so the grabbed row's waveform lane moves with the
+    // hand instead of jumping a whole row when it crosses a drop target.
+    setDraggedTrackOffsetY(update.destination ? (update.delta?.y || 0) : 0);
   };
 
   const handleReorderTracks = (result) => {
@@ -3166,28 +3159,27 @@ export default function Studio() {
                               hasDragged = true;
                               Object.assign(target.style, { zIndex: '50', opacity: '0.94', filter: 'brightness(1.16)', boxShadow: '0 8px 28px hsl(var(--primary)/0.45), inset 0 0 0 2px hsl(var(--primary))', cursor: 'grabbing', willChange: 'left' });
                             }
-                            const deltaTime = deltaX / (20 * zoom);
-                            let newStartTime = Math.max(0, initialStartTime + deltaTime);
+                            // 1:1 with the hand — move unsnapped, only the drop commits snapped.
+                            const liveStartTime = Math.max(0, initialStartTime + deltaX / (20 * zoom));
+                            let committedStartTime = liveStartTime;
                             if (editMode === 'grid') {
                               const secondsPerBeat = 60 / (bpmRef.current || 120);
                               const beatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
-                              const gridSeconds = gridSize === 1
-                                ? secondsPerBeat * beatsPerBar
-                                : secondsPerBeat * 4 * gridSize;
-                              newStartTime = Math.round(newStartTime / gridSeconds) * gridSeconds;
+                              const gridSeconds = gridSize === 1 ? secondsPerBeat * beatsPerBar : secondsPerBeat * 4 * gridSize;
+                              committedStartTime = Math.round(committedStartTime / gridSeconds) * gridSeconds;
                             } else if (editMode === 'shuffle') {
                               const laneKey = track.splitFrom || track.id;
                               const otherClips = tracksRef.current.filter(t =>
                                 t.id !== track.id && (t.splitFrom || t.id) === laneKey && t.waveform?.length > 0
                               );
                               const boundaries = [0, ...otherClips.flatMap(t => [t.startTime || 0, (t.startTime || 0) + (t.duration || 0)])];
-                              newStartTime = boundaries.reduce((nearest, boundary) =>
-                                Math.abs(boundary - newStartTime) < Math.abs(nearest - newStartTime) ? boundary : nearest,
+                              committedStartTime = boundaries.reduce((nearest, boundary) =>
+                                Math.abs(boundary - committedStartTime) < Math.abs(nearest - committedStartTime) ? boundary : nearest,
                               boundaries[0]);
                             }
-                            target.style.left = `${newStartTime * 20 * zoom}px`;
-                            target.dataset.newStartTime = newStartTime;
-                            showEditTooltip(moveEvent.clientX, moveEvent.clientY, newStartTime);
+                            target.style.left = `${liveStartTime * 20 * zoom}px`;
+                            target.dataset.newStartTime = Math.max(0, committedStartTime);
+                            showEditTooltip(moveEvent.clientX, moveEvent.clientY, Math.max(0, committedStartTime));
                           };
                           
                           const handleUp = (upEvent) => {

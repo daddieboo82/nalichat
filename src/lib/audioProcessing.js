@@ -20,16 +20,23 @@ export function getClipRegionGain(region) {
 }
 
 /** Interpolate a DAW automation lane at an absolute timeline time. */
-export function getAutomationValueAtTime(points, timelineTime, fallback = 0) {
+export function getAutomationValueAtTime(points, timelineTime, fallback = 0, laneStartTime = 0) {
   const safeFallback = Number.isFinite(Number(fallback)) ? Number(fallback) : 0;
   const time = Number(timelineTime);
-  if (!Number.isFinite(time) || !Array.isArray(points) || points.length === 0) return safeFallback;
+  const start = Number.isFinite(Number(laneStartTime)) ? Number(laneStartTime) : 0;
+  if (!Number.isFinite(time) || !Array.isArray(points) || points.length === 0 || time <= start) return safeFallback;
   const sorted = points
     .filter(point => Number.isFinite(Number(point?.time)) && Number.isFinite(Number(point?.value)))
     .slice()
     .sort((left, right) => Number(left.time) - Number(right.time));
   if (sorted.length === 0) return safeFallback;
-  if (time <= Number(sorted[0].time)) return Number(sorted[0].value);
+  const first = sorted[0];
+  if (time < Number(first.time)) {
+    const span = Number(first.time) - start;
+    if (span <= 0) return Number(first.value);
+    const progress = (time - start) / span;
+    return safeFallback + (Number(first.value) - safeFallback) * progress;
+  }
   const last = sorted[sorted.length - 1];
   if (time >= Number(last.time)) return Number(last.value);
   for (let index = 1; index < sorted.length; index += 1) {

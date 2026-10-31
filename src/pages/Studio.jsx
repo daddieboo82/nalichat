@@ -2695,6 +2695,7 @@ export default function Studio() {
                               if (event.key === 'Enter' || event.key === ' ') {
                                 event.preventDefault();
                                 setSelectedClipRegion(regionKey);
+                                setSelectedTrackIds([track.id]);
                               }
                             }}
                             className={cn(

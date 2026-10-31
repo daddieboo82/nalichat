@@ -737,7 +737,7 @@ export default function Studio() {
       animationFrameId = requestAnimationFrame(updateTime);
     }
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying, isRecording, zoom, recordingStartTime]);
+  }, [isPlaying, isRecording, zoom, recordingStartTime, tracks]);
 
   /* ---------------- Mixer / FX realtime plumbing ---------------- */
 

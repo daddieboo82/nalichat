@@ -1523,7 +1523,6 @@ export default function Studio() {
           clipRegions: regions.map(region => ({
             ...region,
             timelineStart: region.timelineStart - firstTimelineStart,
-            gainDb: 0,
           })),
         };
 

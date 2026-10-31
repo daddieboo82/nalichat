@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -2515,7 +2515,44 @@ export default function Studio() {
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
 
                         if (activeTool === 'cut') {
-                           // Cut only the region under the pointer. The removed side is no
+                           // With an In/Out selection, remove exactly that range from the
+                           // current track. Both remaining sides stay as regions on this lane.
+                           if (selectionStart !== null && selectionEnd !== null && selectionEnd > selectionStart) {
+                             const rangePreview = cutTrackTimelineRange(
+                               track,
+                               selectionStart,
+                               selectionEnd,
+                               { shuffle: editMode === 'shuffle' }
+                             );
+                             if (!rangePreview.removed) {
+                               toast.error("The selected range contains no audio on this track.");
+                               return;
+                             }
+                             setTracksWithHistory(previous => previous.map(item => {
+                               if (item.id !== track.id) return item;
+                               const result = cutTrackTimelineRange(
+                                 item,
+                                 selectionStart,
+                                 selectionEnd,
+                                 { shuffle: editMode === 'shuffle' }
+                               );
+                               if (!result.removed) return item;
+                               const updatedTrack = { ...result };
+                               delete updatedTrack.removed;
+                               return updatedTrack;
+                             }));
+                             setSelectedTrackIds([track.id]);
+                             const firstRemaining = rangePreview.clipRegions[0];
+                             setSelectedClipRegion(firstRemaining ? `${track.id}:${firstRemaining.id}` : null);
+                             setSelectionStart(null);
+                             setSelectionEnd(null);
+                             toast.success("Selected audio range removed; remaining audio stays on this track");
+                             return;
+                           }
+
+                           // Without an In/Out selection, remove one side of the
+                           // clicked region, retaining the remaining side on this track.
+                           // The removed side is no
                            // longer referenced by the timeline, but the remaining audio stays
                            // on this track and keeps its original timeline position.
                            const clipRect = e.currentTarget.getBoundingClientRect();

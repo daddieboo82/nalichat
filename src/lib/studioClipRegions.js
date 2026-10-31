@@ -115,7 +115,7 @@ export function healTrackRegions(track, regionId) {
 /** Keep the legacy clip container aligned with the outer bounds of its regions. */
 export function withTrackClipRegionBounds(track, regions) {
   const ordered = [...regions].sort((a, b) => a.timelineStart - b.timelineStart);
-  if (ordered.length === 0) return { ...track, clipRegions: ordered };
+  if (ordered.length === 0) return { ...track, duration: 0, clipRegions: ordered };
   const startTime = ordered[0].timelineStart;
   const endTime = ordered.reduce(
     (latest, region) => Math.max(latest, region.timelineStart + region.sourceEnd - region.sourceStart),

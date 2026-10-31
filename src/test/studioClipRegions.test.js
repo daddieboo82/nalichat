@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   cutClipRegionSide,
   cutTrackTimelineRange,
+  getClipRegionAtTime,
+  getClipSourceTimeAtTime,
   getGridIntervalSeconds,
   getTrackClipRegions,
   healTrackRegions,
@@ -30,6 +32,21 @@ const makeTrack = () => ({
 });
 
 describe('NaliStudio clip-region editing', () => {
+  it('maps timeline positions to the correct source region and leaves gaps silent', () => {
+    const track = {
+      clipRegions: [
+        { id: 'first', timelineStart: 2, sourceStart: 1, sourceEnd: 3 },
+        { id: 'second', timelineStart: 6, sourceStart: 5, sourceEnd: 8 },
+      ],
+    };
+
+    expect(getClipRegionAtTime(track, 2)?.id).toBe('first');
+    expect(getClipSourceTimeAtTime(track, 3.5)).toBe(2.5);
+    expect(getClipRegionAtTime(track, 4)).toBeNull();
+    expect(getClipSourceTimeAtTime(track, 4)).toBeNull();
+    expect(getClipRegionAtTime(track, 8)).toBeNull();
+  });
+
   it('converts musical grid subdivisions into seconds using tempo and meter', () => {
     expect(getGridIntervalSeconds(1, 120, '4/4')).toBe(2);
     expect(getGridIntervalSeconds(0.25, 120, '4/4')).toBe(0.5);

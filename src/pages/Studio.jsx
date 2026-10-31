@@ -622,7 +622,7 @@ export default function Studio() {
 
           // Armed recording tracks receive microphone input; only non-armed tracks
           // are played back as the overdub monitor while recording.
-          const shouldMonitor = isPlaying && (!isRecording || !track.armed);
+          const shouldMonitor = !isRecording || !track.armed;
           const audible = shouldMonitor && trackMixGain(track, tracks) > 0;
           const activeRegion = getClipRegionAtTime(track, newTime);
           if (!audible || !activeRegion) {

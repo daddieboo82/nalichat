@@ -186,7 +186,12 @@ export function healTrackRegions(track, regionId) {
 /** Keep the legacy clip container aligned with the outer bounds of its regions. */
 export function withTrackClipRegionBounds(track, regions) {
   const ordered = [...regions].sort((a, b) => a.timelineStart - b.timelineStart);
-  if (ordered.length === 0) return { ...track, duration: 0, clipRegions: ordered };
+  if (ordered.length === 0) return {
+    ...track,
+    duration: 0,
+    clipRegions: ordered,
+    clipRegionRevision: (Number(track.clipRegionRevision) || 0) + 1,
+  };
   const startTime = ordered[0].timelineStart;
   const endTime = ordered.reduce(
     (latest, region) => Math.max(latest, region.timelineStart + region.sourceEnd - region.sourceStart),
@@ -203,6 +208,7 @@ export function withTrackClipRegionBounds(track, regions) {
     duration: Math.max(0.001, endTime - startTime),
     fullDuration: sourceLimit,
     clipRegions: ordered,
+    clipRegionRevision: (Number(track.clipRegionRevision) || 0) + 1,
   };
 }
 
@@ -301,6 +307,7 @@ export function slipClipRegion(track, regionId, sourceDelta) {
         }
       : item
     ),
+    clipRegionRevision: (Number(track.clipRegionRevision) || 0) + 1,
   };
 }
 

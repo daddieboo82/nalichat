@@ -63,12 +63,14 @@ export function createMixEngine() {
     const entry = entries.get(trackId);
     if (!entry || !context || !master) return;
     teardownEntry(entry);
-    const built = connectTrackChain(context, entry.source, track, {
+    if (!entry.fadeGain) entry.fadeGain = context.createGain();
+    entry.source.connect(entry.fadeGain);
+    const built = connectTrackChain(context, entry.fadeGain, track, {
       destination: master.input,
       reverbBus: master.reverbBus,
       gain,
     });
-    entry.nodes = built.nodes;
+    entry.nodes = [entry.fadeGain, ...built.nodes];
     entry.trackGain = built.trackGain;
     entry.track = track;
     entry.gain = gain;
@@ -122,7 +124,7 @@ export function createMixEngine() {
       }
       // The graph owns level from here; leave the element wide open.
       element.volume = 1;
-      entries.set(trackId, { element, source, nodes: [], track: null, gain: 0 });
+      entries.set(trackId, { element, source, nodes: [], fadeGain: context.createGain(), track: null, gain: 0 });
       rebuild(trackId, track || {}, trackGainValue(track || {}));
       return true;
     },
@@ -157,6 +159,15 @@ export function createMixEngine() {
         const value = Math.max(-1, Math.min(1, ((track?.pan ?? 50) - 50) / 50));
         panner.pan.setTargetAtTime(value, context.currentTime, 0.01);
       }
+      return true;
+    },
+
+    /** Set the independent timeline fade envelope without changing the channel fader. */
+    syncFade(trackId, value) {
+      const entry = entries.get(trackId);
+      if (!entry?.fadeGain || !context) return false;
+      const next = Math.max(0, Math.min(1, Number(value) || 0));
+      entry.fadeGain.gain.setTargetAtTime(next, context.currentTime, 0.015);
       return true;
     },
 

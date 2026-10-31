@@ -183,6 +183,7 @@ export default function Studio() {
   
   const [editMode, setEditMode] = useState('slip'); // slip, grid, shuffle
   const [activeTool, setActiveTool] = useState('grab'); // smart, trim, grab, fade
+  const [cutDirection, setCutDirection] = useState('right'); // remove the audio to the left or right of the cut point
   const [gridSize, setGridSize] = useState(1);
 
   const [masterVolume, setMasterVolume] = useState(100);
@@ -2263,6 +2264,7 @@ export default function Studio() {
         bpm={bpm} setBpm={setBpm} bpmInput={bpmInput} setBpmInput={setBpmInput} timeSignature={timeSignature} setTimeSignature={setTimeSignature}
         songKey={songKey} setSongKey={setSongKey}
         editMode={editMode} setEditMode={setEditMode} activeTool={activeTool} setActiveTool={setActiveTool}
+        cutDirection={cutDirection} setCutDirection={setCutDirection}
         toggleTrackProperty={toggleTrackProperty} splitSelectedTracks={splitSelectedTracks} duplicateSelectedTracks={duplicateSelectedTracks}
         deleteSelectedTracks={deleteSelectedTracks} zoom={zoom} setZoom={setZoom}
         gridSize={gridSize} setGridSize={setGridSize}
@@ -2639,16 +2641,21 @@ export default function Studio() {
                              return;
                            }
 
-                           const regionDuration = targetRegion.sourceEnd - targetRegion.sourceStart;
-                           const keepsRight = timelineCut - targetRegion.timelineStart < regionDuration / 2;
-                           const preview = cutClipRegionSide(track, targetRegion.id, timelineCut, { shuffle: editMode === 'shuffle' });
+                           const removesLeft = cutDirection === 'left';
+                           const preview = cutClipRegionSide(track, targetRegion.id, timelineCut, {
+                             shuffle: editMode === 'shuffle',
+                             direction: cutDirection,
+                           });
                            if (!preview.removed) {
                              toast.error("The cut point must be inside the selected audio region.");
                              return;
                            }
                            setTracksWithHistory(previous => previous.map(item => {
                              if (item.id !== track.id) return item;
-                             const result = cutClipRegionSide(item, targetRegion.id, timelineCut, { shuffle: editMode === 'shuffle' });
+                             const result = cutClipRegionSide(item, targetRegion.id, timelineCut, {
+                               shuffle: editMode === 'shuffle',
+                               direction: cutDirection,
+                             });
                              if (!result.removed) return item;
                              const updatedTrack = { ...result };
                              delete updatedTrack.removed;
@@ -2656,7 +2663,7 @@ export default function Studio() {
                            }));
                            setSelectedClipRegion(`${track.id}:${targetRegion.id}`);
                            setSelectedTrackIds([track.id]);
-                           toast.success(keepsRight
+                           toast.success(removesLeft
                              ? "Audio before the cut point removed"
                              : "Audio after the cut point removed");
                            return;

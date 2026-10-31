@@ -650,6 +650,25 @@ describe('NaliStudio clip-region editing', () => {
       .toEqual([[0, 0, 4], [4, 4, 8]]);
   });
 
+  it('preserves region gain through non-destructive left and right trims', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [{
+        id: 'trimmed',
+        timelineStart: 0,
+        sourceStart: 0,
+        sourceEnd: 10,
+        gainDb: 5,
+      }],
+    };
+
+    const leftTrim = trimClipRegionLeft(track, 'trimmed', 1);
+    const rightTrim = trimClipRegionRight(track, 'trimmed', -1);
+
+    expect(leftTrim.clipRegions[0].gainDb).toBe(5);
+    expect(rightTrim.clipRegions[0].gainDb).toBe(5);
+  });
+
   it('clamps region gain to the supported plus/minus 12 dB range', () => {
     const loud = setClipRegionGain(makeTrack(), 'region-1', 40);
     const quiet = setClipRegionGain(makeTrack(), 'region-1', -40);

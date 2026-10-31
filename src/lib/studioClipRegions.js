@@ -76,7 +76,7 @@ export function splitTrackRegion(track, timelineTime, createId = (() => 'region'
   };
   const next = [...regions];
   next.splice(index, 1, left, right);
-  return { ...track, clipRegions: next };
+  return withTrackClipRegionBounds(track, next);
 }
 
 /** Join adjacent regions only when their timeline and source edges are contiguous. */
@@ -94,7 +94,7 @@ export function healTrackRegions(track, regionId) {
   const merged = { ...left, sourceEnd: right.sourceEnd, fadeOut: right.fadeOut };
   const next = [...regions];
   next.splice(index, 2, merged);
-  return { ...track, clipRegions: next, healed: true };
+  return { ...withTrackClipRegionBounds(track, next), healed: true };
 }
 
 
@@ -107,10 +107,16 @@ export function withTrackClipRegionBounds(track, regions) {
     (latest, region) => Math.max(latest, region.timelineStart + region.sourceEnd - region.sourceStart),
     startTime
   );
+  const sourceLimit = Math.max(
+    finite(track.fullDuration, 0),
+    Math.max(0, finite(track.clipStart, 0) + finite(track.duration, 0)),
+    ...ordered.map(region => region.sourceEnd)
+  );
   return {
     ...track,
     startTime,
     duration: Math.max(0.001, endTime - startTime),
+    fullDuration: sourceLimit,
     clipRegions: ordered,
   };
 }
@@ -141,10 +147,18 @@ export function slipClipRegion(track, regionId, sourceStart, sourceDuration) {
   const start = Math.max(0, finite(sourceStart, NaN));
   const duration = Math.max(0.001, finite(sourceDuration, NaN));
   if (!Number.isFinite(start) || !Number.isFinite(duration)) return track;
+  const regions = getTrackClipRegions(track);
+  const sourceLimit = Math.max(
+    finite(track.fullDuration, 0),
+    Math.max(0, finite(track.clipStart, 0) + finite(track.duration, 0)),
+    ...regions.map(region => region.sourceEnd)
+  );
+  const clampedStart = Math.min(start, Math.max(0, sourceLimit - duration));
   return {
     ...track,
-    clipRegions: getTrackClipRegions(track).map(region => region.id === regionId
-      ? { ...region, sourceStart: start, sourceEnd: start + duration }
+    fullDuration: sourceLimit,
+    clipRegions: regions.map(region => region.id === regionId
+      ? { ...region, sourceStart: clampedStart, sourceEnd: clampedStart + duration }
       : region
     ),
   };
@@ -174,7 +188,15 @@ export function trimClipRegionRight(track, regionId, timelineDelta) {
   if (!Number.isFinite(delta)) return track;
   const regions = getTrackClipRegions(track).map(region => {
     if (region.id !== regionId) return region;
-    const nextEnd = Math.max(region.sourceStart + 0.001, region.sourceEnd + delta);
+    const sourceLimit = Math.max(
+      finite(track.fullDuration, 0),
+      Math.max(0, finite(track.clipStart, 0) + finite(track.duration, 0)),
+      ...getTrackClipRegions(track).map(item => item.sourceEnd)
+    );
+    const nextEnd = Math.min(
+      sourceLimit,
+      Math.max(region.sourceStart + 0.001, region.sourceEnd + delta)
+    );
     return { ...region, sourceEnd: nextEnd, fadeOut: 0 };
   });
   return withTrackClipRegionBounds(track, regions);

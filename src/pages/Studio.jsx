@@ -19,7 +19,7 @@ import { usePerformance } from '@/hooks/use-performance';
 
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, getClipRegionGain, getTrackFadeGainAtTime } from '@/lib/audioProcessing';
+import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, getAutomationValueAtTime, getClipRegionGain, getTrackFadeGainAtTime } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { cutClipRegionSide, cutTrackTimelineRange, getClipRegionAtTime, getClipSourceTimeAtTime, getGridIntervalSeconds, getHealCandidateRegionIds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, setClipRegionGain, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
@@ -758,11 +758,13 @@ export default function Studio() {
   /* ---------------- Mixer / FX realtime plumbing ---------------- */
 
   // Post-fader gain for a track (mute + solo aware), matching the offline bounce.
-  const trackMixGain = (track, allTracks = tracks) => {
+  const trackMixGain = (track, allTracks = tracks, timelineTime = currentTimeRef.current) => {
     const hasSolo = (allTracks || []).some(t => t.solo);
     const audible = track.muted ? false : (hasSolo ? !!track.solo : true);
     if (!audible) return 0;
-    return ((track.volume ?? 75) / 100) * Math.pow(10, (track.clipGain || 0) / 20);
+    const baseVolume = track.volume ?? 75;
+    const automatedVolume = getAutomationValueAtTime(track.automationPoints, timelineTime, baseVolume);
+    return (Math.max(0, Math.min(100, automatedVolume)) / 100) * Math.pow(10, (track.clipGain || 0) / 20);
   };
 
   // Keep timeline fades independent from the track fader and apply them to
@@ -773,9 +775,16 @@ export default function Studio() {
     const activeRegion = getClipRegionAtTime(track, timelineTime);
     const regionGain = activeRegion ? getClipRegionGain(activeRegion) : 1;
     const routed = mixEngineRef.current?.syncFade(track.id, fadeGain);
-    if (routed) mixEngineRef.current?.syncRegionGain(track.id, regionGain);
+    if (routed) {
+      mixEngineRef.current?.syncRegionGain(track.id, regionGain);
+      const automatedPan = getAutomationValueAtTime(track.panAutomationPoints, timelineTime, track.pan ?? 50);
+      mixEngineRef.current?.syncTrack(track.id, track, {
+        gain: trackMixGain(track, tracks, timelineTime),
+        pan: automatedPan,
+      });
+    }
     if (!routed && audio.dataset.fxBypass === '1') {
-      audio.volume = trackMixGain(track) * (masterVolume / 100) * fadeGain * regionGain;
+      audio.volume = trackMixGain(track, tracks, timelineTime) * (masterVolume / 100) * fadeGain * regionGain;
     }
   };
 

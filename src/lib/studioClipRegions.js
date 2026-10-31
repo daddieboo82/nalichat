@@ -199,7 +199,14 @@ export function healTrackRegions(track, regionId) {
     left.timelineStart + left.sourceEnd - left.sourceStart - right.timelineStart
   ) < 0.001;
   const sourceAdjacent = Math.abs(left.sourceEnd - right.sourceStart) < 0.001;
-  if (!timelineAdjacent || !sourceAdjacent) return { ...track, clipRegions: regions, healed: false };
+  // A single healed region cannot represent two different clip-gain values or
+  // preserve fades that occur at the internal seam. Refuse the heal rather than
+  // silently changing the sound of either side.
+  const sameClipGain = Math.abs(finite(left.gainDb, 0) - finite(right.gainDb, 0)) < 0.0001;
+  const seamHasFade = finite(left.fadeOut, 0) > 0.0001 || finite(right.fadeIn, 0) > 0.0001;
+  if (!timelineAdjacent || !sourceAdjacent || !sameClipGain || seamHasFade) {
+    return { ...track, clipRegions: regions, healed: false };
+  }
   const merged = { ...left, sourceEnd: right.sourceEnd, fadeOut: right.fadeOut };
   const next = [...regions];
   next.splice(index, 2, merged);

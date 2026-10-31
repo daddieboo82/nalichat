@@ -168,22 +168,21 @@ export function splitTrackRegion(track, timelineTime, createId = (() => 'region'
 export function getHealCandidateRegionIds(regions, selectedRegionId, playheadTime = 0) {
   const ordered = [...(regions || [])].sort((a, b) => a.timelineStart - b.timelineStart);
   const selectedIndex = ordered.findIndex(region => region.id === selectedRegionId);
-  if (selectedIndex < 0) return [];
+  const hasSelectedRegion = selectedIndex >= 0;
   const candidates = [];
-  if (selectedIndex > 0) {
-    const left = ordered[selectedIndex - 1];
+
+  // Each region except the last represents the boundary immediately after it.
+  // With a selection, only boundaries touching that region are eligible.
+  // Without one (or with a stale selection), try every boundary by proximity.
+  for (let index = 0; index < ordered.length - 1; index++) {
+    if (hasSelectedRegion && index !== selectedIndex - 1 && index !== selectedIndex) continue;
+    const region = ordered[index];
     candidates.push({
-      id: left.id,
-      distance: Math.abs(left.timelineStart + left.sourceEnd - left.sourceStart - playheadTime),
+      id: region.id,
+      distance: Math.abs(region.timelineStart + region.sourceEnd - region.sourceStart - playheadTime),
     });
   }
-  if (selectedIndex < ordered.length - 1) {
-    const current = ordered[selectedIndex];
-    candidates.push({
-      id: current.id,
-      distance: Math.abs(current.timelineStart + current.sourceEnd - current.sourceStart - playheadTime),
-    });
-  }
+
   return candidates.sort((a, b) => a.distance - b.distance).map(candidate => candidate.id);
 }
 

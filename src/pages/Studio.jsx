@@ -2491,22 +2491,38 @@ export default function Studio() {
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
 
                         if (activeTool === 'cut') {
-                           // Cut removes the audio after the click point (unlike Split, which
-                           // keeps both halves as separate clips) — the clip is simply shortened.
+                           // Cut is one-sided: clicking in the left half removes the audio
+                           // before the click; clicking in the right half removes audio after it.
                            const target = e.currentTarget;
-                           const rect = target.getBoundingClientRect();
-                           const clickX = e.clientX - rect.left;
-                           const clickRatio = clickX / rect.width;
-                           
-                           const newDuration = track.duration * clickRatio;
-                           
-                           setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
-                             ...t,
-                             duration: newDuration,
-                             fullDuration: t.fullDuration || t.duration,
-                             clipStart: t.clipStart || 0
-                           } : t));
-                           toast.success("Audio after the cut point removed");
+                           const clipRect = target.getBoundingClientRect();
+                           const clickX = e.clientX - clipRect.left;
+                           const clickRatio = Math.max(0, Math.min(1, clickX / clipRect.width));
+                           const clipDuration = track.duration || 40;
+                           const trimAmount = clipDuration * clickRatio;
+                           const fullDuration = track.fullDuration || track.duration || 40;
+                           const sourceStart = track.clipStart || 0;
+
+                           if (clickRatio < 0.5) {
+                             // Keep the right-hand portion and advance both its timeline and
+                             // source-audio start so playback stays aligned with the waveform.
+                             setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
+                               ...t,
+                               startTime: (t.startTime || 0) + trimAmount,
+                               duration: clipDuration - trimAmount,
+                               fullDuration,
+                               clipStart: sourceStart + trimAmount
+                             } : t));
+                             toast.success("Audio before the cut point removed");
+                           } else {
+                             // Keep the left-hand portion and trim the source's right edge.
+                             setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
+                               ...t,
+                               duration: trimAmount,
+                               fullDuration,
+                               clipStart: sourceStart
+                             } : t));
+                             toast.success("Audio after the cut point removed");
+                           }
                            return;
                         }
 

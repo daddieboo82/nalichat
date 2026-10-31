@@ -19,7 +19,7 @@ import { usePerformance } from '@/hooks/use-performance';
 
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, getTrackFadeGainAtTime } from '@/lib/audioProcessing';
+import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, getClipRegionGain, getTrackFadeGainAtTime } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { cutClipRegionSide, cutTrackTimelineRange, getClipRegionAtTime, getClipSourceTimeAtTime, getGridIntervalSeconds, getHealCandidateRegionIds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
@@ -770,9 +770,12 @@ export default function Studio() {
   const syncTrackFade = (track, audio, timelineTime) => {
     if (!track || !audio) return;
     const fadeGain = getTrackFadeGainAtTime(track, timelineTime);
+    const activeRegion = getClipRegionAtTime(track, timelineTime);
+    const regionGain = activeRegion ? getClipRegionGain(activeRegion) : 1;
     const routed = mixEngineRef.current?.syncFade(track.id, fadeGain);
+    if (routed) mixEngineRef.current?.syncRegionGain(track.id, regionGain);
     if (!routed && audio.dataset.fxBypass === '1') {
-      audio.volume = trackMixGain(track) * (masterVolume / 100) * fadeGain;
+      audio.volume = trackMixGain(track) * (masterVolume / 100) * fadeGain * regionGain;
     }
   };
 

@@ -2824,7 +2824,11 @@ export default function Studio() {
                             tabIndex={0}
                             aria-label={`Audio region ${region.id} on track ${track.name || track.id}`}
                             onPointerDown={(event) => {
-                              event.stopPropagation();
+                              // Region dragging owns Grab/Slip, and Spot opens its own
+                              // region dialog. Other tools must bubble to the track lane.
+                              if (editMode === 'spot' || activeTool === 'grab') {
+                                event.stopPropagation();
+                              }
                               setSelectedClipRegion(regionKey);
                               const additiveTrackSelection = event.ctrlKey || event.metaKey;
                               setSelectedTrackIds(previous => {

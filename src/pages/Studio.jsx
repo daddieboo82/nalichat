@@ -3324,10 +3324,13 @@ export default function Studio() {
                               <ClipGainLine
                                 clipGain={region.gainDb || 0}
                                 activeTool={activeTool}
-                                onChange={(newGain) => setTracksWithHistory(prev => prev.map(t =>
+                                onPreviewChange={(newGain) => setTracks(prev => prev.map(t =>
                                   t.id === track.id ? setClipRegionGain(t, region.id, newGain) : t
                                 ))}
-                                onCommit={() => pushToHistory(tracksRef.current)}
+                                onChange={(newGain) => setTracks(prev => prev.map(t =>
+                                  t.id === track.id ? setClipRegionGain(t, region.id, newGain) : t
+                                ))}
+                                onCommit={() => setTimeout(() => pushToHistory(tracksRef.current), 0)}
                               />
                             </div>
                           );

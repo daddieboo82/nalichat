@@ -632,7 +632,12 @@ export default function Studio() {
           }
 
           const sourceTime = getClipSourceTimeAtTime(track, newTime);
-          if (audio.dataset.activeRegionId !== activeRegion.id) {
+          // Re-seek on region changes and after explicit timeline/region edits.
+          // A small tolerance avoids continuous micro-seeks fighting natural playback.
+          if (
+            audio.dataset.activeRegionId !== activeRegion.id ||
+            Math.abs(audio.currentTime - sourceTime) > 0.12
+          ) {
             audio.currentTime = sourceTime;
             audio.dataset.activeRegionId = activeRegion.id;
           }

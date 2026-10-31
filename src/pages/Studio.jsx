@@ -807,7 +807,21 @@ export default function Studio() {
     if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
     if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
     if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
-    Object.values(audioElementsRef.current).forEach(audio => { audio.currentTime = newTime; });
+    tracks.forEach(track => {
+      const audio = audioElementsRef.current[track.id];
+      if (!audio) return;
+      const region = getTrackClipRegions(track).find(item => {
+        const regionEnd = item.timelineStart + item.sourceEnd - item.sourceStart;
+        return newTime >= item.timelineStart && newTime < regionEnd;
+      });
+      if (!region) {
+        audio.pause();
+        audio.dataset.activeRegionId = '';
+        return;
+      }
+      audio.currentTime = region.sourceStart + (newTime - region.timelineStart);
+      audio.dataset.activeRegionId = region.id;
+    });
   };
 
   const togglePlay = () => {
@@ -825,13 +839,15 @@ export default function Studio() {
           const audio = getTrackAudio(track);
           if (!audio) return;
           
-          // Calculate if playhead is within track bounds
-          const trackStart = track.startTime || 0;
-          const trackEnd = trackStart + (track.duration || 40);
-          const clipStartOffset = track.clipStart || 0;
+          // Start from the source offset of the region under the playhead.
+          const activeRegion = getTrackClipRegions(track).find(region => {
+            const regionEnd = region.timelineStart + region.sourceEnd - region.sourceStart;
+            return currentTimeRef.current >= region.timelineStart && currentTimeRef.current < regionEnd;
+          });
           
-          if (currentTimeRef.current >= trackStart && currentTimeRef.current < trackEnd) {
-            audio.currentTime = clipStartOffset + (currentTimeRef.current - trackStart);
+          if (activeRegion) {
+            audio.currentTime = activeRegion.sourceStart + (currentTimeRef.current - activeRegion.timelineStart);
+            audio.dataset.activeRegionId = activeRegion.id;
             playPromises.push(
               audio.play().catch(e => { console.error("Audio playback error:", e); return { failed: true }; })
             );

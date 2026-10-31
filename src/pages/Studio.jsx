@@ -1411,14 +1411,10 @@ export default function Studio() {
       }
     }
 
-    // If no region is selected, heal the adjacent boundary nearest the playhead.
+    // If no valid selected-region boundary exists, try all boundaries nearest-first.
+    // The loop below skips non-contiguous pairs and continues until one can be healed.
     if (candidateIds.length === 0) {
-      const curr = currentTimeRef.current;
-      const nearest = regions.slice(0, -1).reduce((best, region) => {
-        const distance = Math.abs(region.timelineStart + (region.sourceEnd - region.sourceStart) - curr);
-        return !best || distance < best.distance ? { id: region.id, distance } : best;
-      }, null);
-      if (nearest) candidateIds.push(nearest.id);
+      candidateIds = getHealCandidateRegionIds(regions, null, currentTimeRef.current);
     }
 
     let healed = null;

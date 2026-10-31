@@ -94,6 +94,23 @@ export function remapClipRegionSources(regions, newDuration, transform = 'none',
     .filter(Boolean);
 }
 
+/** Return the audible region at an absolute timeline time (region end is exclusive). */
+export function getClipRegionAtTime(track, timelineTime) {
+  const time = finite(timelineTime, NaN);
+  if (!Number.isFinite(time)) return null;
+  return getTrackClipRegions(track).find(region => {
+    const end = region.timelineStart + region.sourceEnd - region.sourceStart;
+    return time >= region.timelineStart && time < end;
+  }) || null;
+}
+
+/** Map an absolute timeline time to the source-audio time for the active region. */
+export function getClipSourceTimeAtTime(track, timelineTime) {
+  const region = getClipRegionAtTime(track, timelineTime);
+  if (!region) return null;
+  return region.sourceStart + (finite(timelineTime, region.timelineStart) - region.timelineStart);
+}
+
 export function getTrackClipRegions(track) {
   if (!track || typeof track !== 'object') return [];
   if (Array.isArray(track.clipRegions)) {

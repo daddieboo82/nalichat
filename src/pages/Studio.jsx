@@ -1310,6 +1310,9 @@ export default function Studio() {
   };
 
   const handleTrackClick = (e, trackId) => {
+    // Header selection changes the editing target from an individual region
+    // back to track-level operations.
+    setSelectedClipRegion(null);
     if (e.ctrlKey || e.metaKey) {
       if (selectedTrackIds.includes(trackId)) {
         setSelectedTrackIds(selectedTrackIds.filter(id => id !== trackId));

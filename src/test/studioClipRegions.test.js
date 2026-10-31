@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   cutClipRegionSide,
+  cutTrackTimelineRange,
   getGridIntervalSeconds,
   getTrackClipRegions,
   healTrackRegions,
@@ -62,6 +63,59 @@ describe('NaliStudio clip-region editing', () => {
       sourceStart: 0,
       sourceEnd: 7,
     });
+  });
+
+  it('removes the selected In/Out range and leaves both sides on the same track', () => {
+    const track = makeTrack();
+    const result = cutTrackTimelineRange(track, 3, 7, {
+      createId: (side, region) => `${region.id}-${side}`,
+    });
+
+    expect(result.id).toBe(track.id);
+    expect(result.removed).toBe(true);
+    expect(result.clipRegions).toHaveLength(2);
+    expect(result.clipRegions[0]).toMatchObject({
+      timelineStart: 0,
+      sourceStart: 0,
+      sourceEnd: 3,
+    });
+    expect(result.clipRegions[1]).toMatchObject({
+      timelineStart: 7,
+      sourceStart: 7,
+      sourceEnd: 10,
+    });
+  });
+
+  it('Shuffle range cuts ripple later regions left and preserve silence gaps', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 10 },
+        { id: 'b', timelineStart: 12, sourceStart: 0, sourceEnd: 2 },
+      ],
+    };
+    const result = cutTrackTimelineRange(track, 3, 7, {
+      shuffle: true,
+      createId: (side, region) => `${region.id}-${side}`,
+    });
+
+    expect(result.clipRegions.map(region => [region.id, region.timelineStart])).toEqual([
+      ['a', 0],
+      ['a-right', 3],
+      ['b', 8],
+    ]);
+    expect(result.clipRegions[1]).toMatchObject({ sourceStart: 7, sourceEnd: 10 });
+  });
+
+  it('does not report a range cut when the selection contains no audio', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [{ id: 'region', timelineStart: 0, sourceStart: 0, sourceEnd: 2 }],
+    };
+    const result = cutTrackTimelineRange(track, 3, 5);
+
+    expect(result.removed).toBe(false);
+    expect(result.clipRegions).toEqual(track.clipRegions);
   });
 
   it('does not treat an edge click as a successful cut', () => {

@@ -3285,14 +3285,6 @@ export default function Studio() {
                         </div>
                       )}
 
-                      {/* Pro Tools-style Clip Gain Line — drag to adjust clip gain independently */}
-                      <ClipGainLine
-                        clipGain={track.clipGain || 0}
-                        activeTool={activeTool}
-                        onChange={(newGain) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, clipGain: newGain } : t))}
-                        onCommit={() => pushToHistory(tracksRef.current)}
-                      />
-
                       <div className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
                         {getTrackClipRegions(track).map((region) => {
                           const regionDuration = region.sourceEnd - region.sourceStart;
@@ -3312,7 +3304,7 @@ export default function Studio() {
                           return (
                             <div
                               key={`waveform-region-${track.id}-${region.id}`}
-                              className="absolute top-0 bottom-0 overflow-hidden"
+                              className="absolute top-0 bottom-0 overflow-hidden relative"
                               style={{
                                 left: `${timelineOffset * 20 * zoom}px`,
                                 width: `${regionDuration * 20 * zoom}px`,
@@ -3320,6 +3312,18 @@ export default function Studio() {
                               }}
                             >
                               <TrackWaveformSVG track={{ ...track, id: `${track.id}-${region.id}`, waveform: regionWaveform }} />
+                              <ClipGainLine
+                                clipGain={region.gainDb || 0}
+                                activeTool={activeTool}
+                                onChange={(newGain) => setTracksWithHistory(prev => prev.map(t => {
+                                  if (t.id !== track.id) return t;
+                                  const nextRegions = getTrackClipRegions(t).map(item =>
+                                    item.id === region.id ? { ...item, gainDb: newGain } : item
+                                  );
+                                  return withTrackClipRegionBounds(t, nextRegions);
+                                }))}
+                                onCommit={() => pushToHistory(tracksRef.current)}
+                              />
                             </div>
                           );
                         })}

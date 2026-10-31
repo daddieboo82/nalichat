@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   cutClipRegionSide,
+  deleteClipRegion,
   cutTrackTimelineRange,
   getClipRegionAtTime,
   getClipSourceTimeAtTime,
@@ -178,6 +179,42 @@ describe('NaliStudio clip-region editing', () => {
       sourceStart: 8,
       sourceEnd: 10,
     });
+  });
+
+  it('deletes one selected region but retains the original track and other regions', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'left', timelineStart: 0, sourceStart: 0, sourceEnd: 2 },
+        { id: 'middle', timelineStart: 4, sourceStart: 2, sourceEnd: 4 },
+        { id: 'right', timelineStart: 8, sourceStart: 4, sourceEnd: 6 },
+      ],
+    };
+    const result = deleteClipRegion(track, 'middle');
+
+    expect(result.id).toBe(track.id);
+    expect(result.removed).toBe(true);
+    expect(result.clipRegions.map(region => [region.id, region.timelineStart])).toEqual([
+      ['left', 0],
+      ['right', 8],
+    ]);
+  });
+
+  it('Shuffle Delete closes the removed region duration and preserves later gaps', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'left', timelineStart: 0, sourceStart: 0, sourceEnd: 2 },
+        { id: 'middle', timelineStart: 4, sourceStart: 2, sourceEnd: 4 },
+        { id: 'right', timelineStart: 8, sourceStart: 4, sourceEnd: 6 },
+      ],
+    };
+    const result = deleteClipRegion(track, 'middle', { shuffle: true });
+
+    expect(result.clipRegions.map(region => [region.id, region.timelineStart])).toEqual([
+      ['left', 0],
+      ['right', 6],
+    ]);
   });
 
   it('does not treat an edge click as a successful cut', () => {

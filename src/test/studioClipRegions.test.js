@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   cutClipRegionSide,
+  getGridIntervalSeconds,
   getTrackClipRegions,
   healTrackRegions,
   moveClipRegion,
@@ -26,6 +27,13 @@ const makeTrack = () => ({
 });
 
 describe('NaliStudio clip-region editing', () => {
+  it('converts musical grid subdivisions into seconds using tempo and meter', () => {
+    expect(getGridIntervalSeconds(1, 120, '4/4')).toBe(2);
+    expect(getGridIntervalSeconds(0.25, 120, '4/4')).toBe(0.5);
+    expect(getGridIntervalSeconds(1, 120, '6/8')).toBe(1.5);
+    expect(getGridIntervalSeconds(1, 60, '4/4')).toBe(4);
+  });
+
   it('cuts away the audio before the cut point and keeps the right side on the same track', () => {
     const track = makeTrack();
     const result = cutClipRegionSide(track, 'region-1', 3);

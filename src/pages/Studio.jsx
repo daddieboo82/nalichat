@@ -1342,6 +1342,7 @@ export default function Studio() {
     });
     setTracksWithHistory(tracks.filter(t => !selectedTrackIds.includes(t.id)));
     setSelectedTrackIds([]);
+    setSelectedClipRegion(null);
     toast.success("Selected tracks deleted");
   };
 

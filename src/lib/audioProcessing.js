@@ -1,3 +1,5 @@
+import { getTrackClipRegions } from '@/lib/studioClipRegions';
+
 // Real client-side audio processing helpers (Web Audio API).
 // These operate on actual audio data — no simulation.
 
@@ -364,28 +366,53 @@ export async function renderMixToBuffer(tracks, options = {}) {
   const active = audioTracks.filter(t => (hasSolo ? t.solo : !t.muted));
   if (active.length === 0) return null;
 
-  const decoded = await Promise.all(active.map(async (t) => ({
-    track: t,
-    buffer: await fetchAudioBuffer(t.audioUrl),
+  const decoded = await Promise.all(active.map(async (track) => ({
+    track,
+    buffer: await fetchAudioBuffer(track.audioUrl),
   })));
 
-  const totalSeconds = Math.max(
-    ...decoded.map(d => (d.track.startTime || 0) + d.buffer.duration)
-  );
+  // Bounce the exact same region/source ranges that realtime playback uses.
+  // A track owns one mixer channel; each clip region feeds that shared channel.
+  const scheduled = decoded.map(({ track, buffer }) => {
+    const regions = getTrackClipRegions(track)
+      .map(region => {
+        const sourceStart = Math.max(0, region.sourceStart);
+        const sourceEnd = Math.min(buffer.duration, region.sourceEnd);
+        const duration = sourceEnd - sourceStart;
+        if (duration <= 0.001) return null;
+        return {
+          timelineStart: Math.max(0, region.timelineStart),
+          sourceStart,
+          duration,
+        };
+      })
+      .filter(Boolean);
+    return { track, buffer, regions };
+  });
+
+  const validRegions = scheduled.flatMap(({ regions }) => regions);
+  if (validRegions.length === 0) return null;
+  const totalSeconds = Math.max(...validRegions.map(region => region.timelineStart + region.duration));
   if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return null;
 
   const length = Math.ceil(totalSeconds * sampleRate);
   const offline = new OfflineAudioContext(2, length, sampleRate);
   const master = connectMasterChain(offline, { masterFx, masterVolume, destination: offline.destination });
 
-  decoded.forEach(({ track, buffer }) => {
-    const src = offline.createBufferSource();
-    src.buffer = buffer;
-    connectTrackChain(offline, src, track, {
+  scheduled.forEach(({ track, buffer, regions }) => {
+    if (regions.length === 0) return;
+    const trackInput = offline.createGain();
+    connectTrackChain(offline, trackInput, track, {
       destination: master.input,
       reverbBus: master.reverbBus,
     });
-    src.start(Math.max(0, track.startTime || 0));
+
+    regions.forEach(region => {
+      const source = offline.createBufferSource();
+      source.buffer = buffer;
+      source.connect(trackInput);
+      source.start(region.timelineStart, region.sourceStart, region.duration);
+    });
   });
 
   return offline.startRendering();

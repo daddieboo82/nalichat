@@ -44,7 +44,8 @@ describe('NaliStudio clip-region editing', () => {
 
     expect(getHealCandidateRegionIds(regions, 'middle', 5.5)).toEqual(['middle', 'left']);
     expect(getHealCandidateRegionIds(regions, 'middle', 0.5)).toEqual(['left', 'middle']);
-    expect(getHealCandidateRegionIds(regions, 'missing', 5)).toEqual([]);
+    expect(getHealCandidateRegionIds(regions, null, 5)).toEqual(['middle', 'left']);
+    expect(getHealCandidateRegionIds(regions, 'missing', 0.5)).toEqual(['left', 'middle']);
   });
 
   it('increments the region revision for edits that require realtime audio resync', () => {

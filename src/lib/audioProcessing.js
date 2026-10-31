@@ -19,6 +19,33 @@ export function getClipRegionGain(region) {
   return Math.pow(10, gainDb / 20);
 }
 
+/** Interpolate a DAW automation lane at an absolute timeline time. */
+export function getAutomationValueAtTime(points, timelineTime, fallback = 0) {
+  const safeFallback = Number.isFinite(Number(fallback)) ? Number(fallback) : 0;
+  const time = Number(timelineTime);
+  if (!Number.isFinite(time) || !Array.isArray(points) || points.length === 0) return safeFallback;
+  const sorted = points
+    .filter(point => Number.isFinite(Number(point?.time)) && Number.isFinite(Number(point?.value)))
+    .slice()
+    .sort((left, right) => Number(left.time) - Number(right.time));
+  if (sorted.length === 0) return safeFallback;
+  if (time <= Number(sorted[0].time)) return Number(sorted[0].value);
+  const last = sorted[sorted.length - 1];
+  if (time >= Number(last.time)) return Number(last.value);
+  for (let index = 1; index < sorted.length; index += 1) {
+    const right = sorted[index];
+    const left = sorted[index - 1];
+    const leftTime = Number(left.time);
+    const rightTime = Number(right.time);
+    if (time > rightTime) continue;
+    const span = rightTime - leftTime;
+    if (span <= 0) return Number(right.value);
+    const progress = (time - leftTime) / span;
+    return Number(left.value) + (Number(right.value) - Number(left.value)) * progress;
+  }
+  return Number(last.value);
+}
+
 /** Gain from the track-wide fade envelope only. */
 function getTrackEnvelopeGainAtTime(track, timelineTime) {
   const start = Number(track?.startTime) || 0;

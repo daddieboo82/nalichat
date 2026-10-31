@@ -1396,18 +1396,47 @@ export default function Studio() {
       toast.error("This track has no split regions to heal.");
       return;
     }
-    const curr = currentTimeRef.current;
-    const candidates = regions.slice(0, -1).map((region, index) => ({
-      region,
-      distance: Math.abs(region.timelineStart + (region.sourceEnd - region.sourceStart) - curr),
-    }));
-    const nearest = candidates.reduce((best, item) => item.distance < best.distance ? item : best, candidates[0]);
-    const healed = healTrackRegions({ ...track, clipRegions: regions }, nearest.region.id);
-    if (!healed.healed) {
+
+    let candidateIds = [];
+    if (selectedClipRegion) {
+      const separator = selectedClipRegion.indexOf(':');
+      const selectedTrackId = separator > 0 ? selectedClipRegion.slice(0, separator) : '';
+      const selectedRegionId = separator > 0 ? selectedClipRegion.slice(separator + 1) : '';
+      if (selectedTrackId === String(track.id)) {
+        const selectedIndex = regions.findIndex(region => region.id === selectedRegionId);
+        if (selectedIndex > 0) candidateIds.push(regions[selectedIndex - 1].id);
+        if (selectedIndex >= 0 && selectedIndex < regions.length - 1) candidateIds.push(regions[selectedIndex].id);
+      }
+    }
+
+    // If no region is selected, heal the adjacent boundary nearest the playhead.
+    if (candidateIds.length === 0) {
+      const curr = currentTimeRef.current;
+      const nearest = regions.slice(0, -1).reduce((best, region) => {
+        const distance = Math.abs(region.timelineStart + (region.sourceEnd - region.sourceStart) - curr);
+        return !best || distance < best.distance ? { id: region.id, distance } : best;
+      }, null);
+      if (nearest) candidateIds.push(nearest.id);
+    }
+
+    let healed = null;
+    let healedRegionId = null;
+    for (const candidateId of candidateIds) {
+      const result = healTrackRegions({ ...track, clipRegions: regions }, candidateId);
+      if (result.healed) {
+        healed = result;
+        healedRegionId = candidateId;
+        break;
+      }
+    }
+
+    if (!healed) {
       toast.error("These regions cannot be healed because their source or timeline edges do not match.");
       return;
     }
-    setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...healed, healed: undefined } : t));
+    const { healed: _healed, ...updatedTrack } = healed;
+    setTracksWithHistory(previous => previous.map(item => item.id === track.id ? updatedTrack : item));
+    setSelectedClipRegion(`${track.id}:${healedRegionId}`);
     toast.success("Adjacent regions rejoined.");
     sounds.nav();
   };

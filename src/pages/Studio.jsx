@@ -1159,6 +1159,7 @@ export default function Studio() {
           audio.currentTime = preRollSourceTime;
           audio.dataset.activeRegionId = getClipRegionAtTime(track, preRollTime)?.id || '';
           audio.dataset.clipRegionRevision = String(Number(track.clipRegionRevision) || 0);
+          syncTrackFade(track, audio, preRollTime);
           preRollPlayPromises.push(
             audio.play().then(() => true).catch((error) => {
               console.error("Pre-roll playback error:", error);
@@ -1207,6 +1208,7 @@ export default function Studio() {
             audio.currentTime = sourceTime;
             audio.dataset.activeRegionId = activeRegion.id;
             audio.dataset.clipRegionRevision = String(Number(track.clipRegionRevision) || 0);
+            syncTrackFade(track, audio, currentTimeRef.current);
             audio.play().catch(e => console.error("Overdub playback error:", e));
           }
         });
@@ -2740,6 +2742,7 @@ export default function Studio() {
                                audio.currentTime = sourceTime;
                                audio.dataset.activeRegionId = getClipRegionAtTime(track, newTime)?.id || '';
                                audio.dataset.clipRegionRevision = String(Number(track.clipRegionRevision) || 0);
+                               syncTrackFade(track, audio, newTime);
                                audio.play().then(() => {
                                  setTimeout(() => audio.pause(), 150);
                                }).catch(() => {});

@@ -3304,7 +3304,7 @@ export default function Studio() {
                           return (
                             <div
                               key={`waveform-region-${track.id}-${region.id}`}
-                              className="absolute top-0 bottom-0 overflow-hidden relative"
+                              className="absolute top-0 bottom-0 overflow-hidden"
                               style={{
                                 left: `${timelineOffset * 20 * zoom}px`,
                                 width: `${regionDuration * 20 * zoom}px`,

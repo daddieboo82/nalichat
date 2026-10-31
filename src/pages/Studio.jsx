@@ -1299,27 +1299,22 @@ export default function Studio() {
     setTracksWithHistory(prev => [...prev, { ...track, id: nextId, name: `${track.name} (Copy)` }]); toast.success("Track duplicated");
   };
 
-  // Pro Tools-style Heal Split: rejoin two clips that were split from the same source.
-  // Finds the "other half" (same splitFrom parent) and merges them back into one clip.
+  // Heal the most recent split boundary on the selected track. Split regions stay
+  // inside their original track, so healing removes only the boundary marker.
   const handleHealSplit = (track) => {
-    if (!track.splitFrom) {
-      toast.error("This clip wasn't split — nothing to heal.");
+    const splitPoints = Array.isArray(track.splitPoints) ? track.splitPoints : [];
+    if (splitPoints.length === 0) {
+      toast.error("This track has no split points to heal.");
       return;
     }
-    // Find the sibling clip that shares the same splitFrom id
-    const sibling = tracks.find(t => t.id !== track.id && t.splitFrom === track.splitFrom);
-    if (!sibling) {
-      toast.error("Can't find the other half of this split.");
-      return;
-    }
-    // Determine which is left and which is right
-    const [left, right] = (track.startTime || 0) < (sibling.startTime || 0) ? [track, sibling] : [sibling, track];
-    const mergedDuration = (left.duration || 0) + (right.duration || 0);
-    setTracksWithHistory(prev => prev
-      .map(t => t.id === left.id ? { ...t, duration: mergedDuration, splitFrom: undefined, clipStart: left.clipStart || 0, fullDuration: left.fullDuration || mergedDuration } : t)
-      .filter(t => t.id !== right.id)
-    );
-    toast.success("Split healed — clips rejoined.");
+    const curr = currentTimeRef.current - (track.startTime || 0);
+    const nearestIndex = splitPoints.reduce((best, point, index) =>
+      Math.abs(point - curr) < Math.abs(splitPoints[best] - curr) ? index : best, 0);
+    setTracksWithHistory(prev => prev.map(t => t.id === track.id
+      ? { ...t, splitPoints: splitPoints.filter((_, index) => index !== nearestIndex) }
+      : t
+    ));
+    toast.success("Split boundary healed.");
     sounds.nav();
   };
 
@@ -1458,57 +1453,26 @@ export default function Studio() {
   const splitSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
     sounds.click();
-    
-    if (tracks.length + selectedTrackIds.length > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
-      return;
-    }
 
-    let nextId = nextTrackId(tracks);
+    const curr = currentTimeRef.current;
     let splitCount = 0;
-    
-    const newTracksList = [];
-
     const updatedTracks = tracks.map(t => {
-      if (selectedTrackIds.includes(t.id) && t.waveform && t.waveform.length > 0) {
-        const clipStart = t.startTime !== undefined ? t.startTime : 0;
-        const clipDuration = t.duration !== undefined ? t.duration : 40;
-        const clipEnd = clipStart + clipDuration;
-        const curr = currentTimeRef.current;
-        
-        if (curr > clipStart && curr < clipEnd) {
-          const splitDuration = curr - clipStart;
-          
-          splitCount++;
-          
-          newTracksList.push({
-            ...t,
-            id: nextId++,
-            name: `${t.name} (Cut)`,
-            startTime: curr,
-            duration: clipDuration - splitDuration,
-            fullDuration: t.fullDuration || t.duration,
-            clipStart: (t.clipStart || 0) + splitDuration,
-            splitFrom: t.id
-          });
-
-          return {
-            ...t,
-            duration: splitDuration,
-            fullDuration: t.fullDuration || t.duration,
-            clipStart: t.clipStart || 0,
-            splitFrom: t.id
-          };
-        }
-      }
-      return t;
+      if (!selectedTrackIds.includes(t.id) || !t.waveform || t.waveform.length === 0) return t;
+      const clipStart = t.startTime !== undefined ? t.startTime : 0;
+      const clipDuration = t.duration !== undefined ? t.duration : 40;
+      const localSplit = Math.round((curr - clipStart) * 1000) / 1000;
+      if (localSplit <= 0 || localSplit >= clipDuration) return t;
+      const splitPoints = Array.isArray(t.splitPoints) ? t.splitPoints : [];
+      if (splitPoints.some(point => Math.abs(point - localSplit) < 0.001)) return t;
+      splitCount++;
+      return { ...t, splitPoints: [...splitPoints, localSplit].sort((a, b) => a - b) };
     });
 
     if (splitCount > 0) {
-      setTracksWithHistory([...updatedTracks, ...newTracksList]);
-      toast.success("Clip split at playhead");
+      setTracksWithHistory(updatedTracks);
+      toast.success("Waveform split on the same track");
     } else {
-      toast.error("Playhead is not positioned over the selected clip");
+      toast.error("Playhead is not positioned over the selected waveform");
     }
   };
 
@@ -2613,6 +2577,16 @@ export default function Studio() {
                         width: `${(track.duration !== undefined ? track.duration : 40) * 20 * zoom}px`
                       }}
                     >
+                      {/* Split boundaries divide the waveform visually without adding track rows. */}
+                      {(Array.isArray(track.splitPoints) ? track.splitPoints : []).map((point, index) => (
+                        <div
+                          key={`split-${track.id}-${index}-${point}`}
+                          className="absolute top-0 bottom-0 z-30 pointer-events-none"
+                          style={{ left: `${(point / (track.duration || 40)) * 100}%`, width: '3px', transform: 'translateX(-1px)', background: 'rgba(255,255,255,0.95)', boxShadow: '0 0 0 1px rgba(0,0,0,0.75), 0 0 8px rgba(255,255,255,0.35)' }}
+                          title={`Split at ${point.toFixed(3)}s`}
+                        />
+                      ))}
+
                       {/* Left Trim Handle */}
                       <div 
                         className={cn("absolute left-0 w-4 z-20 group/handle flex justify-start items-center bg-black/20", 

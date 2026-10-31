@@ -364,7 +364,7 @@ export function slipClipRegion(track, regionId, sourceDelta) {
 
 /** Set one region's independent clip gain without changing its timeline/source bounds. */
 export function setClipRegionGain(track, regionId, gainDb) {
-  const gain = Math.max(-24, Math.min(24, finite(gainDb, 0)));
+  const gain = Math.max(-12, Math.min(12, finite(gainDb, 0)));
   const regions = getTrackClipRegions(track);
   if (!regions.some(region => region.id === regionId)) {
     return { ...track, clipRegions: regions };

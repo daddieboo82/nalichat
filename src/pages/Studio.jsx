@@ -2886,7 +2886,7 @@ export default function Studio() {
                             className={cn(
                               "absolute top-0 bottom-0 z-40 border-x border-transparent",
                               activeTool === 'grab'
-                                ? "cursor-grab active:cursor-grabbing"
+                                ? (editMode === 'slip' ? "cursor-ew-resize" : "cursor-grab active:cursor-grabbing")
                                 : activeTool === 'trim' ? "pointer-events-auto" : "pointer-events-none",
                               isRegionSelected ? "border-primary bg-primary/10" : "hover:border-white/50"
                             )}

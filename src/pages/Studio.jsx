@@ -610,6 +610,36 @@ export default function Studio() {
       } else if (newTime > 100) newTime = 0; // Loop at 100s
       
       currentTimeRef.current = newTime;
+
+      // Region-aware playback: the track keeps one audio source/mixer channel,
+      // while each region selects its own source range at its own timeline position.
+      if (isPlaying) {
+        tracks.forEach(track => {
+          if (!track.audioUrl) return;
+          const audio = getTrackAudio(track);
+          if (!audio) return;
+          const audible = trackMixGain(track, tracks) > 0;
+          const activeRegion = getTrackClipRegions(track).find(region => {
+            const end = region.timelineStart + region.sourceEnd - region.sourceStart;
+            return newTime >= region.timelineStart && newTime < end;
+          });
+          if (!audible || !activeRegion) {
+            if (!audio.paused) audio.pause();
+            audio.dataset.activeRegionId = '';
+            return;
+          }
+          const sourceTime = activeRegion.sourceStart + (newTime - activeRegion.timelineStart);
+          if (audio.dataset.activeRegionId !== activeRegion.id) {
+            audio.currentTime = sourceTime;
+            audio.dataset.activeRegionId = activeRegion.id;
+          }
+          if (audio.paused) {
+            audio.play().catch(error => {
+              console.error("Region playback error:", error);
+            });
+          }
+        });
+      }
       
       // Update DOM directly for maximum 60fps performance without React reconciliation
       if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);

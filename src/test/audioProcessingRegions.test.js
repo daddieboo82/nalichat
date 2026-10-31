@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getAutomationValueAtTime, getClipRegionFadeGainAtTime, getClipRegionGain, getTrackFadeGainAtTime, getTrackRegionFadeGainAtTime, getTrackRegionRenderSchedule } from '../lib/audioProcessing';
+import { getAutomationValueAtTime, getSortedAutomationPoints, getClipRegionFadeGainAtTime, getClipRegionGain, getTrackFadeGainAtTime, getTrackRegionFadeGainAtTime, getTrackRegionRenderSchedule } from '../lib/audioProcessing';
 import { cutClipRegionSide, setClipRegionGain, slipClipRegion } from '../lib/studioClipRegions';
 
 describe('timeline automation interpolation', () => {
@@ -19,6 +19,34 @@ describe('timeline automation interpolation', () => {
   it('uses the base value when no valid automation points exist', () => {
     expect(getAutomationValueAtTime([], 5, 72, 0)).toBe(72);
     expect(getAutomationValueAtTime([{ time: 'bad', value: 20 }], 5, 72, 0)).toBe(72);
+  });
+});
+
+describe('automation point normalization', () => {
+  it('sorts points, ignores points before the lane starts, and keeps the last duplicate', () => {
+    const points = [
+      { time: 8, value: 20 },
+      { time: 2, value: 10 },
+      { time: 6, value: 40 },
+      { time: 6, value: 70 },
+    ];
+
+    expect(getSortedAutomationPoints(points, 4)).toEqual([
+      { time: 6, value: 70 },
+      { time: 8, value: 20 },
+    ]);
+  });
+
+  it('does not let stale pre-start points override the lane base value', () => {
+    const points = [{ time: 1, value: 10 }, { time: 8, value: 30 }];
+    expect(getAutomationValueAtTime(points, 4, 80, 4)).toBe(80);
+    expect(getAutomationValueAtTime(points, 6, 80, 4)).toBe(55);
+    expect(getAutomationValueAtTime(points, 8, 80, 4)).toBe(30);
+  });
+
+  it('keeps a point at lane start as the first active automation value', () => {
+    const points = [{ time: 4, value: 25 }, { time: 8, value: 75 }];
+    expect(getAutomationValueAtTime(points, 5, 80, 4)).toBe(37.5);
   });
 });
 

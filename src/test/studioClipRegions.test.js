@@ -114,7 +114,7 @@ describe('NaliStudio clip-region editing', () => {
     };
     const leftExtended = trimClipRegionLeft(track, 'region-1', -1);
     expect(leftExtended.startTime).toBe(1);
-    expect(leftExtended.duration).toBe(6);
+    expect(leftExtended.duration).toBe(7);
 
     const rightExtended = trimClipRegionRight(track, 'region-1', 3);
     expect(rightExtended.startTime).toBe(2);

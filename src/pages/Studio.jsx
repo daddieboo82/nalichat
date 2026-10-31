@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, cutTrackTimelineRange, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, remapClipRegionSources, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -3362,28 +3362,12 @@ export default function Studio() {
           setTracksWithHistory(previous => previous.map(item => {
             if (item.id !== track.id) return item;
             const existingRegions = getTrackClipRegions(item);
-            const scale = Number.isFinite(Number(sourceScale)) && Number(sourceScale) > 0
-              ? Number(sourceScale)
-              : 1;
-            const mappedRegions = existingRegions.map(region => {
-              const sourceStart = sourceTransform === 'reverse'
-                ? duration - region.sourceEnd
-                : (sourceTransform === 'pitch' || sourceTransform === 'stretch')
-                  ? region.sourceStart * scale
-                  : region.sourceStart;
-              const sourceEnd = sourceTransform === 'reverse'
-                ? duration - region.sourceStart
-                : (sourceTransform === 'pitch' || sourceTransform === 'stretch')
-                  ? region.sourceEnd * scale
-                  : region.sourceEnd;
-              const clampedStart = Math.max(0, Math.min(duration, sourceStart));
-              const clampedEnd = Math.max(0, Math.min(duration, sourceEnd));
-              return {
-                ...region,
-                sourceStart: clampedStart,
-                sourceEnd: clampedEnd,
-              };
-            }).filter(region => region.sourceEnd - region.sourceStart > 0.001);
+            const mappedRegions = remapClipRegionSources(
+              existingRegions,
+              duration,
+              sourceTransform,
+              sourceScale
+            );
 
             return withTrackClipRegionBounds({
               ...item,

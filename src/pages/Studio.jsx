@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, cutTrackTimelineRange, getClipRegionAtTime, getClipSourceTimeAtTime, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getClipRegionAtTime, getClipSourceTimeAtTime, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -2794,8 +2794,51 @@ export default function Studio() {
                               const target = event.currentTarget;
                               const startX = event.clientX;
 
-                              // Slip mode permits free timeline placement; Grid snaps to
-                              // the session grid; Shuffle pushes colliding regions aside.
+                              // Pro Tools-style Slip: move the audio source under a fixed
+                              // region, leaving its timeline position and duration untouched.
+                              if (editMode === 'slip') {
+                                const regionDuration = region.sourceEnd - region.sourceStart;
+                                const initialSourceStart = region.sourceStart;
+                                const sourceLimit = Math.max(
+                                  Number(track.fullDuration) || 0,
+                                  (Number(track.clipStart) || 0) + (Number(track.duration) || 0),
+                                  region.sourceEnd
+                                );
+                                const maxSourceStart = Math.max(0, sourceLimit - regionDuration);
+                                target.setPointerCapture(event.pointerId);
+                                const onSlipMove = (moveEvent) => {
+                                  const delta = (moveEvent.clientX - startX) / (20 * zoom);
+                                  const nextSourceStart = Math.max(
+                                    0,
+                                    Math.min(maxSourceStart, initialSourceStart + delta)
+                                  );
+                                  target.dataset.sourceStart = String(nextSourceStart);
+                                  target.style.background = 'rgba(99,102,241,0.24)';
+                                  showEditTooltip(moveEvent.clientX, moveEvent.clientY, nextSourceStart);
+                                };
+                                const onSlipUp = (upEvent) => {
+                                  target.releasePointerCapture(upEvent.pointerId);
+                                  target.removeEventListener('pointermove', onSlipMove);
+                                  target.removeEventListener('pointerup', onSlipUp);
+                                  target.style.background = '';
+                                  hideEditTooltip();
+                                  if (target.dataset.sourceStart !== undefined) {
+                                    const nextSourceStart = Number(target.dataset.sourceStart);
+                                    delete target.dataset.sourceStart;
+                                    setTracksWithHistory(previous => previous.map(item =>
+                                      item.id === track.id
+                                        ? slipClipRegion(item, region.id, nextSourceStart - initialSourceStart)
+                                        : item
+                                    ));
+                                  }
+                                };
+                                target.addEventListener('pointermove', onSlipMove);
+                                target.addEventListener('pointerup', onSlipUp);
+                                return;
+                              }
+
+                              // Grid snaps movement to the musical timeline; Shuffle
+                              // gives the dragged region priority and pushes collisions.
                               const initialStart = region.timelineStart;
                               const clipContainer = target.parentElement;
                               const previousOverflow = clipContainer?.style.overflow || '';

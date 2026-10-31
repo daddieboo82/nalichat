@@ -1434,7 +1434,8 @@ export default function Studio() {
       toast.error("These regions cannot be healed because their source or timeline edges do not match.");
       return;
     }
-    const { healed: _healed, ...updatedTrack } = healed;
+    const updatedTrack = { ...healed };
+    delete updatedTrack.healed;
     setTracksWithHistory(previous => previous.map(item => item.id === track.id ? updatedTrack : item));
     setSelectedClipRegion(`${track.id}:${healedRegionId}`);
     toast.success("Adjacent regions rejoined.");

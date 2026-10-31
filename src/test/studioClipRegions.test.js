@@ -5,7 +5,7 @@ import {
   healTrackRegions,
   moveClipRegion,
   moveTrackClipRegions,
-  slipClipRegion,
+  shuffleMoveClipRegion,
   splitTrackRegion,
   trimClipRegionLeft,
   trimClipRegionRight,
@@ -108,27 +108,61 @@ describe('NaliStudio clip-region editing', () => {
     expect(result.clipRegions.map(region => [region.sourceStart, region.sourceEnd])).toEqual([[0, 3], [3, 6]]);
   });
 
-  it('slips source audio without moving or resizing the timeline region', () => {
-    const track = {
-      ...makeTrack(),
-      clipRegions: [{ id: 'region-1', timelineStart: 5, sourceStart: 2, sourceEnd: 5 }],
-    };
-    const result = slipClipRegion(track, 'region-1', 9, 3);
-
-    expect(result.startTime).toBe(0);
-    expect(result.duration).toBe(10);
-    expect(result.clipRegions[0]).toMatchObject({
-      timelineStart: 5,
-      sourceStart: 7,
-      sourceEnd: 10,
-    });
-  });
-
   it('preserves the original source duration when a region is first split', () => {
     const track = { ...makeTrack(), fullDuration: undefined };
     const result = splitTrackRegion(track, 4, side => `split-${side}`);
 
     expect(result.fullDuration).toBe(10);
+  });
+
+  it('Shuffle mode pushes overlapping regions right without creating overlaps', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 2 },
+        { id: 'b', timelineStart: 3, sourceStart: 2, sourceEnd: 4 },
+        { id: 'c', timelineStart: 5, sourceStart: 4, sourceEnd: 6 },
+      ],
+    };
+    const result = shuffleMoveClipRegion(track, 'a', 4);
+
+    expect(result.clipRegions.map(region => [region.id, region.timelineStart])).toEqual([
+      ['a', 4],
+      ['b', 6],
+      ['c', 8],
+    ]);
+  });
+
+  it('Shuffle Cut ripples later regions while preserving existing silence gaps', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 10 },
+        { id: 'b', timelineStart: 12, sourceStart: 0, sourceEnd: 2 },
+      ],
+    };
+    const result = cutClipRegionSide(track, 'a', 7, { shuffle: true });
+
+    expect(result.clipRegions[0]).toMatchObject({
+      timelineStart: 0,
+      sourceStart: 0,
+      sourceEnd: 7,
+    });
+    expect(result.clipRegions[1].timelineStart).toBe(9);
+  });
+
+  it('Shuffle right-trim moves later regions by the same applied duration change', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 4 },
+        { id: 'b', timelineStart: 6, sourceStart: 4, sourceEnd: 6 },
+      ],
+    };
+    const result = trimClipRegionRight(track, 'a', 1, { shuffle: true });
+
+    expect(result.clipRegions[0].sourceEnd).toBe(5);
+    expect(result.clipRegions[1].timelineStart).toBe(7);
   });
 
   it('recalculates lane bounds when trimming region edges', () => {

@@ -16,6 +16,7 @@ const makeTrack = () => ({
 function runNudge({ track, selectedClipRegion = null, editMode = 'slip', key = 'ArrowRight', nudgeValue = 1 }) {
   let update;
   const handler = createStudioKeyHandler({
+    tracks: [track],
     selectedTrackIds: [track.id],
     selectedClipRegion,
     editMode,

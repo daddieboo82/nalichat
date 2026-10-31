@@ -364,6 +364,50 @@ describe('NaliStudio clip-region editing', () => {
     ]);
   });
 
+  it('clears region gain and fades after Track Commit bakes them into the rendered audio', () => {
+    const regions = [{
+      id: 'processed',
+      timelineStart: 3,
+      sourceStart: 1,
+      sourceEnd: 5,
+      gainDb: -8,
+      fadeIn: 0.4,
+      fadeOut: 0.6,
+    }];
+
+    const result = rebaseClipRegionsToRenderedTimeline(regions, {
+      resetGain: true,
+      resetFades: true,
+    });
+
+    expect(result[0]).toMatchObject({
+      timelineStart: 3,
+      sourceStart: 3,
+      sourceEnd: 7,
+      gainDb: 0,
+      fadeIn: 0,
+      fadeOut: 0,
+    });
+  });
+
+  it('preserves region gain and fades when rebasing without baking controls', () => {
+    const result = rebaseClipRegionsToRenderedTimeline([{
+      id: 'preserved',
+      timelineStart: 2,
+      sourceStart: 0,
+      sourceEnd: 3,
+      gainDb: -5,
+      fadeIn: 0.2,
+      fadeOut: 0.3,
+    }]);
+
+    expect(result[0]).toMatchObject({
+      gainDb: -5,
+      fadeIn: 0.2,
+      fadeOut: 0.3,
+    });
+  });
+
   it('mirrors clip source ranges when AudioSuite reverses the source file', () => {
     const regions = [
       { id: 'first', timelineStart: 3, sourceStart: 1, sourceEnd: 4, fadeIn: 0.2, fadeOut: 0.4 },

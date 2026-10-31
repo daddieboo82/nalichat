@@ -326,6 +326,19 @@ describe('NaliStudio clip-region editing', () => {
     expect(result.duration).toBe(8);
   });
 
+  it('keeps legacy track clip gain separate from region-level gain', () => {
+    const legacy = getTrackClipRegions({
+      id: 'legacy',
+      startTime: 2,
+      duration: 4,
+      clipStart: 1,
+      clipGain: -6,
+    });
+
+    expect(legacy).toHaveLength(1);
+    expect(legacy[0].gainDb).toBe(0);
+  });
+
   it('preserves the original source duration when a region is first split', () => {
     const track = { ...makeTrack(), fullDuration: undefined };
     const result = splitTrackRegion(track, 4, side => `split-${side}`);

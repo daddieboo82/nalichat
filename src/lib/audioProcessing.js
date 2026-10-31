@@ -84,6 +84,49 @@ export function getTrackRegionFadeGainAtTime(track, region, timelineTime) {
     * getClipRegionFadeGainAtTime(region, timelineTime);
 }
 
+/**
+ * Build a bounded-resolution automation curve for combined track and region fades.
+ * Their gain envelopes multiply, so a single linear ramp between fade boundaries
+ * is not equivalent when both fades overlap. Sampling each segment keeps offline
+ * renders aligned with the realtime gain calculation without scheduling per-sample events.
+ */
+export function getTrackRegionFadeAutomationPoints(track, region, maxStep = 0.02) {
+  const regionStart = Math.max(0, Number(region?.timelineStart) || 0);
+  const duration = Math.max(0, Number(region?.sourceEnd) - Number(region?.sourceStart));
+  const regionEnd = regionStart + duration;
+  if (!Number.isFinite(regionEnd) || duration <= 0) return [];
+
+  const trackStart = Number(track?.startTime) || 0;
+  const trackDuration = Math.max(0, Number(track?.duration) || 0);
+  const fadeInEnd = trackStart + Math.min(1, Math.max(0, Number(track?.fadeIn) || 0)) * trackDuration;
+  const fadeOutStart = trackStart + trackDuration - Math.min(1, Math.max(0, Number(track?.fadeOut) || 0)) * trackDuration;
+  const regionFadeInEnd = regionStart + Math.min(1, Math.max(0, Number(region?.fadeIn) || 0)) * duration;
+  const regionFadeOutStart = regionEnd - Math.min(1, Math.max(0, Number(region?.fadeOut) || 0)) * duration;
+  const boundaries = [regionStart, regionEnd, fadeInEnd, fadeOutStart, regionFadeInEnd, regionFadeOutStart]
+    .filter(time => Number.isFinite(time) && time >= regionStart && time <= regionEnd)
+    .sort((left, right) => left - right)
+    .filter((time, index, values) => index === 0 || Math.abs(time - values[index - 1]) > 0.000001);
+  if (boundaries[0] > regionStart) boundaries.unshift(regionStart);
+
+  const step = Number.isFinite(Number(maxStep)) && Number(maxStep) > 0
+    ? Math.min(0.1, Number(maxStep))
+    : 0.02;
+  const points = [];
+  boundaries.forEach((start, index) => {
+    if (index === 0) {
+      points.push({ time: start, gain: getTrackRegionFadeGainAtTime(track, region, start) });
+    }
+    const end = boundaries[index + 1];
+    if (end === undefined) return;
+    const segments = Math.max(1, Math.ceil((end - start) / step));
+    for (let segment = 1; segment <= segments; segment += 1) {
+      const time = start + (end - start) * segment / segments;
+      points.push({ time, gain: getTrackRegionFadeGainAtTime(track, region, time) });
+    }
+  });
+  return points;
+}
+
 /** Combine the track-wide fade with the region currently under the playhead. */
 export function getTrackFadeGainAtTime(track, timelineTime) {
   const time = Number(timelineTime);
@@ -549,24 +592,15 @@ export async function renderMixToBuffer(tracks, options = {}) {
       source.buffer = buffer;
       regionGain.gain.value = getClipRegionGain(region);
 
-      // Apply the same timeline-based fade envelope used by realtime playback.
-      const regionStart = region.timelineStart;
-      const regionEnd = regionStart + region.duration;
-      const trackStart = Number(track.startTime) || 0;
-      const trackDuration = Math.max(0, Number(track.duration) || 0);
-      const fadeInEnd = trackStart + Math.min(1, Math.max(0, Number(track.fadeIn) || 0)) * trackDuration;
-      const fadeOutStart = trackStart + trackDuration - Math.min(1, Math.max(0, Number(track.fadeOut) || 0)) * trackDuration;
-      const regionFadeInEnd = regionStart + Math.min(1, Math.max(0, Number(region.fadeIn) || 0)) * region.duration;
-      const regionFadeOutStart = regionEnd - Math.min(1, Math.max(0, Number(region.fadeOut) || 0)) * region.duration;
-      const breakpoints = [regionStart, regionEnd, fadeInEnd, fadeOutStart, regionFadeInEnd, regionFadeOutStart]
-        .filter(time => Number.isFinite(time) && time >= regionStart && time <= regionEnd)
-        .sort((a, b) => a - b)
-        .filter((time, index, values) => index === 0 || Math.abs(time - values[index - 1]) > 0.000001);
-      if (breakpoints.length === 0 || breakpoints[0] > regionStart) breakpoints.unshift(regionStart);
-      fade.gain.setValueAtTime(getTrackRegionFadeGainAtTime(track, region, breakpoints[0]), breakpoints[0]);
-      breakpoints.slice(1).forEach(time => {
-        fade.gain.linearRampToValueAtTime(getTrackRegionFadeGainAtTime(track, region, time), time);
-      });
+      // Combined track and region fades multiply; sample the resulting curve
+      // so overlapping fades do not flatten a quadratic product into one ramp.
+      const fadePoints = getTrackRegionFadeAutomationPoints(track, region);
+      if (fadePoints.length > 0) {
+        fade.gain.setValueAtTime(fadePoints[0].gain, fadePoints[0].time);
+        fadePoints.slice(1).forEach(point => {
+          fade.gain.linearRampToValueAtTime(point.gain, point.time);
+        });
+      }
 
       source.connect(regionGain);
       regionGain.connect(fade);

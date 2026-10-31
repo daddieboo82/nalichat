@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -2676,6 +2676,47 @@ export default function Studio() {
                               if (track.locked || activeTool !== 'grab') return;
                               const target = event.currentTarget;
                               const startX = event.clientX;
+
+                              // Slip mode moves source audio inside the existing region;
+                              // Grid/Shuffle move the region itself on the timeline.
+                              if (editMode === 'slip') {
+                                const regionDuration = region.sourceEnd - region.sourceStart;
+                                const initialSourceStart = region.sourceStart;
+                                const sourceLimit = Math.max(
+                                  Number(track.fullDuration) || 0,
+                                  (Number(track.clipStart) || 0) + (Number(track.duration) || 0),
+                                  region.sourceEnd
+                                );
+                                const maxSourceStart = Math.max(0, sourceLimit - regionDuration);
+                                target.setPointerCapture(event.pointerId);
+                                const onSlipMove = (moveEvent) => {
+                                  const delta = (moveEvent.clientX - startX) / (20 * zoom);
+                                  const nextSourceStart = Math.max(0, Math.min(maxSourceStart, initialSourceStart + delta));
+                                  target.dataset.sourceStart = String(nextSourceStart);
+                                  target.style.background = 'rgba(99,102,241,0.22)';
+                                  showEditTooltip(moveEvent.clientX, moveEvent.clientY, nextSourceStart);
+                                };
+                                const onSlipUp = (upEvent) => {
+                                  target.releasePointerCapture(upEvent.pointerId);
+                                  target.removeEventListener('pointermove', onSlipMove);
+                                  target.removeEventListener('pointerup', onSlipUp);
+                                  target.style.background = '';
+                                  hideEditTooltip();
+                                  if (target.dataset.sourceStart !== undefined) {
+                                    const nextSourceStart = Number(target.dataset.sourceStart);
+                                    delete target.dataset.sourceStart;
+                                    setTracksWithHistory(previous => previous.map(item =>
+                                      item.id === track.id
+                                        ? slipClipRegion(item, region.id, nextSourceStart, regionDuration)
+                                        : item
+                                    ));
+                                  }
+                                };
+                                target.addEventListener('pointermove', onSlipMove);
+                                target.addEventListener('pointerup', onSlipUp);
+                                return;
+                              }
+
                               const initialStart = region.timelineStart;
                               const clipContainer = target.parentElement;
                               const previousOverflow = clipContainer?.style.overflow || '';
@@ -2686,7 +2727,11 @@ export default function Studio() {
                                 if (Math.abs(delta) < 0.015 && !moved) return;
                                 moved = true;
                                 if (clipContainer) clipContainer.style.overflow = 'visible';
-                                const nextStart = Math.max(0, initialStart + delta);
+                                let nextStart = Math.max(0, initialStart + delta);
+                                if (editMode === 'grid') {
+                                  const safeGrid = Math.max(0.001, Number(gridSize) || 1);
+                                  nextStart = Math.round(nextStart / safeGrid) * safeGrid;
+                                }
                                 target.style.left = `${((nextStart - trackStart) / trackDuration) * 100}%`;
                                 target.dataset.timelineStart = String(nextStart);
                               };
@@ -2715,7 +2760,9 @@ export default function Studio() {
                             }}
                             className={cn(
                               "absolute top-0 bottom-0 z-40 border-x border-transparent",
-                              activeTool === 'grab' ? "cursor-grab active:cursor-grabbing" : "pointer-events-none",
+                              activeTool === 'grab'
+                                ? (editMode === 'slip' ? "cursor-ew-resize" : "cursor-grab active:cursor-grabbing")
+                                : activeTool === 'trim' ? "pointer-events-auto" : "pointer-events-none",
                               isRegionSelected ? "border-primary bg-primary/10" : "hover:border-white/50"
                             )}
                             style={{ left: `${regionLeft}%`, width: `${regionWidth}%` }}

@@ -7,6 +7,7 @@ import {
   healTrackRegions,
   moveClipRegion,
   moveTrackClipRegions,
+  rebaseClipRegionsToRenderedTimeline,
   remapClipRegionSources,
   shuffleMoveClipRegion,
   splitTrackRegion,
@@ -199,6 +200,23 @@ describe('NaliStudio clip-region editing', () => {
     const result = splitTrackRegion(track, 4, side => `split-${side}`);
 
     expect(result.fullDuration).toBe(10);
+  });
+
+  it('rebases source offsets to rendered timeline positions after Track Commit', () => {
+    const regions = [
+      { id: 'first', timelineStart: 4, sourceStart: 0, sourceEnd: 2 },
+      { id: 'second', timelineStart: 9, sourceStart: 5, sourceEnd: 8 },
+    ];
+    const result = rebaseClipRegionsToRenderedTimeline(regions);
+
+    expect(result.map(region => [
+      region.timelineStart,
+      region.sourceStart,
+      region.sourceEnd,
+    ])).toEqual([
+      [4, 4, 6],
+      [9, 9, 12],
+    ]);
   });
 
   it('mirrors clip source ranges when AudioSuite reverses the source file', () => {

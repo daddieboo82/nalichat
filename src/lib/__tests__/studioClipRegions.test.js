@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   getTrackClipRegions,
+  cutClipRegionSide,
   healTrackRegions,
+  moveClipRegion,
+  slipClipRegion,
   splitTrackRegion,
+  trimClipRegionLeft,
+  trimClipRegionRight,
 } from '@/lib/studioClipRegions';
 
 describe('NaliStudio clip regions', () => {

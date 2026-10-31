@@ -5,6 +5,7 @@ import {
   healTrackRegions,
   moveClipRegion,
   moveTrackClipRegions,
+  slipClipRegion,
   splitTrackRegion,
   trimClipRegionLeft,
   trimClipRegionRight,
@@ -105,6 +106,29 @@ describe('NaliStudio clip-region editing', () => {
     expect(result.duration).toBe(8);
     expect(result.clipRegions.map(region => region.timelineStart)).toEqual([7, 12]);
     expect(result.clipRegions.map(region => [region.sourceStart, region.sourceEnd])).toEqual([[0, 3], [3, 6]]);
+  });
+
+  it('slips source audio without moving or resizing the timeline region', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [{ id: 'region-1', timelineStart: 5, sourceStart: 2, sourceEnd: 5 }],
+    };
+    const result = slipClipRegion(track, 'region-1', 9, 3);
+
+    expect(result.startTime).toBe(0);
+    expect(result.duration).toBe(10);
+    expect(result.clipRegions[0]).toMatchObject({
+      timelineStart: 5,
+      sourceStart: 7,
+      sourceEnd: 10,
+    });
+  });
+
+  it('preserves the original source duration when a region is first split', () => {
+    const track = { ...makeTrack(), fullDuration: undefined };
+    const result = splitTrackRegion(track, 4, side => `split-${side}`);
+
+    expect(result.fullDuration).toBe(10);
   });
 
   it('recalculates lane bounds when trimming region edges', () => {

@@ -369,9 +369,14 @@ export function setClipRegionGain(track, regionId, gainDb) {
   if (!regions.some(region => region.id === regionId)) {
     return { ...track, clipRegions: regions };
   }
-  return withTrackClipRegionBounds(track, regions.map(region =>
-    region.id === regionId ? { ...region, gainDb: gain } : region
-  ));
+  return {
+    ...track,
+    // Gain changes do not alter source/timeline ranges, so do not bump the
+    // clip-region revision (which would unnecessarily seek the live element).
+    clipRegions: regions.map(region =>
+      region.id === regionId ? { ...region, gainDb: gain } : region
+    ),
+  };
 }
 
 /** Trim the left edge non-destructively; move timeline and source starts together. */

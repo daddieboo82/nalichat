@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, getClipRegionGain, getTrackFadeGainAtTime } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, cutTrackTimelineRange, getClipRegionAtTime, getClipSourceTimeAtTime, getGridIntervalSeconds, getHealCandidateRegionIds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getClipRegionAtTime, getClipSourceTimeAtTime, getGridIntervalSeconds, getHealCandidateRegionIds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, setClipRegionGain, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -3315,13 +3315,9 @@ export default function Studio() {
                               <ClipGainLine
                                 clipGain={region.gainDb || 0}
                                 activeTool={activeTool}
-                                onChange={(newGain) => setTracksWithHistory(prev => prev.map(t => {
-                                  if (t.id !== track.id) return t;
-                                  const nextRegions = getTrackClipRegions(t).map(item =>
-                                    item.id === region.id ? { ...item, gainDb: newGain } : item
-                                  );
-                                  return withTrackClipRegionBounds(t, nextRegions);
-                                }))}
+                                onChange={(newGain) => setTracksWithHistory(prev => prev.map(t =>
+                                  t.id === track.id ? setClipRegionGain(t, region.id, newGain) : t
+                                ))}
                                 onCommit={() => pushToHistory(tracksRef.current)}
                               />
                             </div>

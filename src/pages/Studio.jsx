@@ -21,6 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
+import { getTrackClipRegions, healTrackRegions, splitTrackRegion } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -1299,22 +1300,26 @@ export default function Studio() {
     setTracksWithHistory(prev => [...prev, { ...track, id: nextId, name: `${track.name} (Copy)` }]); toast.success("Track duplicated");
   };
 
-  // Heal the most recent split boundary on the selected track. Split regions stay
-  // inside their original track, so healing removes only the boundary marker.
+  // Heal adjacent clip regions on the same track without removing the track or source.
   const handleHealSplit = (track) => {
-    const splitPoints = Array.isArray(track.splitPoints) ? track.splitPoints : [];
-    if (splitPoints.length === 0) {
-      toast.error("This track has no split points to heal.");
+    const regions = getTrackClipRegions(track);
+    if (regions.length < 2) {
+      toast.error("This track has no split regions to heal.");
       return;
     }
-    const curr = currentTimeRef.current - (track.startTime || 0);
-    const nearestIndex = splitPoints.reduce((best, point, index) =>
-      Math.abs(point - curr) < Math.abs(splitPoints[best] - curr) ? index : best, 0);
-    setTracksWithHistory(prev => prev.map(t => t.id === track.id
-      ? { ...t, splitPoints: splitPoints.filter((_, index) => index !== nearestIndex) }
-      : t
-    ));
-    toast.success("Split boundary healed.");
+    const curr = currentTimeRef.current;
+    const candidates = regions.slice(0, -1).map((region, index) => ({
+      region,
+      distance: Math.abs(region.timelineStart + (region.sourceEnd - region.sourceStart) - curr),
+    }));
+    const nearest = candidates.reduce((best, item) => item.distance < best.distance ? item : best, candidates[0]);
+    const healed = healTrackRegions({ ...track, clipRegions: regions }, nearest.region.id);
+    if (!healed.healed) {
+      toast.error("These regions cannot be healed because their source or timeline edges do not match.");
+      return;
+    }
+    setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...healed, healed: undefined } : t));
+    toast.success("Adjacent regions rejoined.");
     sounds.nav();
   };
 
@@ -1456,23 +1461,23 @@ export default function Studio() {
 
     const curr = currentTimeRef.current;
     let splitCount = 0;
-    const updatedTracks = tracks.map(t => {
-      if (!selectedTrackIds.includes(t.id) || !t.waveform || t.waveform.length === 0) return t;
-      const clipStart = t.startTime !== undefined ? t.startTime : 0;
-      const clipDuration = t.duration !== undefined ? t.duration : 40;
-      const localSplit = Math.round((curr - clipStart) * 1000) / 1000;
-      if (localSplit <= 0 || localSplit >= clipDuration) return t;
-      const splitPoints = Array.isArray(t.splitPoints) ? t.splitPoints : [];
-      if (splitPoints.some(point => Math.abs(point - localSplit) < 0.001)) return t;
-      splitCount++;
-      return { ...t, splitPoints: [...splitPoints, localSplit].sort((a, b) => a - b) };
+    const updatedTracks = tracks.map(track => {
+      if (!selectedTrackIds.includes(track.id) || !track.waveform?.length) return track;
+      const regions = getTrackClipRegions(track);
+      const next = splitTrackRegion(
+        { ...track, clipRegions: regions },
+        curr,
+        (side, region) => `region-${track.id}-${Date.now()}-${side}-${region.id}`
+      );
+      if (next.clipRegions.length === regions.length + 1) splitCount++;
+      return next;
     });
 
     if (splitCount > 0) {
       setTracksWithHistory(updatedTracks);
-      toast.success("Waveform split on the same track");
+      toast.success("Clip split into two regions on the same track");
     } else {
-      toast.error("Playhead is not positioned over the selected waveform");
+      toast.error("Playhead is not positioned inside a selected clip region");
     }
   };
 
@@ -2577,15 +2582,18 @@ export default function Studio() {
                         width: `${(track.duration !== undefined ? track.duration : 40) * 20 * zoom}px`
                       }}
                     >
-                      {/* Split boundaries divide the waveform visually without adding track rows. */}
-                      {(Array.isArray(track.splitPoints) ? track.splitPoints : []).map((point, index) => (
-                        <div
-                          key={`split-${track.id}-${index}-${point}`}
-                          className="absolute top-0 bottom-0 z-30 pointer-events-none"
-                          style={{ left: `${(point / (track.duration || 40)) * 100}%`, width: '3px', transform: 'translateX(-1px)', background: 'rgba(255,255,255,0.95)', boxShadow: '0 0 0 1px rgba(0,0,0,0.75), 0 0 8px rgba(255,255,255,0.35)' }}
-                          title={`Split at ${point.toFixed(3)}s`}
-                        />
-                      ))}
+                      {/* Region seams are rendered inside the original track lane. */}
+                      {getTrackClipRegions(track).slice(1).map((region, index) => {
+                        const offset = region.timelineStart - (track.startTime || 0);
+                        return (
+                          <div
+                            key={`region-seam-${track.id}-${region.id}`}
+                            className="absolute top-0 bottom-0 z-30 pointer-events-none"
+                            style={{ left: `${(offset / (track.duration || 40)) * 100}%`, width: '3px', transform: 'translateX(-1px)', background: 'rgba(255,255,255,0.95)', boxShadow: '0 0 0 1px rgba(0,0,0,0.75), 0 0 8px rgba(255,255,255,0.35)' }}
+                            title={`Clip region boundary ${index + 1}`}
+                          />
+                        );
+                      })}
 
                       {/* Left Trim Handle */}
                       <div 

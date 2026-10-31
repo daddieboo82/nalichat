@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, getTrackClipRegions, healTrackRegions, moveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -2628,7 +2628,10 @@ export default function Studio() {
                             hideEditTooltip();
                             if (target.dataset.newStartTime !== undefined) {
                               const newStartTime = parseFloat(target.dataset.newStartTime);
-                              setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t));
+                              const delta = newStartTime - initialStartTime;
+                              setTracksWithHistory(prev => prev.map(t =>
+                                t.id === track.id ? moveTrackClipRegions(t, delta) : t
+                              ));
                               delete target.dataset.newStartTime;
                             }
                           };
@@ -2674,12 +2677,15 @@ export default function Studio() {
                               const target = event.currentTarget;
                               const startX = event.clientX;
                               const initialStart = region.timelineStart;
+                              const clipContainer = target.parentElement;
+                              const previousOverflow = clipContainer?.style.overflow || '';
                               let moved = false;
                               target.setPointerCapture(event.pointerId);
                               const onMove = (moveEvent) => {
                                 const delta = (moveEvent.clientX - startX) / (20 * zoom);
                                 if (Math.abs(delta) < 0.015 && !moved) return;
                                 moved = true;
+                                if (clipContainer) clipContainer.style.overflow = 'visible';
                                 const nextStart = Math.max(0, initialStart + delta);
                                 target.style.left = `${((nextStart - trackStart) / trackDuration) * 100}%`;
                                 target.dataset.timelineStart = String(nextStart);
@@ -2688,6 +2694,7 @@ export default function Studio() {
                                 target.releasePointerCapture(upEvent.pointerId);
                                 target.removeEventListener('pointermove', onMove);
                                 target.removeEventListener('pointerup', onUp);
+                                if (clipContainer) clipContainer.style.overflow = previousOverflow;
                                 if (target.dataset.timelineStart !== undefined) {
                                   const nextStart = Number(target.dataset.timelineStart);
                                   delete target.dataset.timelineStart;

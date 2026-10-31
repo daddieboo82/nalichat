@@ -3004,7 +3004,7 @@ export default function Studio() {
                                 height: '100%',
                               }}
                             >
-                              <TrackWaveformSVG track={{ ...track, waveform: regionWaveform }} />
+                              <TrackWaveformSVG track={{ ...track, id: `${track.id}-${region.id}`, waveform: regionWaveform }} />
                             </div>
                           );
                         })}

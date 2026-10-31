@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { getTrackClipRegions, healTrackRegions, splitTrackRegion } from '@/lib/studioClipRegions';
+import { getTrackClipRegions, healTrackRegions, moveClipRegion, splitTrackRegion } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -176,6 +176,7 @@ export default function Studio() {
   const [newTrackInstrument, setNewTrackInstrument] = useState('default');
   const [newTrackMidiChannel, setNewTrackMidiChannel] = useState('1');
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
+  const [selectedClipRegion, setSelectedClipRegion] = useState(null);
 
   const maxTracks = MAX_TRACKS;
   const [recordingStartTime, setRecordingStartTime] = useState(null);
@@ -2628,6 +2629,73 @@ export default function Studio() {
                         width: `${(track.duration !== undefined ? track.duration : 40) * 20 * zoom}px`
                       }}
                     >
+                      {/* Independent region hit targets stay inside this track's single clip lane. */}
+                      {getTrackClipRegions(track).map((region) => {
+                        const trackStart = track.startTime || 0;
+                        const trackDuration = track.duration || 40;
+                        const regionDuration = region.sourceEnd - region.sourceStart;
+                        const regionLeft = ((region.timelineStart - trackStart) / trackDuration) * 100;
+                        const regionWidth = (regionDuration / trackDuration) * 100;
+                        const regionKey = `${track.id}:${region.id}`;
+                        const isRegionSelected = selectedClipRegion === regionKey;
+                        return (
+                          <div
+                            key={region.id}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Audio region ${region.id} on track ${track.name || track.id}`}
+                            onPointerDown={(event) => {
+                              event.stopPropagation();
+                              setSelectedClipRegion(regionKey);
+                              if (track.locked || activeTool !== 'grab') return;
+                              const target = event.currentTarget;
+                              const startX = event.clientX;
+                              const initialStart = region.timelineStart;
+                              let moved = false;
+                              target.setPointerCapture(event.pointerId);
+                              const onMove = (moveEvent) => {
+                                const delta = (moveEvent.clientX - startX) / (20 * zoom);
+                                if (Math.abs(delta) < 0.015 && !moved) return;
+                                moved = true;
+                                const nextStart = Math.max(0, initialStart + delta);
+                                target.style.left = `${((nextStart - trackStart) / trackDuration) * 100}%`;
+                                target.dataset.timelineStart = String(nextStart);
+                              };
+                              const onUp = (upEvent) => {
+                                target.releasePointerCapture(upEvent.pointerId);
+                                target.removeEventListener('pointermove', onMove);
+                                target.removeEventListener('pointerup', onUp);
+                                if (target.dataset.timelineStart !== undefined) {
+                                  const nextStart = Number(target.dataset.timelineStart);
+                                  delete target.dataset.timelineStart;
+                                  setTracksWithHistory(previous => previous.map(item =>
+                                    item.id === track.id ? moveClipRegion(item, region.id, nextStart) : item
+                                  ));
+                                }
+                              };
+                              target.addEventListener('pointermove', onMove);
+                              target.addEventListener('pointerup', onUp);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                setSelectedClipRegion(regionKey);
+                              }
+                            }}
+                            className={cn(
+                              "absolute top-0 bottom-0 z-40 border-x border-transparent",
+                              activeTool === 'grab' ? "cursor-grab active:cursor-grabbing" : "pointer-events-none",
+                              isRegionSelected ? "border-primary bg-primary/10" : "hover:border-white/50"
+                            )}
+                            style={{ left: `${regionLeft}%`, width: `${regionWidth}%` }}
+                          >
+                            <span className="absolute top-1 left-1 text-[8px] leading-none text-white/80 bg-black/40 rounded px-1 pointer-events-none">
+                              {isRegionSelected ? "SELECTED REGION" : ""}
+                            </span>
+                          </div>
+                        );
+                      })}
+
                       {/* Region seams are rendered inside the original track lane. */}
                       {getTrackClipRegions(track).slice(1).map((region, index) => {
                         const offset = region.timelineStart - (track.startTime || 0);

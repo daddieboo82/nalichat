@@ -1508,6 +1508,7 @@ export default function Studio() {
 
     const curr = currentTimeRef.current;
     let splitCount = 0;
+    let firstSplitSelection = null;
     const updatedTracks = tracks.map(track => {
       if (!selectedTrackIds.includes(track.id) || !track.waveform?.length) return track;
       const regions = getTrackClipRegions(track);
@@ -1516,12 +1517,19 @@ export default function Studio() {
         curr,
         (side, region) => `region-${track.id}-${Date.now()}-${side}-${region.id}`
       );
-      if (next.clipRegions.length === regions.length + 1) splitCount++;
+      if (next.clipRegions.length === regions.length + 1) {
+        splitCount++;
+        if (!firstSplitSelection) {
+          const rightRegion = next.clipRegions.find(region => Math.abs(region.timelineStart - curr) < 0.001);
+          if (rightRegion) firstSplitSelection = `${track.id}:${rightRegion.id}`;
+        }
+      }
       return next;
     });
 
     if (splitCount > 0) {
       setTracksWithHistory(updatedTracks);
+      if (firstSplitSelection) setSelectedClipRegion(firstSplitSelection);
       toast.success("Clip split into two regions on the same track");
     } else {
       toast.error("Playhead is not positioned inside a selected clip region");

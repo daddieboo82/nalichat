@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getAutomationValueAtTime, getClipRegionFadeGainAtTime, getClipRegionGain, getTrackFadeGainAtTime, getTrackRegionFadeGainAtTime, getTrackRegionRenderSchedule } from '../lib/audioProcessing';
-import { cutClipRegionSide, slipClipRegion } from '../lib/studioClipRegions';
+import { cutClipRegionSide, setClipRegionGain, slipClipRegion } from '../lib/studioClipRegions';
 
 describe('timeline automation interpolation', () => {
   it('holds the track base value before the first point and ramps into it', () => {
@@ -75,6 +75,38 @@ describe('track fade envelope', () => {
     const region = { timelineStart: 0, sourceStart: 0, sourceEnd: 4, fadeOut: 0.25 };
     expect(getTrackRegionFadeGainAtTime(track, region, 3.5)).toBe(0.5);
     expect(getTrackRegionFadeGainAtTime(track, region, 4)).toBe(0);
+  });
+});
+
+describe('independent clip gain edits', () => {
+  const track = {
+    id: 'track',
+    clipRegions: [
+      { id: 'first', timelineStart: 0, sourceStart: 0, sourceEnd: 3, gainDb: 0 },
+      { id: 'second', timelineStart: 5, sourceStart: 3, sourceEnd: 6, gainDb: -4 },
+    ],
+  };
+
+  it('changes only the selected region and preserves its edit boundaries', () => {
+    const updated = setClipRegionGain(track, 'second', 7.5);
+
+    expect(updated.clipRegions).toEqual([
+      track.clipRegions[0],
+      { ...track.clipRegions[1], gainDb: 7.5 },
+    ]);
+    expect(updated.clipRegions[1]).toMatchObject({
+      timelineStart: 5, sourceStart: 3, sourceEnd: 6,
+    });
+  });
+
+  it('clamps clip gain to the supported plus-or-minus 12 dB range', () => {
+    expect(setClipRegionGain(track, 'first', 30).clipRegions[0].gainDb).toBe(12);
+    expect(setClipRegionGain(track, 'first', -30).clipRegions[0].gainDb).toBe(-12);
+  });
+
+  it('leaves the track unchanged when the selected region no longer exists', () => {
+    const updated = setClipRegionGain(track, 'stale-region', 5);
+    expect(updated.clipRegions).toEqual(track.clipRegions);
   });
 });
 

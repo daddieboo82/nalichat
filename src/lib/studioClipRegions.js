@@ -49,7 +49,10 @@ export function normalizeClipRegion(region, fallbackId = 'region') {
  * After a track is rendered to a timeline-aligned audio file, the new source
  * offset for each region is its former timeline position in that rendered file.
  */
-export function rebaseClipRegionsToRenderedTimeline(regions) {
+export function rebaseClipRegionsToRenderedTimeline(
+  regions,
+  { resetGain = false, resetFades = false } = {}
+) {
   if (!Array.isArray(regions)) return [];
   return regions.map(region => {
     const normalized = normalizeClipRegion(region);
@@ -59,6 +62,10 @@ export function rebaseClipRegionsToRenderedTimeline(regions) {
       ...normalized,
       sourceStart: normalized.timelineStart,
       sourceEnd: normalized.timelineStart + duration,
+      // Track Commit bakes these controls into the new audio file. Clear only
+      // the controls that were rendered so later playback cannot apply them twice.
+      ...(resetGain ? { gainDb: 0 } : {}),
+      ...(resetFades ? { fadeIn: 0, fadeOut: 0 } : {}),
     };
   }).filter(Boolean);
 }

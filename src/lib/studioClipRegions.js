@@ -165,6 +165,29 @@ export function splitTrackRegion(track, timelineTime, createId = (() => 'region'
 }
 
 /** Join adjacent regions only when their timeline and source edges are contiguous. */
+/** Return adjacent heal boundaries ordered by distance from the playhead. */
+export function getHealCandidateRegionIds(regions, selectedRegionId, playheadTime = 0) {
+  const ordered = [...(regions || [])].sort((a, b) => a.timelineStart - b.timelineStart);
+  const selectedIndex = ordered.findIndex(region => region.id === selectedRegionId);
+  if (selectedIndex < 0) return [];
+  const candidates = [];
+  if (selectedIndex > 0) {
+    const left = ordered[selectedIndex - 1];
+    candidates.push({
+      id: left.id,
+      distance: Math.abs(left.timelineStart + left.sourceEnd - left.sourceStart - playheadTime),
+    });
+  }
+  if (selectedIndex < ordered.length - 1) {
+    const current = ordered[selectedIndex];
+    candidates.push({
+      id: current.id,
+      distance: Math.abs(current.timelineStart + current.sourceEnd - current.sourceStart - playheadTime),
+    });
+  }
+  return candidates.sort((a, b) => a.distance - b.distance).map(candidate => candidate.id);
+}
+
 export function healTrackRegions(track, regionId) {
   const regions = getTrackClipRegions(track);
   const index = regions.findIndex(region => region.id === regionId);

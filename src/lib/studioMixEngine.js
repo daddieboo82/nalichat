@@ -148,7 +148,6 @@ export function createMixEngine() {
 
       if (structureChanged) {
         rebuild(trackId, track || {}, nextGain);
-        return true;
       }
 
       entry.track = track;
@@ -156,6 +155,9 @@ export function createMixEngine() {
       if (entry.trackGain) {
         entry.trackGain.gain.setTargetAtTime(nextGain, context.currentTime, 0.01);
       }
+      // Preserve the timeline's automated pan when a plugin/send change forces
+      // the channel strip to rebuild. Otherwise the rebuild briefly snaps the
+      // panner back to the static track pan until the next transport tick.
       const panner = entry.nodes.find(n => n && n.pan);
       if (panner) {
         const panValue = typeof pan === 'number' ? pan : (track?.pan ?? 50);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getTrackRegionRenderSchedule } from '../lib/audioProcessing';
+import { cutClipRegionSide, slipClipRegion } from '../lib/studioClipRegions';
 
 describe('offline audio region scheduling', () => {
   it('renders only the surviving source ranges at their timeline positions', () => {
@@ -40,6 +41,32 @@ describe('offline audio region scheduling', () => {
     };
 
     expect(getTrackRegionRenderSchedule(track, 8)).toEqual([]);
+  });
+
+  it('exports only the retained side after a directional Cut', () => {
+    const track = {
+      duration: 10,
+      fullDuration: 10,
+      clipRegions: [{ id: 'clip', timelineStart: 0, sourceStart: 0, sourceEnd: 10 }],
+    };
+    const cut = cutClipRegionSide(track, 'clip', 3, { direction: 'right' });
+
+    expect(getTrackRegionRenderSchedule(cut, 10)).toEqual([
+      { timelineStart: 0, sourceStart: 0, duration: 3 },
+    ]);
+  });
+
+  it('exports the slipped source range at the region’s unchanged timeline position', () => {
+    const track = {
+      duration: 10,
+      fullDuration: 10,
+      clipRegions: [{ id: 'clip', timelineStart: 4, sourceStart: 1, sourceEnd: 4 }],
+    };
+    const slipped = slipClipRegion(track, 'clip', 2);
+
+    expect(getTrackRegionRenderSchedule(slipped, 10)).toEqual([
+      { timelineStart: 4, sourceStart: 3, duration: 3 },
+    ]);
   });
 
   it('supports legacy unsplit tracks using their start and clip offsets', () => {

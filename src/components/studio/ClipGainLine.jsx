@@ -21,7 +21,6 @@ export default function ClipGainLine({ clipGain = 0, onChange, onPreviewChange, 
     e.stopPropagation();
     const target = e.currentTarget;
     const container = target.parentElement;
-    const rect = container.getBoundingClientRect();
     target.setPointerCapture(e.pointerId);
 
     const startY = e.clientY;

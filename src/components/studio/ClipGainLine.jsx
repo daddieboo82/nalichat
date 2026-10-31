@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
  * Range: -12 dB to +12 dB. Default: 0 dB (center).
  * The line position maps: top = +12dB, bottom = -12dB, center = 0dB.
  */
-export default function ClipGainLine({ clipGain = 0, onChange, onCommit, activeTool }) {
+export default function ClipGainLine({ clipGain = 0, onChange, onPreviewChange, onCommit, activeTool }) {
   // Only show the gain line when the Smart or Trim tool is active (Pro Tools shows it contextually)
   const visible = activeTool === 'smart' || activeTool === 'trim';
 
@@ -39,6 +39,8 @@ export default function ClipGainLine({ clipGain = 0, onChange, onCommit, activeT
         badge.style.opacity = '1';
       }
       target.dataset.newGain = newGain;
+      // Preview the gain while dragging so the playing mix responds immediately.
+      if (onPreviewChange) onPreviewChange(newGain);
     };
 
     const handleUp = (upEvent) => {

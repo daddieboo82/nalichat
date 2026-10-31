@@ -40,6 +40,39 @@ export function normalizeClipRegion(region, fallbackId = 'region') {
   };
 }
 
+/**
+ * Remap existing clip source ranges after an AudioSuite operation replaces the
+ * source file. Timeline positions stay put; pitch/stretch scale source offsets,
+ * and reverse mirrors source ranges across the new file duration.
+ */
+export function remapClipRegionSources(regions, newDuration, transform = 'none', sourceScale = 1) {
+  const duration = Math.max(0, finite(newDuration, NaN));
+  if (!Number.isFinite(duration) || duration <= 0 || !Array.isArray(regions)) return [];
+  const scale = Math.max(0.000001, finite(sourceScale, 1));
+
+  return regions
+    .map((region, index) => normalizeClipRegion(region, `remapped-region-${index}`))
+    .filter(Boolean)
+    .map(region => {
+      const sourceStart = transform === 'reverse'
+        ? duration - region.sourceEnd
+        : (transform === 'pitch' || transform === 'stretch')
+          ? region.sourceStart * scale
+          : region.sourceStart;
+      const sourceEnd = transform === 'reverse'
+        ? duration - region.sourceStart
+        : (transform === 'pitch' || transform === 'stretch')
+          ? region.sourceEnd * scale
+          : region.sourceEnd;
+      return normalizeClipRegion({
+        ...region,
+        sourceStart: Math.max(0, Math.min(duration, sourceStart)),
+        sourceEnd: Math.max(0, Math.min(duration, sourceEnd)),
+      }, region.id);
+    })
+    .filter(Boolean);
+}
+
 export function getTrackClipRegions(track) {
   if (!track || typeof track !== 'object') return [];
   if (Array.isArray(track.clipRegions)) {

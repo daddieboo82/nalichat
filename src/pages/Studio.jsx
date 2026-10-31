@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -2614,7 +2614,10 @@ export default function Studio() {
                             }
                             const deltaTime = deltaX / (20 * zoom);
                             let newStartTime = Math.max(0, initialStartTime + deltaTime);
-                            if (editMode === 'grid') newStartTime = Math.round(newStartTime / gridSize) * gridSize;
+                            if (editMode === 'grid') {
+                              const gridInterval = getGridIntervalSeconds(gridSize, bpm, timeSignature);
+                              newStartTime = Math.round(newStartTime / gridInterval) * gridInterval;
+                            }
                             target.style.left = `${newStartTime * 20 * zoom}px`;
                             target.dataset.newStartTime = newStartTime;
                             showEditTooltip(moveEvent.clientX, moveEvent.clientY, newStartTime);
@@ -2691,8 +2694,8 @@ export default function Studio() {
                                 if (clipContainer) clipContainer.style.overflow = 'visible';
                                 let nextStart = Math.max(0, initialStart + delta);
                                 if (editMode === 'grid') {
-                                  const safeGrid = Math.max(0.001, Number(gridSize) || 1);
-                                  nextStart = Math.round(nextStart / safeGrid) * safeGrid;
+                                  const gridInterval = getGridIntervalSeconds(gridSize, bpm, timeSignature);
+                                  nextStart = Math.round(nextStart / gridInterval) * gridInterval;
                                 }
                                 target.style.left = `${((nextStart - trackStart) / trackDuration) * 100}%`;
                                 target.dataset.timelineStart = String(nextStart);

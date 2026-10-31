@@ -5,6 +5,8 @@ import {
   countActiveEffects,
   getTrackEffects,
   FX_CHAIN_ORDER,
+  getSortedAutomationPoints,
+  getAutomationValueAtTime,
 } from '@/lib/audioProcessing';
 
 describe('trackGainValue', () => {
@@ -76,5 +78,39 @@ describe('countActiveEffects', () => {
   it('never counts more than the known chain slots', () => {
     const all = Object.fromEntries(FX_CHAIN_ORDER.map(id => [id, { enabled: true }]));
     expect(countActiveEffects({ ...all, bogusPlugin: { enabled: true } })).toBe(FX_CHAIN_ORDER.length);
+  });
+});
+
+
+describe('track automation interpolation', () => {
+  const points = [
+    { time: 4, value: 80 },
+    { time: 2, value: 40 },
+    { time: 2, value: 50 },
+    { time: 8, value: 20 },
+  ];
+
+  it('sorts points and keeps the last edit at duplicate timestamps', () => {
+    expect(getSortedAutomationPoints(points, 0)).toEqual([
+      { time: 2, value: 50 },
+      { time: 4, value: 80 },
+      { time: 8, value: 20 },
+    ]);
+  });
+
+  it('uses the base fader before the first point and linearly interpolates between points', () => {
+    expect(getAutomationValueAtTime(points, 0, 60, 0)).toBe(60);
+    expect(getAutomationValueAtTime(points, 1, 60, 0)).toBeCloseTo(55);
+    expect(getAutomationValueAtTime(points, 3, 60, 0)).toBeCloseTo(65);
+    expect(getAutomationValueAtTime(points, 6, 60, 0)).toBeCloseTo(50);
+  });
+
+  it('holds the last automation value and respects the lane start time', () => {
+    expect(getAutomationValueAtTime(points, 10, 60, 0)).toBe(20);
+    expect(getAutomationValueAtTime(points, 2, 60, 2)).toBe(60);
+    expect(getSortedAutomationPoints(points, 3)).toEqual([
+      { time: 4, value: 80 },
+      { time: 8, value: 20 },
+    ]);
   });
 });

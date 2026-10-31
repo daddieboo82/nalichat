@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, cutTrackTimelineRange, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -1605,7 +1605,22 @@ export default function Studio() {
       setTracksWithHistory(prev => prev.map(t => {
         if (t.id !== trackId) return t;
         if (t.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(t.audioUrl); } catch (e) { /* ignore */ } }
-        return { ...t, audioUrl: url, waveform, duration, fullDuration: duration, clipStart: 0 };
+        const timelineStart = t.startTime || 0;
+        const regions = [{
+          id: `instrument-${trackId}-${Date.now()}`,
+          timelineStart,
+          sourceStart: 0,
+          sourceEnd: duration,
+        }];
+        return withTrackClipRegionBounds({
+          ...t,
+          audioUrl: url,
+          waveform,
+          duration: 0,
+          fullDuration: duration,
+          clipStart: 0,
+          clipRegions: regions,
+        }, regions);
       }));
       toast.success(`${getInstrument(instrumentId).name} rendered`, { id: toastId });
       sounds.success();
@@ -3339,11 +3354,47 @@ export default function Studio() {
         open={showAudioSuite}
         onOpenChange={setShowAudioSuite}
         track={tracks.find(t => selectedTrackIds.includes(t.id))}
-        onProcess={({ audioUrl, waveform, duration }) => {
+        onProcess={({ audioUrl, waveform, duration, sourceTransform, sourceScale }) => {
           const track = tracks.find(t => selectedTrackIds.includes(t.id));
           if (!track) return;
           if (track.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(track.audioUrl); } catch (e) {} }
-          setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, audioUrl, waveform, duration, fullDuration: duration, clipStart: 0 } : t));
+
+          setTracksWithHistory(previous => previous.map(item => {
+            if (item.id !== track.id) return item;
+            const existingRegions = getTrackClipRegions(item);
+            const scale = Number.isFinite(Number(sourceScale)) && Number(sourceScale) > 0
+              ? Number(sourceScale)
+              : 1;
+            const mappedRegions = existingRegions.map(region => {
+              const sourceStart = sourceTransform === 'reverse'
+                ? duration - region.sourceEnd
+                : (sourceTransform === 'pitch' || sourceTransform === 'stretch')
+                  ? region.sourceStart * scale
+                  : region.sourceStart;
+              const sourceEnd = sourceTransform === 'reverse'
+                ? duration - region.sourceStart
+                : (sourceTransform === 'pitch' || sourceTransform === 'stretch')
+                  ? region.sourceEnd * scale
+                  : region.sourceEnd;
+              const clampedStart = Math.max(0, Math.min(duration, sourceStart));
+              const clampedEnd = Math.max(0, Math.min(duration, sourceEnd));
+              return {
+                ...region,
+                sourceStart: clampedStart,
+                sourceEnd: clampedEnd,
+              };
+            }).filter(region => region.sourceEnd - region.sourceStart > 0.001);
+
+            return withTrackClipRegionBounds({
+              ...item,
+              audioUrl,
+              waveform,
+              duration: 0,
+              fullDuration: duration,
+              clipStart: 0,
+              clipRegions: mappedRegions,
+            }, mappedRegions);
+          }));
         }}
       />
       </Suspense>

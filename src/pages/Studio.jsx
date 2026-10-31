@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, cutTrackTimelineRange, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, remapClipRegionSources, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -3445,14 +3445,7 @@ export default function Studio() {
           setTracksWithHistory(previous => previous.map(item => {
             if (item.id !== track.id) return item;
             const { effects: _effects, ...rest } = item;
-            const committedRegions = getTrackClipRegions(item).map(region => {
-              const regionDuration = region.sourceEnd - region.sourceStart;
-              return {
-                ...region,
-                sourceStart: region.timelineStart,
-                sourceEnd: region.timelineStart + regionDuration,
-              };
-            });
+            const committedRegions = rebaseClipRegionsToRenderedTimeline(getTrackClipRegions(item));
             return withTrackClipRegionBounds({
               ...rest,
               audioUrl: newAudioUrl,

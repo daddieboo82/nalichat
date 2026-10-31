@@ -1679,9 +1679,25 @@ export default function Studio() {
     try {
       const { vocals, instrumental } = await separateStems(track.audioUrl);
       const nextId = nextTrackId(tracks);
-      setTracksWithHistory(prev => [...prev,
-        { ...track, id: nextId, name: `${track.name} (Vocals/Highs)`, color: "bg-green-500", audioUrl: vocals.url, waveform: vocals.waveform, duration: vocals.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined },
-        { ...track, id: nextId + 1, name: `${track.name} (Instrumental/Lows)`, color: "bg-green-500", audioUrl: instrumental.url, waveform: instrumental.waveform, duration: instrumental.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined }
+      const sourceRegions = getTrackClipRegions(track);
+      const createStemTrack = (id, name, stem) => withTrackClipRegionBounds({
+        ...track,
+        id,
+        name,
+        color: "bg-green-500",
+        audioUrl: stem.url,
+        waveform: stem.waveform,
+        duration: 0,
+        fullDuration: stem.duration,
+        clipStart: 0,
+        clipRegions: sourceRegions,
+        segments: undefined,
+        effects: undefined,
+      }, sourceRegions);
+      setTracksWithHistory(prev => [
+        ...prev,
+        createStemTrack(nextId, `${track.name} (Vocals/Highs)`, vocals),
+        createStemTrack(nextId + 1, `${track.name} (Instrumental/Lows)`, instrumental),
       ]);
       toast.success("Stems separated successfully!", { id: toastId });
     } catch (e) {

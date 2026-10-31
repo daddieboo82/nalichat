@@ -47,11 +47,12 @@ export default function ClipGainLine({ clipGain = 0, onChange, onPreviewChange, 
       target.releasePointerCapture(upEvent.pointerId);
       target.removeEventListener('pointermove', handleMove);
       target.removeEventListener('pointerup', handleUp);
+      target.removeEventListener('pointercancel', handleCancel);
       const newGainStr = target.dataset.newGain;
       if (newGainStr !== undefined) {
         const newGain = parseFloat(newGainStr);
-        onChange(newGain);
-        if (onCommit) onCommit();
+        if (onChange) onChange(newGain);
+        if (onCommit) onCommit(newGain);
         delete target.dataset.newGain;
       }
       // Fade out the badge after a delay
@@ -61,8 +62,26 @@ export default function ClipGainLine({ clipGain = 0, onChange, onPreviewChange, 
       }
     };
 
+    const handleCancel = (cancelEvent) => {
+      target.removeEventListener('pointermove', handleMove);
+      target.removeEventListener('pointerup', handleUp);
+      target.removeEventListener('pointercancel', handleCancel);
+      try {
+        if (target.hasPointerCapture(cancelEvent.pointerId)) target.releasePointerCapture(cancelEvent.pointerId);
+      } catch { /* the browser may already have released capture */ }
+      delete target.dataset.newGain;
+      target.style.top = `${((12 - startGain) / 24) * 100}%`;
+      const badge = container.querySelector('[data-gain-badge]');
+      if (badge) {
+        badge.textContent = `${startGain > 0 ? '+' : ''}${startGain.toFixed(1)} dB`;
+        badge.style.opacity = '0';
+      }
+      if (onPreviewChange) onPreviewChange(startGain);
+    };
+
     target.addEventListener('pointermove', handleMove);
     target.addEventListener('pointerup', handleUp);
+    target.addEventListener('pointercancel', handleCancel);
   };
 
   return (

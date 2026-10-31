@@ -127,11 +127,11 @@ export function getTrackClipRegions(track) {
     timelineStart: Math.max(0, finite(track.startTime, 0)),
     sourceStart,
     sourceEnd: sourceStart + duration,
-    // Track-wide fades remain on the track envelope; legacy regions do not
-    // inherit them or the combined playback path would apply each fade twice.
+    // Track-wide fades and clip gain remain on the track channel strip.
+    // Legacy regions therefore start with a neutral region-level gain/envelope.
     fadeIn: 0,
     fadeOut: 0,
-    gainDb: track.clipGain,
+    gainDb: 0,
   });
   return region ? [region] : [];
 }

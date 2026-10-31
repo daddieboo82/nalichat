@@ -290,8 +290,6 @@ export function slipClipRegion(track, regionId, sourceDelta) {
   );
   const maxStart = Math.max(0, sourceLimit - duration);
   const sourceStart = Math.max(0, Math.min(maxStart, region.sourceStart + delta));
-  const appliedDelta = sourceStart - region.sourceStart;
-
   return {
     ...track,
     fullDuration: sourceLimit,

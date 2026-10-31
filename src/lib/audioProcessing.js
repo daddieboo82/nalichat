@@ -434,8 +434,28 @@ export async function renderMixToBuffer(tracks, options = {}) {
 
     regions.forEach(region => {
       const source = offline.createBufferSource();
+      const fade = offline.createGain();
       source.buffer = buffer;
-      source.connect(trackInput);
+
+      // Apply the same timeline-based fade envelope used by realtime playback.
+      const regionStart = region.timelineStart;
+      const regionEnd = regionStart + region.duration;
+      const trackStart = Number(track.startTime) || 0;
+      const trackDuration = Math.max(0, Number(track.duration) || 0);
+      const fadeInEnd = trackStart + Math.min(1, Math.max(0, Number(track.fadeIn) || 0)) * trackDuration;
+      const fadeOutStart = trackStart + trackDuration - Math.min(1, Math.max(0, Number(track.fadeOut) || 0)) * trackDuration;
+      const breakpoints = [regionStart, regionEnd, fadeInEnd, fadeOutStart]
+        .filter(time => Number.isFinite(time) && time >= regionStart && time <= regionEnd)
+        .sort((a, b) => a - b)
+        .filter((time, index, values) => index === 0 || Math.abs(time - values[index - 1]) > 0.000001);
+      if (breakpoints.length === 0 || breakpoints[0] > regionStart) breakpoints.unshift(regionStart);
+      fade.gain.setValueAtTime(getTrackFadeGainAtTime(track, breakpoints[0]), breakpoints[0]);
+      breakpoints.slice(1).forEach(time => {
+        fade.gain.linearRampToValueAtTime(getTrackFadeGainAtTime(track, time), time);
+      });
+
+      source.connect(fade);
+      fade.connect(trackInput);
       source.start(region.timelineStart, region.sourceStart, region.duration);
     });
   });

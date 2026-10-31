@@ -411,7 +411,7 @@ export function connectTrackChain(context, source, track, { destination, reverbB
     nodes.push(sendGain);
   }
 
-  return { nodes, trackGain, output, sendGain };
+  return { nodes, trackGain, panner: typeof context.createStereoPanner === 'function' ? output : null, output, sendGain };
 }
 
 /** Master bus: send return + master inserts + master fader. */
@@ -501,10 +501,38 @@ export async function renderMixToBuffer(tracks, options = {}) {
   scheduled.forEach(({ track, buffer, regions }) => {
     if (regions.length === 0) return;
     const trackInput = offline.createGain();
-    connectTrackChain(offline, trackInput, track, {
+    const channel = connectTrackChain(offline, trackInput, track, {
       destination: master.input,
       reverbBus: master.reverbBus,
     });
+
+    // Offline bounces must follow the same volume and pan automation as playback.
+    const trackStart = Math.max(0, Number(track.startTime) || 0);
+    const baseVolume = Math.max(0, Math.min(100, num(track.volume, 75)));
+    const clipGain = Math.pow(10, clamp(num(track.clipGain, 0), -24, 24) / 20);
+    const volumePoints = (track.automationPoints || [])
+      .filter(point => Number.isFinite(Number(point?.time)) && Number.isFinite(Number(point?.value)))
+      .slice().sort((left, right) => Number(left.time) - Number(right.time));
+    if (volumePoints.length > 0) {
+      channel.trackGain.gain.setValueAtTime(baseVolume / 100 * clipGain, 0);
+      channel.trackGain.gain.setValueAtTime(baseVolume / 100 * clipGain, trackStart);
+      volumePoints.forEach(point => {
+        const value = Math.max(0, Math.min(100, Number(point.value))) / 100 * clipGain;
+        channel.trackGain.gain.linearRampToValueAtTime(value, Math.max(trackStart, Number(point.time)));
+      });
+    }
+    const panPoints = (track.panAutomationPoints || [])
+      .filter(point => Number.isFinite(Number(point?.time)) && Number.isFinite(Number(point?.value)))
+      .slice().sort((left, right) => Number(left.time) - Number(right.time));
+    if (channel.panner && panPoints.length > 0) {
+      const basePan = Math.max(0, Math.min(100, num(track.pan, 50)));
+      channel.panner.pan.setValueAtTime((basePan - 50) / 50, 0);
+      channel.panner.pan.setValueAtTime((basePan - 50) / 50, trackStart);
+      panPoints.forEach(point => {
+        const value = Math.max(0, Math.min(100, Number(point.value)));
+        channel.panner.pan.linearRampToValueAtTime((value - 50) / 50, Math.max(trackStart, Number(point.time)));
+      });
+    }
 
     regions.forEach(region => {
       const source = offline.createBufferSource();

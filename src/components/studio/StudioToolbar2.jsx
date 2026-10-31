@@ -178,7 +178,7 @@ export default function StudioToolbar2({
                     </Select>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Choose which side of the cut point to remove</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs">Remove one side of the cut point. With an In/Out selection, Cut removes the selected range.</TooltipContent>
               </Tooltip>
             )}
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Grabber Tool (G)" onClick={() => setActiveTool('grab')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'grab' && "bg-primary/20 text-primary")}><MousePointer2 className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Grabber</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Grabber Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">G</kbd></TooltipContent></Tooltip>

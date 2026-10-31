@@ -1,4 +1,4 @@
-import { moveTrackClipRegions } from '@/lib/studioClipRegions';
+import { getTrackClipRegions, moveTrackClipRegions } from '@/lib/studioClipRegions';
 
 /**
  * Studio keyboard shortcut handler — extracted from Studio.jsx for line-count management.
@@ -56,45 +56,73 @@ export function createStudioKeyHandler(deps) {
     else if (e.key === 'Escape') { e.preventDefault(); setSelectionStart(null); setSelectionEnd(null); setSelectedTrackIds([]); }
     else if (e.key === 'Tab') { e.preventDefault();
       const curr = currentTimeRef.current;
-      if (e.shiftKey) {
-        let prevPeak = null;
-        for (const track of tracks) {
-          if (!track.waveform || track.waveform.length === 0) continue;
-          const trackStart = track.startTime || 0;
-          const fullDuration = track.fullDuration || track.duration || 40;
-          const posInTrack = curr - trackStart;
-          if (posInTrack < 0) continue;
-          const startIdx = Math.floor((posInTrack / fullDuration) * track.waveform.length);
-          for (let i = startIdx - 2; i > 0; i--) {
-            const v = track.waveform[i];
-            if (v > 0.25 && v >= (track.waveform[i-1] || 0) && v >= (track.waveform[i+1] || 0)) {
-              const peakTime = trackStart + (i / track.waveform.length) * fullDuration;
-              if (prevPeak === null || peakTime > prevPeak) prevPeak = peakTime;
-              break;
+      let targetPeak = null;
+      for (const track of tracks) {
+        const waveform = track.waveform;
+        if (!waveform || waveform.length === 0) continue;
+        const regions = getTrackClipRegions(track);
+        const sourceDuration = Math.max(
+          Number(track.fullDuration) || 0,
+          (Number(track.clipStart) || 0) + (Number(track.duration) || 0),
+          ...regions.map(region => region.sourceEnd)
+        );
+        if (sourceDuration <= 0) continue;
+
+        for (const region of regions) {
+          const regionDuration = region.sourceEnd - region.sourceStart;
+          const regionEnd = region.timelineStart + regionDuration;
+          const firstIndex = Math.max(0, Math.floor((region.sourceStart / sourceDuration) * waveform.length));
+          const lastIndex = Math.min(waveform.length - 1, Math.ceil((region.sourceEnd / sourceDuration) * waveform.length) - 1);
+          if (lastIndex - firstIndex < 2) continue;
+
+          if (e.shiftKey) {
+            if (region.timelineStart >= curr) continue;
+            const sourceAtCursor = Math.min(
+              region.sourceEnd,
+              region.sourceStart + Math.max(0, curr - region.timelineStart)
+            );
+            const cursorIndex = Math.floor((sourceAtCursor / sourceDuration) * waveform.length);
+            for (let i = Math.min(lastIndex - 1, cursorIndex - 2); i >= firstIndex + 1; i--) {
+              const value = waveform[i];
+              if (
+                value > 0.25 &&
+                value >= (waveform[i - 1] || 0) &&
+                value >= (waveform[i + 1] || 0)
+              ) {
+                const sourceTime = (i / waveform.length) * sourceDuration;
+                const peakTime = region.timelineStart + (sourceTime - region.sourceStart);
+                if (peakTime < curr - 0.01 && (targetPeak === null || peakTime > targetPeak)) {
+                  targetPeak = peakTime;
+                }
+                break;
+              }
+            }
+          } else {
+            if (regionEnd <= curr) continue;
+            const sourceAtCursor = Math.max(
+              region.sourceStart,
+              region.sourceStart + Math.max(0, curr - region.timelineStart)
+            );
+            const cursorIndex = Math.floor((sourceAtCursor / sourceDuration) * waveform.length);
+            for (let i = Math.max(firstIndex + 1, cursorIndex + 2); i < lastIndex; i++) {
+              const value = waveform[i];
+              if (
+                value > 0.25 &&
+                value >= (waveform[i - 1] || 0) &&
+                value >= (waveform[i + 1] || 0)
+              ) {
+                const sourceTime = (i / waveform.length) * sourceDuration;
+                const peakTime = region.timelineStart + (sourceTime - region.sourceStart);
+                if (peakTime > curr + 0.01 && (targetPeak === null || peakTime < targetPeak)) {
+                  targetPeak = peakTime;
+                }
+                break;
+              }
             }
           }
         }
-        if (prevPeak !== null) { updateCurrentTime(prevPeak); sounds.nav(); }
-      } else {
-        let nextPeak = null;
-        for (const track of tracks) {
-          if (!track.waveform || track.waveform.length === 0) continue;
-          const trackStart = track.startTime || 0;
-          const fullDuration = track.fullDuration || track.duration || 40;
-          const posInTrack = curr - trackStart;
-          if (posInTrack < 0) continue;
-          const startIdx = Math.floor((posInTrack / fullDuration) * track.waveform.length);
-          for (let i = startIdx + 2; i < track.waveform.length - 1; i++) {
-            const v = track.waveform[i];
-            if (v > 0.25 && v >= (track.waveform[i-1] || 0) && v >= (track.waveform[i+1] || 0)) {
-              const peakTime = trackStart + (i / track.waveform.length) * fullDuration;
-              if (nextPeak === null || peakTime < nextPeak) nextPeak = peakTime;
-              break;
-            }
-          }
-        }
-        if (nextPeak !== null) { updateCurrentTime(nextPeak); sounds.nav(); }
       }
+      if (targetPeak !== null) { updateCurrentTime(targetPeak); sounds.nav(); }
     }
     else if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); setLoopActive(!loopActive); }
     else if (e.key === '7') { e.preventDefault(); setMetronomeEnabled(!metronomeEnabled); }

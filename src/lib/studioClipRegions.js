@@ -414,7 +414,7 @@ export function cutTrackTimelineRange(
 }
 
 /** Cut away one side of a region at an absolute timeline position. */
-export function cutClipRegionSide(track, regionId, timelineCut, { shuffle = false } = {}) {
+export function cutClipRegionSide(track, regionId, timelineCut, { shuffle = false, direction = 'right' } = {}) {
   const cut = finite(timelineCut, NaN);
   if (!Number.isFinite(cut)) return { ...track, clipRegions: getTrackClipRegions(track), removed: false };
   const regions = getTrackClipRegions(track);
@@ -425,7 +425,9 @@ export function cutClipRegionSide(track, regionId, timelineCut, { shuffle = fals
   if (cut <= region.timelineStart || cut >= end) return { ...track, clipRegions: regions, removed: false };
   const leftLength = cut - region.timelineStart;
   const rightSourceStart = region.sourceStart + leftLength;
-  const keepRight = cut - region.timelineStart < (end - region.timelineStart) / 2;
+  // Direction is explicit: remove-right keeps the left segment; remove-left
+  // keeps the right segment. The click position no longer changes the behavior.
+  const keepRight = direction === 'left';
   const removedDuration = keepRight ? leftLength : end - cut;
   const kept = keepRight
     ? { ...region, timelineStart: shuffle ? region.timelineStart : cut, sourceStart: rightSourceStart, fadeIn: 0 }

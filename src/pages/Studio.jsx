@@ -1408,8 +1408,25 @@ export default function Studio() {
       const selectedRegionId = separator > 0 ? selectedClipRegion.slice(separator + 1) : '';
       if (selectedTrackId === String(track.id)) {
         const selectedIndex = regions.findIndex(region => region.id === selectedRegionId);
-        if (selectedIndex > 0) candidateIds.push(regions[selectedIndex - 1].id);
-        if (selectedIndex >= 0 && selectedIndex < regions.length - 1) candidateIds.push(regions[selectedIndex].id);
+        if (selectedIndex >= 0) {
+          const adjacent = [];
+          if (selectedIndex > 0) {
+            const left = regions[selectedIndex - 1];
+            adjacent.push({
+              id: left.id,
+              distance: Math.abs(left.timelineStart + (left.sourceEnd - left.sourceStart) - currentTimeRef.current),
+            });
+          }
+          if (selectedIndex < regions.length - 1) {
+            const current = regions[selectedIndex];
+            adjacent.push({
+              id: current.id,
+              distance: Math.abs(current.timelineStart + (current.sourceEnd - current.sourceStart) - currentTimeRef.current),
+            });
+          }
+          adjacent.sort((a, b) => a.distance - b.distance);
+          candidateIds.push(...adjacent.map(candidate => candidate.id));
+        }
       }
     }
 

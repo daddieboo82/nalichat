@@ -142,26 +142,43 @@ export function moveTrackClipRegions(track, timelineDelta) {
   return withTrackClipRegionBounds(track, regions);
 }
 
-/** Slip-edit a region: preserve its timeline position and length, move source in/out together. */
-export function slipClipRegion(track, regionId, sourceStart, sourceDuration) {
-  const start = Math.max(0, finite(sourceStart, NaN));
-  const duration = Math.max(0.001, finite(sourceDuration, NaN));
-  if (!Number.isFinite(start) || !Number.isFinite(duration)) return track;
+/**
+ * Shuffle-move one region. The dragged region takes priority at the drop point;
+ * any regions it collides with are pushed right, cascading as needed. Existing
+ * gaps outside the collision chain remain intact.
+ */
+export function shuffleMoveClipRegion(track, regionId, timelineStart) {
+  const start = Math.max(0, finite(timelineStart, NaN));
+  if (!Number.isFinite(start)) return track;
   const regions = getTrackClipRegions(track);
-  const sourceLimit = Math.max(
-    finite(track.fullDuration, 0),
-    Math.max(0, finite(track.clipStart, 0) + finite(track.duration, 0)),
-    ...regions.map(region => region.sourceEnd)
-  );
-  const clampedStart = Math.min(start, Math.max(0, sourceLimit - duration));
-  return {
-    ...track,
-    fullDuration: sourceLimit,
-    clipRegions: regions.map(region => region.id === regionId
-      ? { ...region, sourceStart: clampedStart, sourceEnd: clampedStart + duration }
-      : region
-    ),
-  };
+  const moving = regions.find(region => region.id === regionId);
+  if (!moving) return { ...track, clipRegions: regions };
+
+  const duration = moving.sourceEnd - moving.sourceStart;
+  const moved = { ...moving, timelineStart: start };
+  let occupiedUntil = start + duration;
+  const others = regions
+    .filter(region => region.id !== regionId)
+    .sort((a, b) => a.timelineStart - b.timelineStart);
+  const shifted = [moved];
+
+  others.forEach(region => {
+    const regionEnd = region.timelineStart + region.sourceEnd - region.sourceStart;
+    if (regionEnd <= start) {
+      shifted.push(region);
+      return;
+    }
+    if (region.timelineStart < occupiedUntil) {
+      const pushed = { ...region, timelineStart: occupiedUntil };
+      shifted.push(pushed);
+      occupiedUntil = pushed.timelineStart + pushed.sourceEnd - pushed.sourceStart;
+      return;
+    }
+    shifted.push(region);
+    occupiedUntil = Math.max(occupiedUntil, regionEnd);
+  });
+
+  return withTrackClipRegionBounds(track, shifted);
 }
 
 /** Trim the left edge non-destructively; move timeline and source starts together. */
@@ -183,27 +200,35 @@ export function trimClipRegionLeft(track, regionId, timelineDelta) {
 }
 
 /** Trim the right edge non-destructively by changing only the source out point. */
-export function trimClipRegionRight(track, regionId, timelineDelta) {
+export function trimClipRegionRight(track, regionId, timelineDelta, { shuffle = false } = {}) {
   const delta = finite(timelineDelta, NaN);
   if (!Number.isFinite(delta)) return track;
-  const regions = getTrackClipRegions(track).map(region => {
-    if (region.id !== regionId) return region;
-    const sourceLimit = Math.max(
-      finite(track.fullDuration, 0),
-      Math.max(0, finite(track.clipStart, 0) + finite(track.duration, 0)),
-      ...getTrackClipRegions(track).map(item => item.sourceEnd)
-    );
-    const nextEnd = Math.min(
-      sourceLimit,
-      Math.max(region.sourceStart + 0.001, region.sourceEnd + delta)
-    );
-    return { ...region, sourceEnd: nextEnd, fadeOut: 0 };
+  const current = getTrackClipRegions(track);
+  const targetIndex = current.findIndex(region => region.id === regionId);
+  if (targetIndex < 0) return { ...track, clipRegions: current };
+  const sourceLimit = Math.max(
+    finite(track.fullDuration, 0),
+    Math.max(0, finite(track.clipStart, 0) + finite(track.duration, 0)),
+    ...current.map(region => region.sourceEnd)
+  );
+  const target = current[targetIndex];
+  const nextEnd = Math.min(
+    sourceLimit,
+    Math.max(target.sourceStart + 0.001, target.sourceEnd + delta)
+  );
+  const appliedDelta = nextEnd - target.sourceEnd;
+  const regions = current.map((region, index) => {
+    if (index === targetIndex) return { ...region, sourceEnd: nextEnd, fadeOut: 0 };
+    if (shuffle && index > targetIndex) {
+      return { ...region, timelineStart: Math.max(0, region.timelineStart + appliedDelta) };
+    }
+    return region;
   });
   return withTrackClipRegionBounds(track, regions);
 }
 
 /** Cut away one side of a region at an absolute timeline position. */
-export function cutClipRegionSide(track, regionId, timelineCut) {
+export function cutClipRegionSide(track, regionId, timelineCut, { shuffle = false } = {}) {
   const cut = finite(timelineCut, NaN);
   if (!Number.isFinite(cut)) return { ...track, clipRegions: getTrackClipRegions(track), removed: false };
   const regions = getTrackClipRegions(track);
@@ -215,10 +240,16 @@ export function cutClipRegionSide(track, regionId, timelineCut) {
   const leftLength = cut - region.timelineStart;
   const rightSourceStart = region.sourceStart + leftLength;
   const keepRight = cut - region.timelineStart < (end - region.timelineStart) / 2;
+  const removedDuration = keepRight ? leftLength : end - cut;
   const kept = keepRight
-    ? { ...region, timelineStart: cut, sourceStart: rightSourceStart, fadeIn: 0 }
+    ? { ...region, timelineStart: shuffle ? region.timelineStart : cut, sourceStart: rightSourceStart, fadeIn: 0 }
     : { ...region, sourceEnd: rightSourceStart, fadeOut: 0 };
-  const next = [...regions];
-  next.splice(index, 1, kept);
+  const next = regions.map((item, itemIndex) => {
+    if (itemIndex === index) return kept;
+    if (shuffle && itemIndex > index) {
+      return { ...item, timelineStart: Math.max(0, item.timelineStart - removedDuration) };
+    }
+    return item;
+  });
   return { ...withTrackClipRegionBounds(track, next), removed: true };
 }

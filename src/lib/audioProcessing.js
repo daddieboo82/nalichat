@@ -1,5 +1,27 @@
 import { getTrackClipRegions } from '@/lib/studioClipRegions';
 
+/**
+ * Build safe source/timeline ranges for an offline render. This keeps WAV,
+ * MP3, and stem exports aligned with the regions used by live playback.
+ */
+export function getTrackRegionRenderSchedule(track, bufferDuration) {
+  const availableDuration = Number(bufferDuration);
+  if (!Number.isFinite(availableDuration) || availableDuration <= 0) return [];
+  return getTrackClipRegions(track)
+    .map(region => {
+      const sourceStart = Math.max(0, region.sourceStart);
+      const sourceEnd = Math.min(availableDuration, region.sourceEnd);
+      const duration = sourceEnd - sourceStart;
+      if (duration <= 0.001) return null;
+      return {
+        timelineStart: Math.max(0, region.timelineStart),
+        sourceStart,
+        duration,
+      };
+    })
+    .filter(Boolean);
+}
+
 // Real client-side audio processing helpers (Web Audio API).
 // These operate on actual audio data — no simulation.
 
@@ -373,22 +395,11 @@ export async function renderMixToBuffer(tracks, options = {}) {
 
   // Bounce the exact same region/source ranges that realtime playback uses.
   // A track owns one mixer channel; each clip region feeds that shared channel.
-  const scheduled = decoded.map(({ track, buffer }) => {
-    const regions = getTrackClipRegions(track)
-      .map(region => {
-        const sourceStart = Math.max(0, region.sourceStart);
-        const sourceEnd = Math.min(buffer.duration, region.sourceEnd);
-        const duration = sourceEnd - sourceStart;
-        if (duration <= 0.001) return null;
-        return {
-          timelineStart: Math.max(0, region.timelineStart),
-          sourceStart,
-          duration,
-        };
-      })
-      .filter(Boolean);
-    return { track, buffer, regions };
-  });
+  const scheduled = decoded.map(({ track, buffer }) => ({
+    track,
+    buffer,
+    regions: getTrackRegionRenderSchedule(track, buffer.duration),
+  }));
 
   const validRegions = scheduled.flatMap(({ regions }) => regions);
   if (validRegions.length === 0) return null;

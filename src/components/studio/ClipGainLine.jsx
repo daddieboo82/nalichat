@@ -68,7 +68,7 @@ export default function ClipGainLine({ clipGain = 0, onChange, onCommit, activeT
       {/* The gain line — a horizontal dashed line across the clip */}
       <div
         onPointerDown={handlePointerDown}
-        className="absolute left-0 right-0 z-30 cursor-ns-resize group/gain"
+        className="absolute left-0 right-0 z-30 cursor-ns-resize pointer-events-auto group/gain"
         style={{ top: `${yPercent}%`, height: '0px' }}
       >
         <div className="absolute left-0 right-0 border-t border-dashed border-yellow-400/60 group-hover/gain:border-yellow-400 transition-colors" />

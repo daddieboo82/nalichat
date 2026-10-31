@@ -2528,9 +2528,15 @@ export default function Studio() {
 
                            const regionDuration = targetRegion.sourceEnd - targetRegion.sourceStart;
                            const keepsRight = timelineCut - targetRegion.timelineStart < regionDuration / 2;
+                           const preview = cutClipRegionSide(track, targetRegion.id, timelineCut);
+                           if (!preview.removed) {
+                             toast.error("The cut point must be inside the selected audio region.");
+                             return;
+                           }
                            setTracksWithHistory(previous => previous.map(item => {
                              if (item.id !== track.id) return item;
                              const result = cutClipRegionSide(item, targetRegion.id, timelineCut);
+                             if (!result.removed) return item;
                              const { removed, ...updatedTrack } = result;
                              return updatedTrack;
                            }));

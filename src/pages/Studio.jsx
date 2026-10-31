@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, cutTrackTimelineRange, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getClipRegionAtTime, getClipSourceTimeAtTime, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -614,22 +614,24 @@ export default function Studio() {
 
       // Region-aware playback: the track keeps one audio source/mixer channel,
       // while each region selects its own source range at its own timeline position.
-      if (isPlaying) {
+      if (isPlaying || isRecording) {
         tracks.forEach(track => {
           if (!track.audioUrl) return;
           const audio = getTrackAudio(track);
           if (!audio) return;
-          const audible = trackMixGain(track, tracks) > 0;
-          const activeRegion = getTrackClipRegions(track).find(region => {
-            const end = region.timelineStart + region.sourceEnd - region.sourceStart;
-            return newTime >= region.timelineStart && newTime < end;
-          });
+
+          // Armed recording tracks receive microphone input; only non-armed tracks
+          // are played back as the overdub monitor while recording.
+          const shouldMonitor = isPlaying && (!isRecording || !track.armed);
+          const audible = shouldMonitor && trackMixGain(track, tracks) > 0;
+          const activeRegion = getClipRegionAtTime(track, newTime);
           if (!audible || !activeRegion) {
             if (!audio.paused) audio.pause();
             audio.dataset.activeRegionId = '';
             return;
           }
-          const sourceTime = activeRegion.sourceStart + (newTime - activeRegion.timelineStart);
+
+          const sourceTime = getClipSourceTimeAtTime(track, newTime);
           if (audio.dataset.activeRegionId !== activeRegion.id) {
             audio.currentTime = sourceTime;
             audio.dataset.activeRegionId = activeRegion.id;
@@ -811,16 +813,14 @@ export default function Studio() {
     tracks.forEach(track => {
       const audio = audioElementsRef.current[track.id];
       if (!audio) return;
-      const region = getTrackClipRegions(track).find(item => {
-        const regionEnd = item.timelineStart + item.sourceEnd - item.sourceStart;
-        return newTime >= item.timelineStart && newTime < regionEnd;
-      });
-      if (!region) {
+      const region = getClipRegionAtTime(track, newTime);
+      const sourceTime = getClipSourceTimeAtTime(track, newTime);
+      if (!region || sourceTime === null) {
         audio.pause();
         audio.dataset.activeRegionId = '';
         return;
       }
-      audio.currentTime = region.sourceStart + (newTime - region.timelineStart);
+      audio.currentTime = sourceTime;
       audio.dataset.activeRegionId = region.id;
     });
   };
@@ -841,13 +841,11 @@ export default function Studio() {
           if (!audio) return;
           
           // Start from the source offset of the region under the playhead.
-          const activeRegion = getTrackClipRegions(track).find(region => {
-            const regionEnd = region.timelineStart + region.sourceEnd - region.sourceStart;
-            return currentTimeRef.current >= region.timelineStart && currentTimeRef.current < regionEnd;
-          });
-          
-          if (activeRegion) {
-            audio.currentTime = activeRegion.sourceStart + (currentTimeRef.current - activeRegion.timelineStart);
+          const activeRegion = getClipRegionAtTime(track, currentTimeRef.current);
+          const sourceTime = getClipSourceTimeAtTime(track, currentTimeRef.current);
+
+          if (activeRegion && sourceTime !== null) {
+            audio.currentTime = sourceTime;
             audio.dataset.activeRegionId = activeRegion.id;
             playPromises.push(
               audio.play().catch(e => { console.error("Audio playback error:", e); return { failed: true }; })
@@ -1125,7 +1123,14 @@ export default function Studio() {
         if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
           const audio = getTrackAudio(track);
           if (!audio) return;
-          audio.currentTime = Math.max(0, recordStartPos - preRoll - (track.startTime || 0));
+          const preRollTime = Math.max(0, recordStartPos - preRoll);
+          const preRollSourceTime = getClipSourceTimeAtTime(track, preRollTime);
+          if (preRollSourceTime === null) {
+            audio.pause();
+            return;
+          }
+          audio.currentTime = preRollSourceTime;
+          audio.dataset.activeRegionId = getClipRegionAtTime(track, preRollTime)?.id || '';
           preRollPlayPromises.push(
             audio.play().then(() => true).catch((error) => {
               console.error("Pre-roll playback error:", error);
@@ -1165,7 +1170,14 @@ export default function Studio() {
           if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
             const audio = getTrackAudio(track);
             if (!audio) return;
-            audio.currentTime = currentTimeRef.current;
+            const sourceTime = getClipSourceTimeAtTime(track, currentTimeRef.current);
+            const activeRegion = getClipRegionAtTime(track, currentTimeRef.current);
+            if (sourceTime === null || !activeRegion) {
+              audio.pause();
+              return;
+            }
+            audio.currentTime = sourceTime;
+            audio.dataset.activeRegionId = activeRegion.id;
             audio.play().catch(e => console.error("Overdub playback error:", e));
           }
         });
@@ -2654,12 +2666,15 @@ export default function Studio() {
                              const clickRatio = Math.max(0, Math.min(1, clickX / rect.width));
                              const newTime = (track.startTime || 0) + ((track.duration || 40) * clickRatio);
                              updateCurrentTime(newTime);
-                             // Play a short snippet from this position
+                             // Scrub only the source audio belonging to the region under
+                             // the pointer; never audition an excised section or a timeline gap.
                              if (track.audioUrl) {
+                               const sourceTime = getClipSourceTimeAtTime(track, newTime);
+                               if (sourceTime === null) return;
                                const audio = getTrackAudio(track);
                                if (!audio) return;
-                               const offset = (track.clipStart || 0) + ((track.duration || 40) * clickRatio);
-                               audio.currentTime = Math.max(0, Math.min(offset, (track.fullDuration || track.duration || 40) - 0.1));
+                               audio.currentTime = sourceTime;
+                               audio.dataset.activeRegionId = getClipRegionAtTime(track, newTime)?.id || '';
                                audio.play().then(() => {
                                  setTimeout(() => audio.pause(), 150);
                                }).catch(() => {});

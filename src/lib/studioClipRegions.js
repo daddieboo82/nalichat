@@ -9,6 +9,20 @@
 const finite = (value, fallback = 0) =>
   Number.isFinite(Number(value)) ? Number(value) : fallback;
 
+/** Convert the toolbar's bar-fraction grid setting into timeline seconds. */
+export function getGridIntervalSeconds(gridSize, bpm, timeSignature = '4/4') {
+  const safeBpm = Math.max(1, finite(bpm, 120));
+  const [rawNumerator, rawDenominator] = String(timeSignature || '4/4').split('/');
+  const numerator = Number(rawNumerator);
+  const denominator = Number(rawDenominator);
+  const beatsPerBar = Number.isFinite(numerator) && numerator > 0
+    && Number.isFinite(denominator) && denominator > 0
+    ? numerator * 4 / denominator
+    : 4;
+  const barsPerGrid = Math.max(0.001, finite(gridSize, 1));
+  return Math.max(0.001, (60 / safeBpm) * beatsPerBar * barsPerGrid);
+}
+
 export function normalizeClipRegion(region, fallbackId = 'region') {
   if (!region || typeof region !== 'object') return null;
   const sourceStart = Math.max(0, finite(region.sourceStart, 0));

@@ -2818,8 +2818,13 @@ export default function Studio() {
                                     0,
                                     Math.min(maxSourceStart, initialSourceStart + delta)
                                   );
-                                  target.dataset.sourceStart = String(nextSourceStart);
-                                  target.style.background = 'rgba(99,102,241,0.24)';
+                                  if (Math.abs(nextSourceStart - initialSourceStart) > 0.001) {
+                                    target.dataset.sourceStart = String(nextSourceStart);
+                                    target.style.background = 'rgba(99,102,241,0.24)';
+                                  } else {
+                                    delete target.dataset.sourceStart;
+                                    target.style.background = '';
+                                  }
                                   showEditTooltip(moveEvent.clientX, moveEvent.clientY, nextSourceStart);
                                 };
                                 const onSlipUp = (upEvent) => {

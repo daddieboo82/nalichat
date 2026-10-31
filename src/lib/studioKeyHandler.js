@@ -1,3 +1,5 @@
+import { moveTrackClipRegions } from '@/lib/studioClipRegions';
+
 /**
  * Studio keyboard shortcut handler — extracted from Studio.jsx for line-count management.
  * Returns a keydown event handler wired to all studio state and actions.
@@ -113,7 +115,7 @@ export function createStudioKeyHandler(deps) {
     else if ((e.ctrlKey || e.metaKey) && e.key === 'Tab') { e.preventDefault(); tabToClip(!e.shiftKey); }
     else if (e.key === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.min(100, currentTimeRef.current + step)); }
     else if (e.key === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.max(0, currentTimeRef.current - step)); }
-    else if (e.key === 'ArrowRight' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = nudgeValue; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) + nudge) } : t)); }
-    else if (e.key === 'ArrowLeft' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = nudgeValue; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) - nudge) } : t)); }
+    else if (e.key === 'ArrowRight' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = nudgeValue; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? moveTrackClipRegions(t, nudge) : t)); }
+    else if (e.key === 'ArrowLeft' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = nudgeValue; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? moveTrackClipRegions(t, -nudge) : t)); }
   };
 }

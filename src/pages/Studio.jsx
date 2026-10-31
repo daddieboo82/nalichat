@@ -1680,20 +1680,23 @@ export default function Studio() {
       const { vocals, instrumental } = await separateStems(track.audioUrl);
       const nextId = nextTrackId(tracks);
       const sourceRegions = getTrackClipRegions(track);
-      const createStemTrack = (id, name, stem) => withTrackClipRegionBounds({
-        ...track,
-        id,
-        name,
-        color: "bg-green-500",
-        audioUrl: stem.url,
-        waveform: stem.waveform,
-        duration: 0,
-        fullDuration: stem.duration,
-        clipStart: 0,
-        clipRegions: sourceRegions,
-        segments: undefined,
-        effects: undefined,
-      }, sourceRegions);
+      const createStemTrack = (id, name, stem) => {
+        const stemRegions = remapClipRegionSources(sourceRegions, stem.duration);
+        return withTrackClipRegionBounds({
+          ...track,
+          id,
+          name,
+          color: "bg-green-500",
+          audioUrl: stem.url,
+          waveform: stem.waveform,
+          duration: 0,
+          fullDuration: stem.duration,
+          clipStart: 0,
+          clipRegions: stemRegions,
+          segments: undefined,
+          effects: undefined,
+        }, stemRegions);
+      };
       setTracksWithHistory(prev => [
         ...prev,
         createStemTrack(nextId, `${track.name} (Vocals/Highs)`, vocals),

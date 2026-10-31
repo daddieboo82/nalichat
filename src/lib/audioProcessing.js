@@ -1,9 +1,5 @@
 import { getTrackClipRegions } from '@/lib/studioClipRegions';
 
-/**
- * Build safe source/timeline ranges for an offline render. This keeps WAV,
- * MP3, and stem exports aligned with the regions used by live playback.
- */
 /** Linear track fade envelope evaluated against the track's timeline bounds. */
 export function getTrackFadeGainAtTime(track, timelineTime) {
   const start = Number(track?.startTime) || 0;
@@ -18,6 +14,10 @@ export function getTrackFadeGainAtTime(track, timelineTime) {
   return Math.min(fadeInGain, fadeOutGain);
 }
 
+/**
+ * Build safe source/timeline ranges for an offline render. This keeps WAV,
+ * MP3, and stem exports aligned with the regions used by live playback.
+ */
 export function getTrackRegionRenderSchedule(track, bufferDuration) {
   const availableDuration = Number(bufferDuration);
   if (!Number.isFinite(availableDuration) || availableDuration <= 0) return [];

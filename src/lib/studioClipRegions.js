@@ -362,6 +362,18 @@ export function slipClipRegion(track, regionId, sourceDelta) {
   };
 }
 
+/** Set one region's independent clip gain without changing its timeline/source bounds. */
+export function setClipRegionGain(track, regionId, gainDb) {
+  const gain = Math.max(-24, Math.min(24, finite(gainDb, 0)));
+  const regions = getTrackClipRegions(track);
+  if (!regions.some(region => region.id === regionId)) {
+    return { ...track, clipRegions: regions };
+  }
+  return withTrackClipRegionBounds(track, regions.map(region =>
+    region.id === regionId ? { ...region, gainDb: gain } : region
+  ));
+}
+
 /** Trim the left edge non-destructively; move timeline and source starts together. */
 export function trimClipRegionLeft(track, regionId, timelineDelta) {
   const delta = finite(timelineDelta, NaN);

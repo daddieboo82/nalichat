@@ -607,22 +607,21 @@ export default function Studio() {
   };
 
   const [draggedTrackId, setDraggedTrackId] = useState(null);
-  const [draggedTrackOffsetY, setDraggedTrackOffsetY] = useState(0);
+  const laneRefsRef = useRef({}); // dragged lanes moved imperatively, outside React's tree
 
   const handleTrackDragStart = (start) => {
     setDraggedTrackId(start.draggableId);
-    setDraggedTrackOffsetY(0);
   };
 
+  // Move the lane directly — re-rendering the drag-and-drop tree on every pointer move is what breaks React.
   const handleTrackDragUpdate = (update) => {
-    // Follow the pointer 1:1 so the grabbed row's waveform lane moves with the
-    // hand instead of jumping a whole row when it crosses a drop target.
-    setDraggedTrackOffsetY(update.destination ? (update.delta?.y || 0) : 0);
+    const lane = laneRefsRef.current[update.draggableId];
+    if (!lane) return;
+    lane.style.transform = update.destination && update.delta?.y ? `translateY(${update.delta.y}px)` : '';
   };
 
   const handleReorderTracks = (result) => {
-    setDraggedTrackId(null);
-    setDraggedTrackOffsetY(0);
+    setDraggedTrackId(null); Object.values(laneRefsRef.current).forEach((lane) => { if (lane) lane.style.transform = ''; });
     if (!result.destination || result.destination.index === result.source.index) return;
     sounds.click();
     setTracksWithHistory(prev => {
@@ -2775,7 +2774,7 @@ export default function Studio() {
                   key={track.id}
                   onClick={(e) => handleTrackClick(e, track.id)}
                   data-testid={`studio-track-row-${track.id}`}
-                  style={{ height: track.trackType === 'vca' ? '96px' : track.trackType === 'folder' ? '48px' : (track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px')), flexShrink: 0, transform: String(track.id) === String(draggedTrackId) ? `translateY(${draggedTrackOffsetY}px)` : undefined }}
+                  ref={(el) => { laneRefsRef.current[track.id] = el; }} style={{ height: track.trackType === 'vca' ? '96px' : track.trackType === 'folder' ? '48px' : (track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px')), flexShrink: 0 }}
                   className={cn(
                     "border-b border-border/20 relative group transition-none shrink-0",
                     String(track.id) === String(draggedTrackId) && "z-30 ring-2 ring-primary/50 shadow-xl opacity-90",

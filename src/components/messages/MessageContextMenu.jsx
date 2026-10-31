@@ -1,6 +1,21 @@
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
+// React must never own nodes among document.body's children: third-party scripts
+// (tag managers, ad units) and our own download links add and remove nodes there,
+// which makes React's insertBefore calls throw "…is not a child of this node".
+// A dedicated host element keeps React's insertions inside a container only it touches.
+let portalHost = null;
+function getPortalHost() {
+  if (typeof document === "undefined") return document.body;
+  if (!portalHost || !portalHost.isConnected) {
+    portalHost = document.createElement("div");
+    portalHost.setAttribute("data-nali-portal", "message-context-menu");
+    document.body.appendChild(portalHost);
+  }
+  return portalHost;
+}
+
 /**
  * A positioned context menu rendered in a portal.
  * Shown on long-press (mobile) or right-click (desktop) on a message bubble.
@@ -46,6 +61,6 @@ export default function MessageContextMenu({ position, items, onClose }) {
         </motion.div>
       </div>
     </AnimatePresence>,
-    document.body
+    getPortalHost()
   );
 }

@@ -2909,7 +2909,6 @@ export default function Studio() {
                               setTracksWithHistory(previous => previous.map(item =>
                                 item.id === track.id ? trimClipRegionLeft(item, region.id, delta) : item
                               ));
-                              pushToHistory(tracksRef.current);
                             }
                             hideEditTooltip();
                           };
@@ -2967,7 +2966,6 @@ export default function Studio() {
                                   ? trimClipRegionRight(item, region.id, delta, { shuffle: editMode === 'shuffle' })
                                   : item
                               ));
-                              pushToHistory(tracksRef.current);
                             }
                             hideEditTooltip();
                           };

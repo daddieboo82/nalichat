@@ -763,7 +763,7 @@ export default function Studio() {
     const audible = track.muted ? false : (hasSolo ? !!track.solo : true);
     if (!audible) return 0;
     const baseVolume = track.volume ?? 75;
-    const automatedVolume = getAutomationValueAtTime(track.automationPoints, timelineTime, baseVolume);
+    const automatedVolume = getAutomationValueAtTime(track.automationPoints, timelineTime, baseVolume, track.startTime || 0);
     return (Math.max(0, Math.min(100, automatedVolume)) / 100) * Math.pow(10, (track.clipGain || 0) / 20);
   };
 
@@ -777,7 +777,7 @@ export default function Studio() {
     const routed = mixEngineRef.current?.syncFade(track.id, fadeGain);
     if (routed) {
       mixEngineRef.current?.syncRegionGain(track.id, regionGain);
-      const automatedPan = getAutomationValueAtTime(track.panAutomationPoints, timelineTime, track.pan ?? 50);
+      const automatedPan = getAutomationValueAtTime(track.panAutomationPoints, timelineTime, track.pan ?? 50, track.startTime || 0);
       mixEngineRef.current?.syncTrack(track.id, track, {
         gain: trackMixGain(track, tracks, timelineTime),
         pan: automatedPan,

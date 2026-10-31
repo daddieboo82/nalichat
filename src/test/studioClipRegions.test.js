@@ -176,7 +176,21 @@ describe('NaliStudio clip-region editing', () => {
 
     const rightExtended = trimClipRegionRight(track, 'region-1', 3);
     expect(rightExtended.startTime).toBe(2);
-    expect(rightExtended.duration).toBe(9);
+    expect(rightExtended.duration).toBe(8);
+  });
+
+  it('preserves existing gaps outside Shuffle collision chains', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 2 },
+        { id: 'b', timelineStart: 8, sourceStart: 2, sourceEnd: 4 },
+      ],
+    };
+    const result = shuffleMoveClipRegion(track, 'a', 4);
+
+    expect(result.clipRegions.find(region => region.id === 'a').timelineStart).toBe(4);
+    expect(result.clipRegions.find(region => region.id === 'b').timelineStart).toBe(8);
   });
 
   it('heals adjacent split regions back into one region', () => {

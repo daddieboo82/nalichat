@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, cutTrackTimelineRange, getClipRegionAtTime, getClipSourceTimeAtTime, getGridIntervalSeconds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getClipRegionAtTime, getClipSourceTimeAtTime, getGridIntervalSeconds, getHealCandidateRegionIds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -1407,26 +1407,7 @@ export default function Studio() {
       const selectedTrackId = separator > 0 ? selectedClipRegion.slice(0, separator) : '';
       const selectedRegionId = separator > 0 ? selectedClipRegion.slice(separator + 1) : '';
       if (selectedTrackId === String(track.id)) {
-        const selectedIndex = regions.findIndex(region => region.id === selectedRegionId);
-        if (selectedIndex >= 0) {
-          const adjacent = [];
-          if (selectedIndex > 0) {
-            const left = regions[selectedIndex - 1];
-            adjacent.push({
-              id: left.id,
-              distance: Math.abs(left.timelineStart + (left.sourceEnd - left.sourceStart) - currentTimeRef.current),
-            });
-          }
-          if (selectedIndex < regions.length - 1) {
-            const current = regions[selectedIndex];
-            adjacent.push({
-              id: current.id,
-              distance: Math.abs(current.timelineStart + (current.sourceEnd - current.sourceStart) - currentTimeRef.current),
-            });
-          }
-          adjacent.sort((a, b) => a.distance - b.distance);
-          candidateIds.push(...adjacent.map(candidate => candidate.id));
-        }
+        candidateIds = getHealCandidateRegionIds(regions, selectedRegionId, currentTimeRef.current);
       }
     }
 

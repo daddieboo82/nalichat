@@ -45,6 +45,24 @@ export function normalizeClipRegion(region, fallbackId = 'region') {
  * source file. Timeline positions stay put; pitch/stretch scale source offsets,
  * and reverse mirrors source ranges across the new file duration.
  */
+/**
+ * After a track is rendered to a timeline-aligned audio file, the new source
+ * offset for each region is its former timeline position in that rendered file.
+ */
+export function rebaseClipRegionsToRenderedTimeline(regions) {
+  if (!Array.isArray(regions)) return [];
+  return regions.map(region => {
+    const normalized = normalizeClipRegion(region);
+    if (!normalized) return null;
+    const duration = normalized.sourceEnd - normalized.sourceStart;
+    return {
+      ...normalized,
+      sourceStart: normalized.timelineStart,
+      sourceEnd: normalized.timelineStart + duration,
+    };
+  }).filter(Boolean);
+}
+
 export function remapClipRegionSources(regions, newDuration, transform = 'none', sourceScale = 1) {
   const duration = Math.max(0, finite(newDuration, NaN));
   if (!Number.isFinite(duration) || duration <= 0 || !Array.isArray(regions)) return [];

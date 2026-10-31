@@ -57,7 +57,7 @@ describe('NaliStudio clip-region editing', () => {
 
   it('cuts away the audio before the cut point and keeps the right side on the same track', () => {
     const track = makeTrack();
-    const result = cutClipRegionSide(track, 'region-1', 3);
+    const result = cutClipRegionSide(track, 'region-1', 3, { direction: 'left' });
     const [kept] = getTrackClipRegions(result);
 
     expect(result.id).toBe(track.id);
@@ -72,7 +72,7 @@ describe('NaliStudio clip-region editing', () => {
 
   it('cuts away the audio after the cut point and keeps the left side on the same track', () => {
     const track = makeTrack();
-    const result = cutClipRegionSide(track, 'region-1', 7);
+    const result = cutClipRegionSide(track, 'region-1', 7, { direction: 'right' });
     const [kept] = getTrackClipRegions(result);
 
     expect(result.id).toBe(track.id);
@@ -145,6 +145,28 @@ describe('NaliStudio clip-region editing', () => {
 
     expect(result.removed).toBe(false);
     expect(result.clipRegions).toEqual(track.clipRegions);
+  });
+
+  it('uses Remove Right at any cut point, independent of which half was clicked', () => {
+    const track = makeTrack();
+    const result = cutClipRegionSide(track, 'region-1', 2, { direction: 'right' });
+
+    expect(result.clipRegions[0]).toMatchObject({
+      timelineStart: 0,
+      sourceStart: 0,
+      sourceEnd: 2,
+    });
+  });
+
+  it('uses Remove Left at any cut point, independent of which half was clicked', () => {
+    const track = makeTrack();
+    const result = cutClipRegionSide(track, 'region-1', 8, { direction: 'left' });
+
+    expect(result.clipRegions[0]).toMatchObject({
+      timelineStart: 8,
+      sourceStart: 8,
+      sourceEnd: 10,
+    });
   });
 
   it('does not treat an edge click as a successful cut', () => {

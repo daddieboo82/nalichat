@@ -241,6 +241,67 @@ export function trimClipRegionRight(track, regionId, timelineDelta, { shuffle = 
   return withTrackClipRegionBounds(track, regions);
 }
 
+/**
+ * Remove a selected timeline range from a track without creating another track.
+ * In Slip mode the right-hand audio stays at its original timeline position;
+ * in Shuffle mode the right-hand audio and all later regions ripple left.
+ */
+export function cutTrackTimelineRange(
+  track,
+  selectionStart,
+  selectionEnd,
+  { shuffle = false, createId } = {}
+) {
+  const start = finite(selectionStart, NaN);
+  const end = finite(selectionEnd, NaN);
+  const regions = getTrackClipRegions(track);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+    return { ...track, clipRegions: regions, removed: false };
+  }
+
+  const rangeDuration = end - start;
+  let removedAny = false;
+  const next = [];
+
+  regions.forEach((region, index) => {
+    const regionStart = region.timelineStart;
+    const regionEnd = regionStart + region.sourceEnd - region.sourceStart;
+    if (regionEnd <= start || regionStart >= end) {
+      next.push(shuffle && regionStart >= end
+        ? { ...region, timelineStart: Math.max(0, regionStart - rangeDuration) }
+        : region);
+      return;
+    }
+
+    removedAny = true;
+    const leftDuration = Math.max(0, start - regionStart);
+    if (leftDuration > 0.001) {
+      next.push({
+        ...region,
+        sourceEnd: region.sourceStart + leftDuration,
+        fadeOut: 0,
+      });
+    }
+
+    const rightDuration = regionEnd - end;
+    if (rightDuration > 0.001) {
+      const rightSourceStart = region.sourceStart + (end - regionStart);
+      next.push({
+        ...region,
+        id: typeof createId === 'function'
+          ? createId('right', region, index)
+          : `${region.id}-cut-right-${Date.now()}-${index}`,
+        timelineStart: shuffle ? start : end,
+        sourceStart: rightSourceStart,
+        fadeIn: 0,
+      });
+    }
+  });
+
+  if (!removedAny) return { ...track, clipRegions: regions, removed: false };
+  return { ...withTrackClipRegionBounds(track, next), removed: true };
+}
+
 /** Cut away one side of a region at an absolute timeline position. */
 export function cutClipRegionSide(track, regionId, timelineCut, { shuffle = false } = {}) {
   const cut = finite(timelineCut, NaN);

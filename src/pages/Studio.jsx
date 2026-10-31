@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { getTrackClipRegions, healTrackRegions, moveClipRegion, splitTrackRegion } from '@/lib/studioClipRegions';
+import { getTrackClipRegions, healTrackRegions, moveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -2692,6 +2692,74 @@ export default function Studio() {
                             <span className="absolute top-1 left-1 text-[8px] leading-none text-white/80 bg-black/40 rounded px-1 pointer-events-none">
                               {isRegionSelected ? "SELECTED REGION" : ""}
                             </span>
+                            {activeTool === 'trim' && (
+                              <>
+                                <div
+                                  role="presentation"
+                                  aria-label="Trim region start"
+                                  className="absolute left-0 top-0 bottom-0 w-2 z-50 cursor-col-resize bg-white/20 hover:bg-white/70"
+                                  onPointerDown={(event) => {
+                                    event.stopPropagation();
+                                    if (track.locked) return;
+                                    const target = event.currentTarget.parentElement;
+                                    const startX = event.clientX;
+                                    let delta = 0;
+                                    target.setPointerCapture(event.pointerId);
+                                    const onMove = (moveEvent) => {
+                                      delta = (moveEvent.clientX - startX) / (20 * zoom);
+                                      target.style.left = `${regionLeft + (delta / trackDuration) * 100}%`;
+                                      target.style.width = `${Math.max(0.1, regionWidth - (delta / trackDuration) * 100)}%`;
+                                    };
+                                    const onUp = (upEvent) => {
+                                      target.releasePointerCapture(upEvent.pointerId);
+                                      target.removeEventListener('pointermove', onMove);
+                                      target.removeEventListener('pointerup', onUp);
+                                      if (Math.abs(delta) > 0.001) {
+                                        setTracksWithHistory(previous => previous.map(item =>
+                                          item.id === track.id ? trimClipRegionLeft(item, region.id, delta) : item
+                                        ));
+                                      }
+                                    };
+                                    target.addEventListener('pointermove', onMove);
+                                    target.addEventListener('pointerup', onUp);
+                                  }}
+                                />
+                                <div
+                                  role="presentation"
+                                  aria-label="Trim region end"
+                                  className="absolute right-0 top-0 bottom-0 w-2 z-50 cursor-col-resize bg-white/20 hover:bg-white/70"
+                                  onPointerDown={(event) => {
+                                    event.stopPropagation();
+                                    if (track.locked) return;
+                                    const target = event.currentTarget.parentElement;
+                                    const startX = event.clientX;
+                                    let delta = 0;
+                                    target.setPointerCapture(event.pointerId);
+                                    const onMove = (moveEvent) => {
+                                      delta = (moveEvent.clientX - startX) / (20 * zoom);
+                                      target.style.width = `${Math.max(0.1, regionWidth + (delta / trackDuration) * 100)}%`;
+                                    };
+                                    const onUp = (upEvent) => {
+                                      target.releasePointerCapture(upEvent.pointerId);
+                                      target.removeEventListener('pointermove', onMove);
+                                      target.removeEventListener('pointerup', onUp);
+                                      if (Math.abs(delta) > 0.001) {
+                                        setTracksWithHistory(previous => previous.map(item => {
+                                          if (item.id !== track.id) return item;
+                                          const current = getTrackClipRegions(item).find(candidate => candidate.id === region.id);
+                                          const maxDelta = current && Number.isFinite(Number(item.fullDuration))
+                                            ? Number(item.fullDuration) - current.sourceEnd
+                                            : delta;
+                                          return trimClipRegionRight(item, region.id, Math.min(delta, maxDelta));
+                                        }));
+                                      }
+                                    };
+                                    target.addEventListener('pointermove', onMove);
+                                    target.addEventListener('pointerup', onUp);
+                                  }}
+                                />
+                              </>
+                            )}
                           </div>
                         );
                       })}

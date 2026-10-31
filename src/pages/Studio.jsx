@@ -1271,7 +1271,7 @@ export default function Studio() {
   useEffect(() => {
     const handleKeyDown = createStudioKeyHandler({
       undo, redo, togglePlay, toggleRecord, stop,
-      selectedTrackIds, setSelectedTrackIds,
+      selectedTrackIds, setSelectedTrackIds, selectedClipRegion, editMode,
       deleteSelectedTracks, duplicateSelectedTracks, splitSelectedTracks,
       toggleTrackProperty, addTrack, addVcaTrack, addFolderTrack, setEditMode,
       toggleSolo, toggleMute, setShowFadePresets, setActiveTool,
@@ -1286,7 +1286,7 @@ export default function Studio() {
     });
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, isRecording, togglePlay, toggleRecord, selectedTrackIds, tracks, activeTool]);
+  }, [isPlaying, isRecording, togglePlay, toggleRecord, selectedTrackIds, selectedClipRegion, editMode, tracks, activeTool]);
 
   const toggleMute = (trackId) => {
     sounds.click();

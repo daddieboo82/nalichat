@@ -107,6 +107,15 @@ describe('NaliStudio clip-region editing', () => {
     expect(result.clipRegions[1]).toMatchObject({ sourceStart: 7, sourceEnd: 10 });
   });
 
+  it('keeps the track but collapses its clip container when a range removes all audio', () => {
+    const result = cutTrackTimelineRange(makeTrack(), 0, 10);
+
+    expect(result.id).toBe('track-1');
+    expect(result.removed).toBe(true);
+    expect(result.clipRegions).toEqual([]);
+    expect(result.duration).toBe(0);
+  });
+
   it('does not report a range cut when the selection contains no audio', () => {
     const track = {
       ...makeTrack(),

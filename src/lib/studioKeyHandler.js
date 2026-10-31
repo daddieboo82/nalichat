@@ -1,4 +1,4 @@
-import { getTrackClipRegions, moveTrackClipRegions } from '@/lib/studioClipRegions';
+import { getTrackClipRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveClipRegion } from '@/lib/studioClipRegions';
 
 /**
  * Studio keyboard shortcut handler — extracted from Studio.jsx for line-count management.
@@ -7,7 +7,7 @@ import { getTrackClipRegions, moveTrackClipRegions } from '@/lib/studioClipRegio
 export function createStudioKeyHandler(deps) {
   const {
     undo, redo, togglePlay, toggleRecord, stop,
-    selectedTrackIds, setSelectedTrackIds,
+    selectedTrackIds, setSelectedTrackIds, selectedClipRegion, editMode,
     deleteSelectedTracks, duplicateSelectedTracks, splitSelectedTracks,
     toggleTrackProperty, addTrack, addVcaTrack, addFolderTrack, setEditMode,
     toggleSolo, toggleMute, setShowFadePresets, setActiveTool,
@@ -20,6 +20,36 @@ export function createStudioKeyHandler(deps) {
     handleConsolidateClips, tabToClip, nudgeValue, zoom, currentTimeRef,
     sounds,
   } = deps;
+
+  const nudgeTimelineSelection = (delta) => {
+    if (selectedClipRegion) {
+      const separator = selectedClipRegion.indexOf(':');
+      if (separator > 0) {
+        const trackId = selectedClipRegion.slice(0, separator);
+        const regionId = selectedClipRegion.slice(separator + 1);
+        const selectedTrack = tracks.find(track => String(track.id) === trackId);
+        const region = selectedTrack
+          ? getTrackClipRegions(selectedTrack).find(item => item.id === regionId)
+          : null;
+        if (region) {
+          const nextStart = Math.max(0, region.timelineStart + delta);
+          setTracksWithHistory(previous => previous.map(track => {
+            if (String(track.id) !== trackId) return track;
+            return editMode === 'shuffle'
+              ? shuffleMoveClipRegion(track, regionId, nextStart)
+              : moveClipRegion(track, regionId, nextStart);
+          }));
+          return;
+        }
+      }
+    }
+
+    // With no individual region selected, nudge every region on each selected
+    // track together while preserving the gaps between them.
+    setTracksWithHistory(previous => previous.map(track =>
+      selectedTrackIds.includes(track.id) ? moveTrackClipRegions(track, delta) : track
+    ));
+  };
 
   return (e) => {
     if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
@@ -143,7 +173,7 @@ export function createStudioKeyHandler(deps) {
     else if ((e.ctrlKey || e.metaKey) && e.key === 'Tab') { e.preventDefault(); tabToClip(!e.shiftKey); }
     else if (e.key === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.min(100, currentTimeRef.current + step)); }
     else if (e.key === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.max(0, currentTimeRef.current - step)); }
-    else if (e.key === 'ArrowRight' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = nudgeValue; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? moveTrackClipRegions(t, nudge) : t)); }
-    else if (e.key === 'ArrowLeft' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = nudgeValue; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? moveTrackClipRegions(t, -nudge) : t)); }
+    else if (e.key === 'ArrowRight' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); nudgeTimelineSelection(nudgeValue); }
+    else if (e.key === 'ArrowLeft' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); nudgeTimelineSelection(-nudgeValue); }
   };
 }

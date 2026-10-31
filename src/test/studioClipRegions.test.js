@@ -533,4 +533,37 @@ describe('NaliStudio clip-region editing', () => {
       sourceEnd: 10,
     });
   });
+
+  it('refuses to heal adjacent regions with different clip gain', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'left', timelineStart: 0, sourceStart: 0, sourceEnd: 4, gainDb: 0 },
+        { id: 'right', timelineStart: 4, sourceStart: 4, sourceEnd: 8, gainDb: -6 },
+      ],
+    };
+
+    const result = healTrackRegions(track, 'left');
+
+    expect(result.healed).toBe(false);
+    expect(result.clipRegions).toHaveLength(2);
+    expect(result.clipRegions.map(region => region.gainDb)).toEqual([0, -6]);
+  });
+
+  it('refuses to heal when either region has a fade at the internal seam', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'left', timelineStart: 0, sourceStart: 0, sourceEnd: 4, fadeOut: 0.25 },
+        { id: 'right', timelineStart: 4, sourceStart: 4, sourceEnd: 8, fadeIn: 0.25 },
+      ],
+    };
+
+    const result = healTrackRegions(track, 'left');
+
+    expect(result.healed).toBe(false);
+    expect(result.clipRegions).toHaveLength(2);
+    expect(result.clipRegions[0].fadeOut).toBe(0.25);
+    expect(result.clipRegions[1].fadeIn).toBe(0.25);
+  });
 });

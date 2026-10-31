@@ -1271,7 +1271,7 @@ export default function Studio() {
   useEffect(() => {
     const handleKeyDown = createStudioKeyHandler({
       undo, redo, togglePlay, toggleRecord, stop,
-      selectedTrackIds, setSelectedTrackIds, selectedClipRegion, editMode,
+      selectedTrackIds, setSelectedTrackIds, selectedClipRegion, setSelectedClipRegion, editMode,
       deleteSelectedTracks, duplicateSelectedTracks, splitSelectedTracks,
       toggleTrackProperty, addTrack, addVcaTrack, addFolderTrack, setEditMode,
       toggleSolo, toggleMute, setShowFadePresets, setActiveTool,

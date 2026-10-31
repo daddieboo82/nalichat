@@ -12,6 +12,7 @@ import {
   rebaseClipRegionsToRenderedTimeline,
   remapClipRegionSources,
   shuffleMoveClipRegion,
+  slipClipRegion,
   splitTrackRegion,
   trimClipRegionLeft,
   trimClipRegionRight,
@@ -265,6 +266,37 @@ describe('NaliStudio clip-region editing', () => {
   it('drops source regions that become empty after AudioSuite duration changes', () => {
     const regions = [{ id: 'tail', timelineStart: 2, sourceStart: 8, sourceEnd: 10 }];
     expect(remapClipRegionSources(regions, 5, 'stretch', 0.5)).toEqual([]);
+  });
+
+  it('Slip mode moves source audio while preserving region timeline placement and duration', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [{ id: 'region-1', timelineStart: 5, sourceStart: 2, sourceEnd: 5 }],
+    };
+    const result = slipClipRegion(track, 'region-1', 3);
+
+    expect(result.startTime).toBe(0);
+    expect(result.duration).toBe(10);
+    expect(result.clipRegions[0]).toMatchObject({
+      timelineStart: 5,
+      sourceStart: 5,
+      sourceEnd: 8,
+    });
+    expect(result).not.toHaveProperty('lastSlipDelta');
+  });
+
+  it('Slip mode clamps source movement to the beginning and end of the source file', () => {
+    const track = {
+      ...makeTrack(),
+      fullDuration: 10,
+      clipRegions: [{ id: 'region-1', timelineStart: 5, sourceStart: 2, sourceEnd: 5 }],
+    };
+
+    const beforeStart = slipClipRegion(track, 'region-1', -10);
+    expect(beforeStart.clipRegions[0]).toMatchObject({ sourceStart: 0, sourceEnd: 3 });
+
+    const afterEnd = slipClipRegion(track, 'region-1', 20);
+    expect(afterEnd.clipRegions[0]).toMatchObject({ sourceStart: 7, sourceEnd: 10 });
   });
 
   it('Shuffle mode pushes overlapping regions right without creating overlaps', () => {

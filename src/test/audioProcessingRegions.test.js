@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getClipRegionFadeGainAtTime, getTrackFadeGainAtTime, getTrackRegionFadeGainAtTime, getTrackRegionRenderSchedule } from '../lib/audioProcessing';
+import { getClipRegionFadeGainAtTime, getClipRegionGain, getTrackFadeGainAtTime, getTrackRegionFadeGainAtTime, getTrackRegionRenderSchedule } from '../lib/audioProcessing';
 import { cutClipRegionSide, slipClipRegion } from '../lib/studioClipRegions';
 
 describe('track fade envelope', () => {
@@ -39,6 +39,12 @@ describe('track fade envelope', () => {
     expect(getTrackFadeGainAtTime(track, 3)).toBeCloseTo(0.3);
   });
 
+  it('converts independent region gain from decibels to linear amplitude', () => {
+    expect(getClipRegionGain({ gainDb: 0 })).toBe(1);
+    expect(getClipRegionGain({ gainDb: -6 })).toBeCloseTo(0.501187);
+    expect(getClipRegionGain({ gainDb: 6 })).toBeCloseTo(1.995262);
+  });
+
   it('keeps legacy track fades from being applied twice as region fades', () => {
     const legacyTrack = { startTime: 0, duration: 8, fadeIn: 0.25 };
     expect(getTrackFadeGainAtTime(legacyTrack, 1)).toBe(0.5);
@@ -64,8 +70,8 @@ describe('offline audio region scheduling', () => {
     };
 
     expect(getTrackRegionRenderSchedule(track, 8)).toEqual([
-      { timelineStart: 0, sourceStart: 0, duration: 2, fadeIn: 0, fadeOut: 0 },
-      { timelineStart: 5, sourceStart: 4, duration: 3, fadeIn: 0, fadeOut: 0 },
+      { timelineStart: 0, sourceStart: 0, duration: 2, fadeIn: 0, fadeOut: 0, gainDb: 0 },
+      { timelineStart: 5, sourceStart: 4, duration: 3, fadeIn: 0, fadeOut: 0, gainDb: 0 },
     ]);
   });
 
@@ -74,7 +80,16 @@ describe('offline audio region scheduling', () => {
       clipRegions: [{ id: 'faded', timelineStart: 2, sourceStart: 1, sourceEnd: 5, fadeIn: 0.25, fadeOut: 0.5 }],
     };
     expect(getTrackRegionRenderSchedule(track, 8)).toEqual([
-      { timelineStart: 2, sourceStart: 1, duration: 4, fadeIn: 0.25, fadeOut: 0.5 },
+      { timelineStart: 2, sourceStart: 1, duration: 4, fadeIn: 0.25, fadeOut: 0.5, gainDb: 0 },
+    ]);
+  });
+
+  it('preserves independent region gain in the offline render schedule', () => {
+    const track = {
+      clipRegions: [{ id: 'quiet', timelineStart: 1, sourceStart: 0, sourceEnd: 2, gainDb: -9 }],
+    };
+    expect(getTrackRegionRenderSchedule(track, 4)).toEqual([
+      { timelineStart: 1, sourceStart: 0, duration: 2, fadeIn: 0, fadeOut: 0, gainDb: -9 },
     ]);
   });
 
@@ -88,7 +103,7 @@ describe('offline audio region scheduling', () => {
     };
 
     expect(getTrackRegionRenderSchedule(track, 6)).toEqual([
-      { timelineStart: 3, sourceStart: 4, duration: 2, fadeIn: 0, fadeOut: 0 },
+      { timelineStart: 3, sourceStart: 4, duration: 2, fadeIn: 0, fadeOut: 0, gainDb: 0 },
     ]);
   });
 
@@ -111,7 +126,7 @@ describe('offline audio region scheduling', () => {
     const cut = cutClipRegionSide(track, 'clip', 3, { direction: 'right' });
 
     expect(getTrackRegionRenderSchedule(cut, 10)).toEqual([
-      { timelineStart: 0, sourceStart: 0, duration: 3, fadeIn: 0, fadeOut: 0 },
+      { timelineStart: 0, sourceStart: 0, duration: 3, fadeIn: 0, fadeOut: 0, gainDb: 0 },
     ]);
   });
 
@@ -124,7 +139,7 @@ describe('offline audio region scheduling', () => {
     const slipped = slipClipRegion(track, 'clip', 2);
 
     expect(getTrackRegionRenderSchedule(slipped, 10)).toEqual([
-      { timelineStart: 4, sourceStart: 3, duration: 3, fadeIn: 0, fadeOut: 0 },
+      { timelineStart: 4, sourceStart: 3, duration: 3, fadeIn: 0, fadeOut: 0, gainDb: 0 },
     ]);
   });
 
@@ -132,7 +147,7 @@ describe('offline audio region scheduling', () => {
     const track = { startTime: 3, duration: 2, clipStart: 4 };
 
     expect(getTrackRegionRenderSchedule(track, 10)).toEqual([
-      { timelineStart: 3, sourceStart: 4, duration: 2, fadeIn: 0, fadeOut: 0 },
+      { timelineStart: 3, sourceStart: 4, duration: 2, fadeIn: 0, fadeOut: 0, gainDb: 0 },
     ]);
   });
 });

@@ -1,17 +1,37 @@
 import { getTrackClipRegions } from '@/lib/studioClipRegions';
 
-/** Linear track fade envelope evaluated against the track's timeline bounds. */
-export function getTrackFadeGainAtTime(track, timelineTime) {
-  const start = Number(track?.startTime) || 0;
-  const duration = Math.max(0, Number(track?.duration) || 0);
-  if (duration <= 0) return 1;
+/** Linear gain envelope for a region's own fade handles. */
+export function getClipRegionFadeGainAtTime(region, timelineTime) {
+  const duration = Math.max(0, Number(region?.sourceEnd) - Number(region?.sourceStart));
+  const start = Math.max(0, Number(region?.timelineStart) || 0);
   const time = Number(timelineTime);
-  if (!Number.isFinite(time)) return 1;
-  const fadeIn = Math.min(1, Math.max(0, Number(track?.fadeIn) || 0)) * duration;
-  const fadeOut = Math.min(1, Math.max(0, Number(track?.fadeOut) || 0)) * duration;
+  if (duration <= 0 || !Number.isFinite(time)) return 1;
+  const fadeIn = Math.min(1, Math.max(0, Number(region?.fadeIn) || 0)) * duration;
+  const fadeOut = Math.min(1, Math.max(0, Number(region?.fadeOut) || 0)) * duration;
   const fadeInGain = fadeIn > 0 ? Math.max(0, Math.min(1, (time - start) / fadeIn)) : 1;
   const fadeOutGain = fadeOut > 0 ? Math.max(0, Math.min(1, (start + duration - time) / fadeOut)) : 1;
   return Math.min(fadeInGain, fadeOutGain);
+}
+
+/** Combine the track-wide fade with the active region's independent fades. */
+export function getTrackFadeGainAtTime(track, timelineTime) {
+  const start = Number(track?.startTime) || 0;
+  const duration = Math.max(0, Number(track?.duration) || 0);
+  const time = Number(timelineTime);
+  if (!Number.isFinite(time)) return 1;
+  let trackGain = 1;
+  if (duration > 0) {
+    const fadeIn = Math.min(1, Math.max(0, Number(track?.fadeIn) || 0)) * duration;
+    const fadeOut = Math.min(1, Math.max(0, Number(track?.fadeOut) || 0)) * duration;
+    const fadeInGain = fadeIn > 0 ? Math.max(0, Math.min(1, (time - start) / fadeIn)) : 1;
+    const fadeOutGain = fadeOut > 0 ? Math.max(0, Math.min(1, (start + duration - time) / fadeOut)) : 1;
+    trackGain = Math.min(fadeInGain, fadeOutGain);
+  }
+  const activeRegion = getTrackClipRegions(track).find(region => {
+    const end = region.timelineStart + region.sourceEnd - region.sourceStart;
+    return time >= region.timelineStart && time < end;
+  });
+  return trackGain * (activeRegion ? getClipRegionFadeGainAtTime(activeRegion, time) : 1);
 }
 
 /**
@@ -31,6 +51,8 @@ export function getTrackRegionRenderSchedule(track, bufferDuration) {
         timelineStart: Math.max(0, region.timelineStart),
         sourceStart,
         duration,
+        fadeIn: region.fadeIn,
+        fadeOut: region.fadeOut,
       };
     })
     .filter(Boolean);
@@ -444,7 +466,9 @@ export async function renderMixToBuffer(tracks, options = {}) {
       const trackDuration = Math.max(0, Number(track.duration) || 0);
       const fadeInEnd = trackStart + Math.min(1, Math.max(0, Number(track.fadeIn) || 0)) * trackDuration;
       const fadeOutStart = trackStart + trackDuration - Math.min(1, Math.max(0, Number(track.fadeOut) || 0)) * trackDuration;
-      const breakpoints = [regionStart, regionEnd, fadeInEnd, fadeOutStart]
+      const regionFadeInEnd = regionStart + Math.min(1, Math.max(0, Number(region.fadeIn) || 0)) * region.duration;
+      const regionFadeOutStart = regionEnd - Math.min(1, Math.max(0, Number(region.fadeOut) || 0)) * region.duration;
+      const breakpoints = [regionStart, regionEnd, fadeInEnd, fadeOutStart, regionFadeInEnd, regionFadeOutStart]
         .filter(time => Number.isFinite(time) && time >= regionStart && time <= regionEnd)
         .sort((a, b) => a - b)
         .filter((time, index, values) => index === 0 || Math.abs(time - values[index - 1]) > 0.000001);

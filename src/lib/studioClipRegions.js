@@ -133,7 +133,7 @@ export function trimClipRegionLeft(track, regionId, timelineDelta) {
     clipRegions: getTrackClipRegions(track).map(region => {
       if (region.id !== regionId) return region;
       const length = region.sourceEnd - region.sourceStart;
-      const applied = Math.max(-region.timelineStart, Math.min(delta, length - 0.001));
+      const applied = Math.max(-region.timelineStart, -region.sourceStart, Math.min(delta, length - 0.001));
       return {
         ...region,
         timelineStart: region.timelineStart + applied,

@@ -13,7 +13,7 @@ import { sounds } from '@/hooks/use-sound';
 export default function StudioToolbar2({
   addTrack, addVcaTrack, addFolderTrack, selectedTrackIds, tracks, handleSeparateStems, isProcessing, handleGenerateMelody, undo, redo, historyIndex, historyLength,
   bpm, setBpm, bpmInput, setBpmInput, timeSignature, setTimeSignature, songKey, setSongKey, editMode, setEditMode,
-  activeTool, setActiveTool, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom,
+  activeTool, setActiveTool, cutDirection = 'right', setCutDirection, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom,
   gridSize, setGridSize
 }) {
   const isMobile = useIsMobile();
@@ -163,6 +163,24 @@ export default function StudioToolbar2({
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Trim Tool (T)" onClick={() => setActiveTool('trim')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'trim' && "bg-primary/20 text-primary")}><MoveHorizontal className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Trim</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Trim Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">T</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Cut Tool (C)" onClick={() => setActiveTool('cut')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'cut' && "bg-primary/20 text-primary")}><Scissors className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Cut</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Cut Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">C</kbd></TooltipContent></Tooltip>
+            {activeTool === 'cut' && setCutDirection && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Select value={cutDirection} onValueChange={setCutDirection}>
+                      <SelectTrigger aria-label="Cut direction" className="h-7 w-[112px] border-border/40 bg-secondary/30 px-2 text-[10px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="right">Remove Right</SelectItem>
+                        <SelectItem value="left">Remove Left</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Choose which side of the cut point to remove</TooltipContent>
+              </Tooltip>
+            )}
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Grabber Tool (G)" onClick={() => setActiveTool('grab')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'grab' && "bg-primary/20 text-primary")}><MousePointer2 className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Grabber</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Grabber Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">G</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Fade Tool (F)" onClick={() => setActiveTool('fade')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'fade' && "bg-primary/20 text-primary")}><Crosshair className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Fade</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Fade Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">F</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Smart Tool (E)" onClick={() => setActiveTool('smart')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground border border-transparent hover:text-foreground gap-1.5", activeTool === 'smart' && "border-primary text-primary bg-primary/10")}>

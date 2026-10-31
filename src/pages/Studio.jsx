@@ -3600,7 +3600,10 @@ export default function Studio() {
           setTracksWithHistory(previous => previous.map(item => {
             if (item.id !== track.id) return item;
             const { effects: _effects, ...rest } = item;
-            const committedRegions = rebaseClipRegionsToRenderedTimeline(getTrackClipRegions(item));
+            const committedRegions = rebaseClipRegionsToRenderedTimeline(getTrackClipRegions(item), {
+              resetGain: true,
+              resetFades: true,
+            });
             return withTrackClipRegionBounds({
               ...rest,
               audioUrl: newAudioUrl,

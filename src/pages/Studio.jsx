@@ -2550,6 +2550,7 @@ export default function Studio() {
                              return updatedTrack;
                            }));
                            setSelectedClipRegion(`${track.id}:${targetRegion.id}`);
+                           setSelectedTrackIds([track.id]);
                            toast.success(keepsRight
                              ? "Audio before the cut point removed"
                              : "Audio after the cut point removed");
@@ -2676,6 +2677,11 @@ export default function Studio() {
                                 }
                                 return [track.id];
                               });
+                              if (editMode === 'spot') {
+                                setSpotClip(track);
+                                setSpotDialogOpen(true);
+                                return;
+                              }
                               if (track.locked || activeTool !== 'grab') return;
                               const target = event.currentTarget;
                               const startX = event.clientX;
@@ -2746,6 +2752,8 @@ export default function Studio() {
                                   className="absolute left-0 top-0 bottom-0 w-2 z-50 cursor-col-resize bg-white/20 hover:bg-white/70"
                                   onPointerDown={(event) => {
                                     event.stopPropagation();
+                                    setSelectedClipRegion(regionKey);
+                                    setSelectedTrackIds([track.id]);
                                     if (track.locked) return;
                                     const target = event.currentTarget.parentElement;
                                     const startX = event.clientX;
@@ -2776,6 +2784,8 @@ export default function Studio() {
                                   className="absolute right-0 top-0 bottom-0 w-2 z-50 cursor-col-resize bg-white/20 hover:bg-white/70"
                                   onPointerDown={(event) => {
                                     event.stopPropagation();
+                                    setSelectedClipRegion(regionKey);
+                                    setSelectedTrackIds([track.id]);
                                     if (track.locked) return;
                                     const target = event.currentTarget.parentElement;
                                     const startX = event.clientX;

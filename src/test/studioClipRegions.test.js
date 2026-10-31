@@ -170,6 +170,20 @@ describe('NaliStudio clip-region editing', () => {
     expect(result.clipRegions.map(region => [region.sourceStart, region.sourceEnd])).toEqual([[0, 3], [3, 6]]);
   });
 
+  it('clamps whole-track movement at zero without collapsing internal spacing', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'left', timelineStart: 2, sourceStart: 0, sourceEnd: 3 },
+        { id: 'right', timelineStart: 7, sourceStart: 3, sourceEnd: 6 },
+      ],
+    };
+    const result = moveTrackClipRegions(track, -5);
+
+    expect(result.clipRegions.map(region => region.timelineStart)).toEqual([0, 5]);
+    expect(result.duration).toBe(8);
+  });
+
   it('preserves the original source duration when a region is first split', () => {
     const track = { ...makeTrack(), fullDuration: undefined };
     const result = splitTrackRegion(track, 4, side => `split-${side}`);

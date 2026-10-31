@@ -565,12 +565,12 @@ describe('NaliStudio clip-region editing', () => {
       .toEqual([[0, 0, 4], [4, 4, 8]]);
   });
 
-  it('clamps region gain to the supported plus/minus 24 dB range', () => {
+  it('clamps region gain to the supported plus/minus 12 dB range', () => {
     const loud = setClipRegionGain(makeTrack(), 'region-1', 40);
     const quiet = setClipRegionGain(makeTrack(), 'region-1', -40);
 
-    expect(loud.clipRegions[0].gainDb).toBe(24);
-    expect(quiet.clipRegions[0].gainDb).toBe(-24);
+    expect(loud.clipRegions[0].gainDb).toBe(12);
+    expect(quiet.clipRegions[0].gainDb).toBe(-12);
   });
 
   it('refuses to heal adjacent regions with different clip gain', () => {

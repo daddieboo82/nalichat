@@ -33,6 +33,17 @@ const makeTrack = () => ({
 });
 
 describe('NaliStudio clip-region editing', () => {
+  it('increments the region revision for edits that require realtime audio resync', () => {
+    const track = makeTrack();
+    const cut = cutClipRegionSide(track, 'region-1', 4, { direction: 'right' });
+    const slip = slipClipRegion(track, 'region-1', 0.02);
+    const split = splitTrackRegion(track, 4, side => `rev-${side}`);
+
+    expect(cut.clipRegionRevision).toBe(1);
+    expect(slip.clipRegionRevision).toBe(1);
+    expect(split.clipRegionRevision).toBe(1);
+  });
+
   it('maps timeline positions to the correct source region and leaves gaps silent', () => {
     const track = {
       clipRegions: [

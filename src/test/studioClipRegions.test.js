@@ -221,7 +221,7 @@ describe('NaliStudio clip-region editing', () => {
 
   it('mirrors clip source ranges when AudioSuite reverses the source file', () => {
     const regions = [
-      { id: 'first', timelineStart: 3, sourceStart: 1, sourceEnd: 4 },
+      { id: 'first', timelineStart: 3, sourceStart: 1, sourceEnd: 4, fadeIn: 0.2, fadeOut: 0.4 },
       { id: 'second', timelineStart: 8, sourceStart: 5, sourceEnd: 9 },
     ];
     const result = remapClipRegionSources(regions, 10, 'reverse');
@@ -230,6 +230,7 @@ describe('NaliStudio clip-region editing', () => {
       ['first', 3, 6, 9],
       ['second', 8, 1, 5],
     ]);
+    expect(result[0]).toMatchObject({ fadeIn: 0.4, fadeOut: 0.2 });
   });
 
   it('scales clip source ranges after AudioSuite pitch or time-stretch resampling', () => {

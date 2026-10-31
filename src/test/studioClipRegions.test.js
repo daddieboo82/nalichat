@@ -7,6 +7,7 @@ import {
   healTrackRegions,
   moveClipRegion,
   moveTrackClipRegions,
+  remapClipRegionSources,
   shuffleMoveClipRegion,
   splitTrackRegion,
   trimClipRegionLeft,
@@ -198,6 +199,36 @@ describe('NaliStudio clip-region editing', () => {
     const result = splitTrackRegion(track, 4, side => `split-${side}`);
 
     expect(result.fullDuration).toBe(10);
+  });
+
+  it('mirrors clip source ranges when AudioSuite reverses the source file', () => {
+    const regions = [
+      { id: 'first', timelineStart: 3, sourceStart: 1, sourceEnd: 4 },
+      { id: 'second', timelineStart: 8, sourceStart: 5, sourceEnd: 9 },
+    ];
+    const result = remapClipRegionSources(regions, 10, 'reverse');
+
+    expect(result.map(region => [region.id, region.timelineStart, region.sourceStart, region.sourceEnd])).toEqual([
+      ['first', 3, 6, 9],
+      ['second', 8, 1, 5],
+    ]);
+  });
+
+  it('scales clip source ranges after AudioSuite pitch or time-stretch resampling', () => {
+    const regions = [{ id: 'region', timelineStart: 2, sourceStart: 2, sourceEnd: 6 }];
+    const result = remapClipRegionSources(regions, 5, 'stretch', 0.5);
+
+    expect(result[0]).toMatchObject({
+      id: 'region',
+      timelineStart: 2,
+      sourceStart: 1,
+      sourceEnd: 3,
+    });
+  });
+
+  it('drops source regions that become empty after AudioSuite duration changes', () => {
+    const regions = [{ id: 'tail', timelineStart: 2, sourceStart: 8, sourceEnd: 10 }];
+    expect(remapClipRegionSources(regions, 5, 'stretch', 0.5)).toEqual([]);
   });
 
   it('Shuffle mode pushes overlapping regions right without creating overlaps', () => {

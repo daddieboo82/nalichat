@@ -238,9 +238,29 @@ export function withTrackClipRegionBounds(track, regions) {
 
 /** Move one region on the timeline without changing which source audio it references. */
 export function moveClipRegion(track, regionId, timelineStart) {
-  const start = Math.max(0, finite(timelineStart, NaN));
-  if (!Number.isFinite(start)) return track;
-  const regions = getTrackClipRegions(track).map(region =>
+  const requestedStart = Math.max(0, finite(timelineStart, NaN));
+  if (!Number.isFinite(requestedStart)) return track;
+  const current = getTrackClipRegions(track);
+  const index = current.findIndex(region => region.id === regionId);
+  if (index < 0) return { ...track, clipRegions: current };
+
+  const target = current[index];
+  const duration = target.sourceEnd - target.sourceStart;
+  const previous = current[index - 1];
+  const next = current[index + 1];
+  const minimumStart = previous
+    ? previous.timelineStart + previous.sourceEnd - previous.sourceStart
+    : 0;
+  const maximumStart = next
+    ? next.timelineStart - duration
+    : Number.POSITIVE_INFINITY;
+
+  // The single-source live playback path cannot render overlapping regions.
+  // Keep ordinary moves/Spot edits inside the available gap; use Shuffle mode
+  // when the user intends to push neighboring regions out of the way.
+  if (maximumStart < minimumStart) return track;
+  const start = Math.max(minimumStart, Math.min(maximumStart, requestedStart));
+  const regions = current.map(region =>
     region.id === regionId ? { ...region, timelineStart: start } : region
   );
   return withTrackClipRegionBounds(track, regions);

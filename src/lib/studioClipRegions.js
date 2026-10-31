@@ -149,9 +149,14 @@ export function moveClipRegion(track, regionId, timelineStart) {
 export function moveTrackClipRegions(track, timelineDelta) {
   const delta = finite(timelineDelta, NaN);
   if (!Number.isFinite(delta)) return track;
-  const regions = getTrackClipRegions(track).map(region => ({
+  const current = getTrackClipRegions(track);
+  const earliestStart = current.length
+    ? Math.min(...current.map(region => region.timelineStart))
+    : 0;
+  const appliedDelta = Math.max(-earliestStart, delta);
+  const regions = current.map(region => ({
     ...region,
-    timelineStart: Math.max(0, region.timelineStart + delta),
+    timelineStart: region.timelineStart + appliedDelta,
   }));
   return withTrackClipRegionBounds(track, regions);
 }

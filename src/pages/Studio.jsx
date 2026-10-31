@@ -1381,14 +1381,14 @@ export default function Studio() {
     let nextId = nextTrackId(tracks);
     const newClips = [];
     for (let i = 1; i <= count; i++) {
-      newClips.push({
+      const repeatedTrack = {
         ...track,
         id: nextId++,
         name: `${track.name} (Repeat ${i})`,
-        startTime: clipStart + clipDur * i,
         splitFrom: track.id,
         armed: false,
-      });
+      };
+      newClips.push(moveTrackClipRegions(repeatedTrack, clipDur * i));
     }
     setTracksWithHistory(prev => [...prev, ...newClips]);
     toast.success(`Clip repeated ${count}×`);
@@ -3267,7 +3267,11 @@ export default function Studio() {
         timeSignature={timeSignature}
         onSpot={(timeInSeconds) => {
           if (spotClip) {
-            setTracksWithHistory(prev => prev.map(t => t.id === spotClip.id ? { ...t, startTime: Math.max(0, timeInSeconds) } : t));
+            setTracksWithHistory(prev => prev.map(t =>
+              t.id === spotClip.id
+                ? moveTrackClipRegions(t, Math.max(0, timeInSeconds) - (t.startTime || 0))
+                : t
+            ));
             toast.success(`Moved "${spotClip.name}" to ${timeInSeconds.toFixed(3)}s`);
             sounds.nav();
           }

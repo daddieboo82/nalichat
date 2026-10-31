@@ -2537,7 +2537,8 @@ export default function Studio() {
                              if (item.id !== track.id) return item;
                              const result = cutClipRegionSide(item, targetRegion.id, timelineCut);
                              if (!result.removed) return item;
-                             const { removed, ...updatedTrack } = result;
+                             const updatedTrack = { ...result };
+                             delete updatedTrack.removed;
                              return updatedTrack;
                            }));
                            setSelectedClipRegion(`${track.id}:${targetRegion.id}`);

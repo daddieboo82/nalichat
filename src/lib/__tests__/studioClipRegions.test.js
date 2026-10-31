@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getTrackClipRegions,
   cutClipRegionSide,
+  cutTrackTimelineRange,
   healTrackRegions,
   moveClipRegion,
   slipClipRegion,
@@ -93,12 +94,64 @@ describe('NaliStudio clip regions', () => {
     });
   });
 
-  it('cuts away the left or right side based on which half is clicked', () => {
+  it('removes the right side at the cut point and keeps the left on the same track', () => {
     const track = { id: 6, clipRegions: [{ id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 10 }] };
-    const keepRight = cutClipRegionSide(track, 'a', 3);
-    expect(keepRight.clipRegions[0]).toMatchObject({ timelineStart: 3, sourceStart: 3, sourceEnd: 10 });
-    const keepLeft = cutClipRegionSide(track, 'a', 7);
-    expect(keepLeft.clipRegions[0]).toMatchObject({ timelineStart: 0, sourceStart: 0, sourceEnd: 7 });
+    const result = cutClipRegionSide(track, 'a', 3, { direction: 'right' });
+    expect(result.id).toBe(6);
+    expect(result.removed).toBe(true);
+    expect(result.clipRegions).toHaveLength(1);
+    expect(result.clipRegions[0]).toMatchObject({
+      timelineStart: 0, sourceStart: 0, sourceEnd: 3,
+    });
+  });
+
+  it('removes the left side at the cut point and keeps the right on the same track', () => {
+    const track = { id: 6, clipRegions: [{ id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 10 }] };
+    const result = cutClipRegionSide(track, 'a', 7, { direction: 'left' });
+    expect(result.id).toBe(6);
+    expect(result.removed).toBe(true);
+    expect(result.clipRegions).toHaveLength(1);
+    expect(result.clipRegions[0]).toMatchObject({
+      timelineStart: 7, sourceStart: 7, sourceEnd: 10,
+    });
+  });
+
+  it('removes only the selected In/Out range and leaves both sides on the same track', () => {
+    const track = { id: 8, clipRegions: [{ id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 10 }] };
+    const result = cutTrackTimelineRange(track, 3, 7, {
+      createId: (side, region) => `${region.id}-${side}`,
+    });
+    expect(result.id).toBe(8);
+    expect(result.removed).toBe(true);
+    expect(result.clipRegions).toHaveLength(2);
+    expect(result.clipRegions[0]).toMatchObject({
+      id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 3,
+    });
+    expect(result.clipRegions[1]).toMatchObject({
+      id: 'a-right', timelineStart: 7, sourceStart: 7, sourceEnd: 10,
+    });
+  });
+
+  it('ripples later regions left in Shuffle mode without creating a track', () => {
+    const track = {
+      id: 9,
+      clipRegions: [
+        { id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 10 },
+        { id: 'b', timelineStart: 12, sourceStart: 20, sourceEnd: 24 },
+      ],
+    };
+    const result = cutTrackTimelineRange(track, 3, 7, {
+      shuffle: true,
+      createId: (side, region) => `${region.id}-${side}`,
+    });
+    expect(result.id).toBe(9);
+    expect(result.clipRegions).toHaveLength(3);
+    expect(result.clipRegions.find(region => region.id === 'a-right')).toMatchObject({
+      timelineStart: 3, sourceStart: 7, sourceEnd: 10,
+    });
+    expect(result.clipRegions.find(region => region.id === 'b')).toMatchObject({
+      timelineStart: 8, sourceStart: 20, sourceEnd: 24,
+    });
   });
 
 });

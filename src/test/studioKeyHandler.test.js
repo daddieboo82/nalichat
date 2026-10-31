@@ -124,6 +124,7 @@ describe('Studio region-aware Delete', () => {
     });
 
     expect(result.id).toBe(7);
+    expect(result).not.toHaveProperty('removed');
     expect(result.clipRegions.map(region => region.id)).toEqual(['left', 'right']);
     expect(result.clipRegions.map(region => region.timelineStart)).toEqual([0, 8]);
     expect(clearedSelection).toBe(true);

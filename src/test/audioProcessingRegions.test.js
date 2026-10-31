@@ -1,6 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { getTrackRegionRenderSchedule } from '../lib/audioProcessing';
+import { getTrackFadeGainAtTime, getTrackRegionRenderSchedule } from '../lib/audioProcessing';
 import { cutClipRegionSide, slipClipRegion } from '../lib/studioClipRegions';
+
+describe('track fade envelope', () => {
+  const track = { startTime: 10, duration: 8, fadeIn: 0.25, fadeOut: 0.25 };
+
+  it('ramps from silence to unity across the configured fade-in', () => {
+    expect(getTrackFadeGainAtTime(track, 10)).toBe(0);
+    expect(getTrackFadeGainAtTime(track, 11)).toBe(0.5);
+    expect(getTrackFadeGainAtTime(track, 12)).toBe(1);
+  });
+
+  it('ramps from unity to silence across the configured fade-out', () => {
+    expect(getTrackFadeGainAtTime(track, 16)).toBe(1);
+    expect(getTrackFadeGainAtTime(track, 17)).toBe(0.5);
+    expect(getTrackFadeGainAtTime(track, 18)).toBe(0);
+  });
+
+  it('keeps the envelope at unity when no fade is configured', () => {
+    expect(getTrackFadeGainAtTime({ startTime: 4, duration: 6 }, 4)).toBe(1);
+    expect(getTrackFadeGainAtTime({ startTime: 4, duration: 6 }, 10)).toBe(1);
+  });
+});
 
 describe('offline audio region scheduling', () => {
   it('renders only the surviving source ranges at their timeline positions', () => {

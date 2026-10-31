@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Snowflake, Loader2, Check } from 'lucide-react';
-import { renderMixToWav } from '@/lib/audioProcessing';
+import { audioBufferToWav, bufferToWaveform, renderMixToBuffer } from '@/lib/audioProcessing';
 import { toast } from 'sonner';
 
 /**
@@ -32,15 +32,17 @@ export default function TrackCommitDialog({ open, onOpenChange, track, onCommit 
     }
     setCommitting(true);
     try {
-      const blob = await renderMixToWav([track]);
-      if (!blob) {
+      const rendered = await renderMixToBuffer([track]);
+      if (!rendered) {
         toast.error("Nothing to commit — track is empty or muted");
         setCommitting(false);
         return;
       }
+      const blob = audioBufferToWav(rendered);
       const url = URL.createObjectURL(blob);
-      const duration = track.duration || 40;
-      onCommit?.(url, duration);
+      const duration = rendered.duration;
+      const waveform = bufferToWaveform(rendered);
+      onCommit?.(url, duration, waveform);
       setDone(true);
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
       closeTimerRef.current = setTimeout(() => {

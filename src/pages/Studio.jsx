@@ -19,7 +19,7 @@ import { usePerformance } from '@/hooks/use-performance';
 
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
+import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, getTrackFadeGainAtTime } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { cutClipRegionSide, cutTrackTimelineRange, getClipRegionAtTime, getClipSourceTimeAtTime, getGridIntervalSeconds, getHealCandidateRegionIds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
@@ -633,6 +633,7 @@ export default function Studio() {
             return;
           }
 
+          syncTrackFade(track, audio, newTime);
           const sourceTime = getClipSourceTimeAtTime(track, newTime);
           const regionRevision = Number(track.clipRegionRevision) || 0;
           // Re-seek on region changes, explicit edits (including sub-frame Slip
@@ -764,6 +765,17 @@ export default function Studio() {
     return ((track.volume ?? 75) / 100) * Math.pow(10, (track.clipGain || 0) / 20);
   };
 
+  // Keep timeline fades independent from the track fader and apply them to
+  // both Web Audio-routed tracks and cross-origin element-volume fallbacks.
+  const syncTrackFade = (track, audio, timelineTime) => {
+    if (!track || !audio) return;
+    const fadeGain = getTrackFadeGainAtTime(track, timelineTime);
+    const routed = mixEngineRef.current?.syncFade(track.id, fadeGain);
+    if (!routed && audio.dataset.fxBypass === '1') {
+      audio.volume = trackMixGain(track) * (masterVolume / 100) * fadeGain;
+    }
+  };
+
   // Creates (or reuses) the <audio> element for a track and routes it through the
   // FX graph. Falls back to plain element playback if Web Audio routing isn't possible.
   const getTrackAudio = (track) => {
@@ -835,6 +847,7 @@ export default function Studio() {
       audio.currentTime = sourceTime;
       audio.dataset.activeRegionId = region.id;
       audio.dataset.clipRegionRevision = String(Number(track.clipRegionRevision) || 0);
+      syncTrackFade(track, audio, newTime);
     });
   };
 
@@ -860,6 +873,7 @@ export default function Studio() {
           if (activeRegion && sourceTime !== null) {
             audio.currentTime = sourceTime;
             audio.dataset.activeRegionId = activeRegion.id;
+            syncTrackFade(track, audio, currentTimeRef.current);
             playPromises.push(
               audio.play().catch(e => { console.error("Audio playback error:", e); return { failed: true }; })
             );

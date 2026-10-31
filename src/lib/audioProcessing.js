@@ -13,6 +13,12 @@ export function getClipRegionFadeGainAtTime(region, timelineTime) {
   return Math.min(fadeInGain, fadeOutGain);
 }
 
+/** Convert a region's independent clip-gain setting from dB to linear gain. */
+export function getClipRegionGain(region) {
+  const gainDb = Number(region?.gainDb) || 0;
+  return Math.pow(10, gainDb / 20);
+}
+
 /** Gain from the track-wide fade envelope only. */
 function getTrackEnvelopeGainAtTime(track, timelineTime) {
   const start = Number(track?.startTime) || 0;
@@ -64,6 +70,7 @@ export function getTrackRegionRenderSchedule(track, bufferDuration) {
         duration,
         fadeIn: region.fadeIn,
         fadeOut: region.fadeOut,
+        gainDb: region.gainDb,
       };
     })
     .filter(Boolean);
@@ -467,8 +474,10 @@ export async function renderMixToBuffer(tracks, options = {}) {
 
     regions.forEach(region => {
       const source = offline.createBufferSource();
+      const regionGain = offline.createGain();
       const fade = offline.createGain();
       source.buffer = buffer;
+      regionGain.gain.value = getClipRegionGain(region);
 
       // Apply the same timeline-based fade envelope used by realtime playback.
       const regionStart = region.timelineStart;
@@ -489,7 +498,8 @@ export async function renderMixToBuffer(tracks, options = {}) {
         fade.gain.linearRampToValueAtTime(getTrackRegionFadeGainAtTime(track, region, time), time);
       });
 
-      source.connect(fade);
+      source.connect(regionGain);
+      regionGain.connect(fade);
       fade.connect(trackInput);
       source.start(region.timelineStart, region.sourceStart, region.duration);
     });

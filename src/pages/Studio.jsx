@@ -2870,107 +2870,107 @@ export default function Studio() {
                         );
                       })}
 
-                      {/* Left Trim Handle */}
-                      <div 
-                        className={cn("absolute left-0 w-4 z-20 group/handle flex justify-start items-center bg-black/20", 
-                          (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "pointer-events-none opacity-0",
+                      {/* Smart Tool trims the first region; Trim Tool uses each region's edge handles. */}
+                      <div
+                        className={cn(
+                          "absolute left-0 w-4 z-20 group/handle flex justify-start items-center bg-black/20",
+                          activeTool === 'smart' ? "cursor-col-resize hover:bg-white/40" : "pointer-events-none opacity-0",
                           activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
                         )}
                         onPointerDown={(e) => {
-                          if (activeTool !== 'trim' && activeTool !== 'smart') return;
+                          if (activeTool !== 'smart') return;
                           e.stopPropagation();
+                          const region = getTrackClipRegions(track)[0];
+                          if (!region || track.locked) return;
                           const target = e.currentTarget;
                           const startX = e.clientX;
-                          const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
-                          const initialDuration = track.duration !== undefined ? track.duration : 40;
-                          const initialClipStart = track.clipStart || 0;
-                          
+                          let delta = 0;
                           target.setPointerCapture(e.pointerId);
-                          
-                          const MIN_CLIP_DURATION = 0.001; // 1ms — surgical-precision trim floor
-                          const round = (v) => Math.round(v * 1000) / 1000; // snap to 1ms to avoid float drift
                           const handleMove = (moveEvent) => {
-                            const deltaX = moveEvent.clientX - startX;
-                            const deltaTime = round(deltaX / (20 * zoom));
-                            
-                            if (deltaTime < initialDuration - MIN_CLIP_DURATION) { 
-                               // Don't allow left trim to go before the actual start of the audio file
-                               const maxLeftTrim = -initialClipStart;
-                               const trimAmount = Math.max(maxLeftTrim, deltaTime);
-                               
-                               setTracks(prev => prev.map(t => 
-                                t.id === track.id ? { 
-                                  ...t, 
-                                  startTime: round(initialStartTime + trimAmount),
-                                  duration: round(initialDuration - trimAmount),
-                                  clipStart: round(initialClipStart + trimAmount)
-                                  } : t
-                                  ));
-                                  showEditTooltip(moveEvent.clientX, moveEvent.clientY, initialStartTime + trimAmount);
-                                  }
-                                  };
+                            const rawDelta = (moveEvent.clientX - startX) / (20 * zoom);
+                            let nextDelta = rawDelta;
+                            if (editMode === 'grid') {
+                              const interval = getGridIntervalSeconds(gridSize, bpm, timeSignature);
+                              nextDelta = Math.round((region.timelineStart + rawDelta) / interval) * interval - region.timelineStart;
+                            }
+                            const regionLength = region.sourceEnd - region.sourceStart;
+                            delta = Math.max(
+                              -region.timelineStart,
+                              -region.sourceStart,
+                              Math.min(nextDelta, regionLength - 0.001)
+                            );
+                            showEditTooltip(moveEvent.clientX, moveEvent.clientY, region.timelineStart + delta);
+                          };
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                            if (Math.abs(delta) > 0.001) {
+                              setTracksWithHistory(previous => previous.map(item =>
+                                item.id === track.id ? trimClipRegionLeft(item, region.id, delta) : item
+                              ));
+                              pushToHistory(tracksRef.current);
+                            }
+                            hideEditTooltip();
+                          };
+                          target.addEventListener('pointermove', handleMove);
+                          target.addEventListener('pointerup', handleUp);
+                        }}
+                      >
+                        <div className="w-1 h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
+                      </div>
 
-                                  const handleUp = (upEvent) => {
-                                  target.releasePointerCapture(upEvent.pointerId);
-                                  target.removeEventListener('pointermove', handleMove);
-                                  target.removeEventListener('pointerup', handleUp);
-                                  pushToHistory(tracksRef.current);
-                                  hideEditTooltip();
-                                  };
-
-                                  target.addEventListener('pointermove', handleMove);
-                                  target.addEventListener('pointerup', handleUp);
-                                            }}
-                                          >
-                                            <div className="w-1 h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
-                                          </div>
-
-                                          {/* Right Trim Handle */}
-                      <div 
-                        className={cn("absolute right-0 w-4 z-20 group/handle flex justify-end items-center bg-black/20", 
-                          (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "pointer-events-none opacity-0",
+                      {/* Smart Tool trims the last region; Trim Tool uses each region's edge handles. */}
+                      <div
+                        className={cn(
+                          "absolute right-0 w-4 z-20 group/handle flex justify-end items-center bg-black/20",
+                          activeTool === 'smart' ? "cursor-col-resize hover:bg-white/40" : "pointer-events-none opacity-0",
                           activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
                         )}
                         onPointerDown={(e) => {
-                          if (activeTool !== 'trim' && activeTool !== 'smart') return;
+                          if (activeTool !== 'smart') return;
                           e.stopPropagation();
+                          const regions = getTrackClipRegions(track);
+                          const region = regions[regions.length - 1];
+                          if (!region || track.locked) return;
                           const target = e.currentTarget;
                           const startX = e.clientX;
-                          const initialDuration = track.duration !== undefined ? track.duration : 40;
-                          const initialClipStart = track.clipStart || 0;
-                          const fullDuration = track.fullDuration || track.duration || 40;
-                          
+                          const regionLength = region.sourceEnd - region.sourceStart;
+                          const trackSourceLimit = Math.max(
+                            Number(track.fullDuration) || 0,
+                            (Number(track.clipStart) || 0) + (Number(track.duration) || 0),
+                            region.sourceEnd
+                          );
+                          let delta = 0;
                           target.setPointerCapture(e.pointerId);
-                          
-                          const MIN_CLIP_DURATION_R = 0.001; // 1ms — surgical-precision trim floor
-                          const roundR = (v) => Math.round(v * 1000) / 1000; // snap to 1ms to avoid float drift
                           const handleMove = (moveEvent) => {
-                            const deltaX = moveEvent.clientX - startX;
-                            const deltaTime = roundR(deltaX / (20 * zoom));
-                            
-                            if (-deltaTime < initialDuration - MIN_CLIP_DURATION_R) {
-                               // Allow dragging right to restore the audio, up to its full duration
-                               const maxRightTrim = fullDuration - (initialClipStart + initialDuration);
-                               const trimAmount = Math.max(-maxRightTrim, -deltaTime); 
-                               
-                               setTracks(prev => prev.map(t => 
-                                t.id === track.id ? { 
-                                  ...t, 
-                                  duration: roundR(initialDuration - trimAmount)
-                                  } : t
-                                  ));
-                                  showEditTooltip(moveEvent.clientX, moveEvent.clientY, (track.startTime || 0) + (initialDuration - trimAmount));
-                                  }
-                                  };
-
-                                  const handleUp = (upEvent) => {
-                                  target.releasePointerCapture(upEvent.pointerId);
-                                  target.removeEventListener('pointermove', handleMove);
-                                  target.removeEventListener('pointerup', handleUp);
-                                  pushToHistory(tracksRef.current);
-                                  hideEditTooltip();
-                                  };
-                          
+                            const rawDelta = (moveEvent.clientX - startX) / (20 * zoom);
+                            const timelineEnd = region.timelineStart + regionLength;
+                            let nextDelta = rawDelta;
+                            if (editMode === 'grid') {
+                              const interval = getGridIntervalSeconds(gridSize, bpm, timeSignature);
+                              nextDelta = Math.round((timelineEnd + rawDelta) / interval) * interval - timelineEnd;
+                            }
+                            delta = Math.max(
+                              -(regionLength - 0.001),
+                              Math.min(nextDelta, trackSourceLimit - region.sourceEnd)
+                            );
+                            showEditTooltip(moveEvent.clientX, moveEvent.clientY, timelineEnd + delta);
+                          };
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                            if (Math.abs(delta) > 0.001) {
+                              setTracksWithHistory(previous => previous.map(item =>
+                                item.id === track.id
+                                  ? trimClipRegionRight(item, region.id, delta, { shuffle: editMode === 'shuffle' })
+                                  : item
+                              ));
+                              pushToHistory(tracksRef.current);
+                            }
+                            hideEditTooltip();
+                          };
                           target.addEventListener('pointermove', handleMove);
                           target.addEventListener('pointerup', handleUp);
                         }}

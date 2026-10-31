@@ -3,7 +3,11 @@ import {
   cutClipRegionSide,
   getTrackClipRegions,
   healTrackRegions,
+  moveClipRegion,
+  moveTrackClipRegions,
   splitTrackRegion,
+  trimClipRegionLeft,
+  trimClipRegionRight,
 } from '../lib/studioClipRegions';
 
 const makeTrack = () => ({
@@ -77,6 +81,44 @@ describe('NaliStudio clip-region editing', () => {
       sourceStart: 4,
       sourceEnd: 10,
     });
+  });
+
+  it('expands the lane bounds when a single region is moved outside its old clip', () => {
+    const result = moveClipRegion(makeTrack(), 'region-1', 14);
+
+    expect(result.startTime).toBe(14);
+    expect(result.duration).toBe(10);
+    expect(result.clipRegions[0].timelineStart).toBe(14);
+  });
+
+  it('moves all regions together while preserving their gaps and source offsets', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'left', timelineStart: 2, sourceStart: 0, sourceEnd: 3 },
+        { id: 'right', timelineStart: 7, sourceStart: 3, sourceEnd: 6 },
+      ],
+    };
+    const result = moveTrackClipRegions(track, 5);
+
+    expect(result.startTime).toBe(7);
+    expect(result.duration).toBe(8);
+    expect(result.clipRegions.map(region => region.timelineStart)).toEqual([7, 12]);
+    expect(result.clipRegions.map(region => [region.sourceStart, region.sourceEnd])).toEqual([[0, 3], [3, 6]]);
+  });
+
+  it('recalculates lane bounds when trimming region edges', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [{ id: 'region-1', timelineStart: 2, sourceStart: 2, sourceEnd: 8 }],
+    };
+    const leftExtended = trimClipRegionLeft(track, 'region-1', -1);
+    expect(leftExtended.startTime).toBe(1);
+    expect(leftExtended.duration).toBe(6);
+
+    const rightExtended = trimClipRegionRight(track, 'region-1', 3);
+    expect(rightExtended.startTime).toBe(2);
+    expect(rightExtended.duration).toBe(9);
   });
 
   it('heals adjacent split regions back into one region', () => {

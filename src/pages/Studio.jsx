@@ -21,7 +21,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { cutClipRegionSide, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -2536,14 +2536,14 @@ export default function Studio() {
 
                            const regionDuration = targetRegion.sourceEnd - targetRegion.sourceStart;
                            const keepsRight = timelineCut - targetRegion.timelineStart < regionDuration / 2;
-                           const preview = cutClipRegionSide(track, targetRegion.id, timelineCut);
+                           const preview = cutClipRegionSide(track, targetRegion.id, timelineCut, { shuffle: editMode === 'shuffle' });
                            if (!preview.removed) {
                              toast.error("The cut point must be inside the selected audio region.");
                              return;
                            }
                            setTracksWithHistory(previous => previous.map(item => {
                              if (item.id !== track.id) return item;
-                             const result = cutClipRegionSide(item, targetRegion.id, timelineCut);
+                             const result = cutClipRegionSide(item, targetRegion.id, timelineCut, { shuffle: editMode === 'shuffle' });
                              if (!result.removed) return item;
                              const updatedTrack = { ...result };
                              delete updatedTrack.removed;
@@ -2677,46 +2677,8 @@ export default function Studio() {
                               const target = event.currentTarget;
                               const startX = event.clientX;
 
-                              // Slip mode moves source audio inside the existing region;
-                              // Grid/Shuffle move the region itself on the timeline.
-                              if (editMode === 'slip') {
-                                const regionDuration = region.sourceEnd - region.sourceStart;
-                                const initialSourceStart = region.sourceStart;
-                                const sourceLimit = Math.max(
-                                  Number(track.fullDuration) || 0,
-                                  (Number(track.clipStart) || 0) + (Number(track.duration) || 0),
-                                  region.sourceEnd
-                                );
-                                const maxSourceStart = Math.max(0, sourceLimit - regionDuration);
-                                target.setPointerCapture(event.pointerId);
-                                const onSlipMove = (moveEvent) => {
-                                  const delta = (moveEvent.clientX - startX) / (20 * zoom);
-                                  const nextSourceStart = Math.max(0, Math.min(maxSourceStart, initialSourceStart + delta));
-                                  target.dataset.sourceStart = String(nextSourceStart);
-                                  target.style.background = 'rgba(99,102,241,0.22)';
-                                  showEditTooltip(moveEvent.clientX, moveEvent.clientY, nextSourceStart);
-                                };
-                                const onSlipUp = (upEvent) => {
-                                  target.releasePointerCapture(upEvent.pointerId);
-                                  target.removeEventListener('pointermove', onSlipMove);
-                                  target.removeEventListener('pointerup', onSlipUp);
-                                  target.style.background = '';
-                                  hideEditTooltip();
-                                  if (target.dataset.sourceStart !== undefined) {
-                                    const nextSourceStart = Number(target.dataset.sourceStart);
-                                    delete target.dataset.sourceStart;
-                                    setTracksWithHistory(previous => previous.map(item =>
-                                      item.id === track.id
-                                        ? slipClipRegion(item, region.id, nextSourceStart, regionDuration)
-                                        : item
-                                    ));
-                                  }
-                                };
-                                target.addEventListener('pointermove', onSlipMove);
-                                target.addEventListener('pointerup', onSlipUp);
-                                return;
-                              }
-
+                              // Slip mode permits free timeline placement; Grid snaps to
+                              // the session grid; Shuffle pushes colliding regions aside.
                               const initialStart = region.timelineStart;
                               const clipContainer = target.parentElement;
                               const previousOverflow = clipContainer?.style.overflow || '';
@@ -2743,9 +2705,12 @@ export default function Studio() {
                                 if (target.dataset.timelineStart !== undefined) {
                                   const nextStart = Number(target.dataset.timelineStart);
                                   delete target.dataset.timelineStart;
-                                  setTracksWithHistory(previous => previous.map(item =>
-                                    item.id === track.id ? moveClipRegion(item, region.id, nextStart) : item
-                                  ));
+                                  setTracksWithHistory(previous => previous.map(item => {
+                                    if (item.id !== track.id) return item;
+                                    return editMode === 'shuffle'
+                                      ? shuffleMoveClipRegion(item, region.id, nextStart)
+                                      : moveClipRegion(item, region.id, nextStart);
+                                  }));
                                 }
                               };
                               target.addEventListener('pointermove', onMove);
@@ -2761,7 +2726,7 @@ export default function Studio() {
                             className={cn(
                               "absolute top-0 bottom-0 z-40 border-x border-transparent",
                               activeTool === 'grab'
-                                ? (editMode === 'slip' ? "cursor-ew-resize" : "cursor-grab active:cursor-grabbing")
+                                ? "cursor-grab active:cursor-grabbing"
                                 : activeTool === 'trim' ? "pointer-events-auto" : "pointer-events-none",
                               isRegionSelected ? "border-primary bg-primary/10" : "hover:border-white/50"
                             )}
@@ -2828,7 +2793,7 @@ export default function Studio() {
                                           const maxDelta = current && Number.isFinite(Number(item.fullDuration))
                                             ? Number(item.fullDuration) - current.sourceEnd
                                             : delta;
-                                          return trimClipRegionRight(item, region.id, Math.min(delta, maxDelta));
+                                          return trimClipRegionRight(item, region.id, Math.min(delta, maxDelta), { shuffle: editMode === 'shuffle' });
                                         }));
                                       }
                                     };

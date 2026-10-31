@@ -271,6 +271,42 @@ export function shuffleMoveClipRegion(track, regionId, timelineStart) {
   return withTrackClipRegionBounds(track, shifted);
 }
 
+/**
+ * Slip-edit a region: move the source in/out together while keeping its
+ * timeline position and duration fixed.
+ */
+export function slipClipRegion(track, regionId, sourceDelta) {
+  const delta = finite(sourceDelta, NaN);
+  if (!Number.isFinite(delta)) return track;
+  const regions = getTrackClipRegions(track);
+  const region = regions.find(item => item.id === regionId);
+  if (!region) return { ...track, clipRegions: regions };
+
+  const duration = region.sourceEnd - region.sourceStart;
+  const sourceLimit = Math.max(
+    finite(track.fullDuration, 0),
+    Math.max(0, finite(track.clipStart, 0) + finite(track.duration, 0)),
+    ...regions.map(item => item.sourceEnd)
+  );
+  const maxStart = Math.max(0, sourceLimit - duration);
+  const sourceStart = Math.max(0, Math.min(maxStart, region.sourceStart + delta));
+  const appliedDelta = sourceStart - region.sourceStart;
+
+  return {
+    ...track,
+    fullDuration: sourceLimit,
+    clipRegions: regions.map(item => item.id === regionId
+      ? {
+          ...item,
+          sourceStart,
+          sourceEnd: sourceStart + duration,
+        }
+      : item
+    ),
+    lastSlipDelta: appliedDelta,
+  };
+}
+
 /** Trim the left edge non-destructively; move timeline and source starts together. */
 export function trimClipRegionLeft(track, regionId, timelineDelta) {
   const delta = finite(timelineDelta, NaN);

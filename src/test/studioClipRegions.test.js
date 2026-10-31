@@ -51,6 +51,14 @@ describe('NaliStudio clip-region editing', () => {
     });
   });
 
+  it('does not treat an edge click as a successful cut', () => {
+    const track = makeTrack();
+    const result = cutClipRegionSide(track, 'region-1', 0);
+
+    expect(result.removed).toBe(false);
+    expect(getTrackClipRegions(result)).toEqual(track.clipRegions);
+  });
+
   it('splits a region into two editable regions without creating a track', () => {
     const track = makeTrack();
     const result = splitTrackRegion(track, 4, (side) => `region-${side}`);

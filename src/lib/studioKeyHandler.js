@@ -7,7 +7,7 @@ import { getTrackClipRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveC
 export function createStudioKeyHandler(deps) {
   const {
     undo, redo, togglePlay, toggleRecord, stop,
-    selectedTrackIds, setSelectedTrackIds, selectedClipRegion, editMode,
+    selectedTrackIds, setSelectedTrackIds, selectedClipRegion, setSelectedClipRegion, editMode,
     deleteSelectedTracks, duplicateSelectedTracks, splitSelectedTracks,
     toggleTrackProperty, addTrack, addVcaTrack, addFolderTrack, setEditMode,
     toggleSolo, toggleMute, setShowFadePresets, setActiveTool,
@@ -83,7 +83,7 @@ export function createStudioKeyHandler(deps) {
     else if (e.key === 'i' || e.key === 'I') { e.preventDefault(); setSelectionStart(currentTimeRef.current); if (selectionEnd !== null && currentTimeRef.current >= selectionEnd) setSelectionEnd(null); }
     else if (e.key === 'o' || e.key === 'O') { e.preventDefault(); setSelectionEnd(currentTimeRef.current); if (selectionStart !== null && currentTimeRef.current <= selectionStart) setSelectionStart(null); }
     else if (e.key === 'a' || e.key === 'A') { if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); const end = Math.max(...tracks.map(t => (t.startTime||0)+(t.duration||0)), 20); setSelectionStart(0); setSelectionEnd(end); } }
-    else if (e.key === 'Escape') { e.preventDefault(); setSelectionStart(null); setSelectionEnd(null); setSelectedTrackIds([]); }
+    else if (e.key === 'Escape') { e.preventDefault(); setSelectionStart(null); setSelectionEnd(null); setSelectedTrackIds([]); setSelectedClipRegion?.(null); }
     else if (e.key === 'Tab') { e.preventDefault();
       const curr = currentTimeRef.current;
       let targetPeak = null;

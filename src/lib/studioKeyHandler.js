@@ -1,4 +1,4 @@
-import { getTrackClipRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveClipRegion } from '@/lib/studioClipRegions';
+import { deleteClipRegion, getTrackClipRegions, moveClipRegion, moveTrackClipRegions, shuffleMoveClipRegion } from '@/lib/studioClipRegions';
 
 /**
  * Studio keyboard shortcut handler — extracted from Studio.jsx for line-count management.
@@ -58,7 +58,29 @@ export function createStudioKeyHandler(deps) {
     else if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
     else if (e.code === 'Numpad0') { e.preventDefault(); stop(); }
     else if (!e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); toggleRecord(); }
-    else if (e.key === 'Backspace' || e.key === 'Delete') { if (selectedTrackIds.length > 0) { e.preventDefault(); deleteSelectedTracks(); } }
+    else if (e.key === 'Backspace' || e.key === 'Delete') {
+      if (selectedClipRegion) {
+        e.preventDefault();
+        const separator = selectedClipRegion.indexOf(':');
+        const trackId = separator > 0 ? selectedClipRegion.slice(0, separator) : '';
+        const regionId = separator > 0 ? selectedClipRegion.slice(separator + 1) : '';
+        const track = tracks.find(item => String(item.id) === trackId);
+        const regionExists = track && getTrackClipRegions(track).some(region => region.id === regionId);
+        if (track && regionExists && !track.locked) {
+          setTracksWithHistory(previous => previous.map(item =>
+            String(item.id) === trackId
+              ? deleteClipRegion(item, regionId, { shuffle: editMode === 'shuffle' })
+              : item
+          ));
+          setSelectedClipRegion?.(null);
+        } else if (!track || !regionExists) {
+          setSelectedClipRegion?.(null);
+        }
+      } else if (selectedTrackIds.length > 0) {
+        e.preventDefault();
+        deleteSelectedTracks();
+      }
+    }
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); duplicateSelectedTracks(); }
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); splitSelectedTracks(); }
     else if (e.key === 'l' || e.key === 'L') { e.preventDefault(); selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked')); }

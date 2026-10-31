@@ -60,4 +60,45 @@ describe('NaliStudio clip regions', () => {
     };
     expect(healTrackRegions(track, 'a').healed).toBe(false);
   });
+
+  it('moves a region without changing its source in/out points', () => {
+    const track = splitTrackRegion({ id: 3, startTime: 2, duration: 8, clipStart: 5 }, 6, side => side);
+    const moved = moveClipRegion(track, 'left', 20);
+    expect(moved.clipRegions.find(region => region.id === 'left')).toMatchObject({
+      timelineStart: 20, sourceStart: 5, sourceEnd: 9,
+    });
+  });
+
+  it('slip-edits source audio without moving the region on the timeline', () => {
+    const track = { id: 4, clipRegions: [{ id: 'a', timelineStart: 12, sourceStart: 2, sourceEnd: 7 }] };
+    const slipped = slipClipRegion(track, 'a', 10, 5);
+    expect(slipped.clipRegions[0]).toMatchObject({
+      timelineStart: 12, sourceStart: 10, sourceEnd: 15,
+    });
+  });
+
+  it('trims the left edge by moving timeline and source starts together', () => {
+    const track = { id: 5, clipRegions: [{ id: 'a', timelineStart: 10, sourceStart: 3, sourceEnd: 9 }] };
+    const trimmed = trimClipRegionLeft(track, 'a', 2);
+    expect(trimmed.clipRegions[0]).toMatchObject({
+      timelineStart: 12, sourceStart: 5, sourceEnd: 9,
+    });
+  });
+
+  it('trims the right edge without changing the region start', () => {
+    const track = { id: 5, clipRegions: [{ id: 'a', timelineStart: 10, sourceStart: 3, sourceEnd: 9 }] };
+    const trimmed = trimClipRegionRight(track, 'a', -2);
+    expect(trimmed.clipRegions[0]).toMatchObject({
+      timelineStart: 10, sourceStart: 3, sourceEnd: 7,
+    });
+  });
+
+  it('cuts away the left or right side based on which half is clicked', () => {
+    const track = { id: 6, clipRegions: [{ id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 10 }] };
+    const keepRight = cutClipRegionSide(track, 'a', 3);
+    expect(keepRight.clipRegions[0]).toMatchObject({ timelineStart: 3, sourceStart: 3, sourceEnd: 10 });
+    const keepLeft = cutClipRegionSide(track, 'a', 7);
+    expect(keepLeft.clipRegions[0]).toMatchObject({ timelineStart: 0, sourceStart: 0, sourceEnd: 7 });
+  });
+
 });

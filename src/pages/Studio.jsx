@@ -3436,18 +3436,31 @@ export default function Studio() {
         open={showCommitDialog}
         onOpenChange={setShowCommitDialog}
         track={tracks.find(t => selectedTrackIds.includes(t.id))}
-        onCommit={(newAudioUrl) => {
+        onCommit={(newAudioUrl, renderDuration, renderedWaveform) => {
           const track = tracks.find(t => selectedTrackIds.includes(t.id));
           if (!track) return;
           if (track.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(track.audioUrl); } catch (e) {} }
-          // The render bakes fader, pan, inserts and Send 1 into the file — reset them
-          // so committed audio isn't processed twice on playback/export.
-          setTracksWithHistory(prev => prev.map(t => {
-            if (t.id !== track.id) return t;
-            const { effects: _effects, ...rest } = t;
-            return {
+          // The render contains audio at its original timeline coordinates. Remap
+          // each region's source range to that rendered file so cuts and gaps survive.
+          setTracksWithHistory(previous => previous.map(item => {
+            if (item.id !== track.id) return item;
+            const { effects: _effects, ...rest } = item;
+            const committedRegions = getTrackClipRegions(item).map(region => {
+              const regionDuration = region.sourceEnd - region.sourceStart;
+              return {
+                ...region,
+                sourceStart: region.timelineStart,
+                sourceEnd: region.timelineStart + regionDuration,
+              };
+            });
+            return withTrackClipRegionBounds({
               ...rest,
               audioUrl: newAudioUrl,
+              waveform: renderedWaveform,
+              duration: 0,
+              fullDuration: renderDuration,
+              clipStart: 0,
+              clipRegions: committedRegions,
               clipGain: 0,
               volume: 100,
               pan: 50,
@@ -3456,7 +3469,7 @@ export default function Studio() {
               fadeIn: 0,
               fadeOut: 0,
               committed: true,
-            };
+            }, committedRegions);
           }));
         }}
       />

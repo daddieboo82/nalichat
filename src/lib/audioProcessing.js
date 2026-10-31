@@ -20,15 +20,27 @@ export function getClipRegionGain(region) {
 }
 
 /** Interpolate a DAW automation lane at an absolute timeline time. */
+export function getSortedAutomationPoints(points, laneStartTime = 0) {
+  const start = Number.isFinite(Number(laneStartTime)) ? Number(laneStartTime) : 0;
+  const sorted = (Array.isArray(points) ? points : [])
+    .filter(point => Number.isFinite(Number(point?.time))
+      && Number(point.time) >= start
+      && Number.isFinite(Number(point?.value)))
+    .slice()
+    .sort((left, right) => Number(left.time) - Number(right.time));
+  // A lane can contain multiple edits at the same timestamp. Keep the last
+  // value so offline AudioParam scheduling never creates zero-length ramps.
+  return sorted.filter((point, index, values) =>
+    index === values.length - 1 || Number(point.time) !== Number(values[index + 1].time)
+  );
+}
+
 export function getAutomationValueAtTime(points, timelineTime, fallback = 0, laneStartTime = 0) {
   const safeFallback = Number.isFinite(Number(fallback)) ? Number(fallback) : 0;
   const time = Number(timelineTime);
   const start = Number.isFinite(Number(laneStartTime)) ? Number(laneStartTime) : 0;
-  if (!Number.isFinite(time) || !Array.isArray(points) || points.length === 0 || time <= start) return safeFallback;
-  const sorted = points
-    .filter(point => Number.isFinite(Number(point?.time)) && Number.isFinite(Number(point?.value)))
-    .slice()
-    .sort((left, right) => Number(left.time) - Number(right.time));
+  if (!Number.isFinite(time) || time <= start) return safeFallback;
+  const sorted = getSortedAutomationPoints(points, start);
   if (sorted.length === 0) return safeFallback;
   const first = sorted[0];
   if (time < Number(first.time)) {
@@ -510,9 +522,7 @@ export async function renderMixToBuffer(tracks, options = {}) {
     const trackStart = Math.max(0, Number(track.startTime) || 0);
     const baseVolume = Math.max(0, Math.min(100, num(track.volume, 75)));
     const clipGain = Math.pow(10, clamp(num(track.clipGain, 0), -24, 24) / 20);
-    const volumePoints = (track.automationPoints || [])
-      .filter(point => Number.isFinite(Number(point?.time)) && Number.isFinite(Number(point?.value)))
-      .slice().sort((left, right) => Number(left.time) - Number(right.time));
+    const volumePoints = getSortedAutomationPoints(track.automationPoints, trackStart);
     if (volumePoints.length > 0) {
       channel.trackGain.gain.setValueAtTime(baseVolume / 100 * clipGain, 0);
       channel.trackGain.gain.setValueAtTime(baseVolume / 100 * clipGain, trackStart);
@@ -521,9 +531,7 @@ export async function renderMixToBuffer(tracks, options = {}) {
         channel.trackGain.gain.linearRampToValueAtTime(value, Math.max(trackStart, Number(point.time)));
       });
     }
-    const panPoints = (track.panAutomationPoints || [])
-      .filter(point => Number.isFinite(Number(point?.time)) && Number.isFinite(Number(point?.value)))
-      .slice().sort((left, right) => Number(left.time) - Number(right.time));
+    const panPoints = getSortedAutomationPoints(track.panAutomationPoints, trackStart);
     if (channel.panner && panPoints.length > 0) {
       const basePan = Math.max(0, Math.min(100, num(track.pan, 50)));
       channel.panner.pan.setValueAtTime((basePan - 50) / 50, 0);

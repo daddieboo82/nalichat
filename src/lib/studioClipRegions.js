@@ -303,7 +303,6 @@ export function slipClipRegion(track, regionId, sourceDelta) {
         }
       : item
     ),
-    lastSlipDelta: appliedDelta,
   };
 }
 

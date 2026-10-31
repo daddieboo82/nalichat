@@ -98,16 +98,42 @@ export function healTrackRegions(track, regionId) {
 }
 
 
-/** Move a region on the timeline without changing which source audio it references. */
+/** Keep the legacy clip container aligned with the outer bounds of its regions. */
+export function withTrackClipRegionBounds(track, regions) {
+  const ordered = [...regions].sort((a, b) => a.timelineStart - b.timelineStart);
+  if (ordered.length === 0) return { ...track, clipRegions: ordered };
+  const startTime = ordered[0].timelineStart;
+  const endTime = ordered.reduce(
+    (latest, region) => Math.max(latest, region.timelineStart + region.sourceEnd - region.sourceStart),
+    startTime
+  );
+  return {
+    ...track,
+    startTime,
+    duration: Math.max(0.001, endTime - startTime),
+    clipRegions: ordered,
+  };
+}
+
+/** Move one region on the timeline without changing which source audio it references. */
 export function moveClipRegion(track, regionId, timelineStart) {
   const start = Math.max(0, finite(timelineStart, NaN));
   if (!Number.isFinite(start)) return track;
-  return {
-    ...track,
-    clipRegions: getTrackClipRegions(track).map(region =>
-      region.id === regionId ? { ...region, timelineStart: start } : region
-    ).sort((a, b) => a.timelineStart - b.timelineStart),
-  };
+  const regions = getTrackClipRegions(track).map(region =>
+    region.id === regionId ? { ...region, timelineStart: start } : region
+  );
+  return withTrackClipRegionBounds(track, regions);
+}
+
+/** Move every region on a track together, preserving all internal spacing. */
+export function moveTrackClipRegions(track, timelineDelta) {
+  const delta = finite(timelineDelta, NaN);
+  if (!Number.isFinite(delta)) return track;
+  const regions = getTrackClipRegions(track).map(region => ({
+    ...region,
+    timelineStart: Math.max(0, region.timelineStart + delta),
+  }));
+  return withTrackClipRegionBounds(track, regions);
 }
 
 /** Slip-edit a region: preserve its timeline position and length, move source in/out together. */
@@ -128,34 +154,30 @@ export function slipClipRegion(track, regionId, sourceStart, sourceDuration) {
 export function trimClipRegionLeft(track, regionId, timelineDelta) {
   const delta = finite(timelineDelta, NaN);
   if (!Number.isFinite(delta)) return track;
-  return {
-    ...track,
-    clipRegions: getTrackClipRegions(track).map(region => {
-      if (region.id !== regionId) return region;
-      const length = region.sourceEnd - region.sourceStart;
-      const applied = Math.max(-region.timelineStart, -region.sourceStart, Math.min(delta, length - 0.001));
-      return {
-        ...region,
-        timelineStart: region.timelineStart + applied,
-        sourceStart: region.sourceStart + applied,
-        fadeIn: 0,
-      };
-    }),
-  };
+  const regions = getTrackClipRegions(track).map(region => {
+    if (region.id !== regionId) return region;
+    const length = region.sourceEnd - region.sourceStart;
+    const applied = Math.max(-region.timelineStart, -region.sourceStart, Math.min(delta, length - 0.001));
+    return {
+      ...region,
+      timelineStart: region.timelineStart + applied,
+      sourceStart: region.sourceStart + applied,
+      fadeIn: 0,
+    };
+  });
+  return withTrackClipRegionBounds(track, regions);
 }
 
 /** Trim the right edge non-destructively by changing only the source out point. */
 export function trimClipRegionRight(track, regionId, timelineDelta) {
   const delta = finite(timelineDelta, NaN);
   if (!Number.isFinite(delta)) return track;
-  return {
-    ...track,
-    clipRegions: getTrackClipRegions(track).map(region => {
-      if (region.id !== regionId) return region;
-      const nextEnd = Math.max(region.sourceStart + 0.001, region.sourceEnd + delta);
-      return { ...region, sourceEnd: nextEnd, fadeOut: 0 };
-    }),
-  };
+  const regions = getTrackClipRegions(track).map(region => {
+    if (region.id !== regionId) return region;
+    const nextEnd = Math.max(region.sourceStart + 0.001, region.sourceEnd + delta);
+    return { ...region, sourceEnd: nextEnd, fadeOut: 0 };
+  });
+  return withTrackClipRegionBounds(track, regions);
 }
 
 /** Cut away one side of a region at an absolute timeline position. */
@@ -176,5 +198,5 @@ export function cutClipRegionSide(track, regionId, timelineCut) {
     : { ...region, sourceEnd: rightSourceStart, fadeOut: 0 };
   const next = [...regions];
   next.splice(index, 1, kept);
-  return { ...track, clipRegions: next, removed: true };
+  return { ...withTrackClipRegionBounds(track, next), removed: true };
 }

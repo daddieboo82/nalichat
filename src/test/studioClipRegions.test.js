@@ -6,6 +6,7 @@ import {
   getClipRegionAtTime,
   getClipSourceTimeAtTime,
   getGridIntervalSeconds,
+  getHealCandidateRegionIds,
   getTrackClipRegions,
   healTrackRegions,
   moveClipRegion,
@@ -34,6 +35,18 @@ const makeTrack = () => ({
 });
 
 describe('NaliStudio clip-region editing', () => {
+  it('orders selected-region Heal boundaries by proximity to the playhead', () => {
+    const regions = [
+      { id: 'left', timelineStart: 0, sourceStart: 0, sourceEnd: 2 },
+      { id: 'middle', timelineStart: 2, sourceStart: 2, sourceEnd: 6 },
+      { id: 'right', timelineStart: 6, sourceStart: 6, sourceEnd: 10 },
+    ];
+
+    expect(getHealCandidateRegionIds(regions, 'middle', 5.5)).toEqual(['middle', 'left']);
+    expect(getHealCandidateRegionIds(regions, 'middle', 0.5)).toEqual(['left', 'middle']);
+    expect(getHealCandidateRegionIds(regions, 'missing', 5)).toEqual([]);
+  });
+
   it('increments the region revision for edits that require realtime audio resync', () => {
     const track = makeTrack();
     const cut = cutClipRegionSide(track, 'region-1', 4, { direction: 'right' });

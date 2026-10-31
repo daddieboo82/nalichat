@@ -359,17 +359,25 @@ export function slipClipRegion(track, regionId, sourceDelta) {
 export function trimClipRegionLeft(track, regionId, timelineDelta) {
   const delta = finite(timelineDelta, NaN);
   if (!Number.isFinite(delta)) return track;
-  const regions = getTrackClipRegions(track).map(region => {
-    if (region.id !== regionId) return region;
-    const length = region.sourceEnd - region.sourceStart;
-    const applied = Math.max(-region.timelineStart, -region.sourceStart, Math.min(delta, length - 0.001));
-    return {
-      ...region,
-      timelineStart: region.timelineStart + applied,
-      sourceStart: region.sourceStart + applied,
-      fadeIn: 0,
-    };
-  });
+  const current = getTrackClipRegions(track);
+  const targetIndex = current.findIndex(region => region.id === regionId);
+  if (targetIndex < 0) return { ...track, clipRegions: current };
+  const target = current[targetIndex];
+  const previous = current[targetIndex - 1];
+  const length = target.sourceEnd - target.sourceStart;
+  const minimumDelta = previous
+    ? previous.timelineStart + previous.sourceEnd - previous.sourceStart - target.timelineStart
+    : -target.timelineStart;
+  const applied = Math.max(minimumDelta, -target.sourceStart, Math.min(delta, length - 0.001));
+  const regions = current.map(region => region.id === regionId
+    ? {
+        ...region,
+        timelineStart: region.timelineStart + applied,
+        sourceStart: region.sourceStart + applied,
+        fadeIn: 0,
+      }
+    : region
+  );
   return withTrackClipRegionBounds(track, regions);
 }
 
@@ -386,9 +394,15 @@ export function trimClipRegionRight(track, regionId, timelineDelta, { shuffle = 
     ...current.map(region => region.sourceEnd)
   );
   const target = current[targetIndex];
+  const next = current[targetIndex + 1];
+  const currentEnd = target.timelineStart + target.sourceEnd - target.sourceStart;
+  const maximumExtension = !shuffle && next
+    ? Math.max(0, next.timelineStart - currentEnd)
+    : Number.POSITIVE_INFINITY;
+  const boundedDelta = Math.min(delta, maximumExtension);
   const nextEnd = Math.min(
     sourceLimit,
-    Math.max(target.sourceStart + 0.001, target.sourceEnd + delta)
+    Math.max(target.sourceStart + 0.001, target.sourceEnd + boundedDelta)
   );
   const appliedDelta = nextEnd - target.sourceEnd;
   const regions = current.map((region, index) => {

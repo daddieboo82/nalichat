@@ -67,11 +67,14 @@ export function createStudioKeyHandler(deps) {
         const track = tracks.find(item => String(item.id) === trackId);
         const regionExists = track && getTrackClipRegions(track).some(region => region.id === regionId);
         if (track && regionExists && !track.locked) {
-          setTracksWithHistory(previous => previous.map(item =>
-            String(item.id) === trackId
-              ? deleteClipRegion(item, regionId, { shuffle: editMode === 'shuffle' })
-              : item
-          ));
+          setTracksWithHistory(previous => previous.map(item => {
+            if (String(item.id) !== trackId) return item;
+            const result = deleteClipRegion(item, regionId, { shuffle: editMode === 'shuffle' });
+            if (!result.removed) return item;
+            const updatedTrack = { ...result };
+            delete updatedTrack.removed;
+            return updatedTrack;
+          }));
           setSelectedClipRegion?.(null);
         } else if (!track || !regionExists) {
           setSelectedClipRegion?.(null);

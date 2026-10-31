@@ -1412,64 +1412,64 @@ export default function Studio() {
 
   // Pro Tools-style Consolidate Clips: render selected clips to new audio files
   const handleConsolidateClips = async () => {
-    const selected = tracks.filter(t => selectedTrackIds.includes(t.id) && t.audioUrl);
+    const selected = tracks.filter(track =>
+      selectedTrackIds.includes(track.id) && track.audioUrl
+    );
     if (selected.length === 0) {
       toast.error("Select at least one clip with audio to consolidate.");
       return;
     }
+
     setIsDownloading(true);
     toast.info(`Consolidating ${selected.length} clip${selected.length > 1 ? 's' : ''}...`);
     try {
       for (const track of selected) {
-        let audioCtx = null;
+        const regions = getTrackClipRegions(track);
+        if (regions.length === 0) {
+          throw new Error(`${track.name || "Selected track"} has no audio regions to consolidate.`);
+        }
+
+        // Consolidation bakes the actual edited regions and their internal gaps,
+        // but deliberately leaves mixer faders, pan, and inserts untouched.
+        // Offset the earliest region to zero so the file contains only the clip span.
+        const firstTimelineStart = regions[0].timelineStart;
+        const consolidateTrack = {
+          ...track,
+          startTime: 0,
+          duration: Math.max(...regions.map(region =>
+            region.timelineStart + region.sourceEnd - region.sourceStart
+          )) - firstTimelineStart,
+          volume: 100,
+          clipGain: 0,
+          pan: 50,
+          muted: false,
+          solo: false,
+          plugins: {},
+          effects: {},
+          send1: 0,
+          clipRegions: regions.map(region => ({
+            ...region,
+            timelineStart: region.timelineStart - firstTimelineStart,
+            gainDb: 0,
+          })),
+        };
+
+        const wavBlob = await renderMixToWav([consolidateTrack], {
+          masterVolume: 100,
+          masterFx: null,
+        });
+        if (!wavBlob) throw new Error(`No audio could be rendered for ${track.name || "selected track"}.`);
+
+        const url = URL.createObjectURL(wavBlob);
         try {
-          const response = await fetch(track.audioUrl);
-          if (!response.ok) throw new Error(`Failed to load ${track.name || "clip"}: ${response.status}`);
-          const arrayBuffer = await response.arrayBuffer();
-          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-          if (!AudioContextClass) throw new Error("Web Audio is not supported");
-          audioCtx = new AudioContextClass();
-          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-          // Apply clip start offset and duration trimming.
-          const clipStart = Math.max(0, track.clipStart || 0);
-          const clipDuration = track.duration || Math.max(0, audioBuffer.duration - clipStart);
-          const startSample = Math.min(audioBuffer.length, Math.floor(clipStart * audioBuffer.sampleRate));
-          const endSample = Math.min(
-            audioBuffer.length,
-            startSample + Math.floor(clipDuration * audioBuffer.sampleRate),
-          );
-          if (endSample <= startSample) throw new Error("Selected clip has no audio to consolidate");
-
-          const trimmedBuffer = audioCtx.createBuffer(
-            audioBuffer.numberOfChannels,
-            endSample - startSample,
-            audioBuffer.sampleRate,
-          );
-          for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
-            const sourceChannel = audioBuffer.getChannelData(ch);
-            const destinationChannel = trimmedBuffer.getChannelData(ch);
-            destinationChannel.set(sourceChannel.subarray(startSample, endSample));
-          }
-
-          // Encode the actual trimmed buffer. The previous path decoded/truncated
-          // the clip but then exported the original track again.
-          const wavBlob = audioBufferToWav(trimmedBuffer);
-          const url = URL.createObjectURL(wavBlob);
-          try {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${track.name.replace(/[^a-z0-9]/gi, '_')}_consolidated.wav`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-          } finally {
-            URL.revokeObjectURL(url);
-          }
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${(track.name || "Track").replace(/[^a-z0-9]/gi, '_')}_consolidated.wav`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
         } finally {
-          if (audioCtx && audioCtx.state !== 'closed') {
-            await audioCtx.close().catch(() => {});
-          }
+          URL.revokeObjectURL(url);
         }
       }
       toast.success(`${selected.length} clip${selected.length > 1 ? 's' : ''} consolidated!`);

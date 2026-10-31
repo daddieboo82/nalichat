@@ -476,6 +476,36 @@ describe('NaliStudio clip-region editing', () => {
     expect(rightExtended.duration).toBe(8);
   });
 
+  it('limits a normal left trim extension to the previous region boundary', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'previous', timelineStart: 0, sourceStart: 0, sourceEnd: 3 },
+        { id: 'target', timelineStart: 5, sourceStart: 3, sourceEnd: 6 },
+      ],
+    };
+    const result = trimClipRegionLeft(track, 'target', -4);
+
+    expect(result.clipRegions.map(region => region.timelineStart)).toEqual([0, 3]);
+    expect(result.clipRegions[1].sourceStart).toBe(1);
+    expect(result.clipRegions[0].timelineStart + 3).toBeLessThanOrEqual(result.clipRegions[1].timelineStart);
+  });
+
+  it('limits a normal right trim extension to the next region boundary', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'target', timelineStart: 0, sourceStart: 0, sourceEnd: 3 },
+        { id: 'next', timelineStart: 5, sourceStart: 3, sourceEnd: 6 },
+      ],
+    };
+    const result = trimClipRegionRight(track, 'target', 4);
+
+    expect(result.clipRegions[0].sourceEnd).toBe(5);
+    expect(result.clipRegions[1].timelineStart).toBe(5);
+    expect(result.clipRegions[0].timelineStart + 5).toBeLessThanOrEqual(result.clipRegions[1].timelineStart);
+  });
+
   it('preserves existing gaps outside Shuffle collision chains', () => {
     const track = {
       ...makeTrack(),

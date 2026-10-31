@@ -764,7 +764,7 @@ export default function Studio() {
     if (!audible) return 0;
     const baseVolume = track.volume ?? 75;
     const automatedVolume = getAutomationValueAtTime(track.automationPoints, timelineTime, baseVolume, track.startTime || 0);
-    return (Math.max(0, Math.min(100, automatedVolume)) / 100) * Math.pow(10, (track.clipGain || 0) / 20);
+    return (Math.max(0, Math.min(100, automatedVolume)) / 100) * Math.pow(10, Math.max(-24, Math.min(24, Number(track.clipGain) || 0)) / 20);
   };
 
   // Keep timeline fades independent from the track fader and apply them to

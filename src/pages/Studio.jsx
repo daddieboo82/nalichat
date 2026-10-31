@@ -3628,6 +3628,8 @@ export default function Studio() {
               plugins: {},
               fadeIn: 0,
               fadeOut: 0,
+              automationPoints: [],
+              panAutomationPoints: [],
               committed: true,
             }, committedRegions);
           }));

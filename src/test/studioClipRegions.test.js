@@ -267,6 +267,35 @@ describe('NaliStudio clip-region editing', () => {
     expect(result.clipRegions[0].timelineStart).toBe(14);
   });
 
+  it('clamps a normal region move to the open gap before the next region', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'left', timelineStart: 0, sourceStart: 0, sourceEnd: 3 },
+        { id: 'middle', timelineStart: 5, sourceStart: 3, sourceEnd: 6 },
+        { id: 'right', timelineStart: 10, sourceStart: 6, sourceEnd: 9 },
+      ],
+    };
+    const result = moveClipRegion(track, 'middle', 9);
+
+    expect(result.clipRegions.map(region => region.timelineStart)).toEqual([0, 7, 10]);
+    expect(result.clipRegions[1].timelineStart + 3).toBeLessThanOrEqual(result.clipRegions[2].timelineStart);
+  });
+
+  it('clamps a normal region move after the previous region', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'left', timelineStart: 0, sourceStart: 0, sourceEnd: 3 },
+        { id: 'middle', timelineStart: 5, sourceStart: 3, sourceEnd: 6 },
+        { id: 'right', timelineStart: 10, sourceStart: 6, sourceEnd: 9 },
+      ],
+    };
+    const result = moveClipRegion(track, 'middle', 0);
+
+    expect(result.clipRegions.map(region => region.timelineStart)).toEqual([0, 3, 10]);
+  });
+
   it('moves all regions together while preserving their gaps and source offsets', () => {
     const track = {
       ...makeTrack(),

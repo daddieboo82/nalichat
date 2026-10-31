@@ -205,6 +205,7 @@ export default function Studio() {
   // Spot mode dialog — lets the user type exact timecode for a clip
   const [spotDialogOpen, setSpotDialogOpen] = useState(false);
   const [spotClip, setSpotClip] = useState(null);
+  const [spotRegionId, setSpotRegionId] = useState(null);
 
   // Pro Tools-style selection region (in/out points)
   const [selectionStart, setSelectionStart] = useState(null);
@@ -2584,6 +2585,8 @@ export default function Studio() {
                         // Spot mode: open dialog to type exact timecode position
                         if (editMode === 'spot') {
                           setSpotClip(track);
+                          setSpotRegionId(null);
+                          setSelectedTrackIds([track.id]);
                           setSpotDialogOpen(true);
                           return;
                         }
@@ -2801,7 +2804,14 @@ export default function Studio() {
                                 return [track.id];
                               });
                               if (editMode === 'spot') {
-                                setSpotClip(track);
+                                setSpotClip({
+                                  ...track,
+                                  startTime: region.timelineStart,
+                                  name: `${track.name || track.id} — Region`,
+                                });
+                                setSpotRegionId(region.id);
+                                setSelectedTrackIds([track.id]);
+                                setSelectedClipRegion(regionKey);
                                 setSpotDialogOpen(true);
                                 return;
                               }
@@ -3423,18 +3433,26 @@ export default function Studio() {
       {/* Pro Tools-style Spot dialog — type exact timecode to position a clip */}
       <SpotDialog
         open={spotDialogOpen}
-        onOpenChange={setSpotDialogOpen}
+        onOpenChange={(open) => {
+          setSpotDialogOpen(open);
+          if (!open) setSpotRegionId(null);
+        }}
         clip={spotClip}
         bpm={bpm}
         timeSignature={timeSignature}
         onSpot={(timeInSeconds) => {
           if (spotClip) {
-            setTracksWithHistory(prev => prev.map(t =>
-              t.id === spotClip.id
-                ? moveTrackClipRegions(t, Math.max(0, timeInSeconds) - (t.startTime || 0))
-                : t
-            ));
-            toast.success(`Moved "${spotClip.name}" to ${timeInSeconds.toFixed(3)}s`);
+            const destination = Math.max(0, timeInSeconds);
+            setTracksWithHistory(previous => previous.map(track => {
+              if (track.id !== spotClip.id) return track;
+              return spotRegionId
+                ? moveClipRegion(track, spotRegionId, destination)
+                : moveTrackClipRegions(track, destination - (track.startTime || 0));
+            }));
+            if (spotRegionId) setSelectedClipRegion(`${spotClip.id}:${spotRegionId}`);
+            setSelectedTrackIds([spotClip.id]);
+            setSpotRegionId(null);
+            toast.success(`Moved "${spotClip.name}" to ${destination.toFixed(3)}s`);
             sounds.nav();
           }
         }}

@@ -578,6 +578,46 @@ describe('NaliStudio clip-region editing', () => {
     expect(result.clipRegions.find(region => region.id === 'b').timelineStart).toBe(8);
   });
 
+  it('preserves clip gain on both halves when splitting a waveform region', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [{
+        id: 'original',
+        timelineStart: 0,
+        sourceStart: 0,
+        sourceEnd: 10,
+        gainDb: -7,
+        fadeIn: 0.2,
+        fadeOut: 0.3,
+      }],
+    };
+
+    const result = splitTrackRegion(track, 4, side => `split-${side}`);
+
+    expect(result.clipRegions.map(region => region.gainDb)).toEqual([-7, -7]);
+    expect(result.clipRegions[0].fadeIn).toBe(0.2);
+    expect(result.clipRegions[1].fadeOut).toBe(0.3);
+  });
+
+  it('preserves region gain through Slip, Shuffle move, and side Cut edits', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'edited', timelineStart: 0, sourceStart: 0, sourceEnd: 4, gainDb: -6 },
+        { id: 'later', timelineStart: 6, sourceStart: 4, sourceEnd: 8, gainDb: 3 },
+      ],
+    };
+
+    const slipped = slipClipRegion(track, 'edited', 1);
+    const shuffled = shuffleMoveClipRegion(slipped, 'edited', 2);
+    const cut = cutClipRegionSide(shuffled, 'edited', 3, { direction: 'right' });
+
+    expect(slipped.clipRegions.find(region => region.id === 'edited').gainDb).toBe(-6);
+    expect(shuffled.clipRegions.find(region => region.id === 'edited').gainDb).toBe(-6);
+    expect(cut.clipRegions.find(region => region.id === 'edited').gainDb).toBe(-6);
+    expect(cut.clipRegions.find(region => region.id === 'later').gainDb).toBe(3);
+  });
+
   it('heals adjacent split regions back into one region', () => {
     const split = splitTrackRegion(makeTrack(), 4, (side) => `region-${side}`);
     const result = healTrackRegions(split, 'region-left');

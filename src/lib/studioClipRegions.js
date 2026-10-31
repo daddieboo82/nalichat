@@ -418,6 +418,28 @@ export function cutTrackTimelineRange(
   return { ...withTrackClipRegionBounds(track, next), removed: true };
 }
 
+/**
+ * Delete a selected region without deleting its mixer track. In Shuffle mode,
+ * later regions move left by the removed region duration while preserving gaps.
+ */
+export function deleteClipRegion(track, regionId, { shuffle = false } = {}) {
+  const regions = getTrackClipRegions(track);
+  const index = regions.findIndex(region => region.id === regionId);
+  if (index < 0) return { ...track, clipRegions: regions, removed: false };
+
+  const removed = regions[index];
+  const removedEnd = removed.timelineStart + removed.sourceEnd - removed.sourceStart;
+  const removedDuration = removed.sourceEnd - removed.sourceStart;
+  const next = regions
+    .filter(region => region.id !== regionId)
+    .map(region => shuffle && region.timelineStart >= removedEnd
+      ? { ...region, timelineStart: Math.max(0, region.timelineStart - removedDuration) }
+      : region
+    );
+
+  return { ...withTrackClipRegionBounds(track, next), removed: true };
+}
+
 /** Cut away one side of a region at an absolute timeline position. */
 export function cutClipRegionSide(track, regionId, timelineCut, { shuffle = false, direction = 'right' } = {}) {
   const cut = finite(timelineCut, NaN);

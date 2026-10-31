@@ -3327,10 +3327,9 @@ export default function Studio() {
                                 onPreviewChange={(newGain) => setTracks(prev => prev.map(t =>
                                   t.id === track.id ? setClipRegionGain(t, region.id, newGain) : t
                                 ))}
-                                onChange={(newGain) => setTracks(prev => prev.map(t =>
+                                onCommit={(newGain) => setTracksWithHistory(prev => prev.map(t =>
                                   t.id === track.id ? setClipRegionGain(t, region.id, newGain) : t
                                 ))}
-                                onCommit={() => setTimeout(() => pushToHistory(tracksRef.current), 0)}
                               />
                             </div>
                           );

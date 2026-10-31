@@ -2814,9 +2814,21 @@ export default function Studio() {
                                     let delta = 0;
                                     target.setPointerCapture(event.pointerId);
                                     const onMove = (moveEvent) => {
-                                      delta = (moveEvent.clientX - startX) / (20 * zoom);
+                                      const rawDelta = (moveEvent.clientX - startX) / (20 * zoom);
+                                      delta = rawDelta;
+                                      if (editMode === 'grid') {
+                                        const interval = getGridIntervalSeconds(gridSize, bpm, timeSignature);
+                                        delta = Math.round((region.timelineStart + rawDelta) / interval) * interval - region.timelineStart;
+                                      }
+                                      const regionLength = region.sourceEnd - region.sourceStart;
+                                      delta = Math.max(
+                                        -region.timelineStart,
+                                        -region.sourceStart,
+                                        Math.min(delta, regionLength - 0.001)
+                                      );
                                       target.style.left = `${regionLeft + (delta / trackDuration) * 100}%`;
                                       target.style.width = `${Math.max(0.1, regionWidth - (delta / trackDuration) * 100)}%`;
+                                      showEditTooltip(moveEvent.clientX, moveEvent.clientY, region.timelineStart + delta);
                                     };
                                     const onUp = (upEvent) => {
                                       target.releasePointerCapture(upEvent.pointerId);
@@ -2827,6 +2839,7 @@ export default function Studio() {
                                           item.id === track.id ? trimClipRegionLeft(item, region.id, delta) : item
                                         ));
                                       }
+                                      hideEditTooltip();
                                     };
                                     target.addEventListener('pointermove', onMove);
                                     target.addEventListener('pointerup', onUp);
@@ -2846,23 +2859,38 @@ export default function Studio() {
                                     let delta = 0;
                                     target.setPointerCapture(event.pointerId);
                                     const onMove = (moveEvent) => {
-                                      delta = (moveEvent.clientX - startX) / (20 * zoom);
+                                      const rawDelta = (moveEvent.clientX - startX) / (20 * zoom);
+                                      const regionDuration = region.sourceEnd - region.sourceStart;
+                                      const regionEnd = region.timelineStart + regionDuration;
+                                      delta = rawDelta;
+                                      if (editMode === 'grid') {
+                                        const interval = getGridIntervalSeconds(gridSize, bpm, timeSignature);
+                                        delta = Math.round((regionEnd + rawDelta) / interval) * interval - regionEnd;
+                                      }
+                                      const sourceLimit = Math.max(
+                                        Number(track.fullDuration) || 0,
+                                        (Number(track.clipStart) || 0) + (Number(track.duration) || 0),
+                                        region.sourceEnd
+                                      );
+                                      delta = Math.max(
+                                        -(regionDuration - 0.001),
+                                        Math.min(delta, sourceLimit - region.sourceEnd)
+                                      );
                                       target.style.width = `${Math.max(0.1, regionWidth + (delta / trackDuration) * 100)}%`;
+                                      showEditTooltip(moveEvent.clientX, moveEvent.clientY, regionEnd + delta);
                                     };
                                     const onUp = (upEvent) => {
                                       target.releasePointerCapture(upEvent.pointerId);
                                       target.removeEventListener('pointermove', onMove);
                                       target.removeEventListener('pointerup', onUp);
                                       if (Math.abs(delta) > 0.001) {
-                                        setTracksWithHistory(previous => previous.map(item => {
-                                          if (item.id !== track.id) return item;
-                                          const current = getTrackClipRegions(item).find(candidate => candidate.id === region.id);
-                                          const maxDelta = current && Number.isFinite(Number(item.fullDuration))
-                                            ? Number(item.fullDuration) - current.sourceEnd
-                                            : delta;
-                                          return trimClipRegionRight(item, region.id, Math.min(delta, maxDelta), { shuffle: editMode === 'shuffle' });
-                                        }));
+                                        setTracksWithHistory(previous => previous.map(item =>
+                                          item.id === track.id
+                                            ? trimClipRegionRight(item, region.id, delta, { shuffle: editMode === 'shuffle' })
+                                            : item
+                                        ));
                                       }
+                                      hideEditTooltip();
                                     };
                                     target.addEventListener('pointermove', onMove);
                                     target.addEventListener('pointerup', onUp);

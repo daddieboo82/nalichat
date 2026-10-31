@@ -14,6 +14,7 @@ import {
   rebaseClipRegionsToRenderedTimeline,
   remapClipRegionSources,
   shuffleMoveClipRegion,
+  setClipRegionGain,
   slipClipRegion,
   splitTrackRegion,
   trimClipRegionLeft,
@@ -545,6 +546,31 @@ describe('NaliStudio clip-region editing', () => {
       sourceStart: 0,
       sourceEnd: 10,
     });
+  });
+
+  it('sets gain on only the selected region and increments the edit revision', () => {
+    const track = {
+      ...makeTrack(),
+      clipRegions: [
+        { id: 'left', timelineStart: 0, sourceStart: 0, sourceEnd: 4, gainDb: 0 },
+        { id: 'right', timelineStart: 4, sourceStart: 4, sourceEnd: 8, gainDb: -3 },
+      ],
+    };
+
+    const result = setClipRegionGain(track, 'right', -9);
+
+    expect(result.clipRegions.map(region => region.gainDb)).toEqual([0, -9]);
+    expect(result.clipRegionRevision).toBe(1);
+    expect(result.clipRegions.map(region => [region.timelineStart, region.sourceStart, region.sourceEnd]))
+      .toEqual([[0, 0, 4], [4, 4, 8]]);
+  });
+
+  it('clamps region gain to the supported plus/minus 24 dB range', () => {
+    const loud = setClipRegionGain(makeTrack(), 'region-1', 40);
+    const quiet = setClipRegionGain(makeTrack(), 'region-1', -40);
+
+    expect(loud.clipRegions[0].gainDb).toBe(24);
+    expect(quiet.clipRegions[0].gainDb).toBe(-24);
   });
 
   it('refuses to heal adjacent regions with different clip gain', () => {

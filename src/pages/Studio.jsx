@@ -1410,7 +1410,6 @@ export default function Studio() {
       return;
     }
     const clipDur = track.duration || 40;
-    const clipStart = track.startTime || 0;
     let nextId = nextTrackId(tracks);
     const newClips = [];
     for (let i = 1; i <= count; i++) {

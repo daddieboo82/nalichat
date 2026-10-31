@@ -1,6 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { getClipRegionFadeGainAtTime, getClipRegionGain, getTrackFadeGainAtTime, getTrackRegionFadeGainAtTime, getTrackRegionRenderSchedule } from '../lib/audioProcessing';
+import { getAutomationValueAtTime, getClipRegionFadeGainAtTime, getClipRegionGain, getTrackFadeGainAtTime, getTrackRegionFadeGainAtTime, getTrackRegionRenderSchedule } from '../lib/audioProcessing';
 import { cutClipRegionSide, slipClipRegion } from '../lib/studioClipRegions';
+
+describe('timeline automation interpolation', () => {
+  it('holds the track base value before the first point and ramps into it', () => {
+    const points = [{ time: 4, value: 20 }];
+    expect(getAutomationValueAtTime(points, 0, 80, 0)).toBe(80);
+    expect(getAutomationValueAtTime(points, 2, 80, 0)).toBe(50);
+    expect(getAutomationValueAtTime(points, 4, 80, 0)).toBe(20);
+  });
+
+  it('interpolates between points and holds the final value afterward', () => {
+    const points = [{ time: 2, value: 100 }, { time: 6, value: 20 }];
+    expect(getAutomationValueAtTime(points, 4, 75, 0)).toBe(60);
+    expect(getAutomationValueAtTime(points, 8, 75, 0)).toBe(20);
+  });
+
+  it('uses the base value when no valid automation points exist', () => {
+    expect(getAutomationValueAtTime([], 5, 72, 0)).toBe(72);
+    expect(getAutomationValueAtTime([{ time: 'bad', value: 20 }], 5, 72, 0)).toBe(72);
+  });
+});
 
 describe('track fade envelope', () => {
   const track = { startTime: 10, duration: 8, fadeIn: 0.25, fadeOut: 0.25 };

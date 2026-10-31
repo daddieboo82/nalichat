@@ -127,8 +127,10 @@ export function getTrackClipRegions(track) {
     timelineStart: Math.max(0, finite(track.startTime, 0)),
     sourceStart,
     sourceEnd: sourceStart + duration,
-    fadeIn: track.fadeIn,
-    fadeOut: track.fadeOut,
+    // Track-wide fades remain on the track envelope; legacy regions do not
+    // inherit them or the combined playback path would apply each fade twice.
+    fadeIn: 0,
+    fadeOut: 0,
     gainDb: track.clipGain,
   });
   return region ? [region] : [];

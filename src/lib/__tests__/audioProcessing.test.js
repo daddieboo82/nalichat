@@ -7,6 +7,8 @@ import {
   FX_CHAIN_ORDER,
   getSortedAutomationPoints,
   getAutomationValueAtTime,
+  getTrackRegionFadeGainAtTime,
+  getTrackRegionFadeAutomationPoints,
 } from '@/lib/audioProcessing';
 
 describe('trackGainValue', () => {
@@ -112,5 +114,37 @@ describe('track automation interpolation', () => {
       { time: 4, value: 80 },
       { time: 8, value: 20 },
     ]);
+  });
+});
+
+
+describe('combined track and clip-region fades', () => {
+  const track = { startTime: 0, duration: 10, fadeIn: 0.5, fadeOut: 0 };
+  const region = {
+    timelineStart: 0,
+    sourceStart: 0,
+    sourceEnd: 10,
+    fadeIn: 0.5,
+    fadeOut: 0,
+  };
+
+  it('multiplies the track and region fade gains during playback', () => {
+    expect(getTrackRegionFadeGainAtTime(track, region, 2.5)).toBeCloseTo(0.25);
+    expect(getTrackRegionFadeGainAtTime(track, region, 5)).toBeCloseTo(1);
+  });
+
+  it('samples overlapping fade curves so offline ramps preserve their product', () => {
+    const points = getTrackRegionFadeAutomationPoints(track, region, 0.1);
+    const midpoint = points.find(point => Math.abs(point.time - 2.5) < 0.000001);
+    expect(midpoint.gain).toBeCloseTo(0.25);
+    expect(points[0]).toEqual({ time: 0, gain: 0 });
+    expect(points[points.length - 1].gain).toBeCloseTo(1);
+    expect(points.every(point => Number.isFinite(point.time) && Number.isFinite(point.gain))).toBe(true);
+  });
+
+  it('returns no fade schedule for an empty region', () => {
+    expect(getTrackRegionFadeAutomationPoints(track, {
+      timelineStart: 0, sourceStart: 4, sourceEnd: 4,
+    })).toEqual([]);
   });
 });

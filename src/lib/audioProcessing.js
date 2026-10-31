@@ -13,25 +13,36 @@ export function getClipRegionFadeGainAtTime(region, timelineTime) {
   return Math.min(fadeInGain, fadeOutGain);
 }
 
-/** Combine the track-wide fade with the active region's independent fades. */
-export function getTrackFadeGainAtTime(track, timelineTime) {
+/** Gain from the track-wide fade envelope only. */
+function getTrackEnvelopeGainAtTime(track, timelineTime) {
   const start = Number(track?.startTime) || 0;
   const duration = Math.max(0, Number(track?.duration) || 0);
   const time = Number(timelineTime);
+  if (!Number.isFinite(time) || duration <= 0) return 1;
+  const fadeIn = Math.min(1, Math.max(0, Number(track?.fadeIn) || 0)) * duration;
+  const fadeOut = Math.min(1, Math.max(0, Number(track?.fadeOut) || 0)) * duration;
+  const fadeInGain = fadeIn > 0 ? Math.max(0, Math.min(1, (time - start) / fadeIn)) : 1;
+  const fadeOutGain = fadeOut > 0 ? Math.max(0, Math.min(1, (start + duration - time) / fadeOut)) : 1;
+  return Math.min(fadeInGain, fadeOutGain);
+}
+
+/** Combine the track-wide envelope with one region's independent fade handles. */
+export function getTrackRegionFadeGainAtTime(track, region, timelineTime) {
+  return getTrackEnvelopeGainAtTime(track, timelineTime)
+    * getClipRegionFadeGainAtTime(region, timelineTime);
+}
+
+/** Combine the track-wide fade with the region currently under the playhead. */
+export function getTrackFadeGainAtTime(track, timelineTime) {
+  const time = Number(timelineTime);
   if (!Number.isFinite(time)) return 1;
-  let trackGain = 1;
-  if (duration > 0) {
-    const fadeIn = Math.min(1, Math.max(0, Number(track?.fadeIn) || 0)) * duration;
-    const fadeOut = Math.min(1, Math.max(0, Number(track?.fadeOut) || 0)) * duration;
-    const fadeInGain = fadeIn > 0 ? Math.max(0, Math.min(1, (time - start) / fadeIn)) : 1;
-    const fadeOutGain = fadeOut > 0 ? Math.max(0, Math.min(1, (start + duration - time) / fadeOut)) : 1;
-    trackGain = Math.min(fadeInGain, fadeOutGain);
-  }
   const activeRegion = getTrackClipRegions(track).find(region => {
     const end = region.timelineStart + region.sourceEnd - region.sourceStart;
     return time >= region.timelineStart && time < end;
   });
-  return trackGain * (activeRegion ? getClipRegionFadeGainAtTime(activeRegion, time) : 1);
+  return activeRegion
+    ? getTrackRegionFadeGainAtTime(track, activeRegion, time)
+    : getTrackEnvelopeGainAtTime(track, time);
 }
 
 /**
@@ -473,9 +484,9 @@ export async function renderMixToBuffer(tracks, options = {}) {
         .sort((a, b) => a - b)
         .filter((time, index, values) => index === 0 || Math.abs(time - values[index - 1]) > 0.000001);
       if (breakpoints.length === 0 || breakpoints[0] > regionStart) breakpoints.unshift(regionStart);
-      fade.gain.setValueAtTime(getTrackFadeGainAtTime(track, breakpoints[0]), breakpoints[0]);
+      fade.gain.setValueAtTime(getTrackRegionFadeGainAtTime(track, region, breakpoints[0]), breakpoints[0]);
       breakpoints.slice(1).forEach(time => {
-        fade.gain.linearRampToValueAtTime(getTrackFadeGainAtTime(track, time), time);
+        fade.gain.linearRampToValueAtTime(getTrackRegionFadeGainAtTime(track, region, time), time);
       });
 
       source.connect(fade);

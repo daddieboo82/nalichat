@@ -1041,15 +1041,30 @@ export default function Studio() {
           }
         }
         
+        const recordedStart = recordingStartTime !== null ? recordingStartTime : currentTimeRef.current;
+        const finalRecordedDuration = recordedDuration || (
+          recordingStartTime !== null
+            ? Math.max(1, currentTimeRef.current - recordingStartTime)
+            : 10
+        );
+        const recordingRegionId = `recording-${Date.now()}`;
         setTracksWithHistory(prev => prev.map(t => {
           if (t.armed) {
-            return { 
-              ...t, 
-              waveform: realWaveform, 
-              armed: false, 
-              audioUrl, 
-              startTime: recordingStartTime !== null ? recordingStartTime : currentTimeRef.current,
-              duration: recordedDuration || (recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10)
+            return {
+              ...t,
+              waveform: realWaveform,
+              armed: false,
+              audioUrl,
+              startTime: recordedStart,
+              duration: finalRecordedDuration,
+              clipStart: 0,
+              fullDuration: finalRecordedDuration,
+              clipRegions: [{
+                id: `${recordingRegionId}-${t.id}`,
+                timelineStart: recordedStart,
+                sourceStart: 0,
+                sourceEnd: finalRecordedDuration,
+              }],
             };
           }
           return t;
@@ -1470,11 +1485,13 @@ export default function Studio() {
   const tabToClip = (forward) => {
     const curr = currentTimeRef.current;
     const clipBoundaries = [];
-    tracks.forEach(t => {
-      if (!t.waveform || t.waveform.length === 0) return;
-      const start = t.startTime || 0;
-      const end = start + (t.duration || 40);
-      clipBoundaries.push(start, end);
+    tracks.forEach(track => {
+      if (!track.waveform || track.waveform.length === 0) return;
+      getTrackClipRegions(track).forEach(region => {
+        const start = region.timelineStart;
+        const end = start + region.sourceEnd - region.sourceStart;
+        clipBoundaries.push(start, end);
+      });
     });
     clipBoundaries.sort((a, b) => a - b);
     if (forward) {

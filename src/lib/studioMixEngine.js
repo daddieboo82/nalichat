@@ -136,7 +136,7 @@ export function createMixEngine() {
     },
 
     /** Push the current track state (fader, mute/solo, pan, inserts, sends) into the graph. */
-    syncTrack(trackId, track, { gain } = {}) {
+    syncTrack(trackId, track, { gain, pan } = {}) {
       const entry = entries.get(trackId);
       if (!entry || !context) return false;
       const nextGain = typeof gain === 'number' ? gain : trackGainValue(track || {});
@@ -158,7 +158,8 @@ export function createMixEngine() {
       }
       const panner = entry.nodes.find(n => n && n.pan);
       if (panner) {
-        const value = Math.max(-1, Math.min(1, ((track?.pan ?? 50) - 50) / 50));
+        const panValue = typeof pan === 'number' ? pan : (track?.pan ?? 50);
+        const value = Math.max(-1, Math.min(1, (panValue - 50) / 50));
         panner.pan.setTargetAtTime(value, context.currentTime, 0.01);
       }
       return true;

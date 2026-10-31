@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getClipRegionFadeGainAtTime, getTrackFadeGainAtTime, getTrackRegionRenderSchedule } from '../lib/audioProcessing';
+import { getClipRegionFadeGainAtTime, getTrackFadeGainAtTime, getTrackRegionFadeGainAtTime, getTrackRegionRenderSchedule } from '../lib/audioProcessing';
 import { cutClipRegionSide, slipClipRegion } from '../lib/studioClipRegions';
 
 describe('track fade envelope', () => {
@@ -36,7 +36,19 @@ describe('track fade envelope', () => {
       startTime: 0, duration: 10, fadeIn: 0.5,
       clipRegions: [{ id: 'region', timelineStart: 2, sourceStart: 0, sourceEnd: 4, fadeIn: 0.5 }],
     };
-    expect(getTrackFadeGainAtTime(track, 3)).toBe(0.25);
+    expect(getTrackFadeGainAtTime(track, 3)).toBeCloseTo(0.3);
+  });
+
+  it('keeps legacy track fades from being applied twice as region fades', () => {
+    const legacyTrack = { startTime: 0, duration: 8, fadeIn: 0.25 };
+    expect(getTrackFadeGainAtTime(legacyTrack, 1)).toBe(0.5);
+  });
+
+  it('evaluates region fade-out at the exact offline region endpoint', () => {
+    const track = { startTime: 0, duration: 4 };
+    const region = { timelineStart: 0, sourceStart: 0, sourceEnd: 4, fadeOut: 0.25 };
+    expect(getTrackRegionFadeGainAtTime(track, region, 3.5)).toBe(0.5);
+    expect(getTrackRegionFadeGainAtTime(track, region, 4)).toBe(0);
   });
 });
 
@@ -54,6 +66,15 @@ describe('offline audio region scheduling', () => {
     expect(getTrackRegionRenderSchedule(track, 8)).toEqual([
       { timelineStart: 0, sourceStart: 0, duration: 2, fadeIn: 0, fadeOut: 0 },
       { timelineStart: 5, sourceStart: 4, duration: 3, fadeIn: 0, fadeOut: 0 },
+    ]);
+  });
+
+  it('preserves independent region fade settings in the render schedule', () => {
+    const track = {
+      clipRegions: [{ id: 'faded', timelineStart: 2, sourceStart: 1, sourceEnd: 5, fadeIn: 0.25, fadeOut: 0.5 }],
+    };
+    expect(getTrackRegionRenderSchedule(track, 8)).toEqual([
+      { timelineStart: 2, sourceStart: 1, duration: 4, fadeIn: 0.25, fadeOut: 0.5 },
     ]);
   });
 

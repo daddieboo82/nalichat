@@ -2653,8 +2653,9 @@ export default function Studio() {
                             onPointerDown={(event) => {
                               event.stopPropagation();
                               setSelectedClipRegion(regionKey);
+                              const additiveTrackSelection = event.ctrlKey || event.metaKey;
                               setSelectedTrackIds(previous => {
-                                if (event.ctrlKey || event.metaKey) {
+                                if (additiveTrackSelection) {
                                   return previous.includes(track.id)
                                     ? previous.filter(id => id !== track.id)
                                     : [...previous, track.id];

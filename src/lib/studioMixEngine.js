@@ -64,13 +64,15 @@ export function createMixEngine() {
     if (!entry || !context || !master) return;
     teardownEntry(entry);
     if (!entry.fadeGain) entry.fadeGain = context.createGain();
-    entry.source.connect(entry.fadeGain);
+    if (!entry.regionGain) entry.regionGain = context.createGain();
+    entry.source.connect(entry.regionGain);
+    entry.regionGain.connect(entry.fadeGain);
     const built = connectTrackChain(context, entry.fadeGain, track, {
       destination: master.input,
       reverbBus: master.reverbBus,
       gain,
     });
-    entry.nodes = [entry.fadeGain, ...built.nodes];
+    entry.nodes = [entry.regionGain, entry.fadeGain, ...built.nodes];
     entry.trackGain = built.trackGain;
     entry.track = track;
     entry.gain = gain;
@@ -124,7 +126,7 @@ export function createMixEngine() {
       }
       // The graph owns level from here; leave the element wide open.
       element.volume = 1;
-      entries.set(trackId, { element, source, nodes: [], fadeGain: context.createGain(), track: null, gain: 0 });
+      entries.set(trackId, { element, source, nodes: [], regionGain: context.createGain(), fadeGain: context.createGain(), track: null, gain: 0 });
       rebuild(trackId, track || {}, trackGainValue(track || {}));
       return true;
     },
@@ -159,6 +161,15 @@ export function createMixEngine() {
         const value = Math.max(-1, Math.min(1, ((track?.pan ?? 50) - 50) / 50));
         panner.pan.setTargetAtTime(value, context.currentTime, 0.01);
       }
+      return true;
+    },
+
+    /** Set the active region's clip gain independently of the track fader. */
+    syncRegionGain(trackId, value) {
+      const entry = entries.get(trackId);
+      if (!entry?.regionGain || !context) return false;
+      const next = Math.max(0, Number(value) || 0);
+      entry.regionGain.gain.setTargetAtTime(next, context.currentTime, 0.01);
       return true;
     },
 

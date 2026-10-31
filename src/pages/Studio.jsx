@@ -2653,6 +2653,14 @@ export default function Studio() {
                             onPointerDown={(event) => {
                               event.stopPropagation();
                               setSelectedClipRegion(regionKey);
+                              setSelectedTrackIds(previous => {
+                                if (event.ctrlKey || event.metaKey) {
+                                  return previous.includes(track.id)
+                                    ? previous.filter(id => id !== track.id)
+                                    : [...previous, track.id];
+                                }
+                                return [track.id];
+                              });
                               if (track.locked || activeTool !== 'grab') return;
                               const target = event.currentTarget;
                               const startX = event.clientX;

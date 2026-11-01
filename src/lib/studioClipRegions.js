@@ -118,19 +118,17 @@ export function getClipSourceTimeAtTime(track, timelineTime) {
   return region.sourceStart + (finite(timelineTime, region.timelineStart) - region.timelineStart);
 }
 
-/** Find the nearest waveform transient that is actually audible in a clip region. */
-export function findClipRegionPeakTime(track, waveform, timelineTime, direction = 'next', threshold = 0.25) {
-  if (!Array.isArray(waveform) || waveform.length < 3) return null;
-  const cursor = finite(timelineTime, NaN);
-  if (!Number.isFinite(cursor)) return null;
+/** Return transient peaks mapped from source samples into audible timeline regions. */
+export function getClipRegionPeakTimes(track, waveform, threshold = 0.25) {
+  if (!Array.isArray(waveform) || waveform.length < 3) return [];
   const regions = getTrackClipRegions(track);
   const sourceDuration = Math.max(
     finite(track?.fullDuration, 0),
     ...regions.map(region => region.sourceEnd),
   );
-  if (sourceDuration <= 0) return null;
+  if (sourceDuration <= 0) return [];
 
-  let nearest = null;
+  const peaks = [];
   regions.forEach(region => {
     const regionEnd = region.timelineStart + region.sourceEnd - region.sourceStart;
     const first = Math.max(1, Math.ceil((region.sourceStart / sourceDuration) * waveform.length));
@@ -140,15 +138,23 @@ export function findClipRegionPeakTime(track, waveform, timelineTime, direction 
       if (value <= threshold || value < (Number(waveform[index - 1]) || 0)
         || value < (Number(waveform[index + 1]) || 0)) continue;
       const sourceTime = (index / waveform.length) * sourceDuration;
-      const peakTime = region.timelineStart + sourceTime - region.sourceStart;
-      if (peakTime < region.timelineStart || peakTime >= regionEnd) continue;
-      if (direction === 'previous' ? peakTime >= cursor : peakTime <= cursor) continue;
-      if (nearest === null || (direction === 'previous' ? peakTime > nearest : peakTime < nearest)) {
-        nearest = peakTime;
-      }
+      const timelineTime = region.timelineStart + sourceTime - region.sourceStart;
+      if (timelineTime >= region.timelineStart && timelineTime < regionEnd) peaks.push(timelineTime);
     }
   });
-  return nearest;
+  return [...new Set(peaks)].sort((a, b) => a - b);
+}
+
+/** Find the nearest waveform transient that is actually audible in a clip region. */
+export function findClipRegionPeakTime(track, waveform, timelineTime, direction = 'next', threshold = 0.25) {
+  const cursor = finite(timelineTime, NaN);
+  if (!Number.isFinite(cursor)) return null;
+  const peaks = getClipRegionPeakTimes(track, waveform, threshold);
+  const candidates = direction === 'previous'
+    ? peaks.filter(time => time < cursor)
+    : peaks.filter(time => time > cursor);
+  if (!candidates.length) return null;
+  return direction === 'previous' ? candidates[candidates.length - 1] : candidates[0];
 }
 
 export function getTrackClipRegions(track) {

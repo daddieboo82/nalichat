@@ -22,6 +22,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume } from '@/lib/audioProcessing';
+import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, splitTrackRegion } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -1753,64 +1754,34 @@ export default function Studio() {
 
   const splitSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
-    sounds.click();
-    
-    const hasRange = selectionStart !== null && selectionEnd !== null && Math.abs(selectionEnd - selectionStart) > 0.001;
-    const maximumNewClips = selectedTrackIds.length * (hasRange ? 2 : 1);
-    if (tracks.length + maximumNewClips > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
+    const hasRange = selectionStart !== null && selectionEnd !== null
+      && Math.abs(selectionEnd - selectionStart) > 0.001;
+    const rangeStart = hasRange ? Math.min(selectionStart, selectionEnd) : null;
+    const rangeEnd = hasRange ? Math.max(selectionStart, selectionEnd) : null;
+    let splitCount = 0;
+    const nextTracks = tracks.map(track => {
+      if (!selectedTrackIds.includes(track.id) || !track.audioUrl) return track;
+      let updated = track;
+      if (hasRange) {
+        updated = splitTrackRegion(updated, rangeStart, (side, region) => `region-${track.id}-${region.id}-${side}-${Date.now()}`);
+        const before = getTrackClipRegions(track).length;
+        const afterStart = getTrackClipRegions(updated).length;
+        updated = splitTrackRegion(updated, rangeEnd, (side, region) => `region-${track.id}-${region.id}-${side}-${Date.now()}`);
+        splitCount += Math.max(0, getTrackClipRegions(updated).length - before);
+      } else {
+        const before = getTrackClipRegions(track).length;
+        updated = splitTrackRegion(updated, currentTimeRef.current, (side, region) => `region-${track.id}-${region.id}-${side}-${Date.now()}`);
+        splitCount += Math.max(0, getTrackClipRegions(updated).length - before);
+      }
+      return updated;
+    });
+    if (!splitCount) {
+      toast.error("Place the playhead or selection boundaries inside selected audio to split it.");
       return;
     }
-
-    const cutPoints = hasRange ? [Math.min(selectionStart, selectionEnd), Math.max(selectionStart, selectionEnd)] : [currentTimeRef.current];
-    let nextId = nextTrackId(tracks);
-    let splitCount = 0;
-    const newTracksList = [];
-
-    let updatedTracks = tracks.map(t => ({ ...t }));
-    const eligibleIds = new Set(selectedTrackIds);
-    cutPoints.forEach(curr => {
-      const additions = [];
-      updatedTracks = updatedTracks.map(t => {
-        if (!eligibleIds.has(t.id) || !t.waveform?.length) return t;
-        const clipStart = t.startTime !== undefined ? t.startTime : 0;
-        const clipDuration = t.duration !== undefined ? t.duration : 40;
-        const clipEnd = clipStart + clipDuration;
-        if (curr <= clipStart || curr >= clipEnd) return t;
-        const splitDuration = curr - clipStart;
-        const lineage = t.splitFrom || t.id;
-        const right = {
-          ...t,
-          id: nextId++,
-          name: `${t.name} (Cut)`,
-          startTime: curr,
-          duration: clipDuration - splitDuration,
-          fullDuration: t.fullDuration || t.duration,
-          clipStart: (t.clipStart || 0) + splitDuration,
-          splitFrom: lineage
-        };
-        additions.push(right);
-        newTracksList.push(right);
-        eligibleIds.add(right.id);
-        splitCount++;
-        return { ...t, duration: splitDuration, fullDuration: t.fullDuration || t.duration, splitFrom: lineage };
-      });
-      updatedTracks = [...updatedTracks, ...additions];
-    });
-
-    if (splitCount > 0) {
-      setTracksWithHistory(updatedTracks);
-      if (hasRange) {
-        const rangeStart = Math.min(selectionStart, selectionEnd);
-        const rangeEnd = Math.max(selectionStart, selectionEnd);
-        setSelectedTrackIds(updatedTracks.filter(t => eligibleIds.has(t.id) && (t.startTime || 0) >= rangeStart - 0.001 && ((t.startTime || 0) + (t.duration || 0)) <= rangeEnd + 0.001).map(t => t.id));
-      } else {
-        setSelectedTrackIds(newTracksList.map(t => t.id));
-      }
-      toast.success(hasRange ? "Selection separated at both boundaries" : `${splitCount} clip${splitCount === 1 ? '' : 's'} separated at playhead`);
-    } else {
-      toast.error("Playhead is not positioned over the selected clip");
-    }
+    setTracksWithHistory(nextTracks);
+    toast.success(hasRange ? "Selection boundaries split into regions on the same track" : "Waveform split into regions on the same track");
+    sounds.click();
   };
 
   const addTrack = () => {
@@ -2994,42 +2965,35 @@ export default function Studio() {
                         const smartAtRightEdge = relativeX >= rect.width - smartEdgeWidth;
 
                         if (activeTool === 'cut') {
-                           // Behave like Pro Tools Separate-at-cursor: preserve both sides of
-                           // the source instead of destructively deleting everything to the right.
                            const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                           const clipStartTime = track.startTime || 0;
-                           const clipDuration = track.duration || 40;
-                           const splitTime = clipStartTime + (clipDuration * clickRatio);
-                           const leftDuration = splitTime - clipStartTime;
-                           const rightDuration = clipDuration - leftDuration;
-                           if (leftDuration <= 0.001 || rightDuration <= 0.001) return;
-                           if (tracksRef.current.length >= maxTracks) {
-                             toast.error(`Track limit reached (${maxTracks}).`);
-                             return;
+                           const cutTime = (track.startTime || 0) + ((track.duration || 40) * clickRatio);
+                           const hasRange = selectionStart !== null && selectionEnd !== null
+                             && Math.abs(selectionEnd - selectionStart) > 0.001;
+                           setTracksWithHistory(prev => prev.map(item => {
+                             if (item.id !== track.id) return item;
+                             if (hasRange) {
+                               return cutTrackTimelineRange(item, Math.min(selectionStart, selectionEnd), Math.max(selectionStart, selectionEnd), {
+                                 shuffle: editMode === 'shuffle',
+                                 createId: (side, region) => `region-${item.id}-${region.id}-${side}-${Date.now()}`,
+                               });
+                             }
+                             const region = getTrackClipRegions(item).find(candidate =>
+                               cutTime > candidate.timelineStart && cutTime < candidate.timelineStart + candidate.sourceEnd - candidate.sourceStart
+                             );
+                             if (!region) return item;
+                             return cutClipRegionSide(item, region.id, cutTime, {
+                               shuffle: editMode === 'shuffle',
+                               direction: 'right',
+                             });
+                           }));
+                           if (hasRange) {
+                             toast.success("Selected audio removed; remaining regions stay on the same track");
+                             setSelectionStart(null);
+                             setSelectionEnd(null);
+                           } else {
+                             toast.success("Audio to the right of the cut removed; no new track created");
                            }
-                           const rightId = nextTrackId(tracksRef.current);
-                           const rightClip = {
-                             ...track,
-                             id: rightId,
-                             name: `${track.name} (Cut)`,
-                             startTime: splitTime,
-                             duration: rightDuration,
-                             fullDuration: track.fullDuration || clipDuration,
-                             clipStart: (track.clipStart || 0) + leftDuration,
-                             splitFrom: track.splitFrom || track.id,
-                           };
-                           setTracksWithHistory(prev => [
-                             ...prev.map(t => t.id === track.id ? {
-                               ...t,
-                               duration: leftDuration,
-                               fullDuration: t.fullDuration || clipDuration,
-                               splitFrom: t.splitFrom || t.id,
-                             } : t),
-                             rightClip,
-                           ]);
-                           setSelectedTrackIds([rightId]);
-                           updateCurrentTime(splitTime);
-                           toast.success("Clip separated at cursor");
+                           sounds.click();
                            return;
                         }
 

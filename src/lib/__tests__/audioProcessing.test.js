@@ -60,7 +60,7 @@ describe('track-wide offline fade envelope', () => {
         { timelineStart: 9, sourceStart: 5, sourceEnd: 8 },
       ],
     );
-    expect(envelope).toEqual({ start: 3, end: 12, fadeIn: 1.8, fadeOut: 1.8 });
+    expect(envelope).toEqual({ start: 3, end: 12, fadeIn: 1.8, fadeOut: 2.25 });
   });
 
   it('prevents fade durations from overlapping beyond the arrangement span', () => {

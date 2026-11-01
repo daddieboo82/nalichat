@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getTrackClipRegions,
   getHealCandidateRegionIds,
+  repeatTrackClipRegions,
   cutClipRegionSide,
   cutTrackTimelineRange,
   healTrackRegions,
@@ -135,6 +136,30 @@ describe('NaliStudio clip regions', () => {
     expect(trimmed.clipRegions).toEqual([
       expect.objectContaining({ id: 'first', timelineStart: 0, sourceStart: 0, sourceEnd: 7 }),
       expect.objectContaining({ id: 'second', timelineStart: 10, sourceStart: 10, sourceEnd: 14 }),
+    ]);
+  });
+
+  it('repeats a split arrangement on the same track and preserves its gaps', () => {
+    const track = {
+      id: 14,
+      clipRegions: [
+        { id: 'a', timelineStart: 2, sourceStart: 0, sourceEnd: 3 },
+        { id: 'b', timelineStart: 7, sourceStart: 8, sourceEnd: 10 },
+      ],
+    };
+    const repeated = repeatTrackClipRegions(
+      track,
+      1,
+      (region, pass) => `${region.id}-repeat-${pass}`,
+    );
+    expect(repeated.id).toBe(14);
+    expect(repeated.clipRegions.map(region => [
+      region.id, region.timelineStart, region.sourceStart, region.sourceEnd,
+    ])).toEqual([
+      ['a', 2, 0, 3],
+      ['b', 7, 8, 10],
+      ['a-repeat-1', 7, 0, 3],
+      ['b-repeat-1', 12, 8, 10],
     ]);
   });
 

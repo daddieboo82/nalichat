@@ -3458,6 +3458,38 @@ export default function Studio() {
                         <div style={{ position: 'absolute', left: `${-(track.clipStart || 0) * 20 * zoom}px`, width: `${(track.fullDuration || track.duration || 40) * 20 * zoom}px`, height: '100%' }}>
                           <TrackWaveformSVG track={track} />
                         </div>
+                        {getTrackClipRegions(track).map((region, index, regions) => {
+                          const previous = regions[index - 1];
+                          const gapStart = previous
+                            ? previous.timelineStart + previous.sourceEnd - previous.sourceStart
+                            : null;
+                          const gapDuration = previous ? Math.max(0, region.timelineStart - gapStart) : 0;
+                          return (
+                            <React.Fragment key={`region-boundary-${track.id}-${region.id}`}>
+                              {gapDuration > 0.001 && (
+                                <div
+                                  className="absolute inset-y-0 bg-black/45 border-x border-white/10"
+                                  style={{
+                                    left: `${(gapStart - (track.startTime || 0)) * 20 * zoom}px`,
+                                    width: `${gapDuration * 20 * zoom}px`,
+                                    zIndex: 2,
+                                  }}
+                                  aria-label="Removed audio gap"
+                                />
+                              )}
+                              {index > 0 && (
+                                <div
+                                  className="absolute inset-y-0 w-px bg-primary/80"
+                                  style={{
+                                    left: `${(region.timelineStart - (track.startTime || 0)) * 20 * zoom}px`,
+                                    zIndex: 3,
+                                  }}
+                                  aria-label="Clip split boundary"
+                                />
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

@@ -22,7 +22,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume } from '@/lib/audioProcessing';
-import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, splitTrackRegion } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -3190,53 +3190,38 @@ export default function Studio() {
                           e.stopPropagation();
                           const target = e.currentTarget;
                           const startX = e.clientX;
-                          const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
-                          const initialDuration = track.duration !== undefined ? track.duration : 40;
-                          const initialClipStart = track.clipStart || 0;
-                          
+                          const initialRegions = getTrackClipRegions(track);
+                          const edgeRegion = initialRegions[0];
+                          if (!edgeRegion) return;
                           target.setPointerCapture(e.pointerId);
-                          
-                          const MIN_CLIP_DURATION = 0.001; // 1ms — surgical-precision trim floor
-                          const round = (v) => Math.round(v * 1000) / 1000; // snap to 1ms to avoid float drift
+                          const round = (value) => Math.round(value * 1000) / 1000;
                           const handleMove = (moveEvent) => {
-                            const deltaX = moveEvent.clientX - startX;
-                            const deltaTime = round(deltaX / (20 * zoom));
-                            
-                            if (deltaTime < initialDuration - MIN_CLIP_DURATION) { 
-                               // Don't allow an extension past source start or before session zero.
-                               const maxLeftExtension = Math.max(-initialClipStart, -initialStartTime);
-                               const trimAmount = Math.max(maxLeftExtension, deltaTime);
-                               
-                               setTracks(prev => prev.map(t => 
-                                t.id === track.id ? { 
-                                  ...t, 
-                                  startTime: round(initialStartTime + trimAmount),
-                                  duration: round(initialDuration - trimAmount),
-                                  clipStart: round(initialClipStart + trimAmount)
-                                  } : t
-                                  ));
-                                  showEditTooltip(moveEvent.clientX, moveEvent.clientY, initialStartTime + trimAmount);
-                                  }
-                                  };
-
-                                  const handleUp = (upEvent) => {
-                                  target.releasePointerCapture(upEvent.pointerId);
-                                  target.removeEventListener('pointermove', handleMove);
-                                  target.removeEventListener('pointerup', handleUp);
-                                  setTracksWithHistory(prev => {
-                                    if (editMode !== 'shuffle') return prev;
-                                    const edited = prev.find(t => t.id === track.id);
-                                    if (!edited) return prev;
-                                    const laneKey = track.splitFrom || track.id;
-                                    const oldEnd = initialStartTime + initialDuration;
-                                    const newEnd = (edited.startTime || 0) + (edited.duration || 0);
-                                    const shift = newEnd - oldEnd;
-                                    return prev.map(t => t.id !== track.id && (t.splitFrom || t.id) === laneKey && (t.startTime || 0) >= oldEnd - 0.001 ? { ...t, startTime: Math.max(0, (t.startTime || 0) + shift) } : t);
-                                  });
-                                  hideEditTooltip();
-                                  };
-
-                                  target.addEventListener('pointermove', handleMove);
+                            const deltaTime = round((moveEvent.clientX - startX) / (20 * zoom));
+                            setTracks(prev => prev.map(item => {
+                              if (item.id !== track.id) return item;
+                              // Recalculate from the pointer-down snapshot so each
+                              // pointer move is absolute, not cumulatively applied.
+                              return trimClipRegionLeft(
+                                { ...item, clipRegions: initialRegions },
+                                edgeRegion.id,
+                                deltaTime,
+                              );
+                            }));
+                            showEditTooltip(
+                              moveEvent.clientX,
+                              moveEvent.clientY,
+                              edgeRegion.timelineStart + deltaTime,
+                            );
+                          };
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                            hideEditTooltip();
+                            setTracksWithHistory(prev => prev);
+                          };
+                          
+                          target.addEventListener('pointermove', handleMove);
                                   target.addEventListener('pointerup', handleUp);
                                             }}
                                           >
@@ -3254,49 +3239,39 @@ export default function Studio() {
                           e.stopPropagation();
                           const target = e.currentTarget;
                           const startX = e.clientX;
-                          const initialDuration = track.duration !== undefined ? track.duration : 40;
-                          const initialClipStart = track.clipStart || 0;
-                          const fullDuration = track.fullDuration || track.duration || 40;
-                          
+                          const initialRegions = getTrackClipRegions(track);
+                          const edgeRegion = initialRegions[initialRegions.length - 1];
+                          if (!edgeRegion) return;
                           target.setPointerCapture(e.pointerId);
-                          
-                          const MIN_CLIP_DURATION_R = 0.001; // 1ms — surgical-precision trim floor
-                          const roundR = (v) => Math.round(v * 1000) / 1000; // snap to 1ms to avoid float drift
+                          const round = (value) => Math.round(value * 1000) / 1000;
                           const handleMove = (moveEvent) => {
-                            const deltaX = moveEvent.clientX - startX;
-                            const deltaTime = roundR(deltaX / (20 * zoom));
-                            
-                            if (-deltaTime < initialDuration - MIN_CLIP_DURATION_R) {
-                               // Allow dragging right to restore the audio, up to its full duration
-                               const maxRightTrim = fullDuration - (initialClipStart + initialDuration);
-                               const trimAmount = Math.max(-maxRightTrim, -deltaTime); 
-                               
-                               setTracks(prev => prev.map(t => 
-                                t.id === track.id ? { 
-                                  ...t, 
-                                  duration: roundR(initialDuration - trimAmount)
-                                  } : t
-                                  ));
-                                  showEditTooltip(moveEvent.clientX, moveEvent.clientY, (track.startTime || 0) + (initialDuration - trimAmount));
-                                  }
-                                  };
-
-                                  const handleUp = (upEvent) => {
-                                  target.releasePointerCapture(upEvent.pointerId);
-                                  target.removeEventListener('pointermove', handleMove);
-                                  target.removeEventListener('pointerup', handleUp);
-                                  setTracksWithHistory(prev => {
-                                    if (editMode !== 'shuffle') return prev;
-                                    const edited = prev.find(t => t.id === track.id);
-                                    if (!edited) return prev;
-                                    const laneKey = track.splitFrom || track.id;
-                                    const oldEnd = (track.startTime || 0) + initialDuration;
-                                    const newEnd = (track.startTime || 0) + (edited.duration || 0);
-                                    const shift = newEnd - oldEnd;
-                                    return prev.map(t => t.id !== track.id && (t.splitFrom || t.id) === laneKey && (t.startTime || 0) >= oldEnd - 0.001 ? { ...t, startTime: Math.max(0, (t.startTime || 0) + shift) } : t);
-                                  });
-                                  hideEditTooltip();
-                                  };
+                            const deltaTime = round((moveEvent.clientX - startX) / (20 * zoom));
+                            setTracks(prev => prev.map(item => {
+                              if (item.id !== track.id) return item;
+                              // Always derive from the original edge so dragging
+                              // back and forth never accumulates rounding or ripple.
+                              return trimClipRegionRight(
+                                { ...item, clipRegions: initialRegions },
+                                edgeRegion.id,
+                                deltaTime,
+                                { shuffle: editMode === 'shuffle' },
+                              );
+                            }));
+                            showEditTooltip(
+                              moveEvent.clientX,
+                              moveEvent.clientY,
+                              edgeRegion.timelineStart
+                                + edgeRegion.sourceEnd - edgeRegion.sourceStart
+                                + deltaTime,
+                            );
+                          };
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                            hideEditTooltip();
+                            setTracksWithHistory(prev => prev);
+                          };
                           
                           target.addEventListener('pointermove', handleMove);
                           target.addEventListener('pointerup', handleUp);

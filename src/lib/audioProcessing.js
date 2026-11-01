@@ -98,6 +98,18 @@ export function getTrackRegionFadeAutomationPoints(track, region, maxStep = 0.02
 
   const trackStart = Number(track?.startTime) || 0;
   const trackDuration = Math.max(0, Number(track?.duration) || 0);
+  const hasAnyFade = Number(track?.fadeIn) > 0
+    || Number(track?.fadeOut) > 0
+    || Number(region?.fadeIn) > 0
+    || Number(region?.fadeOut) > 0;
+  // Most regions have no fade handles. Avoid generating a dense automation
+  // curve for a constant unity gain when the region is rendered without fades.
+  if (!hasAnyFade) {
+    return [
+      { time: regionStart, gain: 1 },
+      { time: regionEnd, gain: 1 },
+    ];
+  }
   const fadeInEnd = trackStart + Math.min(1, Math.max(0, Number(track?.fadeIn) || 0)) * trackDuration;
   const fadeOutStart = trackStart + trackDuration - Math.min(1, Math.max(0, Number(track?.fadeOut) || 0)) * trackDuration;
   const regionFadeInEnd = regionStart + Math.min(1, Math.max(0, Number(region?.fadeIn) || 0)) * duration;

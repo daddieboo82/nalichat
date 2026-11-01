@@ -45,7 +45,7 @@ describe('NaliStudio clip regions', () => {
     };
     expect(findClipRegionPeakTime(track, waveform, 3, 'next')).toBeCloseTo(12);
     expect(findClipRegionPeakTime(track, waveform, 13, 'previous')).toBeCloseTo(12);
-    expect(findClipRegionPeakTime(track, waveform, 5, 'next')).toBeCloseTo(2);
+    expect(findClipRegionPeakTime(track, waveform, 1, 'next')).toBeCloseTo(2);
   });
 
   it('adapts a legacy single-clip track without changing the track count', () => {

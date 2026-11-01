@@ -479,6 +479,16 @@ export function getTrackRenderRegions(track, sourceDuration = Number.POSITIVE_IN
     .filter(region => region.sourceEnd - region.sourceStart > 0.001);
 }
 
+/** Normalize region clip-gain and fade timing for both bounce and export. */
+export function getClipRegionEnvelope(region) {
+  const duration = Math.max(0, Number(region?.sourceEnd) - Number(region?.sourceStart));
+  const gainDb = Number.isFinite(Number(region?.gainDb)) ? Number(region.gainDb) : 0;
+  const gain = Math.pow(10, Math.max(-120, Math.min(24, gainDb)) / 20);
+  const fadeIn = Math.min(duration, Math.max(0, Number(region?.fadeIn) || 0));
+  const fadeOut = Math.min(Math.max(0, duration - fadeIn), Math.max(0, Number(region?.fadeOut) || 0));
+  return { gain, fadeIn, fadeOut };
+}
+
 export async function renderMixToBuffer(tracks, options = {}) {
   const { masterVolume = 100, masterFx = null, sampleRate = 44100 } = options;
   const audioTracks = (tracks || []).filter(track =>
@@ -519,14 +529,33 @@ export async function renderMixToBuffer(tracks, options = {}) {
       cueBus: master.cueBus,
     });
     regions.forEach(region => {
+      const duration = region.sourceEnd - region.sourceStart;
+      const envelope = getClipRegionEnvelope(region);
+      const regionGain = offline.createGain();
+      regionGain.gain.setValueAtTime(0, region.timelineStart);
+      if (envelope.fadeIn > 0) {
+        regionGain.gain.linearRampToValueAtTime(
+          envelope.gain,
+          region.timelineStart + envelope.fadeIn,
+        );
+      } else {
+        regionGain.gain.setValueAtTime(envelope.gain, region.timelineStart);
+      }
+      const regionEnd = region.timelineStart + duration;
+      if (envelope.fadeOut > 0) {
+        regionGain.gain.setValueAtTime(
+          envelope.gain,
+          regionEnd - envelope.fadeOut,
+        );
+        regionGain.gain.linearRampToValueAtTime(0, regionEnd);
+      } else {
+        regionGain.gain.setValueAtTime(envelope.gain, regionEnd);
+      }
+      regionGain.connect(trackInput);
       const source = offline.createBufferSource();
       source.buffer = buffer;
-      source.connect(trackInput);
-      source.start(
-        region.timelineStart,
-        region.sourceStart,
-        region.sourceEnd - region.sourceStart
-      );
+      source.connect(regionGain);
+      source.start(region.timelineStart, region.sourceStart, duration);
     });
   });
 

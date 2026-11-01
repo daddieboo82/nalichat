@@ -1579,16 +1579,18 @@ export default function Studio() {
     tracks.forEach(t => {
       if (selectedTrackIds.includes(t.id)) {
         const duration = t.duration || 40;
-        newTracks.push({
+        const duplicate = {
           ...t,
           id: nextId++,
           name: `${t.name} (Copy)`,
-          // Pro Tools Duplicate places the new clip directly after the source
-          // instead of stacking a second clip at the same timeline position.
-          startTime: (t.startTime || 0) + duration,
           armed: false,
           splitFrom: t.splitFrom || t.id,
-        });
+        };
+        // Region arrangements include internal gaps. Move every region by the
+        // arrangement span instead of changing only the legacy track startTime.
+        newTracks.push(Array.isArray(t.clipRegions)
+          ? moveTrackClipRegions(duplicate, duration)
+          : { ...duplicate, startTime: (t.startTime || 0) + duration });
       }
     });
 
@@ -1628,6 +1630,11 @@ export default function Studio() {
       waveform: compactWaveform(track.waveform),
       startTime: track.startTime || 0,
       duration: track.duration || 0,
+      fullDuration: track.fullDuration || track.duration || 0,
+      clipStart: track.clipStart || 0,
+      clipRegions: Array.isArray(track.clipRegions)
+        ? track.clipRegions.map(region => ({ ...region }))
+        : undefined,
       clipGain: track.clipGain || 0,
       fadeIn: track.fadeIn || 0,
       fadeOut: track.fadeOut || 0,
@@ -1642,6 +1649,14 @@ export default function Studio() {
     setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
       ...t, activePlaylistId: take.id, audioUrl: take.audioUrl, file_url: take.file_url || take.audioUrl,
       waveform: take.waveform || [], startTime: take.startTime || 0, duration: take.duration || 0,
+      fullDuration: take.fullDuration || take.duration || 0,
+      clipStart: take.clipStart || 0,
+      // Older playlist entries have no region array; explicitly clear the
+      // current take's regions so the legacy source range is reconstructed.
+      clipRegions: Array.isArray(take.clipRegions)
+        ? take.clipRegions.map(region => ({ ...region }))
+        : undefined,
+      clipRegionRevision: (Number(t.clipRegionRevision) || 0) + 1,
       clipGain: take.clipGain || 0, fadeIn: take.fadeIn || 0, fadeOut: take.fadeOut || 0,
     } : t));
     toast.success(`Recalled ${take.name}`);
@@ -1991,7 +2006,24 @@ export default function Studio() {
       setTracksWithHistory(prev => prev.map(t => {
         if (t.id !== trackId) return t;
         if (t.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(t.audioUrl); } catch (e) { /* ignore */ } }
-        return { ...t, audioUrl: url, waveform, duration, fullDuration: duration, clipStart: 0 };
+        return {
+          ...t,
+          audioUrl: url,
+          waveform,
+          duration,
+          fullDuration: duration,
+          clipStart: 0,
+          clipRegions: [{
+            id: `region-${t.id}-instrument-render-${Date.now()}`,
+            timelineStart: Math.max(0, Number(t.startTime) || 0),
+            sourceStart: 0,
+            sourceEnd: duration,
+            fadeIn: 0,
+            fadeOut: 0,
+            gainDb: 0,
+          }],
+          clipRegionRevision: (Number(t.clipRegionRevision) || 0) + 1,
+        };
       }));
       toast.success(`${getInstrument(instrumentId).name} rendered`, { id: toastId });
       sounds.success();
@@ -2051,8 +2083,54 @@ export default function Studio() {
       const { vocals, instrumental } = await separateStems(track.audioUrl);
       const nextId = nextTrackId(tracks);
       setTracksWithHistory(prev => [...prev,
-        { ...track, id: nextId, name: `${track.name} (Vocals/Highs)`, color: "bg-green-500", audioUrl: vocals.url, waveform: vocals.waveform, duration: vocals.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined },
-        { ...track, id: nextId + 1, name: `${track.name} (Instrumental/Lows)`, color: "bg-green-500", audioUrl: instrumental.url, waveform: instrumental.waveform, duration: instrumental.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined }
+        {
+          ...track,
+          id: nextId,
+          name: `${track.name} (Vocals/Highs)`,
+          color: "bg-green-500",
+          audioUrl: vocals.url,
+          waveform: vocals.waveform,
+          duration: vocals.duration,
+          fullDuration: vocals.duration,
+          clipStart: 0,
+          startTime: track.startTime || 0,
+          clipRegions: [{
+            id: `region-${nextId}-stem-vocals`,
+            timelineStart: track.startTime || 0,
+            sourceStart: 0,
+            sourceEnd: vocals.duration,
+            fadeIn: 0,
+            fadeOut: 0,
+            gainDb: 0,
+          }],
+          clipRegionRevision: (Number(track.clipRegionRevision) || 0) + 1,
+          segments: undefined,
+          effects: undefined,
+        },
+        {
+          ...track,
+          id: nextId + 1,
+          name: `${track.name} (Instrumental/Lows)`,
+          color: "bg-green-500",
+          audioUrl: instrumental.url,
+          waveform: instrumental.waveform,
+          duration: instrumental.duration,
+          fullDuration: instrumental.duration,
+          clipStart: 0,
+          startTime: track.startTime || 0,
+          clipRegions: [{
+            id: `region-${nextId + 1}-stem-instrumental`,
+            timelineStart: track.startTime || 0,
+            sourceStart: 0,
+            sourceEnd: instrumental.duration,
+            fadeIn: 0,
+            fadeOut: 0,
+            gainDb: 0,
+          }],
+          clipRegionRevision: (Number(track.clipRegionRevision) || 0) + 1,
+          segments: undefined,
+          effects: undefined,
+        }
       ]);
       toast.success("Stems separated successfully!", { id: toastId });
     } catch (e) {

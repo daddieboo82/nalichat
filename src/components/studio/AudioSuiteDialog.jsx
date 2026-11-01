@@ -106,7 +106,7 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
             dst[i] = src[idx0] * (1 - frac) + (src[idx0 + 1] || 0) * frac;
           }
         }
-        newDuration = audioBuffer.duration / ratio;
+        newDuration = newLength / audioBuffer.sampleRate;
       }
 
       // Encode to WAV

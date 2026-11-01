@@ -22,7 +22,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume } from '@/lib/audioProcessing';
-import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, moveTrackClipRegions, repeatTrackClipRegions, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, moveTrackClipRegions, repeatTrackClipRegions, remapClipRegionSources, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -3691,11 +3691,35 @@ export default function Studio() {
         open={showAudioSuite}
         onOpenChange={setShowAudioSuite}
         track={tracks.find(t => selectedTrackIds.includes(t.id))}
-        onProcess={({ audioUrl, waveform, duration }) => {
+        onProcess={({ audioUrl, waveform, duration, transform = 'none', sourceScale = 1 }) => {
           const track = tracks.find(t => selectedTrackIds.includes(t.id));
-          if (!track) return;
+          if (!track) {
+            if (audioUrl?.startsWith('blob:')) URL.revokeObjectURL(audioUrl);
+            return;
+          }
+          const existingRegions = getTrackClipRegions(track);
+          const remappedRegions = remapClipRegionSources(
+            existingRegions,
+            duration,
+            transform,
+            sourceScale,
+          );
+          if (remappedRegions.length === 0) {
+            if (audioUrl?.startsWith('blob:')) URL.revokeObjectURL(audioUrl);
+            toast.error('AudioSuite could not preserve the current clip regions.');
+            return;
+          }
           if (track.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(track.audioUrl); } catch (e) {} }
-          setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, audioUrl, waveform, duration, fullDuration: duration, clipStart: 0 } : t));
+          setTracksWithHistory(prev => prev.map(t => {
+            if (t.id !== track.id) return t;
+            return withTrackClipRegionBounds({
+              ...t,
+              audioUrl,
+              waveform,
+              fullDuration: duration,
+              clipStart: 0,
+            }, remappedRegions);
+          }));
         }}
       />
       </Suspense>

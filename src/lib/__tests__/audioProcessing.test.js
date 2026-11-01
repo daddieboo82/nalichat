@@ -4,6 +4,7 @@ import {
   clampAudioElementVolume,
   getTrackRenderRegions,
   getTrackTimelineFade,
+  getClipRegionGainAtTime,
   getClipRegionEnvelope,
   trackPanValue,
   countActiveEffects,
@@ -48,6 +49,21 @@ describe('offline clip-region render scheduling', () => {
     }, 10);
     expect(regions).toHaveLength(1);
     expect(regions[0]).toMatchObject({ timelineStart: 2, sourceStart: 8, sourceEnd: 10 });
+  });
+});
+
+describe('realtime clip-region envelope', () => {
+  it('combines clip gain, region fades, and track-wide fades at transport time', () => {
+    const track = { startTime: 0, duration: 10, fadeIn: 0.2, fadeOut: 0.2 };
+    const region = {
+      timelineStart: 0, sourceStart: 0, sourceEnd: 10,
+      gainDb: 6, fadeIn: 1, fadeOut: 1,
+    };
+    expect(getClipRegionGainAtTime(track, region, 0)).toBe(0);
+    expect(getClipRegionGainAtTime(track, region, 1)).toBeCloseTo(Math.pow(10, 6 / 20) * 0.5);
+    expect(getClipRegionGainAtTime(track, region, 5)).toBeCloseTo(Math.pow(10, 6 / 20));
+    expect(getClipRegionGainAtTime(track, region, 9)).toBeCloseTo(Math.pow(10, 6 / 20) * 0.5);
+    expect(getClipRegionGainAtTime(track, null, 5)).toBe(0);
   });
 });
 

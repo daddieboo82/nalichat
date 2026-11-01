@@ -1,3 +1,14 @@
+import { describe, it, expect } from 'vitest';
+import {
+  trackGainValue,
+  clampAudioElementVolume,
+  getTrackRenderRegions,
+  trackPanValue,
+  countActiveEffects,
+  getTrackEffects,
+  FX_CHAIN_ORDER,
+} from '@/lib/audioProcessing';
+
 describe('offline clip-region render scheduling', () => {
   it('keeps split regions on one track with contiguous source offsets', () => {
     const regions = getTrackRenderRegions({
@@ -50,17 +61,6 @@ describe('HTML audio fallback volume', () => {
     expect(clampAudioElementVolume(Number.POSITIVE_INFINITY)).toBe(0);
   });
 });
-
-import { describe, it, expect } from 'vitest';
-import {
-  trackGainValue,
-  clampAudioElementVolume,
-  getTrackRenderRegions,
-  trackPanValue,
-  countActiveEffects,
-  getTrackEffects,
-  FX_CHAIN_ORDER,
-} from '@/lib/audioProcessing';
 
 describe('trackGainValue', () => {
   it('maps the 0-100 fader onto 0-1', () => {

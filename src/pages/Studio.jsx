@@ -1816,9 +1816,11 @@ export default function Studio() {
     const clipBoundaries = [];
     tracks.forEach(t => {
       if (!t.waveform || t.waveform.length === 0) return;
-      const start = t.startTime || 0;
-      const end = start + (t.duration || 40);
-      clipBoundaries.push(start, end);
+      getTrackClipRegions(t).forEach(region => {
+        const start = region.timelineStart;
+        const end = start + region.sourceEnd - region.sourceStart;
+        clipBoundaries.push(start, end);
+      });
     });
     clipBoundaries.sort((a, b) => a - b);
     if (forward) {

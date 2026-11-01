@@ -3,6 +3,7 @@ import {
   trackGainValue,
   clampAudioElementVolume,
   getTrackRenderRegions,
+  getTrackTimelineFade,
   getClipRegionEnvelope,
   trackPanValue,
   countActiveEffects,
@@ -47,6 +48,28 @@ describe('offline clip-region render scheduling', () => {
     }, 10);
     expect(regions).toHaveLength(1);
     expect(regions[0]).toMatchObject({ timelineStart: 2, sourceStart: 8, sourceEnd: 10 });
+  });
+});
+
+describe('track-wide offline fade envelope', () => {
+  it('maps fade fractions across the full clip-region timeline span', () => {
+    const envelope = getTrackTimelineFade(
+      { fadeIn: 0.2, fadeOut: 0.25 },
+      [
+        { timelineStart: 3, sourceStart: 0, sourceEnd: 4 },
+        { timelineStart: 9, sourceStart: 5, sourceEnd: 8 },
+      ],
+    );
+    expect(envelope).toEqual({ start: 3, end: 12, fadeIn: 1.8, fadeOut: 1.8 });
+  });
+
+  it('prevents fade durations from overlapping beyond the arrangement span', () => {
+    const envelope = getTrackTimelineFade(
+      { fadeIn: 0.8, fadeOut: 0.8 },
+      [{ timelineStart: 2, sourceStart: 0, sourceEnd: 5 }],
+    );
+    expect(envelope.fadeIn).toBe(4);
+    expect(envelope.fadeOut).toBe(1);
   });
 });
 

@@ -1254,7 +1254,10 @@ export default function Studio() {
         if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
           const audio = getTrackAudio(track);
           if (!audio) return;
-          audio.currentTime = Math.max(0, recordStartPos - preRoll - (track.startTime || 0));
+          const preRollTime = Math.max(0, recordStartPos - preRoll);
+          const preRollSourceTime = getClipSourceTimeAtTime(track, preRollTime);
+          if (preRollSourceTime === null) return;
+          audio.currentTime = preRollSourceTime;
           preRollPlayPromises.push(
             audio.play().then(() => true).catch((error) => {
               console.error("Pre-roll playback error:", error);
@@ -1310,7 +1313,9 @@ export default function Studio() {
           if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
             const audio = getTrackAudio(track);
             if (!audio) return;
-            audio.currentTime = currentTimeRef.current;
+            const sourceTime = getClipSourceTimeAtTime(track, currentTimeRef.current);
+            if (sourceTime === null) return;
+            audio.currentTime = sourceTime;
             audio.play().catch(e => console.error("Overdub playback error:", e));
           }
         });
@@ -2984,8 +2989,12 @@ export default function Studio() {
                              if (track.audioUrl) {
                                const audio = getTrackAudio(track);
                                if (!audio) return;
-                               const offset = (track.clipStart || 0) + ((track.duration || 40) * clickRatio);
-                               audio.currentTime = Math.max(0, Math.min(offset, (track.fullDuration || track.duration || 40) - 0.1));
+                               const sourceTime = getClipSourceTimeAtTime(track, newTime);
+                               if (sourceTime === null) {
+                                 audio.pause();
+                                 return;
+                               }
+                               audio.currentTime = sourceTime;
                                audio.play().then(() => {
                                  setTimeout(() => audio.pause(), 150);
                                }).catch(() => {});

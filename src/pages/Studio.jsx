@@ -1209,10 +1209,31 @@ export default function Studio() {
             }));
             return { ...t, armed: false, midiNotes: [...(t.midiNotes || []), ...finalized].sort((a, b) => a.startBeat - b.startBeat) };
           }
+          const recordedStartTime = recordingStartTime !== null ? recordingStartTime : currentTimeRef.current;
+          const duration = recordedDuration || (recordingStartTime !== null
+            ? Math.max(1, currentTimeRef.current - recordingStartTime)
+            : 10);
           return {
-            ...t, waveform: realWaveform, armed: false, audioUrl,
-            startTime: recordingStartTime !== null ? recordingStartTime : currentTimeRef.current,
-            duration: recordedDuration || (recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10)
+            ...t,
+            waveform: realWaveform,
+            armed: false,
+            audioUrl,
+            startTime: recordedStartTime,
+            duration,
+            fullDuration: duration,
+            clipStart: 0,
+            // A new recording is a new source file, not a continuation of the
+            // previous take's edited source ranges.
+            clipRegions: [{
+              id: `region-${t.id}-recording-${Date.now()}`,
+              timelineStart: recordedStartTime,
+              sourceStart: 0,
+              sourceEnd: duration,
+              fadeIn: 0,
+              fadeOut: 0,
+              gainDb: 0,
+            }],
+            clipRegionRevision: (Number(t.clipRegionRevision) || 0) + 1,
           };
         }));
         setRecordingStartTime(null);

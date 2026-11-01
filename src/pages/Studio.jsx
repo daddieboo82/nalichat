@@ -22,7 +22,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume } from '@/lib/audioProcessing';
-import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, repeatTrackClipRegions, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -1704,26 +1704,18 @@ export default function Studio() {
 
   // Pro Tools-style Repeat Clip: duplicate a clip N times to the right, end-to-end.
   const handleRepeatClip = (track, count) => {
-    if (tracks.length + count - 1 > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
+    const repetitions = Math.max(1, Math.min(64, Math.floor(Number(count) || 1)));
+    const repeated = repeatTrackClipRegions(
+      track,
+      repetitions,
+      (region, pass, index) => `region-${track.id}-repeat-${pass}-${index}-${Date.now()}`,
+    );
+    if (repeated.clipRegions.length === getTrackClipRegions(track).length) {
+      toast.error("This track has no clip regions to repeat.");
       return;
     }
-    const clipDur = track.duration || 40;
-    const clipStart = track.startTime || 0;
-    let nextId = nextTrackId(tracks);
-    const newClips = [];
-    for (let i = 1; i <= count; i++) {
-      newClips.push({
-        ...track,
-        id: nextId++,
-        name: `${track.name} (Repeat ${i})`,
-        startTime: clipStart + clipDur * i,
-        splitFrom: track.id,
-        armed: false,
-      });
-    }
-    setTracksWithHistory(prev => [...prev, ...newClips]);
-    toast.success(`Clip repeated ${count}×`);
+    setTracksWithHistory(prev => prev.map(item => item.id === track.id ? repeated : item));
+    toast.success(`Clip repeated ${repetitions}× on the same track.`);
     sounds.success();
   };
 

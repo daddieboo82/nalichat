@@ -107,6 +107,23 @@ describe('realtime Studio mix engine', () => {
     engine.dispose();
   });
 
+  it('preserves the current automated pan when the master bus rebuilds', () => {
+    const engine = createMixEngine();
+    engine.attach('vocal', { volume: 1 }, track);
+    engine.syncTrack('vocal', track, { gain: 0.8, pan: 82 });
+
+    const previousPanner = createdNodes.find(node => node.kind === 'panner');
+    expect(previousPanner.pan.setTargetAtTime).toHaveBeenCalledWith(0.64, 12, 0.01);
+
+    engine.syncMaster({ masterVolume: 70, masterFx: { limiter: { enabled: true } } });
+
+    const panners = createdNodes.filter(node => node.kind === 'panner');
+    const rebuiltPanner = panners[panners.length - 1];
+    expect(rebuiltPanner).not.toBe(previousPanner);
+    expect(rebuiltPanner.pan.value).toBeCloseTo(0.64);
+    engine.dispose();
+  });
+
   it('rebuilds channel and master routing when insert structure changes', () => {
     const engine = createMixEngine();
     engine.attach('vocal', { volume: 1 }, track);

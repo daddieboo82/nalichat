@@ -494,6 +494,39 @@ export function getTrackTimelineFade(track, regions) {
   return { start, end, fadeIn, fadeOut };
 }
 
+/** Evaluate clip-level and track-wide fade/gain envelopes at a timeline position. */
+export function getClipRegionGainAtTime(track, region, timelineTime) {
+  if (!region || !Number.isFinite(Number(timelineTime))) return 0;
+  const duration = Math.max(0, Number(region.sourceEnd) - Number(region.sourceStart));
+  if (duration <= 0) return 0;
+  const time = Number(timelineTime);
+  const elapsed = Math.max(0, Math.min(duration, time - Number(region.timelineStart)));
+  const fadeIn = Math.min(duration, Math.max(0, Number(region.fadeIn) || 0));
+  const fadeOut = Math.min(duration - fadeIn, Math.max(0, Number(region.fadeOut) || 0));
+  const regionFadeIn = fadeIn > 0 ? Math.min(1, elapsed / fadeIn) : 1;
+  const regionFadeOut = fadeOut > 0 ? Math.min(1, (duration - elapsed) / fadeOut) : 1;
+
+  const trackDuration = Math.max(0, Number(track?.duration) || 0);
+  const trackStart = Number(track?.startTime) || 0;
+  const trackElapsed = time - trackStart;
+  const trackFadeInDuration = Math.min(trackDuration, Math.max(0, Number(track?.fadeIn) || 0) * trackDuration);
+  const trackFadeOutDuration = Math.min(
+    trackDuration - trackFadeInDuration,
+    Math.max(0, Number(track?.fadeOut) || 0) * trackDuration,
+  );
+  const trackFadeIn = trackFadeInDuration > 0
+    ? Math.min(1, Math.max(0, trackElapsed / trackFadeInDuration))
+    : 1;
+  const trackRemaining = trackDuration - trackElapsed;
+  const trackFadeOut = trackFadeOutDuration > 0
+    ? Math.min(1, Math.max(0, trackRemaining / trackFadeOutDuration))
+    : 1;
+  const gainDb = Number.isFinite(Number(region.gainDb)) ? Number(region.gainDb) : 0;
+  return Math.pow(10, Math.max(-120, Math.min(24, gainDb)) / 20)
+    * Math.min(regionFadeIn, regionFadeOut)
+    * Math.min(trackFadeIn, trackFadeOut);
+}
+
 /** Normalize region clip-gain and fade timing for both bounce and export. */
 export function getClipRegionEnvelope(region) {
   const duration = Math.max(0, Number(region?.sourceEnd) - Number(region?.sourceStart));

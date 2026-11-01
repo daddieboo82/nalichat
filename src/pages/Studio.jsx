@@ -2103,55 +2103,33 @@ export default function Studio() {
     try {
       const { vocals, instrumental } = await separateStems(track.audioUrl);
       const nextId = nextTrackId(tracks);
+      const makeStemTrack = (id, name, stem) => {
+        // Stem separation returns a replacement source with the same audio
+        // timeline. Keep the source in/out points and gaps from the edited
+        // arrangement, clamping only if the stem is shorter than its source.
+        const regions = remapClipRegionSources(
+          getTrackClipRegions(track),
+          stem.duration,
+          'none',
+        );
+        return withTrackClipRegionBounds({
+          ...track,
+          id,
+          name,
+          color: "bg-green-500",
+          audioUrl: stem.url,
+          waveform: stem.waveform,
+          fullDuration: stem.duration,
+          clipStart: 0,
+          duration: 0,
+          segments: undefined,
+          effects: undefined,
+          clipRegionRevision: (Number(track.clipRegionRevision) || 0) + 1,
+        }, regions);
+      };
       setTracksWithHistory(prev => [...prev,
-        {
-          ...track,
-          id: nextId,
-          name: `${track.name} (Vocals/Highs)`,
-          color: "bg-green-500",
-          audioUrl: vocals.url,
-          waveform: vocals.waveform,
-          duration: vocals.duration,
-          fullDuration: vocals.duration,
-          clipStart: 0,
-          startTime: track.startTime || 0,
-          clipRegions: [{
-            id: `region-${nextId}-stem-vocals`,
-            timelineStart: track.startTime || 0,
-            sourceStart: 0,
-            sourceEnd: vocals.duration,
-            fadeIn: 0,
-            fadeOut: 0,
-            gainDb: 0,
-          }],
-          clipRegionRevision: (Number(track.clipRegionRevision) || 0) + 1,
-          segments: undefined,
-          effects: undefined,
-        },
-        {
-          ...track,
-          id: nextId + 1,
-          name: `${track.name} (Instrumental/Lows)`,
-          color: "bg-green-500",
-          audioUrl: instrumental.url,
-          waveform: instrumental.waveform,
-          duration: instrumental.duration,
-          fullDuration: instrumental.duration,
-          clipStart: 0,
-          startTime: track.startTime || 0,
-          clipRegions: [{
-            id: `region-${nextId + 1}-stem-instrumental`,
-            timelineStart: track.startTime || 0,
-            sourceStart: 0,
-            sourceEnd: instrumental.duration,
-            fadeIn: 0,
-            fadeOut: 0,
-            gainDb: 0,
-          }],
-          clipRegionRevision: (Number(track.clipRegionRevision) || 0) + 1,
-          segments: undefined,
-          effects: undefined,
-        }
+        makeStemTrack(nextId, `${track.name} (Vocals/Highs)`, vocals),
+        makeStemTrack(nextId + 1, `${track.name} (Instrumental/Lows)`, instrumental),
       ]);
       toast.success("Stems separated successfully!", { id: toastId });
     } catch (e) {

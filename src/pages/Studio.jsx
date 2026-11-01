@@ -3338,7 +3338,9 @@ export default function Studio() {
                                     positions.set(clip.id, cursor);
                                     cursor += clip.duration || 0;
                                   });
-                                  return prev.map(t => positions.has(t.id) ? { ...t, startTime: positions.get(t.id) } : t);
+                                  return prev.map(t => positions.has(t.id)
+                                    ? moveTrackClipRegions(t, positions.get(t.id) - (t.startTime || 0))
+                                    : t);
                                 });
                               } else {
                                 const delta = newStartTime - initialStartTime;

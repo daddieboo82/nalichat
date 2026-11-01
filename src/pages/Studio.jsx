@@ -919,6 +919,14 @@ export default function Studio() {
           if (sourceTime !== null) {
             audio.currentTime = sourceTime;
             const region = getClipRegionAtTime(track, currentTimeRef.current);
+            if (audio.dataset.fxBypass === '1') {
+              audio.volume = clampAudioElementVolume(
+                trackMixGain(track) * (masterVolume / 100)
+                * getClipRegionGainAtTime(track, region, currentTimeRef.current),
+              );
+            } else {
+              mixEngineRef.current?.syncClipRegion(track.id, track, region, currentTimeRef.current);
+            }
             audio.dataset.activeRegionId = region?.id || '';
             audio.dataset.clipRegionRevision = String(Number(track.clipRegionRevision) || 0);
             playPromises.push(

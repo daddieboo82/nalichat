@@ -527,6 +527,33 @@ export function getClipRegionGainAtTime(track, region, timelineTime) {
     * Math.min(trackFadeIn, trackFadeOut);
 }
 
+/** Equal-power gain for overlapping sibling clips on legacy split-track lanes. */
+export function getSiblingCrossfadeGainAtTime(track, region, timelineTime, allTracks = []) {
+  if (!track || !region || !Number.isFinite(Number(timelineTime))) return 1;
+  const laneKey = track.splitFrom || track.id;
+  const start = Number(region.timelineStart) || 0;
+  const end = start + Math.max(0, Number(region.sourceEnd) - Number(region.sourceStart));
+  let gain = 1;
+
+  (allTracks || []).forEach(sibling => {
+    if (!sibling || sibling.id === track.id || (sibling.splitFrom || sibling.id) !== laneKey) return;
+    getTrackClipRegions(sibling).forEach(other => {
+      const otherStart = Number(other.timelineStart) || 0;
+      const otherEnd = otherStart + Math.max(0, Number(other.sourceEnd) - Number(other.sourceStart));
+      const overlapStart = Math.max(start, otherStart);
+      const overlapEnd = Math.min(end, otherEnd);
+      const overlapDuration = overlapEnd - overlapStart;
+      if (overlapDuration <= 0.001 || timelineTime < overlapStart || timelineTime > overlapEnd) return;
+      const progress = Math.max(0, Math.min(1, (timelineTime - overlapStart) / overlapDuration));
+      // Earlier clip fades out while the later clip fades in: equal-power pair.
+      gain *= start < otherStart
+        ? Math.cos(progress * Math.PI / 2)
+        : Math.sin(progress * Math.PI / 2);
+    });
+  });
+  return gain;
+}
+
 /** Normalize region clip-gain and fade timing for both bounce and export. */
 export function getClipRegionEnvelope(region) {
   const duration = Math.max(0, Number(region?.sourceEnd) - Number(region?.sourceStart));
@@ -612,7 +639,16 @@ export async function renderMixToBuffer(tracks, options = {}) {
       } else {
         regionGain.gain.setValueAtTime(envelope.gain, regionEnd);
       }
-      regionGain.connect(trackInput);
+      const crossfadeGain = offline.createGain();
+      const crossfadeSamples = 128;
+      const crossfadeCurve = new Float32Array(crossfadeSamples);
+      for (let sample = 0; sample < crossfadeSamples; sample++) {
+        const time = region.timelineStart + (sample / (crossfadeSamples - 1)) * duration;
+        crossfadeCurve[sample] = getSiblingCrossfadeGainAtTime(track, region, time, active);
+      }
+      crossfadeGain.gain.setValueCurveAtTime(crossfadeCurve, region.timelineStart, duration);
+      regionGain.connect(crossfadeGain);
+      crossfadeGain.connect(trackInput);
       const source = offline.createBufferSource();
       source.buffer = buffer;
       source.connect(regionGain);

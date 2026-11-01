@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   trackPanValue: vi.fn(track => ((Number(track?.pan ?? 50) - 50) / 50)),
   automatedTrackState: vi.fn(track => track),
   getClipRegionGainAtTime: vi.fn(() => 0.5),
+  getSiblingCrossfadeGainAtTime: vi.fn(() => 1),
 }));
 
 vi.mock('@/lib/audioProcessing', () => ({
@@ -16,6 +17,7 @@ vi.mock('@/lib/audioProcessing', () => ({
   trackPanValue: mocks.trackPanValue,
   automatedTrackState: mocks.automatedTrackState,
   getClipRegionGainAtTime: mocks.getClipRegionGainAtTime,
+  getSiblingCrossfadeGainAtTime: mocks.getSiblingCrossfadeGainAtTime,
 }));
 
 import { createMixEngine } from '@/lib/studioMixEngine';

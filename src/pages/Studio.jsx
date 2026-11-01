@@ -21,7 +21,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume, getClipRegionGainAtTime } from '@/lib/audioProcessing';
+import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume, getClipRegionGainAtTime, getSiblingCrossfadeGainAtTime } from '@/lib/audioProcessing';
 import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, moveTrackClipRegions, repeatTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
@@ -697,10 +697,11 @@ export default function Studio() {
         if (audio.dataset.fxBypass === '1') {
           audio.volume = clampAudioElementVolume(
             trackMixGain(track) * (masterVolume / 100)
-            * getClipRegionGainAtTime(track, activeRegion, newTime),
+            * getClipRegionGainAtTime(track, activeRegion, newTime)
+            * getSiblingCrossfadeGainAtTime(track, activeRegion, newTime, tracksRef.current),
           );
         } else {
-          mixEngineRef.current?.syncClipRegion(track.id, track, activeRegion, newTime);
+          mixEngineRef.current?.syncClipRegion(track.id, track, activeRegion, newTime, tracksRef.current);
         }
         const revision = Number(track.clipRegionRevision) || 0;
         if (
@@ -922,10 +923,11 @@ export default function Studio() {
             if (audio.dataset.fxBypass === '1') {
               audio.volume = clampAudioElementVolume(
                 trackMixGain(track) * (masterVolume / 100)
-                * getClipRegionGainAtTime(track, region, currentTimeRef.current),
+                * getClipRegionGainAtTime(track, region, currentTimeRef.current)
+                * getSiblingCrossfadeGainAtTime(track, region, currentTimeRef.current, tracksRef.current),
               );
             } else {
-              mixEngineRef.current?.syncClipRegion(track.id, track, region, currentTimeRef.current);
+              mixEngineRef.current?.syncClipRegion(track.id, track, region, currentTimeRef.current, tracksRef.current);
             }
             audio.dataset.activeRegionId = region?.id || '';
             audio.dataset.clipRegionRevision = String(Number(track.clipRegionRevision) || 0);

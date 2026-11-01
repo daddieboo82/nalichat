@@ -17,6 +17,7 @@ import {
   trackPanValue,
   automatedTrackState,
   getClipRegionGainAtTime,
+  getSiblingCrossfadeGainAtTime,
 } from '@/lib/audioProcessing';
 
 const isSameOriginUrl = (url) => {
@@ -190,10 +191,11 @@ export function createMixEngine() {
     },
 
     /** Apply the active clip region's gain and fade envelope at transport time. */
-    syncClipRegion(trackId, track, region, timelineTime) {
+    syncClipRegion(trackId, track, region, timelineTime, allTracks = []) {
       const entry = entries.get(trackId);
       if (!entry?.regionGain || !context) return false;
-      const value = getClipRegionGainAtTime(track, region, timelineTime);
+      const value = getClipRegionGainAtTime(track, region, timelineTime)
+        * getSiblingCrossfadeGainAtTime(track, region, timelineTime, allTracks);
       entry.regionGain.gain.setTargetAtTime(value, context.currentTime, 0.008);
       return true;
     },

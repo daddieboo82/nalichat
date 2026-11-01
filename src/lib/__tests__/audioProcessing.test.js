@@ -5,6 +5,7 @@ import {
   getTrackRenderRegions,
   getTrackTimelineFade,
   getClipRegionGainAtTime,
+  getSiblingCrossfadeGainAtTime,
   getClipRegionEnvelope,
   trackPanValue,
   countActiveEffects,
@@ -64,6 +65,37 @@ describe('realtime clip-region envelope', () => {
     expect(getClipRegionGainAtTime(track, region, 5)).toBeCloseTo(Math.pow(10, 6 / 20));
     expect(getClipRegionGainAtTime(track, region, 9)).toBeCloseTo(Math.pow(10, 6 / 20) * 0.5);
     expect(getClipRegionGainAtTime(track, null, 5)).toBe(0);
+  });
+});
+
+describe('same-lane sibling crossfade envelope', () => {
+  const earlier = {
+    id: 'earlier', splitFrom: 'parent', startTime: 0, duration: 4,
+    clipRegions: [{ id: 'earlier-region', timelineStart: 0, sourceStart: 0, sourceEnd: 4 }],
+  };
+  const later = {
+    id: 'later', splitFrom: 'parent', startTime: 2, duration: 4,
+    clipRegions: [{ id: 'later-region', timelineStart: 2, sourceStart: 0, sourceEnd: 4 }],
+  };
+
+  it('applies complementary equal-power curves over the actual overlap', () => {
+    const earlierRegion = earlier.clipRegions[0];
+    const laterRegion = later.clipRegions[0];
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlierRegion, 1, [earlier, later])).toBe(1);
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlierRegion, 2, [earlier, later])).toBeCloseTo(1);
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlierRegion, 3, [earlier, later])).toBeCloseTo(Math.SQRT1_2);
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlierRegion, 4, [earlier, later])).toBeCloseTo(0);
+    expect(getSiblingCrossfadeGainAtTime(later, laterRegion, 2, [earlier, later])).toBeCloseTo(0);
+    expect(getSiblingCrossfadeGainAtTime(later, laterRegion, 3, [earlier, later])).toBeCloseTo(Math.SQRT1_2);
+    expect(getSiblingCrossfadeGainAtTime(later, laterRegion, 4, [earlier, later])).toBeCloseTo(1);
+    expect(getSiblingCrossfadeGainAtTime(later, laterRegion, 5, [earlier, later])).toBe(1);
+  });
+
+  it('does not crossfade independent tracks or non-overlapping sibling regions', () => {
+    const independent = { ...later, id: 'independent', splitFrom: undefined };
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlier.clipRegions[0], 3, [earlier, independent])).toBe(1);
+    const shifted = { ...later, clipRegions: [{ ...later.clipRegions[0], timelineStart: 5 }] };
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlier.clipRegions[0], 3, [earlier, shifted])).toBe(1);
   });
 });
 

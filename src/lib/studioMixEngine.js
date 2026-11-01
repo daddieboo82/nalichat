@@ -76,6 +76,14 @@ export function createMixEngine() {
     entry.trackGain = built.trackGain;
     entry.track = track;
     entry.gain = gain;
+    // A master-bus rebuild recreates the panner as well as the channel strip.
+    // Restore the last timeline pan value so a paused transport does not snap
+    // back to the track's static pan until the next playback tick.
+    const panner = built.nodes.find(node => node && node.pan);
+    if (panner) {
+      const panValue = typeof entry.pan === 'number' ? entry.pan : (track?.pan ?? 50);
+      panner.pan.value = Math.max(-1, Math.min(1, (panValue - 50) / 50));
+    }
   };
 
   return {
@@ -126,7 +134,7 @@ export function createMixEngine() {
       }
       // The graph owns level from here; leave the element wide open.
       element.volume = 1;
-      entries.set(trackId, { element, source, nodes: [], regionGain: context.createGain(), fadeGain: context.createGain(), track: null, gain: 0 });
+      entries.set(trackId, { element, source, nodes: [], regionGain: context.createGain(), fadeGain: context.createGain(), track: null, gain: 0, pan: track?.pan ?? 50 });
       rebuild(trackId, track || {}, trackGainValue(track || {}));
       return true;
     },
@@ -158,9 +166,10 @@ export function createMixEngine() {
       // Preserve the timeline's automated pan when a plugin/send change forces
       // the channel strip to rebuild. Otherwise the rebuild briefly snaps the
       // panner back to the static track pan until the next transport tick.
+      const panValue = typeof pan === 'number' ? pan : (track?.pan ?? 50);
+      entry.pan = panValue;
       const panner = entry.nodes.find(n => n && n.pan);
       if (panner) {
-        const panValue = typeof pan === 'number' ? pan : (track?.pan ?? 50);
         const value = Math.max(-1, Math.min(1, (panValue - 50) / 50));
         panner.pan.setTargetAtTime(value, context.currentTime, 0.01);
       }

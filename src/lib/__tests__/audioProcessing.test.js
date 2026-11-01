@@ -3,6 +3,7 @@ import {
   trackGainValue,
   clampAudioElementVolume,
   getTrackRenderRegions,
+  getClipRegionEnvelope,
   trackPanValue,
   countActiveEffects,
   getTrackEffects,
@@ -46,6 +47,34 @@ describe('offline clip-region render scheduling', () => {
     }, 10);
     expect(regions).toHaveLength(1);
     expect(regions[0]).toMatchObject({ timelineStart: 2, sourceStart: 8, sourceEnd: 10 });
+  });
+});
+
+describe('clip-region render envelopes', () => {
+  it('converts clip gain from dB and retains region fades', () => {
+    const envelope = getClipRegionEnvelope({
+      sourceStart: 2,
+      sourceEnd: 6,
+      gainDb: 6,
+      fadeIn: 0.5,
+      fadeOut: 1,
+    });
+    expect(envelope.gain).toBeCloseTo(Math.pow(10, 6 / 20));
+    expect(envelope.fadeIn).toBe(0.5);
+    expect(envelope.fadeOut).toBe(1);
+  });
+
+  it('bounds fades to the region duration and limits extreme gain', () => {
+    const envelope = getClipRegionEnvelope({
+      sourceStart: 0,
+      sourceEnd: 1,
+      gainDb: 100,
+      fadeIn: 0.8,
+      fadeOut: 0.8,
+    });
+    expect(envelope.gain).toBeCloseTo(Math.pow(10, 24 / 20));
+    expect(envelope.fadeIn).toBe(0.8);
+    expect(envelope.fadeOut).toBeCloseTo(0.2);
   });
 });
 

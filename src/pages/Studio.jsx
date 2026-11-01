@@ -1793,7 +1793,6 @@ export default function Studio() {
       if (hasRange) {
         updated = splitTrackRegion(updated, rangeStart, (side, region) => `region-${track.id}-${region.id}-${side}-${Date.now()}`);
         const before = getTrackClipRegions(track).length;
-        const afterStart = getTrackClipRegions(updated).length;
         updated = splitTrackRegion(updated, rangeEnd, (side, region) => `region-${track.id}-${region.id}-${side}-${Date.now()}`);
         splitCount += Math.max(0, getTrackClipRegions(updated).length - before);
       } else {
@@ -2942,7 +2941,8 @@ export default function Studio() {
                              toast.error("The cut did not overlap any audio.");
                              return;
                            }
-                           const { removed, ...updatedTrack } = result;
+                           const updatedTrack = { ...result };
+                           delete updatedTrack.removed;
                            setTracksWithHistory(prev => prev.map(item => item.id === track.id ? updatedTrack : item));
                            if (hasRange) {
                              setSelectionStart(null);

@@ -509,15 +509,19 @@ export async function renderMixToBuffer(tracks, options = {}) {
   const master = connectMasterChain(offline, { masterFx, masterVolume, destination: offline.destination });
 
   decoded.forEach(({ track, buffer, regions }) => {
+    // One channel strip per DAW track: split regions feed the same insert,
+    // pan, fader and send chain so edits do not reset effect state at seams.
+    const trackInput = offline.createGain();
+    connectTrackChain(offline, trackInput, track, {
+      destination: master.input,
+      reverbBus: master.reverbBus,
+      delayBus: master.delayBus,
+      cueBus: master.cueBus,
+    });
     regions.forEach(region => {
       const source = offline.createBufferSource();
       source.buffer = buffer;
-      connectTrackChain(offline, source, track, {
-        destination: master.input,
-        reverbBus: master.reverbBus,
-        delayBus: master.delayBus,
-        cueBus: master.cueBus,
-      });
+      source.connect(trackInput);
       source.start(
         region.timelineStart,
         region.sourceStart,

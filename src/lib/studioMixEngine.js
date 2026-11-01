@@ -14,6 +14,7 @@ import {
   connectMasterChain,
   connectTrackChain,
   trackGainValue,
+  trackPanValue,
   automatedTrackState,
 } from '@/lib/audioProcessing';
 
@@ -72,6 +73,8 @@ export function createMixEngine() {
       gain,
     });
     entry.nodes = built.nodes;
+    const panner = entry.nodes.find(node => node && node.pan);
+    if (panner && Number.isFinite(entry.pan)) panner.pan.value = entry.pan;
     entry.trackGain = built.trackGain;
     entry.sendGains = built.sendGains;
     entry.track = track;
@@ -126,7 +129,7 @@ export function createMixEngine() {
       }
       // The graph owns level from here; leave the element wide open.
       element.volume = 1;
-      entries.set(trackId, { element, source, nodes: [], track: null, gain: 0 });
+      entries.set(trackId, { element, source, nodes: [], track: null, gain: 0, pan: trackPanValue(track || {}) });
       rebuild(trackId, track || {}, trackGainValue(track || {}));
       return true;
     },
@@ -140,6 +143,8 @@ export function createMixEngine() {
       const entry = entries.get(trackId);
       if (!entry || !context) return false;
       const nextGain = typeof gain === 'number' ? gain : trackGainValue(track || {});
+      const nextPan = trackPanValue(track || {});
+      entry.pan = nextPan;
       const prev = entry.track;
       const structureChanged =
         !prev ||
@@ -157,8 +162,7 @@ export function createMixEngine() {
       }
       const panner = entry.nodes.find(n => n && n.pan);
       if (panner) {
-        const value = Math.max(-1, Math.min(1, ((track?.pan ?? 50) - 50) / 50));
-        panner.pan.setTargetAtTime(value, context.currentTime, 0.01);
+        panner.pan.setTargetAtTime(nextPan, context.currentTime, 0.01);
       }
       entry.sendGains?.forEach((sendGain, index) => {
         if (!sendGain) return;

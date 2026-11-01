@@ -72,11 +72,13 @@ describe('media storage resilience', () => {
     expect(source).toContain('await ctx.close().catch(() => {})');
   });
 
-  it('consolidates the trimmed Studio buffer instead of re-exporting the original track', async () => {
+  it('consolidates the edited Studio regions instead of re-exporting the original track', async () => {
     const source = await readText('src/pages/Studio.jsx');
-    expect(source).toContain('audioBufferToWav(trimmedBuffer)');
+    expect(source).toContain('for (const region of regions)');
+    expect(source).toContain('audioBufferToWav(consolidatedBuffer)');
     expect(source).toContain('if (!response.ok) throw new Error(`Failed to load ${track.name || "clip"}: ${response.status}`)');
-    expect(source).toContain('destinationChannel.set(sourceChannel.subarray(startSample, endSample));');
+    expect(source).toContain('const destination = consolidatedBuffer.getChannelData(channel)');
+    expect(source).toContain('const timelineOffset = region.timelineStart - timelineStart');
     expect(source).toContain('await audioCtx.close().catch(() => {})');
   });
 

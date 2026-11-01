@@ -250,6 +250,33 @@ export function withTrackClipRegionBounds(track, regions) {
   };
 }
 
+/**
+ * Repeat the complete clip-region arrangement on the same mixer track.
+ * Each pass preserves the original source ranges and internal gaps.
+ */
+export function repeatTrackClipRegions(track, count = 1, createId = (() => `region-repeat-${Date.now()}`)) {
+  const repetitions = Math.max(0, Math.floor(finite(count, 0)));
+  const regions = getTrackClipRegions(track);
+  if (!regions.length || repetitions === 0) return { ...track, clipRegions: regions };
+  const timelineStart = Math.min(...regions.map(region => region.timelineStart));
+  const timelineEnd = Math.max(...regions.map(
+    region => region.timelineStart + region.sourceEnd - region.sourceStart
+  ));
+  const span = timelineEnd - timelineStart;
+  if (span <= 0) return { ...track, clipRegions: regions };
+  const repeated = [...regions];
+  for (let pass = 1; pass <= repetitions; pass++) {
+    regions.forEach((region, index) => {
+      repeated.push({
+        ...region,
+        id: createId(region, pass, index),
+        timelineStart: region.timelineStart + span * pass,
+      });
+    });
+  }
+  return withTrackClipRegionBounds(track, repeated);
+}
+
 /** Move one region on the timeline without changing which source audio it references. */
 export function moveClipRegion(track, regionId, timelineStart) {
   const requestedStart = Math.max(0, finite(timelineStart, NaN));

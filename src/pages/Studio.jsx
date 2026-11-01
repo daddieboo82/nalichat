@@ -22,7 +22,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume } from '@/lib/audioProcessing';
-import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, splitTrackRegion } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, splitTrackRegion } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -679,6 +679,34 @@ export default function Studio() {
 
       // Drive the full automation frame in one pass for responsive large sessions.
       mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
+
+      // Keep one audio source per track, but audition only the clip region under
+      // the playhead. Gaps created by Cut stay silent; Split remains seamless.
+      tracksRef.current.forEach(track => {
+        const audio = audioElementsRef.current[track.id];
+        if (!audio || !track.audioUrl) return;
+        const activeRegion = getClipRegionAtTime(track, newTime);
+        if (!activeRegion || (track.muted && !track.solo)) {
+          if (!audio.paused) audio.pause();
+          audio.dataset.activeRegionId = '';
+          return;
+        }
+        const sourceTime = getClipSourceTimeAtTime(track, newTime);
+        if (sourceTime === null) return;
+        const revision = Number(track.clipRegionRevision) || 0;
+        if (
+          audio.dataset.activeRegionId !== activeRegion.id ||
+          Number(audio.dataset.clipRegionRevision || 0) !== revision ||
+          Math.abs(audio.currentTime - sourceTime) > 0.12
+        ) {
+          audio.currentTime = sourceTime;
+          audio.dataset.activeRegionId = activeRegion.id;
+          audio.dataset.clipRegionRevision = String(revision);
+        }
+        if (audio.paused) audio.play().catch(error => {
+          console.error("Clip-region playback error:", error);
+        });
+      });
       
       if (isRecording && recordingStartTime !== null) {
         // Use real elapsed time (performance.now) for accurate sync with the actual audio recording
@@ -862,12 +890,12 @@ export default function Studio() {
           if (!audio) return;
           
           // Calculate if playhead is within track bounds
-          const trackStart = track.startTime || 0;
-          const trackEnd = trackStart + (track.duration || 40);
-          const clipStartOffset = track.clipStart || 0;
-          
-          if (currentTimeRef.current >= trackStart && currentTimeRef.current < trackEnd) {
-            audio.currentTime = clipStartOffset + (currentTimeRef.current - trackStart);
+          const sourceTime = getClipSourceTimeAtTime(track, currentTimeRef.current);
+          if (sourceTime !== null) {
+            audio.currentTime = sourceTime;
+            const region = getClipRegionAtTime(track, currentTimeRef.current);
+            audio.dataset.activeRegionId = region?.id || '';
+            audio.dataset.clipRegionRevision = String(Number(track.clipRegionRevision) || 0);
             playPromises.push(
               audio.play().catch(e => { console.error("Audio playback error:", e); return { failed: true }; })
             );

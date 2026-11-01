@@ -173,8 +173,8 @@ export function getTrackClipRegions(track) {
     timelineStart: Math.max(0, finite(track.startTime, 0)),
     sourceStart,
     sourceEnd: sourceStart + duration,
-    // Track-wide fades and clip gain remain on the track channel strip.
-    // Legacy regions therefore start with a neutral region-level gain/envelope.
+    // Legacy track-wide fades and clip gain remain on the channel strip.
+    // Region-level gain/fades default to neutral until edited independently.
     fadeIn: 0,
     fadeOut: 0,
     gainDb: 0,

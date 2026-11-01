@@ -1773,11 +1773,23 @@ export default function Studio() {
               outputLength - destinationStart,
             );
             if (copyLength <= 0) continue;
+            const regionGain = Math.pow(10, (Number(region.gainDb) || 0) / 20);
+            const fadeInSamples = Math.max(0, Math.floor((Number(region.fadeIn) || 0) * audioBuffer.sampleRate));
+            const fadeOutSamples = Math.max(0, Math.floor((Number(region.fadeOut) || 0) * audioBuffer.sampleRate));
             for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-              consolidatedBuffer.getChannelData(channel).set(
-                audioBuffer.getChannelData(channel).subarray(sourceStart, sourceStart + copyLength),
-                destinationStart,
-              );
+              const source = audioBuffer.getChannelData(channel);
+              const destination = consolidatedBuffer.getChannelData(channel);
+              for (let sample = 0; sample < copyLength; sample++) {
+                const fadeInGain = fadeInSamples > 0
+                  ? Math.min(1, sample / fadeInSamples)
+                  : 1;
+                const remaining = copyLength - sample - 1;
+                const fadeOutGain = fadeOutSamples > 0
+                  ? Math.min(1, remaining / fadeOutSamples)
+                  : 1;
+                destination[destinationStart + sample] =
+                  source[sourceStart + sample] * regionGain * Math.min(fadeInGain, fadeOutGain);
+              }
             }
           }
 
@@ -1788,7 +1800,7 @@ export default function Studio() {
           try {
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${track.name.replace(/[^a-z0-9]/gi, '_')}_consolidated.wav`;
+            a.download = `${String(track.name || `Track_${track.id}`).replace(/[^a-z0-9_-]/gi, '_')}_consolidated.wav`;
             document.body.appendChild(a);
             a.click();
             a.remove();

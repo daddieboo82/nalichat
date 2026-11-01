@@ -62,17 +62,27 @@ describe('NaliStudio clip regions', () => {
     expect(healTrackRegions(track, 'a').healed).toBe(false);
   });
 
-  it('moves a region without changing its source in/out points', () => {
-    const track = splitTrackRegion({ id: 3, startTime: 2, duration: 8, clipStart: 5 }, 6, side => side);
-    const moved = moveClipRegion(track, 'left', 20);
-    expect(moved.clipRegions.find(region => region.id === 'left')).toMatchObject({
-      timelineStart: 20, sourceStart: 5, sourceEnd: 9,
+  it('moves a region into an available gap without changing its source in/out points', () => {
+    const track = {
+      id: 3,
+      clipRegions: [
+        { id: 'left', timelineStart: 0, sourceStart: 0, sourceEnd: 4 },
+        { id: 'right', timelineStart: 8, sourceStart: 10, sourceEnd: 14 },
+      ],
+    };
+    const moved = moveClipRegion(track, 'right', 5);
+    expect(moved.clipRegions.find(region => region.id === 'right')).toMatchObject({
+      timelineStart: 5, sourceStart: 10, sourceEnd: 14,
     });
   });
 
   it('slip-edits source audio without moving the region on the timeline', () => {
-    const track = { id: 4, clipRegions: [{ id: 'a', timelineStart: 12, sourceStart: 2, sourceEnd: 7 }] };
-    const slipped = slipClipRegion(track, 'a', 10, 5);
+    const track = {
+      id: 4,
+      fullDuration: 20,
+      clipRegions: [{ id: 'a', timelineStart: 12, sourceStart: 2, sourceEnd: 7 }],
+    };
+    const slipped = slipClipRegion(track, 'a', 8);
     expect(slipped.clipRegions[0]).toMatchObject({
       timelineStart: 12, sourceStart: 10, sourceEnd: 15,
     });

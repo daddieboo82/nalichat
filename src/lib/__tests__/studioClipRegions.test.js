@@ -7,6 +7,7 @@ import {
   cutTrackTimelineRange,
   healTrackRegions,
   moveClipRegion,
+  moveTrackClipRegions,
   slipClipRegion,
   splitTrackRegion,
   trimClipRegionLeft,
@@ -76,6 +77,28 @@ describe('NaliStudio clip regions', () => {
     expect(moved.clipRegions.find(region => region.id === 'right')).toMatchObject({
       timelineStart: 5, sourceStart: 10, sourceEnd: 14,
     });
+  });
+
+  it('moves all regions together while preserving their relative gaps', () => {
+    const track = {
+      id: 15,
+      clipRegions: [
+        { id: 'a', timelineStart: 2, sourceStart: 0, sourceEnd: 3 },
+        { id: 'b', timelineStart: 8, sourceStart: 10, sourceEnd: 12 },
+      ],
+    };
+    const moved = moveTrackClipRegions(track, 4);
+    expect(moved.id).toBe(15);
+    expect(moved.clipRegions.map(region => [region.timelineStart, region.sourceStart])).toEqual([
+      [6, 0],
+      [12, 10],
+    ]);
+  });
+
+  it('moves non-audio lanes without creating fake clip regions', () => {
+    const moved = moveTrackClipRegions({ id: 16, type: 'midi', startTime: 5 }, 2);
+    expect(moved).toMatchObject({ id: 16, type: 'midi', startTime: 7 });
+    expect(moved.clipRegions).toBeUndefined();
   });
 
   it('slip-edits source audio without moving the region on the timeline', () => {

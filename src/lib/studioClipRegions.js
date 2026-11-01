@@ -311,6 +311,11 @@ export function moveClipRegion(track, regionId, timelineStart) {
 export function moveTrackClipRegions(track, timelineDelta) {
   const delta = finite(timelineDelta, NaN);
   if (!Number.isFinite(delta)) return track;
+  // MIDI, folder, VCA and other non-audio lanes have no clip regions; retain
+  // their ordinary lane movement rather than synthesizing an audio region.
+  if (!Array.isArray(track?.clipRegions) && !track?.audioUrl && !track?.waveform?.length) {
+    return { ...track, startTime: Math.max(0, finite(track.startTime, 0) + delta) };
+  }
   const current = getTrackClipRegions(track);
   const earliestStart = current.length
     ? Math.min(...current.map(region => region.timelineStart))

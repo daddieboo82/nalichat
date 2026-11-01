@@ -21,7 +21,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume } from '@/lib/audioProcessing';
+import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume, getClipRegionGainAtTime } from '@/lib/audioProcessing';
 import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, moveTrackClipRegions, repeatTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
@@ -687,12 +687,21 @@ export default function Studio() {
         if (!audio || !track.audioUrl) return;
         const activeRegion = getClipRegionAtTime(track, newTime);
         if (!activeRegion || (track.muted && !track.solo)) {
+          mixEngineRef.current?.syncClipRegion(track.id, track, null, newTime);
           if (!audio.paused) audio.pause();
           audio.dataset.activeRegionId = '';
           return;
         }
         const sourceTime = getClipSourceTimeAtTime(track, newTime);
         if (sourceTime === null) return;
+        if (audio.dataset.fxBypass === '1') {
+          audio.volume = clampAudioElementVolume(
+            trackMixGain(track) * (masterVolume / 100)
+            * getClipRegionGainAtTime(track, activeRegion, newTime),
+          );
+        } else {
+          mixEngineRef.current?.syncClipRegion(track.id, track, activeRegion, newTime);
+        }
         const revision = Number(track.clipRegionRevision) || 0;
         if (
           audio.dataset.activeRegionId !== activeRegion.id ||

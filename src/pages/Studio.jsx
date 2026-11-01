@@ -1489,30 +1489,25 @@ export default function Studio() {
       const rangeStart = Math.min(selectionStart, selectionEnd);
       const rangeEnd = Math.max(selectionStart, selectionEnd);
       const rangeDuration = rangeEnd - rangeStart;
-      let nextId = nextTrackId(tracks);
       let changed = false;
-      const nextTracks = [];
-      tracks.forEach(t => {
-        if (!selectedTrackIds.includes(t.id) || !t.waveform?.length) { nextTracks.push(t); return; }
-        const start = t.startTime || 0;
-        const duration = t.duration || 40;
-        const end = start + duration;
-        const cutStart = Math.max(start, rangeStart);
-        const cutEnd = Math.min(end, rangeEnd);
-        if (cutEnd <= cutStart) { nextTracks.push(t); return; }
+      const nextTracks = tracks.map(track => {
+        if (!selectedTrackIds.includes(track.id) || !track.waveform?.length) {
+          if (editMode === 'shuffle' && (track.startTime || 0) >= rangeEnd) {
+            return { ...track, startTime: Math.max(0, (track.startTime || 0) - rangeDuration) };
+          }
+          return track;
+        }
+        const result = cutTrackTimelineRange(track, rangeStart, rangeEnd, {
+          shuffle: editMode === 'shuffle',
+          createId: (side, region, index) => `region-${track.id}-${region.id}-${side}-${index}-${Date.now()}`,
+        });
+        if (!result.removed) return track;
         changed = true;
-        const lineage = t.splitFrom || t.id;
-        const leftDuration = cutStart - start;
-        const rightDuration = end - cutEnd;
-        if (leftDuration > 0.001) nextTracks.push({ ...t, duration: leftDuration, splitFrom: lineage });
-        if (rightDuration > 0.001) nextTracks.push({ ...t, id: nextId++, name: `${t.name} (After Clear)`, startTime: editMode === 'shuffle' ? cutStart : cutEnd, duration: rightDuration, clipStart: (t.clipStart || 0) + (cutEnd - start), splitFrom: lineage });
+        const updatedTrack = { ...result };
+        delete updatedTrack.removed;
+        return updatedTrack;
       });
       if (!changed) { toast.error("The selection does not overlap a selected clip"); return; }
-      if (editMode === 'shuffle') {
-        nextTracks.forEach(t => {
-          if (!selectedTrackIds.includes(t.id) && (t.startTime || 0) >= rangeEnd) t.startTime = Math.max(0, (t.startTime || 0) - rangeDuration);
-        });
-      }
       setTracksWithHistory(nextTracks);
       setSelectedTrackIds([]);
       setSelectionStart(null);

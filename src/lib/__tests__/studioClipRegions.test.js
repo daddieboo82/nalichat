@@ -3,6 +3,7 @@ import {
   getTrackClipRegions,
   getHealCandidateRegionIds,
   findClipRegionPeakTime,
+  getClipRegionPeakTimes,
   remapClipRegionSources,
   repeatTrackClipRegions,
   cutClipRegionSide,
@@ -46,6 +47,7 @@ describe('NaliStudio clip regions', () => {
     expect(findClipRegionPeakTime(track, waveform, 3, 'next')).toBeCloseTo(12);
     expect(findClipRegionPeakTime(track, waveform, 13, 'previous')).toBeCloseTo(12);
     expect(findClipRegionPeakTime(track, waveform, 1, 'next')).toBeCloseTo(2);
+    expect(getClipRegionPeakTimes(track, waveform)).toEqual([2, 12]);
   });
 
   it('adapts a legacy single-clip track without changing the track count', () => {

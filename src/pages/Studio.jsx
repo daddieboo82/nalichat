@@ -869,9 +869,25 @@ export default function Studio() {
     if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
     if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
     if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
-    Object.values(audioElementsRef.current).forEach(audio => { audio.currentTime = newTime; });
+    const liveTracks = tracksRef.current || tracks;
+    const hasSolo = liveTracks.some(track => track.solo);
+    liveTracks.forEach(track => {
+      const audio = audioElementsRef.current[track.id];
+      if (!audio) return;
+      const audible = track.solo || (!track.muted && !hasSolo);
+      const region = audible ? getClipRegionAtTime(track, newTime) : null;
+      const sourceTime = region ? getClipSourceTimeAtTime(track, newTime) : null;
+      if (sourceTime === null) {
+        if (!audio.paused) audio.pause();
+        audio.dataset.activeRegionId = '';
+        return;
+      }
+      audio.currentTime = sourceTime;
+      audio.dataset.activeRegionId = region.id;
+      audio.dataset.clipRegionRevision = String(Number(track.clipRegionRevision) || 0);
+    });
     // Scrubbing/seeking must immediately audition the automation state at the destination.
-    mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
+    mixEngineRef.current?.syncAutomationFrame(liveTracks, newTime);
   };
 
   const togglePlay = () => {

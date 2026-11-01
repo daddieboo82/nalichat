@@ -1799,7 +1799,8 @@ export default function Studio() {
               outputLength - destinationStart,
             );
             if (copyLength <= 0) continue;
-            const regionGain = Math.pow(10, (Number(region.gainDb) || 0) / 20);
+            const regionGainDb = Math.max(-120, Math.min(24, Number(region.gainDb) || 0));
+            const regionGain = Math.pow(10, regionGainDb / 20);
             const fadeInSamples = Math.max(0, Math.floor((Number(region.fadeIn) || 0) * audioBuffer.sampleRate));
             const fadeOutSamples = Math.max(0, Math.floor((Number(region.fadeOut) || 0) * audioBuffer.sampleRate));
             for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {

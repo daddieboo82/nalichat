@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   getTrackClipRegions,
   getHealCandidateRegionIds,
+  findClipRegionPeakTime,
+  remapClipRegionSources,
   repeatTrackClipRegions,
   cutClipRegionSide,
   cutTrackTimelineRange,
@@ -15,6 +17,37 @@ import {
 } from '@/lib/studioClipRegions';
 
 describe('NaliStudio clip regions', () => {
+  it('remaps pitch and stretch source offsets without moving timeline regions', () => {
+    const regions = [{ id: 'a', timelineStart: 5, sourceStart: 2, sourceEnd: 6 }];
+    expect(remapClipRegionSources(regions, 5, 'pitch', 0.5)[0]).toMatchObject({
+      timelineStart: 5, sourceStart: 1, sourceEnd: 3,
+    });
+  });
+
+  it('reverses source ranges and swaps region fade directions', () => {
+    const regions = [{ id: 'a', timelineStart: 5, sourceStart: 2, sourceEnd: 6, fadeIn: 0.25, fadeOut: 0.75 }];
+    expect(remapClipRegionSources(regions, 10, 'reverse')[0]).toMatchObject({
+      timelineStart: 5, sourceStart: 4, sourceEnd: 8, fadeIn: 0.75, fadeOut: 0.25,
+    });
+  });
+
+  it('navigates waveform peaks only when they fall inside audible regions', () => {
+    const waveform = new Array(1000).fill(0);
+    waveform[200] = 0.9;
+    waveform[500] = 1;
+    waveform[800] = 0.8;
+    const track = {
+      fullDuration: 10,
+      clipRegions: [
+        { id: 'first', timelineStart: 0, sourceStart: 0, sourceEnd: 4 },
+        { id: 'last', timelineStart: 10, sourceStart: 6, sourceEnd: 10 },
+      ],
+    };
+    expect(findClipRegionPeakTime(track, waveform, 3, 'next')).toBeCloseTo(12);
+    expect(findClipRegionPeakTime(track, waveform, 13, 'previous')).toBeCloseTo(12);
+    expect(findClipRegionPeakTime(track, waveform, 5, 'next')).toBeCloseTo(2);
+  });
+
   it('adapts a legacy single-clip track without changing the track count', () => {
     const regions = getTrackClipRegions({ id: 7, startTime: 12, duration: 8, clipStart: 3 });
     expect(regions).toHaveLength(1);

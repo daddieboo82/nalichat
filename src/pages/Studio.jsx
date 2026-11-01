@@ -1749,8 +1749,17 @@ export default function Studio() {
           const timelineEnd = Math.max(...regions.map(
             region => region.timelineStart + region.sourceEnd - region.sourceStart
           ));
-          const outputLength = Math.ceil((timelineEnd - timelineStart) * audioBuffer.sampleRate);
+          const timelineDuration = timelineEnd - timelineStart;
+          const outputLength = Math.ceil(timelineDuration * audioBuffer.sampleRate);
           if (outputLength <= 0) throw new Error("Selected clip has no audio to consolidate");
+          const trackFadeIn = Math.min(
+            timelineDuration,
+            Math.max(0, Number(track.fadeIn) || 0) * timelineDuration,
+          );
+          const trackFadeOut = Math.min(
+            timelineDuration - trackFadeIn,
+            Math.max(0, Number(track.fadeOut) || 0) * timelineDuration,
+          );
           const consolidatedBuffer = audioCtx.createBuffer(
             audioBuffer.numberOfChannels,
             outputLength,
@@ -1787,8 +1796,19 @@ export default function Studio() {
                 const fadeOutGain = fadeOutSamples > 0
                   ? Math.min(1, remaining / fadeOutSamples)
                   : 1;
+                const timelineOffset = region.timelineStart - timelineStart
+                  + sample / audioBuffer.sampleRate;
+                const trackFadeInGain = trackFadeIn > 0
+                  ? Math.min(1, timelineOffset / trackFadeIn)
+                  : 1;
+                const trackRemaining = timelineDuration - timelineOffset;
+                const trackFadeOutGain = trackFadeOut > 0
+                  ? Math.min(1, trackRemaining / trackFadeOut)
+                  : 1;
                 destination[destinationStart + sample] =
-                  source[sourceStart + sample] * regionGain * Math.min(fadeInGain, fadeOutGain);
+                  source[sourceStart + sample] * regionGain
+                  * Math.min(fadeInGain, fadeOutGain)
+                  * Math.min(trackFadeInGain, trackFadeOutGain);
               }
             }
           }

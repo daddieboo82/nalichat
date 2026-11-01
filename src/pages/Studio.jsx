@@ -3167,8 +3167,10 @@ export default function Studio() {
                               const beatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
                               const gridSeconds = gridSize === 1 ? secondsPerBeat * beatsPerBar : secondsPerBeat * 4 * gridSize;
                               committedStartTime = Math.round(committedStartTime / gridSeconds) * gridSeconds;
-                            } else if (editMode === 'shuffle') {
-                              const laneKey = track.splitFrom || track.id;
+                            } else if (editMode === 'shuffle' && track.splitFrom) {
+                              // Legacy split-track sessions still snap sibling tracks;
+                              // same-track region arrangements are moved as one clip lane.
+                              const laneKey = track.splitFrom;
                               const otherClips = tracksRef.current.filter(t =>
                                 t.id !== track.id && (t.splitFrom || t.id) === laneKey && t.waveform?.length > 0
                               );

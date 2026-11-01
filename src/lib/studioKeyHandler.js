@@ -1,4 +1,4 @@
-import { moveTrackClipRegions } from '@/lib/studioClipRegions';
+import { findClipRegionPeakTime, moveTrackClipRegions } from '@/lib/studioClipRegions';
 /**
  * Studio keyboard shortcut handler — extracted from Studio.jsx for line-count management.
  * Returns a keydown event handler wired to all studio state and actions.
@@ -79,46 +79,25 @@ export function createStudioKeyHandler(deps) {
         setActiveTool(tools[(index + 1 + tools.length) % tools.length]);
       }
     }
-    else if (e.key === 'Tab') { e.preventDefault();
+    else if (e.key === 'Tab') {
+      e.preventDefault();
       const curr = currentTimeRef.current;
-      if (e.shiftKey) {
-        let prevPeak = null;
-        for (const track of tracks) {
-          if (!track.waveform || track.waveform.length === 0) continue;
-          const trackStart = track.startTime || 0;
-          const fullDuration = track.fullDuration || track.duration || 40;
-          const posInTrack = curr - trackStart;
-          if (posInTrack < 0) continue;
-          const startIdx = Math.floor((posInTrack / fullDuration) * track.waveform.length);
-          for (let i = startIdx - 2; i > 0; i--) {
-            const v = track.waveform[i];
-            if (v > 0.25 && v >= (track.waveform[i-1] || 0) && v >= (track.waveform[i+1] || 0)) {
-              const peakTime = trackStart + (i / track.waveform.length) * fullDuration;
-              if (prevPeak === null || peakTime > prevPeak) prevPeak = peakTime;
-              break;
-            }
-          }
+      let nearestPeak = null;
+      for (const track of tracks) {
+        const peakTime = findClipRegionPeakTime(
+          track,
+          track.waveform,
+          curr,
+          e.shiftKey ? 'previous' : 'next',
+        );
+        if (peakTime === null) continue;
+        if (nearestPeak === null || (e.shiftKey ? peakTime > nearestPeak : peakTime < nearestPeak)) {
+          nearestPeak = peakTime;
         }
-        if (prevPeak !== null) { updateCurrentTime(prevPeak); sounds.nav(); }
-      } else {
-        let nextPeak = null;
-        for (const track of tracks) {
-          if (!track.waveform || track.waveform.length === 0) continue;
-          const trackStart = track.startTime || 0;
-          const fullDuration = track.fullDuration || track.duration || 40;
-          const posInTrack = curr - trackStart;
-          if (posInTrack < 0) continue;
-          const startIdx = Math.floor((posInTrack / fullDuration) * track.waveform.length);
-          for (let i = startIdx + 2; i < track.waveform.length - 1; i++) {
-            const v = track.waveform[i];
-            if (v > 0.25 && v >= (track.waveform[i-1] || 0) && v >= (track.waveform[i+1] || 0)) {
-              const peakTime = trackStart + (i / track.waveform.length) * fullDuration;
-              if (nextPeak === null || peakTime < nextPeak) nextPeak = peakTime;
-              break;
-            }
-          }
-        }
-        if (nextPeak !== null) { updateCurrentTime(nextPeak); sounds.nav(); }
+      }
+      if (nearestPeak !== null) {
+        updateCurrentTime(nearestPeak);
+        sounds.nav();
       }
     }
     else if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); setLoopActive(!loopActive); }

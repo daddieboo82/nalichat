@@ -96,6 +96,10 @@ describe('same-lane sibling crossfade envelope', () => {
     expect(getSiblingCrossfadeGainAtTime(earlier, earlier.clipRegions[0], 3, [earlier, independent])).toBe(1);
     const shifted = { ...later, clipRegions: [{ ...later.clipRegions[0], timelineStart: 5 }] };
     expect(getSiblingCrossfadeGainAtTime(earlier, earlier.clipRegions[0], 3, [earlier, shifted])).toBe(1);
+    const muted = { ...later, muted: true };
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlier.clipRegions[0], 3, [earlier, muted])).toBe(1);
+    const soloOther = { ...later, solo: true };
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlier.clipRegions[0], 3, [earlier, soloOther])).toBe(1);
   });
 });
 

@@ -533,10 +533,19 @@ export function getSiblingCrossfadeGainAtTime(track, region, timelineTime, allTr
   const laneKey = track.splitFrom || track.id;
   const start = Number(region.timelineStart) || 0;
   const end = start + Math.max(0, Number(region.sourceEnd) - Number(region.sourceStart));
+  const tracks = allTracks || [];
+  const hasSolo = tracks.some(item => item?.solo);
+  if (track.muted || (hasSolo && !track.solo)) return 1;
   let gain = 1;
 
-  (allTracks || []).forEach(sibling => {
-    if (!sibling || sibling.id === track.id || (sibling.splitFrom || sibling.id) !== laneKey) return;
+  tracks.forEach(sibling => {
+    if (
+      !sibling
+      || sibling.id === track.id
+      || (sibling.splitFrom || sibling.id) !== laneKey
+      || sibling.muted
+      || (hasSolo && !sibling.solo)
+    ) return;
     getTrackClipRegions(sibling).forEach(other => {
       const otherStart = Number(other.timelineStart) || 0;
       const otherEnd = otherStart + Math.max(0, Number(other.sourceEnd) - Number(other.sourceStart));

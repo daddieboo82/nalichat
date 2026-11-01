@@ -1493,7 +1493,7 @@ export default function Studio() {
       const nextTracks = tracks.map(track => {
         if (!selectedTrackIds.includes(track.id) || !track.waveform?.length) {
           if (editMode === 'shuffle' && (track.startTime || 0) >= rangeEnd) {
-            return { ...track, startTime: Math.max(0, (track.startTime || 0) - rangeDuration) };
+            return moveTrackClipRegions(track, -rangeDuration);
           }
           return track;
         }
@@ -1539,7 +1539,7 @@ export default function Studio() {
               ? sum + (clip.duration || 0)
               : sum;
           }, 0);
-          return shiftLeft > 0 ? { ...t, startTime: Math.max(0, (t.startTime || 0) - shiftLeft) } : t;
+          return shiftLeft > 0 ? moveTrackClipRegions(t, -shiftLeft) : t;
         })
       : remaining;
     setTracksWithHistory(nextTracks);
@@ -3654,7 +3654,7 @@ export default function Studio() {
         timeSignature={timeSignature}
         onSpot={(timeInSeconds) => {
           if (spotClip) {
-            setTracksWithHistory(prev => prev.map(t => t.id === spotClip.id ? { ...t, startTime: Math.max(0, timeInSeconds) } : t));
+            setTracksWithHistory(prev => prev.map(t => t.id === spotClip.id ? moveTrackClipRegions(t, Math.max(0, timeInSeconds) - (t.startTime || 0)) : t));
             toast.success(`Moved "${spotClip.name}" to ${timeInSeconds.toFixed(3)}s`);
             sounds.nav();
           }

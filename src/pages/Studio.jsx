@@ -2915,109 +2915,39 @@ export default function Studio() {
                          } else if (activeTool === 'grab') {
                            e.currentTarget.style.cursor = 'grab';
                          } else if (activeTool === 'cut') {
-                           e.currentTarget.style.cursor = 'crosshair';
-                         } else if (activeTool === 'scrub') {
-                           e.currentTarget.style.cursor = 'ew-resize';
-                         } else {
-                           e.currentTarget.style.cursor = 'default';
-                         }
-                      }}
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                        if (activeTool === 'fade') return;
-                        if (track.locked && !['zoomer', 'selector', 'scrub'].includes(activeTool)) return;
-
-                        if (activeTool === 'zoomer') {
-                          const target = e.currentTarget;
-                          const rect = target.getBoundingClientRect();
-                          const clipStart = track.startTime || 0;
-                          const clipDuration = track.duration || 40;
-                          const timeFromClientX = (clientX) => {
-                            const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-                            return clipStart + (x / rect.width) * clipDuration;
-                          };
-                          const anchorTime = timeFromClientX(e.clientX);
-                          let endTime = anchorTime;
-                          let dragged = false;
-                          target.setPointerCapture(e.pointerId);
-                          const handleZoomMove = (moveEvent) => {
-                            endTime = timeFromClientX(moveEvent.clientX);
-                            dragged = dragged || Math.abs(moveEvent.clientX - e.clientX) > 4;
-                            if (dragged) {
-                              setSelectionStart(Math.min(anchorTime, endTime));
-                              setSelectionEnd(Math.max(anchorTime, endTime));
-                            }
-                          };
-                          const finishZoom = (upEvent) => {
-                            target.releasePointerCapture(upEvent.pointerId);
-                            target.removeEventListener('pointermove', handleZoomMove);
-                            target.removeEventListener('pointerup', finishZoom);
-                            const workspace = workspaceRef.current;
-                            const viewportWidth = Math.max(320, (workspace?.clientWidth || 1200) - 384);
-                            if (dragged && Math.abs(endTime - anchorTime) > 0.01) {
-                              const start = Math.min(anchorTime, endTime);
-                              const range = Math.abs(endTime - anchorTime);
-                              const nextZoom = Math.max(0.5, Math.min(5000, viewportWidth / (range * 20)));
-                              setZoom(nextZoom);
-                              setTimeout(() => {
-                                if (workspaceRef.current) workspaceRef.current.scrollLeft = Math.max(0, start * 20 * nextZoom);
-                              }, 0);
-                            } else {
-                              const nextZoom = e.altKey ? Math.max(0.5, zoom / 2) : Math.min(5000, zoom * 2);
-                              setZoom(nextZoom);
-                              setTimeout(() => {
-                                if (workspaceRef.current) workspaceRef.current.scrollLeft = Math.max(0, anchorTime * 20 * nextZoom - viewportWidth / 2);
-                              }, 0);
-                            }
-                            setSelectionStart(null);
-                            setSelectionEnd(null);
-                          };
-                          target.addEventListener('pointermove', handleZoomMove);
-                          target.addEventListener('pointerup', finishZoom);
-                          return;
-                        }
-
-                        // Spot mode: open dialog to type exact timecode position
-                        if (editMode === 'spot') {
-                          setSpotClip(track);
-                          setSpotDialogOpen(true);
-                          return;
-                        }
-
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const relativeX = e.clientX - rect.left;
-                        const relativeY = e.clientY - rect.top;
-                        const isTopHalf = relativeY < rect.height / 2;
-                        const smartEdgeWidth = Math.min(16, rect.width * 0.12);
-                        const smartAtLeftEdge = relativeX <= smartEdgeWidth;
-                        const smartAtRightEdge = relativeX >= rect.width - smartEdgeWidth;
-
-                        if (activeTool === 'cut') {
                            const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
                            const cutTime = (track.startTime || 0) + ((track.duration || 40) * clickRatio);
                            const hasRange = selectionStart !== null && selectionEnd !== null
                              && Math.abs(selectionEnd - selectionStart) > 0.001;
-                           setTracksWithHistory(prev => prev.map(item => {
-                             if (item.id !== track.id) return item;
-                             if (hasRange) {
-                               return cutTrackTimelineRange(item, Math.min(selectionStart, selectionEnd), Math.max(selectionStart, selectionEnd), {
-                                 shuffle: editMode === 'shuffle',
-                                 createId: (side, region) => `region-${item.id}-${region.id}-${side}-${Date.now()}`,
-                               });
-                             }
-                             const region = getTrackClipRegions(item).find(candidate =>
+                           let result;
+                           if (hasRange) {
+                             result = cutTrackTimelineRange(track, Math.min(selectionStart, selectionEnd), Math.max(selectionStart, selectionEnd), {
+                               shuffle: editMode === 'shuffle',
+                               createId: (side, region) => `region-${track.id}-${region.id}-${side}-${Date.now()}`,
+                             });
+                           } else {
+                             const region = getTrackClipRegions(track).find(candidate =>
                                cutTime > candidate.timelineStart && cutTime < candidate.timelineStart + candidate.sourceEnd - candidate.sourceStart
                              );
-                             if (!region) return item;
-                             return cutClipRegionSide(item, region.id, cutTime, {
+                             if (!region) {
+                               toast.error("Place the cut point inside an audio region.");
+                               return;
+                             }
+                             result = cutClipRegionSide(track, region.id, cutTime, {
                                shuffle: editMode === 'shuffle',
                                direction: 'right',
                              });
-                           }));
+                           }
+                           if (!result?.removed) {
+                             toast.error("The cut did not overlap any audio.");
+                             return;
+                           }
+                           const { removed, ...updatedTrack } = result;
+                           setTracksWithHistory(prev => prev.map(item => item.id === track.id ? updatedTrack : item));
                            if (hasRange) {
-                             toast.success("Selected audio removed; remaining regions stay on the same track");
                              setSelectionStart(null);
                              setSelectionEnd(null);
+                             toast.success("Selected audio removed; remaining regions stay on the same track");
                            } else {
                              toast.success("Audio to the right of the cut removed; no new track created");
                            }

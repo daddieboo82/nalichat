@@ -21,7 +21,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
+import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -809,7 +809,7 @@ export default function Studio() {
         plain.src = track.audioUrl;
         plain.dataset.srcUrl = track.audioUrl;
         plain.dataset.fxBypass = '1';
-        plain.volume = trackMixGain(track) * (masterVolume / 100);
+        plain.volume = clampAudioElementVolume(trackMixGain(track) * (masterVolume / 100));
         audioElementsRef.current[track.id] = plain;
         if (!fxFallbackNotifiedRef.current) {
           fxFallbackNotifiedRef.current = true;
@@ -819,7 +819,7 @@ export default function Studio() {
     }
 
     if (audio.dataset.fxBypass === '1') {
-      audio.volume = trackMixGain(track) * (masterVolume / 100);
+      audio.volume = clampAudioElementVolume(trackMixGain(track) * (masterVolume / 100));
       return audio;
     }
 
@@ -830,7 +830,7 @@ export default function Studio() {
       mixEngineRef.current.syncMaster({ masterVolume, masterFx });
     } else {
       audio.dataset.fxBypass = '1';
-      audio.volume = trackMixGain(track) * (masterVolume / 100);
+      audio.volume = clampAudioElementVolume(trackMixGain(track) * (masterVolume / 100));
     }
     return audio;
   };
@@ -919,7 +919,7 @@ export default function Studio() {
       const audio = audioElementsRef.current[track.id];
       if (!audio) return;
       if (audio.dataset?.fxBypass === '1' || !engine?.isRouted(track.id)) {
-        audio.volume = Math.max(0, Math.min(1, trackMixGain(track) * (masterVolume / 100)));
+        audio.volume = clampAudioElementVolume(Math.max(0, Math.min(1, trackMixGain(track) * (masterVolume / 100))));
         return;
       }
       engine.syncTrack(track.id, track, { gain: trackMixGain(track, tracks) });

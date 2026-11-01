@@ -940,7 +940,16 @@ export default function Studio() {
         audio.volume = Math.max(0, Math.min(1, trackMixGain(track) * (masterVolume / 100)));
         return;
       }
-      engine.syncTrack(track.id, track, { gain: trackMixGain(track, tracks) });
+      const automatedPan = getAutomationValueAtTime(
+        track.panAutomationPoints,
+        currentTimeRef.current,
+        track.pan ?? 50,
+        track.startTime || 0
+      );
+      engine.syncTrack(track.id, track, {
+        gain: trackMixGain(track, tracks, currentTimeRef.current),
+        pan: automatedPan,
+      });
     });
   }, [tracks, masterVolume, masterFx]);
 

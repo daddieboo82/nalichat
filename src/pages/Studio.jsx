@@ -784,7 +784,7 @@ export default function Studio() {
       });
     }
     if (!routed && audio.dataset.fxBypass === '1') {
-      audio.volume = trackMixGain(track, tracks, timelineTime) * (masterVolume / 100) * fadeGain * regionGain;
+      audio.volume = Math.max(0, Math.min(1, trackMixGain(track, tracks, timelineTime) * (masterVolume / 100) * fadeGain * regionGain));
     }
   };
 
@@ -825,7 +825,7 @@ export default function Studio() {
     }
 
     if (audio.dataset.fxBypass === '1') {
-      audio.volume = trackMixGain(track) * (masterVolume / 100);
+      audio.volume = Math.max(0, Math.min(1, trackMixGain(track) * (masterVolume / 100)));
       return audio;
     }
 
@@ -836,7 +836,7 @@ export default function Studio() {
       mixEngineRef.current.syncMaster({ masterVolume, masterFx });
     } else {
       audio.dataset.fxBypass = '1';
-      audio.volume = trackMixGain(track) * (masterVolume / 100);
+      audio.volume = Math.max(0, Math.min(1, trackMixGain(track) * (masterVolume / 100)));
     }
     return audio;
   };

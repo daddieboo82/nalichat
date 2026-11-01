@@ -128,7 +128,15 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
       }
       const normalizedWaveform = maxVal > 0 ? Array.from(waveform).map(v => v / maxVal) : Array.from(waveform).map(() => 0.05);
 
-      onProcess({ audioUrl: newUrl, waveform: normalizedWaveform, duration: newDuration });
+      onProcess({
+        audioUrl: newUrl,
+        waveform: normalizedWaveform,
+        duration: newDuration,
+        transform: processType,
+        sourceScale: (processType === 'pitch' || processType === 'stretch')
+          ? ratio
+          : 1,
+      });
       handedOffUrl = true;
       toast.success(`${processes.find(p => p.id === processType).label} applied!`);
       onOpenChange(false);

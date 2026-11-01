@@ -815,7 +815,7 @@ export default function Studio() {
         plain.src = track.audioUrl;
         plain.dataset.srcUrl = track.audioUrl;
         plain.dataset.fxBypass = '1';
-        plain.volume = trackMixGain(track) * (masterVolume / 100);
+        plain.volume = clampAudioElementVolume(trackMixGain(track) * (masterVolume / 100));
         audioElementsRef.current[track.id] = plain;
         if (!fxFallbackNotifiedRef.current) {
           fxFallbackNotifiedRef.current = true;

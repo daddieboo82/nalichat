@@ -3214,7 +3214,7 @@ export default function Studio() {
                                 if (groupedClipIds.length > 1) {
                                   const minInitialStart = Math.min(...groupedInitialStarts.values());
                                   const safeDelta = Math.max(-minInitialStart, delta);
-                                  setTracksWithHistory(prev => prev.map(t => groupedInitialStarts.has(t.id) ? moveTrackClipRegions(t, safeDelta) : t));
+                                  setTracksWithHistory(prev => prev.map(t => groupedInitialStarts.has(t.id) ? (t.clipRegions || t.waveform?.length ? moveTrackClipRegions(t, safeDelta) : { ...t, startTime: groupedInitialStarts.get(t.id) + safeDelta }) : t));
                                 } else {
                                   setTracksWithHistory(prev => prev.map(t => t.id === track.id ? moveTrackClipRegions(t, newStartTime - initialStartTime) : t));
                                 }

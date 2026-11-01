@@ -1710,30 +1710,50 @@ export default function Studio() {
           audioCtx = new AudioContextClass();
           const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-          // Apply clip start offset and duration trimming.
-          const clipStart = Math.max(0, track.clipStart || 0);
-          const clipDuration = track.duration || Math.max(0, audioBuffer.duration - clipStart);
-          const startSample = Math.min(audioBuffer.length, Math.floor(clipStart * audioBuffer.sampleRate));
-          const endSample = Math.min(
-            audioBuffer.length,
-            startSample + Math.floor(clipDuration * audioBuffer.sampleRate),
-          );
-          if (endSample <= startSample) throw new Error("Selected clip has no audio to consolidate");
-
-          const trimmedBuffer = audioCtx.createBuffer(
+          // Consolidate every audible region into one timeline-aligned file.
+          // Keep intentional gaps as silence and preserve each region's source
+          // in/out points instead of exporting the legacy track-wide trim only.
+          const regions = getTrackClipRegions(track);
+          if (regions.length === 0) throw new Error("Selected track has no audible clip regions");
+          const timelineStart = Math.min(...regions.map(region => region.timelineStart));
+          const timelineEnd = Math.max(...regions.map(
+            region => region.timelineStart + region.sourceEnd - region.sourceStart
+          ));
+          const outputLength = Math.ceil((timelineEnd - timelineStart) * audioBuffer.sampleRate);
+          if (outputLength <= 0) throw new Error("Selected clip has no audio to consolidate");
+          const consolidatedBuffer = audioCtx.createBuffer(
             audioBuffer.numberOfChannels,
-            endSample - startSample,
+            outputLength,
             audioBuffer.sampleRate,
           );
-          for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
-            const sourceChannel = audioBuffer.getChannelData(ch);
-            const destinationChannel = trimmedBuffer.getChannelData(ch);
-            destinationChannel.set(sourceChannel.subarray(startSample, endSample));
+          for (const region of regions) {
+            const sourceStart = Math.max(0, Math.min(
+              audioBuffer.length,
+              Math.floor(region.sourceStart * audioBuffer.sampleRate),
+            ));
+            const sourceEnd = Math.max(sourceStart, Math.min(
+              audioBuffer.length,
+              Math.floor(region.sourceEnd * audioBuffer.sampleRate),
+            ));
+            const destinationStart = Math.max(0, Math.floor(
+              (region.timelineStart - timelineStart) * audioBuffer.sampleRate,
+            ));
+            const copyLength = Math.min(
+              sourceEnd - sourceStart,
+              outputLength - destinationStart,
+            );
+            if (copyLength <= 0) continue;
+            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+              consolidatedBuffer.getChannelData(channel).set(
+                audioBuffer.getChannelData(channel).subarray(sourceStart, sourceStart + copyLength),
+                destinationStart,
+              );
+            }
           }
 
           // Encode the actual trimmed buffer. The previous path decoded/truncated
           // the clip but then exported the original track again.
-          const wavBlob = audioBufferToWav(trimmedBuffer);
+          const wavBlob = audioBufferToWav(consolidatedBuffer);
           const url = URL.createObjectURL(wavBlob);
           try {
             const a = document.createElement('a');

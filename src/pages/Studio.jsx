@@ -19,7 +19,7 @@ import { usePerformance } from '@/hooks/use-performance';
 
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, getAutomationValueAtTime, getClipRegionGain, getTrackFadeGainAtTime } from '@/lib/audioProcessing';
+import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, getAutomationValueAtTime, getClipRegionGain, getTrackFadeGainAtTime, clampAudioElementVolume } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { cutClipRegionSide, cutTrackTimelineRange, getClipRegionAtTime, getClipSourceTimeAtTime, getGridIntervalSeconds, getHealCandidateRegionIds, getTrackClipRegions, healTrackRegions, moveClipRegion, moveTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, shuffleMoveClipRegion, setClipRegionGain, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
@@ -784,7 +784,7 @@ export default function Studio() {
       });
     }
     if (!routed && audio.dataset.fxBypass === '1') {
-      audio.volume = Math.max(0, Math.min(1, trackMixGain(track, tracks, timelineTime) * (masterVolume / 100) * fadeGain * regionGain));
+      audio.volume = clampAudioElementVolume(trackMixGain(track, tracks, timelineTime) * (masterVolume / 100) * fadeGain * regionGain);
     }
   };
 
@@ -825,7 +825,7 @@ export default function Studio() {
     }
 
     if (audio.dataset.fxBypass === '1') {
-      audio.volume = Math.max(0, Math.min(1, trackMixGain(track) * (masterVolume / 100)));
+      audio.volume = clampAudioElementVolume(trackMixGain(track) * (masterVolume / 100));
       return audio;
     }
 
@@ -836,7 +836,7 @@ export default function Studio() {
       mixEngineRef.current.syncMaster({ masterVolume, masterFx });
     } else {
       audio.dataset.fxBypass = '1';
-      audio.volume = Math.max(0, Math.min(1, trackMixGain(track) * (masterVolume / 100)));
+      audio.volume = clampAudioElementVolume(trackMixGain(track) * (masterVolume / 100));
     }
     return audio;
   };
@@ -937,7 +937,7 @@ export default function Studio() {
       const audio = audioElementsRef.current[track.id];
       if (!audio) return;
       if (audio.dataset?.fxBypass === '1' || !engine?.isRouted(track.id)) {
-        audio.volume = Math.max(0, Math.min(1, trackMixGain(track) * (masterVolume / 100)));
+        audio.volume = clampAudioElementVolume(trackMixGain(track) * (masterVolume / 100));
         return;
       }
       const automatedPan = getAutomationValueAtTime(

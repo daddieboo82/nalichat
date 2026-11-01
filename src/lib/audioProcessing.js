@@ -600,3 +600,10 @@ export async function generateMelody({ seconds = 8, bpm = 120 } = {}) {
     duration: rendered.duration,
   };
 }
+
+/** Clamp a linear fallback level to the HTMLMediaElement volume range. */
+export function clampAudioElementVolume(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(1, numeric));
+}

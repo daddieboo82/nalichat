@@ -72,6 +72,17 @@ describe('media storage resilience', () => {
     expect(source).toContain('await ctx.close().catch(() => {})');
   });
 
+  it('wires Slip edit mode to source-only region movement', async () => {
+    const source = await readText('src/pages/Studio.jsx');
+    expect(source).toContain('slipClipRegion,');
+    expect(source).toContain("const slipRegion = editMode === 'slip'");
+    expect(source).toContain('slipClipRegion({ ...item, clipRegions: initialRegions }, slipRegion.id, sourceDelta)');
+    expect(source).toContain("if (editMode === 'slip' && slipRegion && hasDragged)");
+    const slipBranch = source.split("if (editMode === 'slip') {")[1]?.split('// 1:1 with the hand')[0] || '';
+    expect(slipBranch).not.toContain('target.dataset.newStartTime');
+    expect(slipBranch).not.toContain('startTime:');
+  });
+
   it('consolidates the edited Studio regions instead of re-exporting the original track', async () => {
     const source = await readText('src/pages/Studio.jsx');
     expect(source).toContain('for (const region of regions)');

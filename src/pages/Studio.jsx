@@ -22,7 +22,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume, getClipRegionGainAtTime } from '@/lib/audioProcessing';
-import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, moveTrackClipRegions, repeatTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, moveTrackClipRegions, repeatTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -3274,6 +3274,14 @@ export default function Studio() {
                           const target = e.currentTarget;
                           const startX = e.clientX;
                           const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
+                          const initialRegions = getTrackClipRegions(track);
+                          const clipRect = target.getBoundingClientRect();
+                          const pointerTimelineTime = initialStartTime
+                            + (Math.max(0, Math.min(clipRect.width, e.clientX - clipRect.left)) / Math.max(1, clipRect.width))
+                              * (track.duration || 40);
+                          const slipRegion = editMode === 'slip'
+                            ? getClipRegionAtTime({ ...track, clipRegions: initialRegions }, pointerTimelineTime)
+                            : null;
                           const groupedClipIds = track.groupId ? tracksRef.current.filter(t => t.groupId === track.groupId && !t.locked).map(t => t.id) : [];
                           const groupedInitialStarts = new Map(tracksRef.current.filter(t => groupedClipIds.includes(t.id)).map(t => [t.id, t.startTime || 0]));
                           target.setPointerCapture(e.pointerId);
@@ -3284,7 +3292,24 @@ export default function Studio() {
                             if (!hasDragged) {
                               if (Math.abs(deltaX) < 3) return; // Ignore tiny movement so a plain click doesn't highlight the clip
                               hasDragged = true;
-                              Object.assign(target.style, { zIndex: '50', opacity: '0.94', filter: 'brightness(1.16)', boxShadow: '0 8px 28px hsl(var(--primary)/0.45), inset 0 0 0 2px hsl(var(--primary))', cursor: 'grabbing', willChange: 'left' });
+                              Object.assign(target.style, {
+                                zIndex: '50',
+                                opacity: '0.94',
+                                filter: 'brightness(1.16)',
+                                boxShadow: '0 8px 28px hsl(var(--primary)/0.45), inset 0 0 0 2px hsl(var(--primary))',
+                                cursor: 'grabbing',
+                                willChange: slipRegion ? 'filter' : 'left',
+                              });
+                            }
+                            if (editMode === 'slip') {
+                              if (!slipRegion) return;
+                              const sourceDelta = deltaX / (20 * zoom);
+                              const sourcePosition = Math.max(0, slipRegion.sourceStart + sourceDelta);
+                              setTracks(prev => prev.map(item => item.id === track.id
+                                ? slipClipRegion({ ...item, clipRegions: initialRegions }, slipRegion.id, sourceDelta)
+                                : item));
+                              showEditTooltip(moveEvent.clientX, moveEvent.clientY, sourcePosition);
+                              return;
                             }
                             // 1:1 with the hand — move unsnapped, only the drop commits snapped.
                             const liveStartTime = Math.max(0, initialStartTime + deltaX / (20 * zoom));
@@ -3317,6 +3342,9 @@ export default function Studio() {
                             target.removeEventListener('pointermove', handleMove);
                             target.removeEventListener('pointerup', handleUp);
                             hideEditTooltip();
+                            if (editMode === 'slip' && slipRegion && hasDragged) {
+                              setTracksWithHistory(prev => prev);
+                            }
                             if (target.dataset.newStartTime !== undefined) {
                               const newStartTime = parseFloat(target.dataset.newStartTime);
                               if (editMode === 'shuffle') {

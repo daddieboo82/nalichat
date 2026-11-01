@@ -1,6 +1,20 @@
+describe('HTML audio fallback volume', () => {
+  it('clamps boosted and negative levels to the media element range', () => {
+    expect(clampAudioElementVolume(1.5)).toBe(1);
+    expect(clampAudioElementVolume(-0.25)).toBe(0);
+    expect(clampAudioElementVolume(0.65)).toBe(0.65);
+  });
+
+  it('returns silence for non-finite levels', () => {
+    expect(clampAudioElementVolume(Number.NaN)).toBe(0);
+    expect(clampAudioElementVolume(Number.POSITIVE_INFINITY)).toBe(0);
+  });
+});
+
 import { describe, it, expect } from 'vitest';
 import {
   trackGainValue,
+  clampAudioElementVolume,
   trackPanValue,
   countActiveEffects,
   getTrackEffects,

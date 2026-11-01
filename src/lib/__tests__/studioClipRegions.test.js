@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   getTrackClipRegions,
+  getHealCandidateRegionIds,
   cutClipRegionSide,
   cutTrackTimelineRange,
   healTrackRegions,
@@ -102,6 +103,48 @@ describe('NaliStudio clip regions', () => {
     expect(trimmed.clipRegions[0]).toMatchObject({
       timelineStart: 10, sourceStart: 3, sourceEnd: 7,
     });
+  });
+
+  it('trims the first region without changing later split regions', () => {
+    const track = {
+      id: 12,
+      fullDuration: 30,
+      clipRegions: [
+        { id: 'first', timelineStart: 2, sourceStart: 2, sourceEnd: 8 },
+        { id: 'second', timelineStart: 12, sourceStart: 14, sourceEnd: 18 },
+      ],
+    };
+    const trimmed = trimClipRegionLeft(track, 'first', 1.5);
+    expect(trimmed.id).toBe(12);
+    expect(trimmed.clipRegions).toEqual([
+      expect.objectContaining({ id: 'first', timelineStart: 3.5, sourceStart: 3.5, sourceEnd: 8 }),
+      expect.objectContaining({ id: 'second', timelineStart: 12, sourceStart: 14, sourceEnd: 18 }),
+    ]);
+  });
+
+  it('ripples later regions by the right-edge trim delta in Shuffle mode', () => {
+    const track = {
+      id: 13,
+      fullDuration: 30,
+      clipRegions: [
+        { id: 'first', timelineStart: 0, sourceStart: 0, sourceEnd: 5 },
+        { id: 'second', timelineStart: 8, sourceStart: 10, sourceEnd: 14 },
+      ],
+    };
+    const trimmed = trimClipRegionRight(track, 'first', 2, { shuffle: true });
+    expect(trimmed.clipRegions).toEqual([
+      expect.objectContaining({ id: 'first', timelineStart: 0, sourceStart: 0, sourceEnd: 7 }),
+      expect.objectContaining({ id: 'second', timelineStart: 10, sourceStart: 10, sourceEnd: 14 }),
+    ]);
+  });
+
+  it('chooses the nearest same-track split boundary for Heal', () => {
+    const regions = [
+      { id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 4 },
+      { id: 'b', timelineStart: 4, sourceStart: 4, sourceEnd: 7 },
+      { id: 'c', timelineStart: 7, sourceStart: 7, sourceEnd: 10 },
+    ];
+    expect(getHealCandidateRegionIds(regions, 'b', 6.8)).toEqual(['b', 'a']);
   });
 
   it('removes the right side at the cut point and keeps the left on the same track', () => {

@@ -3718,6 +3718,7 @@ export default function Studio() {
               waveform,
               fullDuration: duration,
               clipStart: 0,
+              duration: 0,
             }, remappedRegions);
           }));
         }}

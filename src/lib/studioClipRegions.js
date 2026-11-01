@@ -120,7 +120,7 @@ export function getClipSourceTimeAtTime(track, timelineTime) {
 
 /** Return transient peaks mapped from source samples into audible timeline regions. */
 export function getClipRegionPeakTimes(track, waveform, threshold = 0.25) {
-  if (!Array.isArray(waveform) || waveform.length < 3) return [];
+  if ((!Array.isArray(waveform) && !ArrayBuffer.isView(waveform)) || waveform.length < 3) return [];
   const regions = getTrackClipRegions(track);
   const sourceDuration = Math.max(
     finite(track?.fullDuration, 0),

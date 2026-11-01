@@ -142,6 +142,16 @@ describe('combined track and clip-region fades', () => {
     expect(points.every(point => Number.isFinite(point.time) && Number.isFinite(point.gain))).toBe(true);
   });
 
+  it('keeps fade-free regions on a minimal constant-gain schedule', () => {
+    expect(getTrackRegionFadeAutomationPoints(
+      { startTime: 0, duration: 10 },
+      { timelineStart: 2, sourceStart: 0, sourceEnd: 10 },
+    )).toEqual([
+      { time: 2, gain: 1 },
+      { time: 12, gain: 1 },
+    ]);
+  });
+
   it('returns no fade schedule for an empty region', () => {
     expect(getTrackRegionFadeAutomationPoints(track, {
       timelineStart: 0, sourceStart: 4, sourceEnd: 4,

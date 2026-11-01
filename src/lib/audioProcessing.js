@@ -479,6 +479,21 @@ export function getTrackRenderRegions(track, sourceDuration = Number.POSITIVE_IN
     .filter(region => region.sourceEnd - region.sourceStart > 0.001);
 }
 
+/** Convert track-wide fade fractions into absolute timeline envelope bounds. */
+export function getTrackTimelineFade(track, regions) {
+  if (!Array.isArray(regions) || regions.length === 0) {
+    return { start: 0, end: 0, fadeIn: 0, fadeOut: 0 };
+  }
+  const start = Math.min(...regions.map(region => region.timelineStart));
+  const end = Math.max(...regions.map(region =>
+    region.timelineStart + region.sourceEnd - region.sourceStart
+  ));
+  const duration = Math.max(0, end - start);
+  const fadeIn = Math.min(duration, Math.max(0, Number(track?.fadeIn) || 0) * duration);
+  const fadeOut = Math.min(duration - fadeIn, Math.max(0, Number(track?.fadeOut) || 0) * duration);
+  return { start, end, fadeIn, fadeOut };
+}
+
 /** Normalize region clip-gain and fade timing for both bounce and export. */
 export function getClipRegionEnvelope(region) {
   const duration = Math.max(0, Number(region?.sourceEnd) - Number(region?.sourceStart));
@@ -522,6 +537,19 @@ export async function renderMixToBuffer(tracks, options = {}) {
     // One channel strip per DAW track: split regions feed the same insert,
     // pan, fader and send chain so edits do not reset effect state at seams.
     const trackInput = offline.createGain();
+    const trackFade = getTrackTimelineFade(track, regions);
+    trackInput.gain.setValueAtTime(0, trackFade.start);
+    if (trackFade.fadeIn > 0) {
+      trackInput.gain.linearRampToValueAtTime(1, trackFade.start + trackFade.fadeIn);
+    } else {
+      trackInput.gain.setValueAtTime(1, trackFade.start);
+    }
+    if (trackFade.fadeOut > 0) {
+      trackInput.gain.setValueAtTime(1, trackFade.end - trackFade.fadeOut);
+      trackInput.gain.linearRampToValueAtTime(0, trackFade.end);
+    } else {
+      trackInput.gain.setValueAtTime(1, trackFade.end);
+    }
     connectTrackChain(offline, trackInput, track, {
       destination: master.input,
       reverbBus: master.reverbBus,

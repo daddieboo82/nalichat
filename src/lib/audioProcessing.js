@@ -1,3 +1,5 @@
+import { getTrackClipRegions } from './studioClipRegions';
+
 // Real client-side audio processing helpers (Web Audio API).
 // These operate on actual audio data — no simulation.
 
@@ -460,20 +462,37 @@ export async function separateStems(url) {
 // Respects startTime, volume/clip gain, mute/solo, pan, inserts, Send 1 and master FX.
 export async function renderMixToBuffer(tracks, options = {}) {
   const { masterVolume = 100, masterFx = null, sampleRate = 44100 } = options;
-  const audioTracks = (tracks || []).filter(t => t.audioUrl);
+  const audioTracks = (tracks || []).filter(track =>
+    track.audioUrl && getTrackClipRegions(track).length > 0
+  );
   if (audioTracks.length === 0) return null;
 
-  const hasSolo = audioTracks.some(t => t.solo);
-  const active = audioTracks.filter(t => (hasSolo ? t.solo : !t.muted));
+  const hasSolo = audioTracks.some(track => track.solo);
+  const active = audioTracks.filter(track => (hasSolo ? track.solo : !track.muted));
   if (active.length === 0) return null;
 
-  const decoded = await Promise.all(active.map(async (t) => ({
-    track: t,
-    buffer: await fetchAudioBuffer(t.audioUrl),
-  })));
+  const decoded = await Promise.all(active.map(async track => {
+    const buffer = await fetchAudioBuffer(track.audioUrl);
+    const regions = getTrackClipRegions(track)
+      .map(region => {
+        const sourceStart = Math.max(0, Math.min(buffer.duration, region.sourceStart));
+        const sourceEnd = Math.max(sourceStart, Math.min(buffer.duration, region.sourceEnd));
+        return {
+          ...region,
+          sourceStart,
+          sourceEnd,
+          timelineStart: Math.max(0, region.timelineStart),
+        };
+      })
+      .filter(region => region.sourceEnd - region.sourceStart > 0.001);
+    return { track, buffer, regions };
+  }));
 
   const totalSeconds = Math.max(
-    ...decoded.map(d => (d.track.startTime || 0) + d.buffer.duration)
+    0,
+    ...decoded.flatMap(({ regions }) => regions.map(region =>
+      region.timelineStart + region.sourceEnd - region.sourceStart
+    ))
   );
   if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return null;
 
@@ -481,16 +500,22 @@ export async function renderMixToBuffer(tracks, options = {}) {
   const offline = new OfflineAudioContext(2, length, sampleRate);
   const master = connectMasterChain(offline, { masterFx, masterVolume, destination: offline.destination });
 
-  decoded.forEach(({ track, buffer }) => {
-    const src = offline.createBufferSource();
-    src.buffer = buffer;
-    connectTrackChain(offline, src, track, {
-      destination: master.input,
-      reverbBus: master.reverbBus,
-      delayBus: master.delayBus,
-      cueBus: master.cueBus,
+  decoded.forEach(({ track, buffer, regions }) => {
+    regions.forEach(region => {
+      const source = offline.createBufferSource();
+      source.buffer = buffer;
+      connectTrackChain(offline, source, track, {
+        destination: master.input,
+        reverbBus: master.reverbBus,
+        delayBus: master.delayBus,
+        cueBus: master.cueBus,
+      });
+      source.start(
+        region.timelineStart,
+        region.sourceStart,
+        region.sourceEnd - region.sourceStart
+      );
     });
-    src.start(Math.max(0, track.startTime || 0));
   });
 
   return offline.startRendering();

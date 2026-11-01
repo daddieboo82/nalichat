@@ -1,3 +1,43 @@
+describe('offline clip-region render scheduling', () => {
+  it('keeps split regions on one track with contiguous source offsets', () => {
+    const regions = getTrackRenderRegions({
+      id: 'track-1',
+      clipRegions: [
+        { id: 'left', timelineStart: 0, sourceStart: 0, sourceEnd: 4 },
+        { id: 'right', timelineStart: 4, sourceStart: 4, sourceEnd: 10 },
+      ],
+    }, 10);
+    expect(regions.map(region => [region.timelineStart, region.sourceStart, region.sourceEnd])).toEqual([
+      [0, 0, 4],
+      [4, 4, 10],
+    ]);
+  });
+
+  it('preserves cut gaps instead of rendering removed source audio', () => {
+    const regions = getTrackRenderRegions({
+      id: 'track-1',
+      clipRegions: [
+        { id: 'before', timelineStart: 0, sourceStart: 0, sourceEnd: 3 },
+        { id: 'after', timelineStart: 7, sourceStart: 7, sourceEnd: 10 },
+      ],
+    }, 10);
+    expect(regions.map(region => [region.timelineStart, region.sourceStart, region.sourceEnd])).toEqual([
+      [0, 0, 3],
+      [7, 7, 10],
+    ]);
+    expect(regions.every(region => region.timelineStart !== 3)).toBe(true);
+  });
+
+  it('clips source ranges to the decoded audio duration', () => {
+    const regions = getTrackRenderRegions({
+      id: 'track-1',
+      clipRegions: [{ id: 'tail', timelineStart: 2, sourceStart: 8, sourceEnd: 12 }],
+    }, 10);
+    expect(regions).toHaveLength(1);
+    expect(regions[0]).toMatchObject({ timelineStart: 2, sourceStart: 8, sourceEnd: 10 });
+  });
+});
+
 describe('HTML audio fallback volume', () => {
   it('clamps boosted and negative levels to the media element range', () => {
     expect(clampAudioElementVolume(1.5)).toBe(1);
@@ -15,6 +55,7 @@ import { describe, it, expect } from 'vitest';
 import {
   trackGainValue,
   clampAudioElementVolume,
+  getTrackRenderRegions,
   trackPanValue,
   countActiveEffects,
   getTrackEffects,

@@ -22,7 +22,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume } from '@/lib/audioProcessing';
-import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -1633,34 +1633,72 @@ export default function Studio() {
   // Pro Tools-style Heal Split: rejoin two clips that were split from the same source.
   // Finds the "other half" (same splitFrom parent) and merges them back into one clip.
   const handleHealSplit = (track) => {
+    // New same-track splits are healed by joining adjacent source/timeline
+    // regions. Prefer the boundary nearest the playhead (or adjacent to the
+    // region under it) and never create/delete mixer tracks for this action.
+    const regions = getTrackClipRegions(track);
+    if (regions.length > 1) {
+      const selectedRegion = getClipRegionAtTime(track, currentTimeRef.current);
+      const candidates = getHealCandidateRegionIds(
+        regions,
+        selectedRegion?.id,
+        currentTimeRef.current,
+      );
+      for (const regionId of candidates) {
+        const healed = healTrackRegions(track, regionId);
+        if (!healed.healed) continue;
+        setTracksWithHistory(prev => prev.map(item => item.id === track.id ? healed : item));
+        toast.success("Adjacent waveform regions healed on the same track.");
+        sounds.nav();
+        return;
+      }
+      toast.error("Heal requires adjacent regions with continuous source audio and no seam fades.");
+      return;
+    }
+
+    // Retain compatibility with sessions created before same-track regions.
     if (!track.splitFrom) {
-      toast.error("This clip wasn't split — nothing to heal.");
+      toast.error("This clip has no adjacent split to heal.");
       return;
     }
     const lineage = tracks
-      .filter(t => t.splitFrom === track.splitFrom)
+      .filter(item => item.splitFrom === track.splitFrom)
       .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
-    const index = lineage.findIndex(t => t.id === track.id);
+    const index = lineage.findIndex(item => item.id === track.id);
     const candidates = [lineage[index - 1], lineage[index + 1]].filter(Boolean);
     const sibling = candidates.find(candidate => {
-      const [left, right] = (track.startTime || 0) <= (candidate.startTime || 0) ? [track, candidate] : [candidate, track];
-      const timelineContiguous = Math.abs(((left.startTime || 0) + (left.duration || 0)) - (right.startTime || 0)) < 0.002;
-      const sourceContiguous = Math.abs(((left.clipStart || 0) + (left.duration || 0)) - (right.clipStart || 0)) < 0.002;
+      const [left, right] = (track.startTime || 0) <= (candidate.startTime || 0)
+        ? [track, candidate]
+        : [candidate, track];
+      const timelineContiguous = Math.abs(
+        ((left.startTime || 0) + (left.duration || 0)) - (right.startTime || 0)
+      ) < 0.002;
+      const sourceContiguous = Math.abs(
+        ((left.clipStart || 0) + (left.duration || 0)) - (right.clipStart || 0)
+      ) < 0.002;
       return timelineContiguous && sourceContiguous;
     });
     if (!sibling) {
       toast.error("Heal requires adjacent clips from the same original source.");
       return;
     }
-    const [left, right] = (track.startTime || 0) <= (sibling.startTime || 0) ? [track, sibling] : [sibling, track];
+    const [left, right] = (track.startTime || 0) <= (sibling.startTime || 0)
+      ? [track, sibling]
+      : [sibling, track];
     const mergedDuration = (left.duration || 0) + (right.duration || 0);
-    const remainingInLineage = lineage.filter(t => t.id !== left.id && t.id !== right.id);
+    const remainingInLineage = lineage.filter(item => item.id !== left.id && item.id !== right.id);
     setTracksWithHistory(prev => prev
-      .map(t => t.id === left.id ? { ...t, duration: mergedDuration, splitFrom: remainingInLineage.length ? track.splitFrom : undefined, clipStart: left.clipStart || 0, fullDuration: left.fullDuration || mergedDuration } : t)
-      .filter(t => t.id !== right.id)
+      .map(item => item.id === left.id ? {
+        ...item,
+        duration: mergedDuration,
+        splitFrom: remainingInLineage.length ? track.splitFrom : undefined,
+        clipStart: left.clipStart || 0,
+        fullDuration: left.fullDuration || mergedDuration,
+      } : item)
+      .filter(item => item.id !== right.id)
     );
     setSelectedTrackIds([left.id]);
-    toast.success("Adjacent split healed.");
+    toast.success("Adjacent legacy split healed.");
     sounds.nav();
   };
 

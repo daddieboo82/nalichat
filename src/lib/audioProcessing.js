@@ -460,6 +460,25 @@ export async function separateStems(url) {
 
 // Mix multiple studio tracks down to a single AudioBuffer (offline render).
 // Respects startTime, volume/clip gain, mute/solo, pan, inserts, Send 1 and master FX.
+/** Return source/timeline ranges that the realtime and offline renderers should audition. */
+export function getTrackRenderRegions(track, sourceDuration = Number.POSITIVE_INFINITY) {
+  const limit = Number.isFinite(Number(sourceDuration))
+    ? Math.max(0, Number(sourceDuration))
+    : Number.POSITIVE_INFINITY;
+  return getTrackClipRegions(track)
+    .map(region => {
+      const sourceStart = Math.max(0, Math.min(limit, region.sourceStart));
+      const sourceEnd = Math.max(sourceStart, Math.min(limit, region.sourceEnd));
+      return {
+        ...region,
+        sourceStart,
+        sourceEnd,
+        timelineStart: Math.max(0, region.timelineStart),
+      };
+    })
+    .filter(region => region.sourceEnd - region.sourceStart > 0.001);
+}
+
 export async function renderMixToBuffer(tracks, options = {}) {
   const { masterVolume = 100, masterFx = null, sampleRate = 44100 } = options;
   const audioTracks = (tracks || []).filter(track =>
@@ -473,18 +492,7 @@ export async function renderMixToBuffer(tracks, options = {}) {
 
   const decoded = await Promise.all(active.map(async track => {
     const buffer = await fetchAudioBuffer(track.audioUrl);
-    const regions = getTrackClipRegions(track)
-      .map(region => {
-        const sourceStart = Math.max(0, Math.min(buffer.duration, region.sourceStart));
-        const sourceEnd = Math.max(sourceStart, Math.min(buffer.duration, region.sourceEnd));
-        return {
-          ...region,
-          sourceStart,
-          sourceEnd,
-          timelineStart: Math.max(0, region.timelineStart),
-        };
-      })
-      .filter(region => region.sourceEnd - region.sourceStart > 0.001);
+    const regions = getTrackRenderRegions(track, buffer.duration);
     return { track, buffer, regions };
   }));
 

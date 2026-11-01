@@ -1,5 +1,12 @@
 import { getTrackClipRegions } from '@/lib/studioClipRegions';
 
+/** Clamp a linear fallback level to the HTMLMediaElement volume range. */
+export function clampAudioElementVolume(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(1, numeric));
+}
+
 /** Linear gain envelope for a region's own fade handles. */
 export function getClipRegionFadeGainAtTime(region, timelineTime) {
   const duration = Math.max(0, Number(region?.sourceEnd) - Number(region?.sourceStart));

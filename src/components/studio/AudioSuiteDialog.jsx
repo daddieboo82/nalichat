@@ -47,6 +47,7 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
 
       let processedBuffer = audioBuffer;
       let newDuration = audioBuffer.duration;
+      let sourceScale = 1;
 
       if (processType === 'normalize') {
         // Find peak and scale to 0 dB
@@ -92,6 +93,7 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
         const ratio = processType === 'pitch'
           ? Math.pow(2, pitch / 12) // pitch shift via playback rate
           : timeStretch / 100; // time stretch via inverse playback rate
+        sourceScale = 1 / ratio;
         const newLength = Math.floor(audioBuffer.length / ratio);
         processedBuffer = audioCtx.createBuffer(audioBuffer.numberOfChannels, newLength, audioBuffer.sampleRate);
         for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
@@ -133,9 +135,7 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
         waveform: normalizedWaveform,
         duration: newDuration,
         transform: processType,
-        sourceScale: (processType === 'pitch' || processType === 'stretch')
-          ? ratio
-          : 1,
+        sourceScale,
       });
       handedOffUrl = true;
       toast.success(`${processes.find(p => p.id === processType).label} applied!`);

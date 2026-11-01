@@ -56,17 +56,19 @@ export function createMixEngine() {
     });
   };
 
-  const teardownEntry = (entry) => {
+  const teardownEntry = (entry, { disconnectSource = true } = {}) => {
     entry.nodes?.forEach(node => { try { node.disconnect(); } catch { /* already gone */ } });
     entry.nodes = [];
-    try { entry.source?.disconnect(); } catch { /* already gone */ }
+    if (disconnectSource) {
+      try { entry.source?.disconnect(); } catch { /* already gone */ }
+    }
     try { entry.regionGain?.disconnect(); } catch { /* already gone */ }
   };
 
   const rebuild = (trackId, track, gain) => {
     const entry = entries.get(trackId);
     if (!entry || !context || !master) return;
-    teardownEntry(entry);
+    teardownEntry(entry, { disconnectSource: false });
     const built = connectTrackChain(context, entry.regionGain || entry.source, track, {
       destination: master.input,
       reverbBus: master.reverbBus,

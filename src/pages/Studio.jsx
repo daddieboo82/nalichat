@@ -22,7 +22,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume } from '@/lib/audioProcessing';
-import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, moveTrackClipRegions, repeatTrackClipRegions, remapClipRegionSources, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, moveTrackClipRegions, repeatTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -3762,18 +3762,29 @@ export default function Studio() {
         open={showCommitDialog}
         onOpenChange={setShowCommitDialog}
         track={tracks.find(t => selectedTrackIds.includes(t.id))}
-        onCommit={(newAudioUrl) => {
+        onCommit={(newAudioUrl, renderedDuration, renderedWaveform) => {
           const track = tracks.find(t => selectedTrackIds.includes(t.id));
-          if (!track) return;
+          if (!track) {
+            if (newAudioUrl?.startsWith('blob:')) URL.revokeObjectURL(newAudioUrl);
+            return;
+          }
           if (track.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(track.audioUrl); } catch (e) {} }
-          // The render bakes fader, pan, inserts and Send 1 into the file — reset them
-          // so committed audio isn't processed twice on playback/export.
+          // The render bakes channel-strip and region processing into a timeline-aligned
+          // file. Rebase region source offsets and clear baked envelopes to avoid doubling.
           setTracksWithHistory(prev => prev.map(t => {
             if (t.id !== track.id) return t;
             const { effects: _effects, ...rest } = t;
-            return {
+            const rebasedRegions = rebaseClipRegionsToRenderedTimeline(
+              getTrackClipRegions(t),
+              { resetGain: true, resetFades: true },
+            );
+            return withTrackClipRegionBounds({
               ...rest,
               audioUrl: newAudioUrl,
+              waveform: renderedWaveform,
+              fullDuration: renderedDuration,
+              duration: 0,
+              clipStart: 0,
               clipGain: 0,
               volume: 100,
               pan: 50,
@@ -3784,7 +3795,7 @@ export default function Studio() {
               fadeIn: 0,
               fadeOut: 0,
               committed: true,
-            };
+            }, rebasedRegions);
           }));
         }}
       />

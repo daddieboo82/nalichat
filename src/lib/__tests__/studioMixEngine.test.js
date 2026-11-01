@@ -30,9 +30,11 @@ class FakeAudioContext {
     this.state = 'running';
     this.currentTime = 0;
     this.destination = {};
+    FakeAudioContext.lastInstance = this;
   }
   createMediaElementSource() {
-    return { connect: vi.fn(), disconnect: vi.fn() };
+    this.mediaSource = { connect: vi.fn(), disconnect: vi.fn() };
+    return this.mediaSource;
   }
   createGain() {
     return { gain: makeParam(), connect: vi.fn(), disconnect: vi.fn() };
@@ -75,7 +77,14 @@ describe('Studio mixer pan persistence', () => {
       timelineStart: 0, sourceStart: 0, sourceEnd: 4, gainDb: 0,
     }, 1)).toBe(true);
     expect(regionGain.gain.setTargetAtTime).toHaveBeenCalledWith(0.5, 0, 0.008);
+
+    const mediaSource = FakeAudioContext.lastInstance.mediaSource;
+    expect(mediaSource.connect).toHaveBeenCalledTimes(1);
+    engine.syncTrack('track-region', { ...track, effects: { eq: { enabled: true } } });
+    expect(mediaSource.disconnect).not.toHaveBeenCalled();
+    expect(mediaSource.connect).toHaveBeenCalledTimes(1);
     engine.dispose();
+    expect(mediaSource.disconnect).toHaveBeenCalledTimes(1);
   });
 
   it('restores the latest automated pan after a channel-strip rebuild', () => {

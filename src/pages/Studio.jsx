@@ -22,7 +22,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume } from '@/lib/audioProcessing';
-import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, repeatTrackClipRegions, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, moveTrackClipRegions, repeatTrackClipRegions, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -3060,37 +3060,44 @@ export default function Studio() {
                         }
 
                         if (activeTool === 'smart' && !isTopHalf && (smartAtLeftEdge || smartAtRightEdge)) {
-                          // Smart Tool lower-corner zones trim the corresponding clip edge.
+                          // Smart Tool trims the outermost region, not legacy
+                          // track-wide bounds that become stale after splitting.
                           const isLeft = smartAtLeftEdge;
                           const startX = e.clientX;
-                          const initialStartTime = track.startTime || 0;
-                          const initialDuration = track.duration || 40;
-                          const initialClipStart = track.clipStart || 0;
-                          const fullDuration = track.fullDuration || initialDuration;
+                          const initialRegions = getTrackClipRegions(track);
+                          const edgeRegion = isLeft
+                            ? initialRegions[0]
+                            : initialRegions[initialRegions.length - 1];
+                          if (!edgeRegion) return;
                           const target = e.currentTarget;
                           target.setPointerCapture(e.pointerId);
                           const handleSmartTrim = (moveEvent) => {
-                            const delta = (moveEvent.clientX - startX) / (20 * zoom);
-                            setTracks(prev => prev.map(t => {
-                              if (t.id !== track.id) return t;
-                              if (isLeft) {
-                                // Extending left is limited by both available source media and
-                                // the session start, so startTime/duration/source offset stay coherent.
-                                const minAmount = Math.max(-initialClipStart, -initialStartTime);
-                                const amount = Math.max(minAmount, Math.min(initialDuration - 0.001, delta));
-                                return { ...t, startTime: initialStartTime + amount, duration: initialDuration - amount, clipStart: initialClipStart + amount };
-                              }
-                              const maxRestore = fullDuration - (initialClipStart + initialDuration);
-                              const amount = Math.max(-initialDuration + 0.001, Math.min(maxRestore, delta));
-                              return { ...t, duration: initialDuration + amount };
+                            const delta = Math.round(
+                              ((moveEvent.clientX - startX) / (20 * zoom)) * 1000
+                            ) / 1000;
+                            setTracks(prev => prev.map(item => {
+                              if (item.id !== track.id) return item;
+                              const snapshot = { ...item, clipRegions: initialRegions };
+                              return isLeft
+                                ? trimClipRegionLeft(snapshot, edgeRegion.id, delta)
+                                : trimClipRegionRight(snapshot, edgeRegion.id, delta, {
+                                    shuffle: editMode === 'shuffle',
+                                  });
                             }));
+                            showEditTooltip(
+                              moveEvent.clientX,
+                              moveEvent.clientY,
+                              isLeft
+                                ? edgeRegion.timelineStart + delta
+                                : edgeRegion.timelineStart
+                                  + edgeRegion.sourceEnd - edgeRegion.sourceStart + delta,
+                            );
                           };
                           const finishSmartTrim = (upEvent) => {
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleSmartTrim);
                             target.removeEventListener('pointerup', finishSmartTrim);
-                            // Snapshot the final React state rather than relying on a ref update
-                            // racing the pointerup event.
+                            hideEditTooltip();
                             setTracksWithHistory(prev => prev);
                           };
                           target.addEventListener('pointermove', handleSmartTrim);
@@ -3189,7 +3196,10 @@ export default function Studio() {
                                     .map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t)
                                     .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
                                   if (lane.length <= 1) {
-                                    return prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t);
+                                    const delta = newStartTime - initialStartTime;
+                                    return prev.map(t => t.id === track.id
+                                      ? moveTrackClipRegions(t, delta)
+                                      : t);
                                   }
                                   let cursor = Math.min(...lane.map(t => t.startTime || 0));
                                   const positions = new Map();
@@ -3204,9 +3214,9 @@ export default function Studio() {
                                 if (groupedClipIds.length > 1) {
                                   const minInitialStart = Math.min(...groupedInitialStarts.values());
                                   const safeDelta = Math.max(-minInitialStart, delta);
-                                  setTracksWithHistory(prev => prev.map(t => groupedInitialStarts.has(t.id) ? { ...t, startTime: groupedInitialStarts.get(t.id) + safeDelta } : t));
+                                  setTracksWithHistory(prev => prev.map(t => groupedInitialStarts.has(t.id) ? moveTrackClipRegions(t, safeDelta) : t));
                                 } else {
-                                  setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t));
+                                  setTracksWithHistory(prev => prev.map(t => t.id === track.id ? moveTrackClipRegions(t, newStartTime - initialStartTime) : t));
                                 }
                               }
                               delete target.dataset.newStartTime;

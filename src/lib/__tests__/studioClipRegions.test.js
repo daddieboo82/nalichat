@@ -5,6 +5,7 @@ import {
   findClipRegionPeakTime,
   getClipRegionPeakTimes,
   remapClipRegionSources,
+  rebaseClipRegionsToRenderedTimeline,
   repeatTrackClipRegions,
   cutClipRegionSide,
   cutTrackTimelineRange,
@@ -18,6 +19,17 @@ import {
 } from '@/lib/studioClipRegions';
 
 describe('NaliStudio clip regions', () => {
+  it('rebases committed region source offsets to the rendered timeline and clears baked envelopes', () => {
+    const rebased = rebaseClipRegionsToRenderedTimeline([
+      { id: 'left', timelineStart: 2, sourceStart: 0, sourceEnd: 3, gainDb: 4, fadeIn: 0.2, fadeOut: 0.3 },
+      { id: 'right', timelineStart: 8, sourceStart: 5, sourceEnd: 7, gainDb: -2, fadeIn: 0.1, fadeOut: 0.4 },
+    ], { resetGain: true, resetFades: true });
+    expect(rebased).toEqual([
+      { id: 'left', timelineStart: 2, sourceStart: 2, sourceEnd: 5, gainDb: 0, fadeIn: 0, fadeOut: 0 },
+      { id: 'right', timelineStart: 8, sourceStart: 8, sourceEnd: 10, gainDb: 0, fadeIn: 0, fadeOut: 0 },
+    ]);
+  });
+
   it('remaps pitch and stretch source offsets without moving timeline regions', () => {
     const regions = [{ id: 'a', timelineStart: 5, sourceStart: 2, sourceEnd: 6 }];
     expect(remapClipRegionSources(regions, 5, 'pitch', 0.5)[0]).toMatchObject({

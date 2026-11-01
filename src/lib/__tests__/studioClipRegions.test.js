@@ -158,8 +158,8 @@ describe('NaliStudio clip regions', () => {
     ])).toEqual([
       ['a', 2, 0, 3],
       ['b', 7, 8, 10],
-      ['a-repeat-1', 7, 0, 3],
-      ['b-repeat-1', 12, 8, 10],
+      ['a-repeat-1', 9, 0, 3],
+      ['b-repeat-1', 14, 8, 10],
     ]);
   });
 

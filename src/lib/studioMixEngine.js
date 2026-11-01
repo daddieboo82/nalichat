@@ -16,6 +16,7 @@ import {
   trackGainValue,
   trackPanValue,
   automatedTrackState,
+  getClipRegionGainAtTime,
 } from '@/lib/audioProcessing';
 
 const isSameOriginUrl = (url) => {
@@ -59,13 +60,14 @@ export function createMixEngine() {
     entry.nodes?.forEach(node => { try { node.disconnect(); } catch { /* already gone */ } });
     entry.nodes = [];
     try { entry.source?.disconnect(); } catch { /* already gone */ }
+    try { entry.regionGain?.disconnect(); } catch { /* already gone */ }
   };
 
   const rebuild = (trackId, track, gain) => {
     const entry = entries.get(trackId);
     if (!entry || !context || !master) return;
     teardownEntry(entry);
-    const built = connectTrackChain(context, entry.source, track, {
+    const built = connectTrackChain(context, entry.regionGain || entry.source, track, {
       destination: master.input,
       reverbBus: master.reverbBus,
       delayBus: master.delayBus,
@@ -127,9 +129,22 @@ export function createMixEngine() {
         console.warn('Studio mixer: FX routing unavailable for track', trackId, e);
         return false;
       }
+      // The region gain stage applies non-destructive clip gain and fades
+      // before the shared per-track channel strip.
+      const regionGain = context.createGain();
+      regionGain.gain.value = 1;
+      source.connect(regionGain);
       // The graph owns level from here; leave the element wide open.
       element.volume = 1;
-      entries.set(trackId, { element, source, nodes: [], track: null, gain: 0, pan: trackPanValue(track || {}) });
+      entries.set(trackId, {
+        element,
+        source,
+        regionGain,
+        nodes: [],
+        track: null,
+        gain: 0,
+        pan: trackPanValue(track || {}),
+      });
       rebuild(trackId, track || {}, trackGainValue(track || {}));
       return true;
     },
@@ -169,6 +184,15 @@ export function createMixEngine() {
         const value = Math.max(0, Math.min(100, track?.[`send${index + 1}`] ?? 0)) / 100;
         sendGain.gain.setTargetAtTime(value, context.currentTime, 0.01);
       });
+      return true;
+    },
+
+    /** Apply the active clip region's gain and fade envelope at transport time. */
+    syncClipRegion(trackId, track, region, timelineTime) {
+      const entry = entries.get(trackId);
+      if (!entry?.regionGain || !context) return false;
+      const value = getClipRegionGainAtTime(track, region, timelineTime);
+      entry.regionGain.gain.setTargetAtTime(value, context.currentTime, 0.008);
       return true;
     },
 

@@ -164,4 +164,46 @@ describe('NaliStudio clip regions', () => {
     });
   });
 
+  it('cuts across multiple regions while preserving track identity and Slip gaps', () => {
+    const track = {
+      id: 10,
+      clipRegions: [
+        { id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 5 },
+        { id: 'b', timelineStart: 8, sourceStart: 10, sourceEnd: 15 },
+        { id: 'c', timelineStart: 20, sourceStart: 20, sourceEnd: 25 },
+      ],
+    };
+    const result = cutTrackTimelineRange(track, 3, 11, {
+      createId: (side, region) => `${region.id}-${side}`,
+    });
+    expect(result.id).toBe(10);
+    expect(result.removed).toBe(true);
+    expect(result.clipRegions.map(region => [region.id, region.timelineStart, region.sourceStart, region.sourceEnd])).toEqual([
+      ['a', 0, 0, 3],
+      ['b-right', 11, 13, 15],
+      ['c', 20, 20, 25],
+    ]);
+  });
+
+  it('shuffles a multi-region cut by the full timeline selection duration', () => {
+    const track = {
+      id: 11,
+      clipRegions: [
+        { id: 'a', timelineStart: 0, sourceStart: 0, sourceEnd: 5 },
+        { id: 'b', timelineStart: 8, sourceStart: 10, sourceEnd: 15 },
+        { id: 'c', timelineStart: 20, sourceStart: 20, sourceEnd: 25 },
+      ],
+    };
+    const result = cutTrackTimelineRange(track, 3, 11, {
+      shuffle: true,
+      createId: (side, region) => `${region.id}-${side}`,
+    });
+    expect(result.id).toBe(11);
+    expect(result.clipRegions.map(region => [region.id, region.timelineStart, region.sourceStart, region.sourceEnd])).toEqual([
+      ['a', 0, 0, 3],
+      ['b-right', 3, 13, 15],
+      ['c', 12, 20, 25],
+    ]);
+  });
+
 });

@@ -22,12 +22,12 @@ export default function CrossfadeOverlay({ clips, zoom, trackId }) {
     const aEnd = (a.startTime || 0) + (a.duration || 0);
     const bStart = b.startTime || 0;
 
-    // If clips overlap or are within 0.05s of each other, show a crossfade
+    // Only display a crossfade where the audio regions actually overlap.
     const overlap = aEnd - bStart;
-    if (overlap >= -0.05) {
+    if (overlap > 0.001) {
       const fadeStart = Math.max(a.startTime || 0, bStart);
       const fadeEnd = Math.min(aEnd, (b.startTime || 0) + (b.duration || 0));
-      const fadeDuration = Math.max(0.1, fadeEnd - fadeStart);
+      const fadeDuration = fadeEnd - fadeStart;
       const fadeWidth = fadeDuration * 20 * zoom;
       const fadeLeft = fadeStart * 20 * zoom;
 

@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Activity, Zap, AlignHorizontalJustifyCenter, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { getClipRegionPeakTimes } from '@/lib/studioClipRegions';
 
 /**
  * Pro Tools-style Beat Detective dialog.
@@ -42,22 +43,14 @@ export default function BeatDetectiveDialog({ open, onOpenChange, track, bpm, ti
     }
     setAnalyzing(true);
     setTimeout(() => {
-      const wf = track.waveform;
-      const duration = track.fullDuration || track.duration || 40;
+      const sourcePeaks = getClipRegionPeakTimes(track, track.waveform, sensitivity);
       const detected = [];
-      const threshold = sensitivity;
-
-      for (let i = 2; i < wf.length - 2; i++) {
-        const v = wf[i];
-        // A transient is a local peak above threshold where the value rises sharply
-        if (v > threshold && v >= wf[i - 1] && v >= wf[i + 1] && v > (wf[i - 2] || 0) * 1.3) {
-          const time = (i / wf.length) * duration + (track.startTime || 0);
-          // Enforce minimum spacing between hits
-          if (detected.length === 0 || time - detected[detected.length - 1] >= minSpacing) {
-            detected.push(time);
-          }
+      sourcePeaks.forEach(time => {
+        // Enforce minimum spacing after mapping source peaks into timeline space.
+        if (detected.length === 0 || time - detected[detected.length - 1] >= minSpacing) {
+          detected.push(time);
         }
-      }
+      });
       setHits(detected);
       setAnalyzing(false);
       if (detected.length === 0) {

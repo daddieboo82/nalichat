@@ -1,11 +1,170 @@
 import { describe, it, expect } from 'vitest';
 import {
   trackGainValue,
+  clampAudioElementVolume,
+  getTrackRenderRegions,
+  getTrackTimelineFade,
+  getClipRegionGainAtTime,
+  getSiblingCrossfadeGainAtTime,
+  getClipRegionEnvelope,
   trackPanValue,
   countActiveEffects,
   getTrackEffects,
   FX_CHAIN_ORDER,
 } from '@/lib/audioProcessing';
+
+describe('offline clip-region render scheduling', () => {
+  it('keeps split regions on one track with contiguous source offsets', () => {
+    const regions = getTrackRenderRegions({
+      id: 'track-1',
+      clipRegions: [
+        { id: 'left', timelineStart: 0, sourceStart: 0, sourceEnd: 4 },
+        { id: 'right', timelineStart: 4, sourceStart: 4, sourceEnd: 10 },
+      ],
+    }, 10);
+    expect(regions.map(region => [region.timelineStart, region.sourceStart, region.sourceEnd])).toEqual([
+      [0, 0, 4],
+      [4, 4, 10],
+    ]);
+  });
+
+  it('preserves cut gaps instead of rendering removed source audio', () => {
+    const regions = getTrackRenderRegions({
+      id: 'track-1',
+      clipRegions: [
+        { id: 'before', timelineStart: 0, sourceStart: 0, sourceEnd: 3 },
+        { id: 'after', timelineStart: 7, sourceStart: 7, sourceEnd: 10 },
+      ],
+    }, 10);
+    expect(regions.map(region => [region.timelineStart, region.sourceStart, region.sourceEnd])).toEqual([
+      [0, 0, 3],
+      [7, 7, 10],
+    ]);
+    expect(regions.every(region => region.timelineStart !== 3)).toBe(true);
+  });
+
+  it('clips source ranges to the decoded audio duration', () => {
+    const regions = getTrackRenderRegions({
+      id: 'track-1',
+      clipRegions: [{ id: 'tail', timelineStart: 2, sourceStart: 8, sourceEnd: 12 }],
+    }, 10);
+    expect(regions).toHaveLength(1);
+    expect(regions[0]).toMatchObject({ timelineStart: 2, sourceStart: 8, sourceEnd: 10 });
+  });
+});
+
+describe('realtime clip-region envelope', () => {
+  it('combines clip gain, region fades, and track-wide fades at transport time', () => {
+    const track = { startTime: 0, duration: 10, fadeIn: 0.2, fadeOut: 0.2 };
+    const region = {
+      timelineStart: 0, sourceStart: 0, sourceEnd: 10,
+      gainDb: 6, fadeIn: 1, fadeOut: 1,
+    };
+    expect(getClipRegionGainAtTime(track, region, 0)).toBe(0);
+    expect(getClipRegionGainAtTime(track, region, 1)).toBeCloseTo(Math.pow(10, 6 / 20) * 0.5);
+    expect(getClipRegionGainAtTime(track, region, 5)).toBeCloseTo(Math.pow(10, 6 / 20));
+    expect(getClipRegionGainAtTime(track, region, 9)).toBeCloseTo(Math.pow(10, 6 / 20) * 0.5);
+    expect(getClipRegionGainAtTime(track, null, 5)).toBe(0);
+  });
+});
+
+describe('same-lane sibling crossfade envelope', () => {
+  const earlier = {
+    id: 'earlier', splitFrom: 'parent', startTime: 0, duration: 4,
+    clipRegions: [{ id: 'earlier-region', timelineStart: 0, sourceStart: 0, sourceEnd: 4 }],
+  };
+  const later = {
+    id: 'later', splitFrom: 'parent', startTime: 2, duration: 4,
+    clipRegions: [{ id: 'later-region', timelineStart: 2, sourceStart: 0, sourceEnd: 4 }],
+  };
+
+  it('applies complementary equal-power curves over the actual overlap', () => {
+    const earlierRegion = earlier.clipRegions[0];
+    const laterRegion = later.clipRegions[0];
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlierRegion, 1, [earlier, later])).toBe(1);
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlierRegion, 2, [earlier, later])).toBeCloseTo(1);
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlierRegion, 3, [earlier, later])).toBeCloseTo(Math.SQRT1_2);
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlierRegion, 4, [earlier, later])).toBeCloseTo(0);
+    expect(getSiblingCrossfadeGainAtTime(later, laterRegion, 2, [earlier, later])).toBeCloseTo(0);
+    expect(getSiblingCrossfadeGainAtTime(later, laterRegion, 3, [earlier, later])).toBeCloseTo(Math.SQRT1_2);
+    expect(getSiblingCrossfadeGainAtTime(later, laterRegion, 4, [earlier, later])).toBeCloseTo(1);
+    expect(getSiblingCrossfadeGainAtTime(later, laterRegion, 5, [earlier, later])).toBe(1);
+  });
+
+  it('does not crossfade independent tracks or non-overlapping sibling regions', () => {
+    const independent = { ...later, id: 'independent', splitFrom: undefined };
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlier.clipRegions[0], 3, [earlier, independent])).toBe(1);
+    const shifted = { ...later, clipRegions: [{ ...later.clipRegions[0], timelineStart: 5 }] };
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlier.clipRegions[0], 3, [earlier, shifted])).toBe(1);
+    const muted = { ...later, muted: true };
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlier.clipRegions[0], 3, [earlier, muted])).toBe(1);
+    const soloOther = { ...later, solo: true };
+    expect(getSiblingCrossfadeGainAtTime(earlier, earlier.clipRegions[0], 3, [earlier, soloOther])).toBe(1);
+  });
+});
+
+describe('track-wide offline fade envelope', () => {
+  it('maps fade fractions across the full clip-region timeline span', () => {
+    const envelope = getTrackTimelineFade(
+      { fadeIn: 0.2, fadeOut: 0.25 },
+      [
+        { timelineStart: 3, sourceStart: 0, sourceEnd: 4 },
+        { timelineStart: 9, sourceStart: 5, sourceEnd: 8 },
+      ],
+    );
+    expect(envelope).toEqual({ start: 3, end: 12, fadeIn: 1.8, fadeOut: 2.25 });
+  });
+
+  it('prevents fade durations from overlapping beyond the arrangement span', () => {
+    const envelope = getTrackTimelineFade(
+      { fadeIn: 0.8, fadeOut: 0.8 },
+      [{ timelineStart: 2, sourceStart: 0, sourceEnd: 5 }],
+    );
+    expect(envelope.fadeIn).toBe(4);
+    expect(envelope.fadeOut).toBe(1);
+  });
+});
+
+describe('clip-region render envelopes', () => {
+  it('converts clip gain from dB and retains region fades', () => {
+    const envelope = getClipRegionEnvelope({
+      sourceStart: 2,
+      sourceEnd: 6,
+      gainDb: 6,
+      fadeIn: 0.5,
+      fadeOut: 1,
+    });
+    expect(envelope.gain).toBeCloseTo(Math.pow(10, 6 / 20));
+    expect(envelope.fadeIn).toBe(0.5);
+    expect(envelope.fadeOut).toBe(1);
+  });
+
+  it('bounds fades to the region duration and limits extreme gain', () => {
+    const envelope = getClipRegionEnvelope({
+      sourceStart: 0,
+      sourceEnd: 1,
+      gainDb: 100,
+      fadeIn: 0.8,
+      fadeOut: 0.8,
+    });
+    expect(envelope.gain).toBeCloseTo(Math.pow(10, 24 / 20));
+    expect(envelope.fadeIn).toBe(0.8);
+    expect(envelope.fadeOut).toBeCloseTo(0.2);
+  });
+});
+
+describe('HTML audio fallback volume', () => {
+  it('clamps boosted and negative levels to the media element range', () => {
+    expect(clampAudioElementVolume(1.5)).toBe(1);
+    expect(clampAudioElementVolume(-0.25)).toBe(0);
+    expect(clampAudioElementVolume(0.65)).toBe(0.65);
+  });
+
+  it('returns silence for non-finite levels', () => {
+    expect(clampAudioElementVolume(Number.NaN)).toBe(0);
+    expect(clampAudioElementVolume(Number.POSITIVE_INFINITY)).toBe(0);
+  });
+});
 
 describe('trackGainValue', () => {
   it('maps the 0-100 fader onto 0-1', () => {

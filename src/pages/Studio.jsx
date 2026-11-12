@@ -2275,6 +2275,10 @@ export default function Studio() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
+    if (file.name.toLowerCase().endsWith(".nalistudio.json")) {
+      toast.error("This older session file contains links rather than bundled audio. Importing it could lose recorded tracks. Open the original project in Studio and create a new ZIP backup instead.");
+      return;
+    }
     if (roomId) {
       toast.error("Leave the shared Jam Room before restoring a device session.");
       return;

@@ -93,6 +93,11 @@ const portableTrackState = (track, audioUrl) => {
   };
 };
 
+// LocalStorage cannot rehydrate object URLs after the browser document closes.
+const hasTransientStudioAudio = (tracks) => Array.isArray(tracks) && tracks.some(
+  (track) => [track?.audioUrl, track?.file_url].some((url) => typeof url === "string" && url.startsWith("blob:"))
+);
+
 async function listPersistedTracks(projectId) {
   const rows = [];
   const pageSize = 200;
@@ -388,7 +393,7 @@ export default function Studio() {
       const saved = localStorage.getItem(autosaveStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.length > 0) setHasAutosave(true);
+        if (Array.isArray(parsed) && parsed.length > 0 && !hasTransientStudioAudio(parsed)) setHasAutosave(true);
       }
     } catch (e) {}
   }, [autosaveStorageKey]);
@@ -518,7 +523,16 @@ export default function Studio() {
       const saved = localStorage.getItem(autosaveStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.length > 0) { setTracks(parsed); setShowWelcome(false); return; }
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          if (hasTransientStudioAudio(parsed)) {
+            setHasAutosave(false);
+            toast.error("This autosave contains temporary audio that expired after reload. Restore your downloaded Studio ZIP backup or open the project in My Sessions.");
+            return;
+          }
+          setTracks(parsed);
+          setShowWelcome(false);
+          return;
+        }
       }
     } catch (e) {}
     toast.error("No autosave found");
@@ -2371,7 +2385,7 @@ export default function Studio() {
       if (payload.project.masterFx && typeof payload.project.masterFx === "object") setMasterFx(payload.project.masterFx);
       if (payload.project.audioSettings && typeof payload.project.audioSettings === "object") setAudioSettings(payload.project.audioSettings);
       setShowWelcome(false);
-      toast.success(`Restored ${restoredTracks.length} Studio tracks.`, { id: toastId });
+      toast.success(`Restored ${restoredTracks.length} Studio tracks. Save to My Sessions or keep your ZIP backup before leaving.`, { id: toastId, duration: 9000 });
     } catch (error) {
       console.error("Device session import failed", error);
       toast.error(error.message || "Could not restore Studio session.", { id: toastId });

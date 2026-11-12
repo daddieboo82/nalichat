@@ -58,5 +58,9 @@ describe("NaliStudio portable exports", () => {
     expect(studio).toContain("Restore Device Session (.zip)");
     expect(studio).toContain('ref={sessionImportRef}');
     expect(studio).toContain('onChange={handleSessionImport}');
+    expect(studio).toContain('handleSessionImport={handleSessionImport}');
+    const welcome = await readFile("src/components/studio/StudioWelcome.jsx", "utf8");
+    expect(welcome).toContain("Restore Backup from Device");
+    expect(welcome).toContain('onChange={handleSessionImport}');
   });
 });

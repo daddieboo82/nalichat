@@ -4,6 +4,15 @@ import { readFile } from "node:fs/promises";
 const source = () => readFile("src/pages/Studio.jsx", "utf8");
 
 describe("NaliStudio portable exports", () => {
+  it("does not advertise expired object-URL autosaves as recoverable", async () => {
+    const studio = await source();
+    expect(studio).toContain("const hasTransientStudioAudio = (tracks)");
+    expect(studio).toContain("!hasTransientStudioAudio(parsed)");
+    expect(studio).toContain("if (hasTransientStudioAudio(parsed))");
+    expect(studio).toContain("This autosave contains temporary audio that expired after reload.");
+    expect(studio).toContain("Save to My Sessions or keep your ZIP backup before leaving.");
+  });
+
   it("preserves restored audio codecs when saving to My Sessions", async () => {
     const studio = await source();
     const start = studio.indexOf("const handleSave = async () => {");

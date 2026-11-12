@@ -2292,6 +2292,13 @@ export default function Studio() {
       if (archiveEntries.length > MAX_TRACKS + 1) {
         throw new Error("Session archive contains too many files.");
       }
+      // Protect against ZIP bombs: compressed upload size alone is insufficient.
+      const totalUncompressedBytes = archiveEntries.reduce(
+        (sum, entry) => sum + (entry._data?.uncompressedSize || 0), 0
+      );
+      if (!Number.isFinite(totalUncompressedBytes) || totalUncompressedBytes > 1024 * 1024 * 1024) {
+        throw new Error("Uncompressed session contents exceed the 1 GB safety limit.");
+      }
       const manifest = archive.file("session.json");
       if (!manifest) throw new Error("This archive has no Studio session manifest.");
       if (manifest._data?.uncompressedSize > 2 * 1024 * 1024) {

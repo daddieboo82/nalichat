@@ -2206,12 +2206,36 @@ export default function Studio() {
     }
   };
 
-  const handleSaveSessionToDevice = () => {
+  // Export a portable archive: never save ephemeral blob: URLs in device backups.
+  const handleSaveSessionToDevice = async () => {
+    const toastId = toast.loading("Packaging Studio session and audio...");
     try {
-      const portableTracks = tracks.map((track) => portableTrackState(track, track.audioUrl || track.file_url || ""));
+      const zip = new JSZip();
+      const portableTracks = [];
+      for (const [index, track] of tracks.entries()) {
+        const source = track.audioUrl || track.file_url || "";
+        let savedAudioPath = "";
+        if (source) {
+          const response = await fetch(source);
+          if (!response.ok) throw new Error(`Could not read audio for ${track.name || index + 1}.`);
+          const audio = await response.blob();
+          if (!audio.size) throw new Error(`Audio is empty for ${track.name || index + 1}.`);
+          const extension = audio.type.includes("mpeg") ? "mp3"
+            : audio.type.includes("webm") ? "webm"
+            : audio.type.includes("ogg") ? "ogg"
+            : audio.type.includes("mp4") ? "m4a" : "wav";
+          savedAudioPath = `audio/track_${index + 1}.${extension}`;
+          zip.file(savedAudioPath, audio);
+        }
+        portableTracks.push({
+          ...portableTrackState(track, savedAudioPath),
+          audioUrl: savedAudioPath,
+          file_url: savedAudioPath,
+        });
+      }
       const payload = {
         format: "nalichat-studio-session",
-        version: 1,
+        version: 2,
         saved_at: new Date().toISOString(),
         project: {
           title: projectName.trim() || "Untitled Project",
@@ -2224,20 +2248,70 @@ export default function Studio() {
           tracks: portableTracks,
         },
       };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
+      zip.file("session.json", JSON.stringify(payload, null, 2));
+      const archive = await zip.generateAsync({ type: "blob" });
+      if (!archive.size) throw new Error("Session archive is empty.");
+      const url = URL.createObjectURL(archive);
       const link = document.createElement("a");
       const safeName = (projectName.trim() || "Untitled Project").replace(/[^a-z0-9_-]+/gi, "_");
       link.href = url;
-      link.download = `${safeName}.nalistudio.json`;
+      link.download = `${safeName}.nalistudio.zip`;
       document.body.appendChild(link);
       link.click();
       link.remove();
-      URL.revokeObjectURL(url);
-      toast.success("Studio session saved to this device.");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      toast.success("Portable Studio session and audio packaged.", { id: toastId });
     } catch (error) {
       console.error("Device session save failed", error);
-      toast.error("Could not save this Studio session to your device.");
+      toast.error(error.message || "Could not save this Studio session to your device.", { id: toastId });
+    }
+  };
+
+  const sessionImportRef = useRef(null);
+  const handleSessionImport = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const toastId = toast.loading("Restoring Studio session...");
+    try {
+      const archive = await JSZip.loadAsync(file);
+      const manifest = archive.file("session.json");
+      if (!manifest) throw new Error("This archive has no Studio session manifest.");
+      const payload = JSON.parse(await manifest.async("string"));
+      if (payload?.format !== "nalichat-studio-session" || payload.version !== 2 ||
+          !payload.project || !Array.isArray(payload.project.tracks) ||
+          payload.project.tracks.length > MAX_TRACKS) {
+        throw new Error("Unsupported or invalid Studio session archive.");
+      }
+      const restoredTracks = [];
+      for (const track of payload.project.tracks) {
+        const audioPath = track.audioUrl || track.file_url || "";
+        let audioUrl = "";
+        if (audioPath) {
+          if (!/^audio\\/track_[0-9]+\\.(wav|mp3|webm|ogg|m4a)$/.test(audioPath)) {
+            throw new Error("Session contains an invalid audio reference.");
+          }
+          const entry = archive.file(audioPath);
+          if (!entry) throw new Error(`Session audio file missing: ${audioPath}`);
+          const audio = await entry.async("blob");
+          if (!audio.size) throw new Error(`Session audio file is empty: ${audioPath}`);
+          audioUrl = URL.createObjectURL(audio);
+        }
+        restoredTracks.push({ ...track, audioUrl, file_url: audioUrl });
+      }
+      setTracksWithHistory(restoredTracks);
+      setProjectName(payload.project.title || "Restored Project");
+      if (Number.isFinite(Number(payload.project.bpm))) setBpm(Number(payload.project.bpm));
+      if (typeof payload.project.key === "string") setSongKey(payload.project.key);
+      if (payload.project.timeSignature) setTimeSignature(payload.project.timeSignature);
+      if (Number.isFinite(Number(payload.project.masterVolume))) setMasterVolume(Number(payload.project.masterVolume));
+      if (payload.project.masterFx && typeof payload.project.masterFx === "object") setMasterFx(payload.project.masterFx);
+      if (payload.project.audioSettings && typeof payload.project.audioSettings === "object") setAudioSettings(payload.project.audioSettings);
+      setShowWelcome(false);
+      toast.success(`Restored ${restoredTracks.length} Studio tracks.`, { id: toastId });
+    } catch (error) {
+      console.error("Device session import failed", error);
+      toast.error(error.message || "Could not restore Studio session.", { id: toastId });
     }
   };
 
@@ -2531,6 +2605,7 @@ export default function Studio() {
 
           <div className="flex flex-wrap items-center justify-end gap-2 pl-2 min-w-0">
             <input type="file" ref={fileInputRef} className="hidden" multiple accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} />
+            <input type="file" ref={sessionImportRef} className="hidden" accept=".zip,.nalistudio.zip" onChange={handleSessionImport} aria-label="Restore Studio session backup" />
             <Button id="milestones-btn" onClick={() => setShowMilestones(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-border/50 hover:bg-secondary transition-colors">
               <ListTodo className="w-4 h-4" /> Milestones
             </Button>
@@ -2555,6 +2630,9 @@ export default function Studio() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSaveSessionToDevice} className="cursor-pointer py-2">
                   <Download className="w-4 h-4 mr-2" /> Save Session to Device
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => sessionImportRef.current?.click()} className="cursor-pointer py-2">
+                  <FolderOpen className="w-4 h-4 mr-2" /> Restore Device Session (.zip)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -3,6 +3,7 @@ import { validateUpload } from "@/lib/uploadValidation";
 import { markActivationComplete, trackProductEvent } from "@/lib/productAnalytics";
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import JSZip from 'jszip';
+import { studioAudioExtension, studioAudioMimeForExtension } from '@/lib/studioArchiveAudio';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Play, Square, Circle, Mic, Settings2, Volume2, Save, Download, FastForward, Rewind, Maximize2, Pause, Layers, Keyboard, Upload, Activity, Crosshair, Link2, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Loader2, Check, Edit2, ChevronLeft, RefreshCw, ListTodo, AudioLines, Folder, FolderOpen } from 'lucide-react';
@@ -2220,10 +2221,12 @@ export default function Studio() {
           if (!response.ok) throw new Error(`Could not read audio for ${track.name || index + 1}.`);
           const audio = await response.blob();
           if (!audio.size) throw new Error(`Audio is empty for ${track.name || index + 1}.`);
-          const extension = audio.type.includes("mpeg") ? "mp3"
-            : audio.type.includes("webm") ? "webm"
-            : audio.type.includes("ogg") ? "ogg"
-            : audio.type.includes("mp4") ? "m4a" : "wav";
+          const extension = studioAudioExtension({
+            mimeType: audio.type,
+            filename: track.name || "",
+            sourceUrl: source,
+          });
+          if (!extension) throw new Error(`Unsupported audio format for ${track.name || index + 1}. Export a WAV or MP3 first.`);
           savedAudioPath = `audio/track_${index + 1}.${extension}`;
           zip.file(savedAudioPath, audio);
         }
@@ -2320,7 +2323,7 @@ export default function Studio() {
         const audioPath = track.audioUrl || track.file_url || "";
         let audioUrl = "";
         if (audioPath) {
-          if (!/^audio[/]track_[0-9]+[.](wav|mp3|webm|ogg|m4a)$/.test(audioPath)) {
+          if (!/^audio[/]track_[0-9]+[.](wav|mp3|webm|ogg|m4a|aac|flac|aiff)$/.test(audioPath)) {
             throw new Error("Session contains an invalid audio reference.");
           }
           const entry = archive.file(audioPath);
@@ -2333,7 +2336,8 @@ export default function Studio() {
             throw new Error(`Session audio exceeds the per-track size limit: ${audioPath}`);
           }
           const ext = audioPath.split(".").pop();
-          const mime = ({ wav: "audio/wav", mp3: "audio/mpeg", webm: "audio/webm", ogg: "audio/ogg", m4a: "audio/mp4" })[ext];
+          const mime = studioAudioMimeForExtension(ext);
+          if (!mime) throw new Error(`Unsupported audio format in session: ${audioPath}`);
           const audio = new Blob([bytes], { type: mime });
           if (!audio.size) throw new Error(`Session audio file is empty: ${audioPath}`);
           audioUrl = URL.createObjectURL(audio);

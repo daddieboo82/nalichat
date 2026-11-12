@@ -45,6 +45,8 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain('Studio session manifest is too large.');
     expect(handler).toContain('Object.values(archive.files).filter((entry) => !entry.dir)');
     expect(handler).toContain('archiveEntries.length > MAX_TRACKS + 1');
+    expect(handler).toContain('totalUncompressedBytes > 1024 * 1024 * 1024');
+    expect(handler).toContain('Uncompressed session contents exceed the 1 GB safety limit.');
     expect(handler).toContain('Session audio exceeds the per-track size limit:');
     expect(handler).toContain('archive.file("session.json")');
     expect(handler).toContain('payload.version !== 2');

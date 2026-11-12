@@ -2,6 +2,7 @@ import { secureUploadFile } from "@/lib/secureUpload";
 import { validateUpload } from "@/lib/uploadValidation";
 import { markActivationComplete, trackProductEvent } from "@/lib/productAnalytics";
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import JSZip from 'jszip';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Play, Square, Circle, Mic, Settings2, Volume2, Save, Download, FastForward, Rewind, Maximize2, Pause, Layers, Keyboard, Upload, Activity, Crosshair, Link2, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Loader2, Check, Edit2, ChevronLeft, RefreshCw, ListTodo, AudioLines, Folder, FolderOpen } from 'lucide-react';
@@ -2278,9 +2279,10 @@ export default function Studio() {
 
   // handleExport removed in favor of BounceDialog
 
-  // Export each track as a separate stem file — Pro Tools "Export Stems" workflow
+  // Render each audible track and package the stems in one browser download.
+  // Multiple programmatic downloads can be blocked by mobile/desktop browsers.
   const handleExportStems = async () => {
-    const audioTracks = tracks.filter(t => t.audioUrl && !t.muted);
+    const audioTracks = tracks.filter(t => (t.audioUrl || t.file_url) && !t.muted);
     if (audioTracks.length === 0) {
       toast.error("No audio tracks to export as stems.");
       return;
@@ -2288,24 +2290,42 @@ export default function Studio() {
     setIsDownloading(true);
     toast.info(`Exporting ${audioTracks.length} stems...`);
     try {
-      for (const track of audioTracks) {
+      const zip = new JSZip();
+      const usedNames = new Set();
+      for (const [index, track] of audioTracks.entries()) {
         const blob = await renderMixToWav([track]);
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${track.name.replace(/[^a-z0-9]/gi, '_')}_stem.wav`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
+        if (!(blob instanceof Blob) || blob.size === 0) {
+          throw new Error(`Could not render stem: ${track.name || index + 1}`);
         }
+        const stemName = (track.name || `track_${index + 1}`)
+          .replace(/[^a-z0-9_-]+/gi, "_").replace(/^_+|_+$/g, "") || `track_${index + 1}`;
+        let filename = `${stemName}_stem.wav`;
+        let suffix = 2;
+        while (usedNames.has(filename.toLowerCase())) {
+          filename = `${stemName}_stem_${suffix++}.wav`;
+        }
+        usedNames.add(filename.toLowerCase());
+        zip.file(filename, blob);
       }
+      if (Object.keys(zip.files).length !== audioTracks.length) {
+        throw new Error("Stem archive is missing one or more tracks.");
+      }
+      const archive = await zip.generateAsync({ type: "blob" });
+      if (!archive.size) throw new Error("Stem archive is empty.");
+      const url = URL.createObjectURL(archive);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "NaliStudio_stems.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // Keep the URL alive while the browser's download manager accepts it.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
       sounds.success();
-      toast.success(`${audioTracks.length} stems exported!`);
+      toast.success(`${audioTracks.length} stems packaged into one ZIP download.`);
     } catch (e) {
       console.error("Stem export failed", e);
-      toast.error("Failed to export stems.");
+      toast.error("Failed to export all stems. No complete archive was created.");
     } finally {
       setIsDownloading(false);
     }

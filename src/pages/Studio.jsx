@@ -2276,6 +2276,9 @@ export default function Studio() {
       toast.error("Leave the shared Jam Room before restoring a device session.");
       return;
     }
+    if (tracks.length > 0 && !window.confirm("Restoring a backup will replace the tracks currently open in Studio. Save your current session first. Continue?")) {
+      return;
+    }
     if (file.size > 1024 * 1024 * 1024) {
       toast.error("Session backup is too large to restore in the browser.");
       return;
@@ -2288,6 +2291,9 @@ export default function Studio() {
       }
       const manifest = archive.file("session.json");
       if (!manifest) throw new Error("This archive has no Studio session manifest.");
+      if (manifest._data?.uncompressedSize > 2 * 1024 * 1024) {
+        throw new Error("Studio session manifest is too large.");
+      }
       const payload = JSON.parse(await manifest.async("string"));
       if (payload?.format !== "nalichat-studio-session" || payload.version !== 2 ||
           !payload.project || !Array.isArray(payload.project.tracks) ||
@@ -2309,7 +2315,13 @@ export default function Studio() {
           }
           const entry = archive.file(audioPath);
           if (!entry) throw new Error(`Session audio file missing: ${audioPath}`);
+          if (entry._data?.uncompressedSize > 512 * 1024 * 1024) {
+            throw new Error(`Session audio exceeds the per-track size limit: ${audioPath}`);
+          }
           const bytes = await entry.async("uint8array");
+          if (bytes.byteLength > 512 * 1024 * 1024) {
+            throw new Error(`Session audio exceeds the per-track size limit: ${audioPath}`);
+          }
           const ext = audioPath.split(".").pop();
           const mime = ({ wav: "audio/wav", mp3: "audio/mpeg", webm: "audio/webm", ogg: "audio/ogg", m4a: "audio/mp4" })[ext];
           const audio = new Blob([bytes], { type: mime });

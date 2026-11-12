@@ -26,6 +26,8 @@ describe("NaliStudio portable exports", () => {
     expect(start).toBeGreaterThan(0);
     expect(handler).toContain("const response = await fetch(source)");
     expect(handler).toContain("zip.file(savedAudioPath, audio)");
+    expect(handler).toContain("studioAudioExtension({");
+    expect(handler).toContain("if (!extension) throw new Error");
     expect(handler).toContain('zip.file("session.json", JSON.stringify(payload, null, 2))');
     expect(handler).toContain('format: "nalichat-studio-session"');
     expect(handler).toContain("version: 2");
@@ -52,6 +54,7 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain('payload.version !== 2');
     expect(handler).toContain("payload.project.tracks.length > MAX_TRACKS");
     expect(handler).toContain("Session contains an invalid audio reference.");
+    expect(handler).toContain("studioAudioMimeForExtension(ext)");
     expect(handler).toContain("Session audio file missing:");
     expect(handler).toContain("temporaryUrls.forEach((url) => URL.revokeObjectURL(url))");
     expect(handler).toContain("setTracksWithHistory(restoredTracks)");

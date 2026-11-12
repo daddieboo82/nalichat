@@ -2403,7 +2403,7 @@ export default function Studio() {
       const zip = new JSZip();
       const usedNames = new Set();
       for (const [index, track] of audioTracks.entries()) {
-        const blob = await renderMixToWav([track]);
+        const blob = await renderMixToWav([{ ...track, audioUrl: track.audioUrl || track.file_url }]);
         if (!(blob instanceof Blob) || blob.size === 0) {
           throw new Error(`Could not render stem: ${track.name || index + 1}`);
         }

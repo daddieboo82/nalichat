@@ -2272,9 +2272,20 @@ export default function Studio() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
+    if (roomId) {
+      toast.error("Leave the shared Jam Room before restoring a device session.");
+      return;
+    }
+    if (file.size > 1024 * 1024 * 1024) {
+      toast.error("Session backup is too large to restore in the browser.");
+      return;
+    }
     const toastId = toast.loading("Restoring Studio session...");
     try {
       const archive = await JSZip.loadAsync(file);
+      if (Object.keys(archive.files).length > MAX_TRACKS + 1) {
+        throw new Error("Session archive contains too many files.");
+      }
       const manifest = archive.file("session.json");
       if (!manifest) throw new Error("This archive has no Studio session manifest.");
       const payload = JSON.parse(await manifest.async("string"));
@@ -2284,7 +2295,12 @@ export default function Studio() {
         throw new Error("Unsupported or invalid Studio session archive.");
       }
       const restoredTracks = [];
+      const temporaryUrls = [];
+      try {
       for (const track of payload.project.tracks) {
+        if (!track || typeof track !== "object" || Array.isArray(track)) {
+          throw new Error("Session has invalid track metadata.");
+        }
         const audioPath = track.audioUrl || track.file_url || "";
         let audioUrl = "";
         if (audioPath) {
@@ -2299,8 +2315,13 @@ export default function Studio() {
           const audio = new Blob([bytes], { type: mime });
           if (!audio.size) throw new Error(`Session audio file is empty: ${audioPath}`);
           audioUrl = URL.createObjectURL(audio);
+          temporaryUrls.push(audioUrl);
         }
         restoredTracks.push({ ...track, audioUrl, file_url: audioUrl });
+      }
+      } catch (restoreError) {
+        temporaryUrls.forEach((url) => URL.revokeObjectURL(url));
+        throw restoreError;
       }
       setTracksWithHistory(restoredTracks);
       setProjectName(payload.project.title || "Restored Project");

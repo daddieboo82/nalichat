@@ -2288,12 +2288,15 @@ export default function Studio() {
         const audioPath = track.audioUrl || track.file_url || "";
         let audioUrl = "";
         if (audioPath) {
-          if (!/^audio\\/track_[0-9]+\\.(wav|mp3|webm|ogg|m4a)$/.test(audioPath)) {
+          if (!/^audio[/]track_[0-9]+[.](wav|mp3|webm|ogg|m4a)$/.test(audioPath)) {
             throw new Error("Session contains an invalid audio reference.");
           }
           const entry = archive.file(audioPath);
           if (!entry) throw new Error(`Session audio file missing: ${audioPath}`);
-          const audio = await entry.async("blob");
+          const bytes = await entry.async("uint8array");
+          const ext = audioPath.split(".").pop();
+          const mime = ({ wav: "audio/wav", mp3: "audio/mpeg", webm: "audio/webm", ogg: "audio/ogg", m4a: "audio/mp4" })[ext];
+          const audio = new Blob([bytes], { type: mime });
           if (!audio.size) throw new Error(`Session audio file is empty: ${audioPath}`);
           audioUrl = URL.createObjectURL(audio);
         }

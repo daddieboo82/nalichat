@@ -2342,12 +2342,24 @@ export default function Studio() {
       }
       const restoredTracks = [];
       const temporaryUrls = [];
+      const restoredIds = new Set();
+      const restoredAudioPaths = new Set();
       try {
       for (const track of payload.project.tracks) {
         if (!track || typeof track !== "object" || Array.isArray(track)) {
           throw new Error("Session has invalid track metadata.");
         }
+        if ((typeof track.id !== "string" && typeof track.id !== "number") || !String(track.id).trim()) {
+          throw new Error("Session contains a track with an invalid ID.");
+        }
+        const trackId = String(track.id);
+        if (restoredIds.has(trackId)) throw new Error("Session contains duplicate track IDs.");
+        restoredIds.add(trackId);
         const audioPath = track.audioUrl || track.file_url || "";
+        if (audioPath && restoredAudioPaths.has(audioPath)) {
+          throw new Error("Session contains duplicate audio references.");
+        }
+        if (audioPath) restoredAudioPaths.add(audioPath);
         let audioUrl = "";
         if (audioPath) {
           if (!/^audio[/]track_[0-9]+[.](wav|mp3|webm|ogg|m4a|aac|flac|aiff)$/.test(audioPath)) {

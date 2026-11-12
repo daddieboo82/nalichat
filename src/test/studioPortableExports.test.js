@@ -43,6 +43,8 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain('Leave the shared Jam Room');
     expect(handler).toContain('tracks.length > 0 && !window.confirm(');
     expect(handler).toContain('Studio session manifest is too large.');
+    expect(handler).toContain('Object.values(archive.files).filter((entry) => !entry.dir)');
+    expect(handler).toContain('archiveEntries.length > MAX_TRACKS + 1');
     expect(handler).toContain('Session audio exceeds the per-track size limit:');
     expect(handler).toContain('archive.file("session.json")');
     expect(handler).toContain('payload.version !== 2');

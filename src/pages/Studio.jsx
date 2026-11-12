@@ -2471,7 +2471,7 @@ export default function Studio() {
 
   if (showWelcome) return (
     <>
-      <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} navigate={navigate} />
+      <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} handleSessionImport={handleSessionImport} navigate={navigate} />
       <StudioVideoHelp />
     </>
   );

@@ -10,7 +10,7 @@ describe("NaliStudio portable exports", () => {
     const end = studio.indexOf("if (roomId && projectLoading)", start);
     const handler = studio.slice(start, end);
     expect(start).toBeGreaterThan(0);
-    expect(handler).toContain("await renderMixToWav([track])");
+    expect(handler).toContain("await renderMixToWav([{ ...track, audioUrl: track.audioUrl || track.file_url }])");
     expect(handler).toContain("zip.file(filename, blob)");
     expect(handler).toContain("Object.keys(zip.files).length !== audioTracks.length");
     expect(handler).toContain('a.download = "NaliStudio_stems.zip"');

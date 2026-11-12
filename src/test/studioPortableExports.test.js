@@ -42,6 +42,8 @@ describe("NaliStudio portable exports", () => {
     const handler = studio.slice(start, end);
     expect(start).toBeGreaterThan(0);
     expect(handler).toContain('if (roomId)');
+    expect(handler).toContain('file.name.toLowerCase().endsWith(".nalistudio.json")');
+    expect(handler).toContain("Importing it could lose recorded tracks.");
     expect(handler).toContain('Leave the shared Jam Room');
     expect(handler).toContain('tracks.length > 0 && !window.confirm(');
     expect(handler).toContain('Studio session manifest is too large.');

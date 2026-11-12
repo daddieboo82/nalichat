@@ -2286,7 +2286,10 @@ export default function Studio() {
     const toastId = toast.loading("Restoring Studio session...");
     try {
       const archive = await JSZip.loadAsync(file);
-      if (Object.keys(archive.files).length > MAX_TRACKS + 1) {
+      // JSZip also lists directory entries such as "audio/" in archive.files.
+      // Count actual files only so a full 999-track backup remains restorable.
+      const archiveEntries = Object.values(archive.files).filter((entry) => !entry.dir);
+      if (archiveEntries.length > MAX_TRACKS + 1) {
         throw new Error("Session archive contains too many files.");
       }
       const manifest = archive.file("session.json");

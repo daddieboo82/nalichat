@@ -4,6 +4,18 @@ import { readFile } from "node:fs/promises";
 const source = () => readFile("src/pages/Studio.jsx", "utf8");
 
 describe("NaliStudio portable exports", () => {
+  it("preserves restored audio codecs when saving to My Sessions", async () => {
+    const studio = await source();
+    const start = studio.indexOf("const handleSave = async () => {");
+    const end = studio.indexOf("const handleImportClick =", start);
+    const handler = studio.slice(start, end);
+    expect(start).toBeGreaterThan(0);
+    expect(handler).toContain("studioAudioExtension({");
+    expect(handler).toContain("studioAudioMimeForExtension(extension)");
+    expect(handler).toContain("unsupported audio format");
+    expect(handler).not.toContain('blob.type || "audio/wav"');
+  });
+
   it("exports all rendered stems as one ZIP rather than individual browser downloads", async () => {
     const studio = await source();
     const start = studio.indexOf("const handleExportStems = async () => {");

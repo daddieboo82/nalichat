@@ -2001,9 +2001,18 @@ export default function Studio() {
         if (audioUrl.startsWith("blob:")) {
           const response = await fetch(audioUrl);
           const blob = await response.blob();
-          const extension = blob.type.includes("mpeg") ? "mp3" : blob.type.includes("webm") ? "webm" : "wav";
+          const extension = studioAudioExtension({
+            mimeType: blob.type,
+            filename: track.name || "",
+            sourceUrl: audioUrl,
+          });
+          if (!extension) {
+            throw new Error(`${track.name || "Track"}: unsupported audio format. Export to WAV or MP3 before saving.`);
+          }
           const safeName = (track.name || "track").replace(/[^a-z0-9_-]+/gi, "_");
-          const file = new File([blob], `${safeName}.${extension}`, { type: blob.type || "audio/wav" });
+          const file = new File([blob], `${safeName}.${extension}`, {
+            type: studioAudioMimeForExtension(extension),
+          });
           const validation = validateUpload(file);
           if (!validation.ok) {
             throw new Error(`${track.name || "Track"}: ${validation.error}`);

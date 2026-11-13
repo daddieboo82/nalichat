@@ -141,7 +141,8 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain("const needsCurrentProviderStatus = newStatus === 'active';");
     expect(code).toContain("remoteSubscription?.status !== 'ACTIVE'");
     expect(code).toContain("remoteSubscription.planId !== record.paypal_plan_id");
-    expect(code).toContain('providerMismatch || requiresPayPalBillingVerification');
+    expect(code).toContain('providerMismatch || requiresRestorationBillingVerification ||');
+    expect(code).toContain('requiresPayPalBillingVerification(record.status, newStatus, periodEnd)');
     expect(code.indexOf("remoteSubscription?.status !== 'ACTIVE'")).toBeLessThan(
       code.indexOf('await entities.Subscription.update(record.id, update)')
     );

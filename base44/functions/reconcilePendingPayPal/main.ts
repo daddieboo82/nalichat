@@ -63,9 +63,14 @@ Deno.serve(async (req) => {
       if (page.length < pageSize) break;
     }
     const BATCH_SIZE = 100;
-    const start = allPending.length
-      ? (Math.floor(Date.now() / 60_000) * 53) % allPending.length
-      : 0;
+    // Mix the time bucket before selecting a starting row. A fixed step
+    // can alias a workflow's regular cadence and repeatedly revisit only a
+    // fraction of a large backlog. This is best-effort, not a durable cursor.
+    const minuteBucket = Math.floor(Date.now() / 60_000);
+    const mixedMinute = Math.imul(
+      minuteBucket ^ (minuteBucket >>> 16), 0x45d9f3b,
+    ) >>> 0;
+    const start = allPending.length ? mixedMinute % allPending.length : 0;
     const pending = allPending.length
       ? allPending.slice(start).concat(allPending.slice(0, start)).slice(0, BATCH_SIZE)
       : [];

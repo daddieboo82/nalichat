@@ -29,6 +29,19 @@ describe('signed PayPal webhook event ordering', () => {
     expect(shouldApplyPayPalEvent('last', older, 'next', newer)).toBe(true);
   });
 
+  it('keeps different equal-timestamp lifecycle events retryable instead of ignored', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const guard = code.indexOf('lastEventTimeMs === eventCreatedAt');
+    const genericStaleCheck = code.indexOf('!shouldApplyPayPalEvent(');
+    expect(guard).toBeGreaterThan(0);
+    expect(genericStaleCheck).toBeGreaterThan(guard);
+    const handling = code.slice(guard, genericStaleCheck);
+    expect(handling).toContain("processing_state: 'failed'");
+    expect(handling).toContain('Same-timestamp PayPal events require provider reconciliation');
+    expect(handling).toContain('status: 503');
+    expect(handling).not.toContain("processing_state: 'ignored'");
+  });
+
   it('requires a valid signed creation time before the webhook ledger is touched', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     const verification = code.indexOf('if (!(await verify(req, event, token)))');

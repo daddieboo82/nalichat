@@ -49,10 +49,10 @@ describe('PayPal subscription access', () => {
   });
 
   it('keeps an approved subscription pending if PayPal has not confirmed activation', async () => {
-    const remote = { status: 'APPROVED', billing_info: { next_billing_time: '2020-01-01T00:00:00.000Z' } };
+    const remote = { status: 'APPROVED', plan_id: 'P-PLAN', custom_id: 'user-1:premium_monthly', billing_info: { next_billing_time: '2020-01-01T00:00:00.000Z' } };
     const fetchPayPal = vi.fn(async (url) => {
       if (String(url).endsWith('/activate')) return new Response(null, { status: 204 });
-      return Response.json({ status: 'APPROVED' });
+      return Response.json({ status: 'APPROVED', plan_id: 'P-PLAN', custom_id: 'user-1:premium_monthly' });
     });
     vi.stubGlobal('fetch', fetchPayPal);
 
@@ -74,11 +74,30 @@ describe('PayPal subscription access', () => {
   it('honors a fresh SUSPENDED status even after the activation request succeeded', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url) => {
       if (String(url).endsWith('/activate')) return new Response(null, { status: 204 });
-      return Response.json({ status: 'SUSPENDED' });
+      return Response.json({ status: 'SUSPENDED', plan_id: 'P-PLAN', custom_id: 'user-1:premium_monthly' });
     }));
     expect(await resolvePayPalSubscriptionStatus(
-      'https://api-m.paypal.com', 'token', 'I-SUSPENDED', { status: 'APPROVED' },
+      'https://api-m.paypal.com', 'token', 'I-SUSPENDED', {
+        status: 'APPROVED', plan_id: 'P-PLAN', custom_id: 'user-1:premium_monthly',
+      },
     )).toBe('SUSPENDED');
+  });
+
+  it('refuses a mismatched non-active lifecycle response before revoking a subscription', async () => {
+    for (const changed of [
+      { status: 'SUSPENDED', plan_id: 'P-OTHER', custom_id: 'user-1:premium_monthly' },
+      { status: 'CANCELLED', plan_id: 'P-PLAN', custom_id: 'other:premium_monthly' },
+      { status: 'EXPIRED' },
+    ]) {
+      const remote = { status: 'APPROVED', plan_id: 'P-PLAN', custom_id: 'user-1:premium_monthly' };
+      vi.stubGlobal('fetch', vi.fn(async (url) => {
+        if (String(url).endsWith('/activate')) return new Response(null, { status: 204 });
+        return Response.json(changed);
+      }));
+      expect(await resolvePayPalSubscriptionStatus(
+        'https://api-m.paypal.com', 'token', 'I-NON-ACTIVE', remote,
+      )).toBe('UNVERIFIED');
+    }
   });
 
   it('does not reuse pre-activation billing metadata when the refreshed ACTIVE response omits it', async () => {

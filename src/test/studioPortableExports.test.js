@@ -33,6 +33,14 @@ describe("NaliStudio portable exports", () => {
     expect(handler).not.toContain("const playlists = Array.isArray(track.playlists)");
   });
 
+  it("invalidates queued history callbacks when restoring another session", async () => {
+    const studio = await source();
+    expect(studio).toContain("const historyEpochRef = useRef(0)");
+    expect(studio).toContain("const historyEpoch = historyEpochRef.current");
+    expect(studio).toContain("if (historyEpochRef.current === historyEpoch) pushToHistory(next)");
+    expect(studio).toContain("historyEpochRef.current += 1");
+  });
+
   it("recalls takes from the latest track and playlist state", async () => {
     const studio = await source();
     const start = studio.indexOf("const recallTakePlaylist = (track, playlistId) => {");
@@ -137,6 +145,7 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("studioRestoreInFlightRef.current = false;");
     expect(handler).toContain("if (isRecording || isPlaying)");
     expect(handler).toContain("Stop playback and recording before restoring a Studio backup.");
+    expect(handler).toContain("historyEpochRef.current += 1");
     expect(handler).toContain("historyRef.current = [restoredTracks]");
     expect(handler).toContain("historyIndexRef.current = 0");
     expect(handler).toContain("setHistoryIndex(0)");

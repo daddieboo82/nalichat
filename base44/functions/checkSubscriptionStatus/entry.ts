@@ -98,9 +98,14 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
         typeof subscription.id !== 'string' ||
         typeof subscription.subscription_id !== 'string') return false;
     if (subscription.status === 'pending') return true;
-    if (subscription.status !== 'active' || typeof subscription.current_period_end !== 'string') return false;
-    const periodEndMs = Date.parse(subscription.current_period_end);
-    return Number.isFinite(periodEndMs) && periodEndMs <= nowMs;
+    if (subscription.status !== 'active') return false;
+    // Missing/malformed billing dates are also unresolved: without selecting
+    // these records the access guard can deny Premium indefinitely while
+    // checkout is blocked awaiting verification.
+    const periodEndMs = typeof subscription.current_period_end === 'string'
+      ? Date.parse(subscription.current_period_end)
+      : Number.NaN;
+    return !Number.isFinite(periodEndMs) || periodEndMs <= nowMs;
   })
     .sort((left, right) => Number(right.status === 'active') - Number(left.status === 'active'))
     .slice(0, 10);

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { secrets } from 'base44:runtime';
 import {
+  entitlementStatusForProvider,
   hasPaidTierAccess,
   normalizePlan,
   normalizeStatus,
@@ -152,7 +153,10 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
 function subscriptionPriority(subscription: SubscriptionRecord, now: string): number {
   const plan = normalizePlan(subscription.plan);
   const status = normalizeStatus(subscription.status);
-  const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(status, {
+  const accessStatus = entitlementStatusForProvider(
+    subscription.provider, status, subscription.current_period_end, now,
+  );
+  const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(accessStatus, {
     currentPeriodEnd: typeof subscription.current_period_end === 'string'
       ? subscription.current_period_end
       : null,
@@ -202,12 +206,13 @@ Deno.serve(async (req) => {
     const plan = selected ? normalizePlan(selected.plan) : 'free';
     const status = selected ? normalizeStatus(selected.status) : 'active';
     const currentPeriodEnd = selected?.current_period_end || null;
-    const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(status, {
+    const accessStatus = entitlementStatusForProvider(selected?.provider, status, currentPeriodEnd, now);
+    const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(accessStatus, {
       currentPeriodEnd,
       trialEndDate: selected?.trial_end_date || null,
       now,
     });
-    const entitlements = resolveEntitlements(plan, status, {
+    const entitlements = resolveEntitlements(plan, accessStatus, {
       currentPeriodEnd,
       trialEndDate: selected?.trial_end_date || null,
       now,

@@ -25,6 +25,7 @@ export function shouldApplyPayPalEvent(
   lastEventTime: unknown,
   incomingEventId: string,
   incomingEventTime: string,
+  nowMs = Date.now(),
 ): boolean {
   if (lastEventId === incomingEventId) return false;
   // An invalid incoming event time cannot be ordered against previous
@@ -32,7 +33,10 @@ export function shouldApplyPayPalEvent(
   const incomingMs = typeof incomingEventTime === 'string'
     ? Date.parse(incomingEventTime)
     : Number.NaN;
-  if (!Number.isFinite(incomingMs)) return false;
+  // A far-future timestamp can permanently outrank legitimate subsequent
+  // events. Allow modest provider/merchant clock skew, but never apply an
+  // event more than five minutes ahead of the server's clock.
+  if (!Number.isFinite(incomingMs) || incomingMs > nowMs + 5 * 60_000) return false;
   if (typeof lastEventTime !== 'string' || lastEventTime.length === 0) {
     return true;
   }

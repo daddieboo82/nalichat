@@ -599,6 +599,8 @@ export default function Studio() {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const historyRef = useRef([]);
   const historyIndexRef = useRef(-1);
+  // Invalidates queued history writes after a complete session replacement.
+  const historyEpochRef = useRef(0);
   const tracksRef = useRef(tracks);
   const automationLatchRef = useRef(new Map());
 
@@ -631,7 +633,10 @@ export default function Studio() {
   const setTracksWithHistory = (updater) => {
     setTracks(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      setTimeout(() => pushToHistory(next), 0);
+      const historyEpoch = historyEpochRef.current;
+      setTimeout(() => {
+        if (historyEpochRef.current === historyEpoch) pushToHistory(next);
+      }, 0);
       return next;
     });
   };
@@ -2587,6 +2592,7 @@ export default function Studio() {
       }
       // A restored backup replaces the current session. Do not let Undo
       // resurrect tracks from the previous session or redo into its edits.
+      historyEpochRef.current += 1;
       historyRef.current = [restoredTracks];
       historyIndexRef.current = 0;
       setHistoryIndex(0);

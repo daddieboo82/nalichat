@@ -2534,18 +2534,20 @@ export default function Studio() {
       return;
     }
     studioDeviceExportInFlightRef.current = true;
-    // Capture one immutable view of track metadata before awaiting media downloads.
-    const exportTracks = tracks.map(track => ({
-      ...track,
-      playlists: Array.isArray(track?.playlists) ? track.playlists.map(take => ({ ...take })) : [],
-    }));
-    const exportMetadata = {
-      title: projectName.trim() || "Untitled Project", bpm, key: songKey,
-      timeSignature, masterVolume, masterFx: { ...(masterFx || {}) },
-      audioSettings: { ...(audioSettings || {}) },
-    };
-    const toastId = toast.loading("Packaging Studio session and audio...");
+    let toastId;
     try {
+      // Capture track and project metadata before any asynchronous audio fetch.
+      // Keep this inside try/finally so even snapshot failures release the lock.
+      const exportTracks = tracks.map(track => ({
+        ...track,
+        playlists: Array.isArray(track?.playlists) ? track.playlists.map(take => ({ ...take })) : [],
+      }));
+      const exportMetadata = {
+        title: projectName.trim() || "Untitled Project", bpm, key: songKey,
+        timeSignature, masterVolume, masterFx: { ...(masterFx || {}) },
+        audioSettings: { ...(audioSettings || {}) },
+      };
+      toastId = toast.loading("Packaging Studio session and audio...");
       const zip = new JSZip();
       const portableTracks = [];
       if (exportTracks.length > MAX_TRACKS) {

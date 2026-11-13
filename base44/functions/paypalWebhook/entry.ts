@@ -217,7 +217,8 @@ Deno.serve(async (req) => {
       // final_payment_time is not a substitute for a future renewal boundary.
       const billingTime = event.event_type.startsWith('PAYMENT.')
         ? (await fetchSubscriptionBillingInfo(token, subscriptionId))?.nextBillingTime
-        : event.resource?.billing_info?.next_billing_time;
+        : (event.resource?.billing_info?.next_billing_time ||
+          (newStatus !== 'active' ? event.resource?.billing_info?.final_payment_time : null));
       const periodEnd = paypalPeriodEndForStatus(newStatus, billingTime);
       if (requiresPayPalBillingVerification(record.status, newStatus, periodEnd)) {
         // Keep the ledger retryable so an incomplete event is not silently

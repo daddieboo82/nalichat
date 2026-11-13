@@ -136,6 +136,10 @@ export default function Studio() {
   const isMobile = useIsMobile();
   const { isLowEnd } = usePerformance();
   const WAVEFORM_POINTS = isMobile ? 2000 : 8000;
+  // Project hydration must not rerun just because the responsive waveform
+  // resolution changes; use the latest resolution during an intentional load.
+  const waveformPointsRef = useRef(WAVEFORM_POINTS);
+  waveformPointsRef.current = WAVEFORM_POINTS;
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const currentTimeRef = useRef(0);
@@ -445,9 +449,11 @@ export default function Studio() {
             typeof accepted?.data?.already_member !== "boolean"
           ) throw new Error("Project invite acceptance was not confirmed.");
           if (!cancelled) {
-            const nextParams = new URLSearchParams(searchParams);
-            nextParams.delete("invite");
-            setSearchParams(nextParams, { replace: true });
+            setSearchParams(prev => {
+              const nextParams = new URLSearchParams(prev);
+              nextParams.delete("invite");
+              return nextParams;
+            }, { replace: true });
           }
         }
         const project = await base44.entities.Project.get(roomId);
@@ -476,7 +482,7 @@ export default function Studio() {
             audioUrl: track.audioUrl || track.file_url || "",
             waveform: Array.isArray(track.waveform) && track.waveform.length > 0
               ? track.waveform
-              : generateWaveform(WAVEFORM_POINTS),
+              : generateWaveform(waveformPointsRef.current),
           }));
           if (cancelled) return;
           historyEpochRef.current += 1;
@@ -505,7 +511,7 @@ export default function Studio() {
               armed: false,
               waveform: Array.isArray(track.waveform_data) && track.waveform_data.length > 0
                 ? track.waveform_data
-                : generateWaveform(WAVEFORM_POINTS),
+                : generateWaveform(waveformPointsRef.current),
               startTime: 0,
               duration: track.duration || 0,
               audioUrl: track.file_url || "",
@@ -544,7 +550,7 @@ export default function Studio() {
     })();
 
     return () => { cancelled = true; };
-  }, [roomId, inviteToken, WAVEFORM_POINTS, user?.id, projectLoadRetryKey, searchParams, setSearchParams]);
+  }, [roomId, inviteToken, user?.id, projectLoadRetryKey, setSearchParams]);
 
   const handleStartBlank = () => {
     if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current) {

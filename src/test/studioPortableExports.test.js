@@ -30,7 +30,12 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("uploadedAudioUrls.set(source, uploaded.file_url)");
     expect(handler).toContain("for (const take of playlists)");
     expect(handler).toContain("savedPlaylists.push({ ...take, audioUrl: takeUrl, file_url: takeUrl })");
-    expect(handler).toContain("playlists: portableTracks[index]?.playlists || track.playlists");
+    expect(handler).toContain("const savedTracksById = new Map(portableTracks.map((track) => [String(track.id), track]))");
+    expect(handler).toContain("const originalTracksById = new Map(tracks.map((track) => [String(track.id), track]))");
+    expect(handler).toContain("const sourceUnchanged =");
+    expect(handler).toContain("const savedTakesById = new Map(");
+    expect(handler).toContain("const originalTakesById = new Map(");
+    expect(handler).toContain("return { ...take, audioUrl: savedTake.audioUrl, file_url: savedTake.file_url }");
     expect(handler).toContain("unsupported audio format");
     expect(handler).not.toContain('blob.type || "audio/wav"');
   });

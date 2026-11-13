@@ -155,6 +155,25 @@ export function hasPaidTierAccess(
   return Number.isFinite(periodEnd) && Number.isFinite(now) && periodEnd > now;
 }
 
+/**
+ * Preserve intentionally non-expiring manual grants, but a PayPal ACTIVE
+ * record with no future billing boundary is not verified paid access.
+ * This is the access-control status only, not a mutation of provider state.
+ */
+export function entitlementStatusForProvider(
+  provider: unknown,
+  status: SubscriptionStatus,
+  currentPeriodEnd: unknown,
+  now = new Date().toISOString(),
+): SubscriptionStatus {
+  if (provider !== 'paypal' || status !== 'active') return status;
+  const endMs = typeof currentPeriodEnd === 'string' ? Date.parse(currentPeriodEnd) : Number.NaN;
+  const nowMs = Date.parse(now);
+  return Number.isFinite(endMs) && Number.isFinite(nowMs) && endMs > nowMs
+    ? status
+    : 'ended';
+}
+
 export function resolveEntitlements(
   plan: SubscriptionPlan,
   status: SubscriptionStatus,

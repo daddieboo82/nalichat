@@ -67,8 +67,11 @@ describe('PayPal subscription integration contracts', () => {
     const appParams = await read('src/lib/app-params.js');
     expect(webhookSetupSource).toContain("secrets.get('BASE44_APP_ID') || '6a1f5ee134147461560c2b37'");
     expect(webhookSetupSource).toContain("'/v1/notifications/webhooks/'");
-    expect(webhookSetupSource).toContain('destinationMatches: registration?.url === webhookUrl');
-    expect(webhookSetupSource).toContain('missingEvents: EVENTS.filter((event) => !eventTypes.includes(event))');
+    expect(webhookSetupSource).toContain('const destinationMatches = registration?.url === webhookUrl');
+    expect(webhookSetupSource).toContain('const missingEvents = EVENTS.filter((event) => !eventTypes.includes(event))');
+    expect(webhookSetupSource).toContain('const registrationVerified = destinationMatches && missingEvents.length === 0');
+    expect(webhookSetupSource).toContain('success: registrationVerified');
+    expect(webhookSetupSource).toContain('status: registrationVerified ? 200 : 409');
     expect(webhookSetupSource).toContain('Unable to verify existing PayPal webhook registration');
     expect(webhookSetupSource).not.toContain('if (existing && !existing.startsWith(\'REPLACE_\')) return Response.json({ success: true, reused: true, webhookId: existing });');
     expect(appParams).toContain("VITE_BASE44_APP_ID || '6a1f5ee134147461560c2b37'");

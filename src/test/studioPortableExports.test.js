@@ -18,6 +18,16 @@ describe("NaliStudio portable exports", () => {
     expect(studio).toContain("Save to My Sessions or keep your ZIP backup before leaving.");
   });
 
+  it("creates collision-resistant take IDs within a track playlist", async () => {
+    const studio = await source();
+    const start = studio.indexOf("const createTakePlaylist = (track) => {");
+    const end = studio.indexOf("const recallTakePlaylist =", start);
+    const handler = studio.slice(start, end);
+    expect(handler).toContain("const usedTakeIds = new Set(");
+    expect(handler).toContain("while (usedTakeIds.has(takeId))");
+    expect(handler).toContain("id: takeId");
+  });
+
   it("preserves restored audio codecs when saving to My Sessions", async () => {
     const studio = await source();
     const start = studio.indexOf("const handleSave = async () => {");
@@ -33,6 +43,9 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("studioSaveInFlightRef.current = true;");
     expect(handler).toContain("studioSaveInFlightRef.current = false;");
     expect(handler).toContain("} finally {");
+    expect(handler).toContain("Cannot save: duplicate Studio track IDs.");
+    expect(handler).toContain("Cannot save: duplicate take playlist IDs.");
+    expect(handler).toContain("Cannot save: a take playlist has no valid ID.");
     expect(handler).toContain("const uploadedAudioUrls = new Map()");
     const cloudConfirmed = handler.indexOf('throw new Error("Project save was not confirmed.")');
     const localSnapshot = handler.indexOf('localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks))');

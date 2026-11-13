@@ -24,6 +24,20 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain('await subscriptionEntity.update(subscription.id as string, update);');
   });
 
+  it('leaves scheduled pending subscriptions unchanged without a future billing boundary', async () => {
+    for (const path of [
+      'base44/functions/reconcilePendingPayPal/entry.ts',
+      'base44/functions/reconcilePendingPayPal/main.ts',
+    ]) {
+      const code = await readFile(path, 'utf8');
+      expect(code).toContain("status === 'active' && (typeof periodEnd !== 'string' || Date.parse(periodEnd) <= Date.now())");
+      expect(code).toContain("result: 'needs_billing_period_verification'");
+      expect(code.indexOf("result: 'needs_billing_period_verification'")).toBeLessThan(
+        code.indexOf('await base44.asServiceRole.entities.Subscription.update(subscription.id, update)')
+      );
+    }
+  });
+
   it('keeps failed provider verification from granting paid access', async () => {
     const code = await source();
     expect(code).toContain('if (!token) return;');

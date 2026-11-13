@@ -1396,7 +1396,11 @@ export default function Studio() {
       return;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      // Snapshot the target tracks before async recorder finalization.
+      const recordingEpoch = historyEpochRef.current;
+      const recordingTargets = new Map(tracksRef.current.filter(t => t.armed).map(t => [String(t.id), t]));
       mediaRecorderRef.current.onstop = async () => {
+        if (recordingEpoch !== historyEpochRef.current) return;
         const recordingMimeType =
           mediaRecorderRef.current?.mimeType ||
           audioChunksRef.current.find((chunk) => chunk?.type)?.type ||
@@ -1458,8 +1462,17 @@ export default function Studio() {
         const heldMidiNotes = midiRecordingRef.current ? [...midiActiveNotesRef.current.values()] : [];
         midiRecordingRef.current = false;
         midiActiveNotesRef.current.clear();
+        const hasEligibleTarget = tracksRef.current.some(t => {
+          const original = recordingTargets.get(String(t.id));
+          return original && t.armed && (t.audioUrl || t.file_url || '') === (original.audioUrl || original.file_url || '');
+        });
+        if (recordingEpoch !== historyEpochRef.current || !hasEligibleTarget) {
+          URL.revokeObjectURL(audioUrl);
+          return;
+        }
         setTracksWithHistory(prev => prev.map(t => {
-          if (!t.armed) return t;
+          const original = recordingTargets.get(String(t.id));
+          if (!original || !t.armed || (t.audioUrl || t.file_url || '') !== (original.audioUrl || original.file_url || '')) return t;
           if (['midi', 'instrument'].includes(t.type)) {
             const finalized = heldMidiNotes.filter(note => note.trackId === t.id).map(note => ({
               id: crypto.randomUUID(), note: note.note,
@@ -1470,7 +1483,9 @@ export default function Studio() {
             return { ...t, armed: false, midiNotes: [...(t.midiNotes || []), ...finalized].sort((a, b) => a.startBeat - b.startBeat) };
           }
           return {
-            ...t, waveform: realWaveform, armed: false, audioUrl,
+            ...t, waveform: realWaveform, armed: false, audioUrl, file_url: audioUrl,
+            // New recorded media starts with an unedited source timeline.
+            clipRegions: undefined, clipStart: 0, fullDuration: recordedDuration || 0,
             startTime: recordingStartTime !== null ? recordingStartTime : currentTimeRef.current,
             duration: recordedDuration || (recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10)
           };

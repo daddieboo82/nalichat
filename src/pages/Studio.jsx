@@ -203,6 +203,8 @@ export default function Studio() {
   const audioElementsRef = useRef({});
   // Avoid repeated HTMLMediaElement.play() calls while an earlier request is pending.
   const pendingAudioStartsRef = useRef(new WeakSet());
+  const transportPlayingRef = useRef(false);
+  const transportPlayGenerationRef = useRef(0);
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
   if (!mixEngineRef.current) mixEngineRef.current = createMixEngine();
@@ -953,7 +955,8 @@ export default function Studio() {
               // The user may have stopped playback or edited into silence while play() was pending.
               const liveTrack = tracksRef.current.find(item => item.id === track.id);
               const soloActive = tracksRef.current.some(item => item.solo);
-              const shouldPlay = liveTrack?.audioUrl === audio.dataset?.srcUrl &&
+              const shouldPlay = transportPlayingRef.current &&
+                liveTrack?.audioUrl === audio.dataset?.srcUrl &&
                 !liveTrack.muted && (!soloActive || liveTrack.solo) &&
                 getClipSourceTimeAtTime(liveTrack, currentTimeRef.current) !== null;
               if (!shouldPlay || audioElementsRef.current[track.id] !== audio) audio.pause();
@@ -1147,6 +1150,9 @@ export default function Studio() {
   };
 
   const togglePlay = () => {
+    // Invalidate outstanding play() callbacks as soon as the user toggles transport.
+    const requestGeneration = ++transportPlayGenerationRef.current;
+    transportPlayingRef.current = !isPlaying;
     if (isRecording) {
       setIsRecording(false);
       stopRecordingProcess();
@@ -1176,7 +1182,9 @@ export default function Studio() {
       // previously this failed silently, so the transport looked like it was playing with no sound.
       if (playPromises.length > 0) {
         Promise.all(playPromises).then(results => {
+          if (transportPlayGenerationRef.current !== requestGeneration || !transportPlayingRef.current) return;
           if (results.every(r => r && r.failed)) {
+            transportPlayingRef.current = false;
             toast.error("Playback was blocked by your browser. Click Play again to retry.");
             setIsPlaying(false);
           }
@@ -1194,7 +1202,13 @@ export default function Studio() {
   };
 
   useEffect(() => {
+    transportPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
     return () => {
+      transportPlayingRef.current = false;
+      transportPlayGenerationRef.current += 1;
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(t => t.stop());
       }

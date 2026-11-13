@@ -76,6 +76,15 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain("typeof periodEnd !== 'string' || Date.parse(periodEnd) <= nowMs");
   });
 
+  it('checks unresolved PayPal before reusing an existing Stripe checkout', async () => {
+    const code = await readFile('base44/functions/createSubscriptionCheckout/entry.ts', 'utf8');
+    const guardPosition = code.indexOf('const unresolvedPayPal = subscriptions.some');
+    const earlyReusePosition = code.indexOf('pendingSubscription?.checkout_url');
+    expect(guardPosition).toBeGreaterThan(0);
+    expect(earlyReusePosition).toBeGreaterThan(guardPosition);
+    expect(code).toContain('Existing PayPal subscription needs verification before another checkout');
+  });
+
   it('blocks cross-provider checkout on unresolved active PayPal renewal', async () => {
     for (const path of [
       'base44/functions/createSubscriptionCheckout/entry.ts',

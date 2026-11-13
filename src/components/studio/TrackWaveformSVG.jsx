@@ -96,6 +96,19 @@ export default function TrackWaveformSVG({ track }) {
           />
         ) : null)}
       </g>
+      {/* Region boundaries remain visible after a non-destructive Split.
+          Deleted timeline gaps contain no waveform path. */}
+      {regions.slice(1).map(region => {
+        const x = Math.max(0, Math.min(10000, (region.timelineStart - trackStart) / timelineDuration * 10000));
+        return (
+          <line
+            key={`boundary-${region.id}`}
+            x1={x} y1="0" x2={x} y2="100"
+            stroke={color} strokeOpacity="0.85" strokeDasharray="3 2"
+            strokeWidth="1.5" vectorEffect="non-scaling-stroke"
+          />
+        );
+      })}
       <line x1="0" y1="50" x2="10000" y2="50" stroke="#000000" strokeOpacity="0.5" strokeWidth="2" vectorEffect="non-scaling-stroke" shapeRendering="geometricPrecision" />
     </svg>
   );

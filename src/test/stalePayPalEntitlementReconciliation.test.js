@@ -12,13 +12,15 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain("Number(right.status === 'active') - Number(left.status === 'active')");
   });
 
-  it('requires a successful provider lookup before renewing local access', async () => {
+  it('requires a successful provider lookup and never grants an unbounded period', async () => {
     const code = await source();
     expect(code).toContain('if (!response.ok) continue;');
     expect(code).toContain('const status = paypalStatus(remoteStatus);');
-    expect(code).toContain("status === 'active' && periodEnd === undefined");
-    expect(code).toContain('update.current_period_end = null;');
-    expect(code.indexOf('if (!response.ok) continue;')).toBeLessThan(code.indexOf('update.current_period_end = null;'));
+    expect(code).toContain("status === 'active'");
+    expect(code).toContain('periodEnd === null || periodEnd === undefined');
+    expect(code).toContain('delete update.current_period_end;');
+    expect(code).not.toContain('update.current_period_end = null;');
+    expect(code.indexOf('if (!response.ok) continue;')).toBeLessThan(code.indexOf('delete update.current_period_end;'));
     expect(code).toContain('await subscriptionEntity.update(subscription.id as string, update);');
   });
 

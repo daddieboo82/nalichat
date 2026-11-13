@@ -403,7 +403,7 @@ export default function Studio() {
 
   useEffect(() => {
     setHasAutosave(false);
-    if (!autosaveStorageKey) return;
+    if (!autosaveStorageKey || roomId) return;
     try {
       const saved = localStorage.getItem(autosaveStorageKey);
       if (saved) {
@@ -411,7 +411,7 @@ export default function Studio() {
         if (Array.isArray(parsed) && parsed.length > 0 && !hasTransientStudioAudio(parsed)) setHasAutosave(true);
       }
     } catch (e) {}
-  }, [autosaveStorageKey]);
+  }, [autosaveStorageKey, roomId]);
 
   useEffect(() => {
     if (!roomId || !user?.id) {
@@ -578,6 +578,10 @@ export default function Studio() {
   };
 
   const handleLoadAutosave = () => {
+    if (roomId) {
+      toast.error("Leave the cloud project before opening a standalone draft recovery.");
+      return;
+    }
     if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current) {
       toast.error("Finish saving or restoring before loading a local session.");
       return;

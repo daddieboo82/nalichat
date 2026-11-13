@@ -66,6 +66,18 @@ describe("Studio same-track split integration", () => {
     expect(stop).toContain("recordingFromPreRollRef.current = false");
   });
 
+  it("ignores recorder finalization after a session reset or track audio replacement", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));
+    expect(finalize).toContain("const recordingEpoch = historyEpochRef.current");
+    expect(finalize).toContain("const recordingTargets = new Map(tracksRef.current.filter(t => t.armed)");
+    expect(finalize).toContain("if (recordingEpoch !== historyEpochRef.current) return;");
+    expect(finalize).toContain("recordingEpoch !== historyEpochRef.current || !hasEligibleTarget");
+    expect(finalize).toContain("URL.revokeObjectURL(audioUrl)");
+    expect(finalize).toContain("const original = recordingTargets.get(String(t.id))");
+    expect(finalize).toContain("clipRegions: undefined, clipStart: 0");
+  });
+
   it("discards microphone permission granted after Stop or unmount", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     expect(studio).toContain("const recordingRequestGenerationRef = useRef(0)");

@@ -232,6 +232,91 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
   });
 
+  it('rejects whitespace-only display names before calling the backend', async () => {
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: '507f1f77bcf86cd799439011', display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
+      isAuthenticated: true,
+    };
+
+    renderInRouter(<Onboarding />);
+    fireEvent.change(screen.getByPlaceholderText('What should we call you?'), {
+      target: { value: '   ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith('Please enter your display name');
+    });
+    expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
+  });
+
+  it('submits a trimmed valid display name to onboarding', async () => {
+    const userId = '507f1f77bcf86cd799439013';
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: userId, display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
+      isAuthenticated: true,
+      checkUserAuth: vi.fn().mockResolvedValue({ id: userId, onboarding_completed: true }),
+    };
+    mockBase44.functions.invoke.mockResolvedValueOnce({ data: {
+      success: true,
+      action: 'complete_onboarding',
+      userId,
+      onboardingCompleted: true,
+    } });
+    renderInRouter(<Onboarding />);
+    fireEvent.change(screen.getByPlaceholderText('What should we call you?'), {
+      target: { value: '  Fresh Artist  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+    await waitFor(() => {
+      expect(mockBase44.functions.invoke).toHaveBeenCalledWith('completeOnboarding',
+        expect.objectContaining({ display_name: 'Fresh Artist' }));
+    });
+  });
+
+  it('rejects future birthdates before calling the backend', async () => {
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: '507f1f77bcf86cd799439011', display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
+      isAuthenticated: true,
+    };
+    const { container } = renderInRouter(<Onboarding />);
+    fireEvent.change(screen.getByPlaceholderText('What should we call you?'), {
+      target: { value: 'Future Artist' },
+    });
+    fireEvent.change(container.querySelector('input[type="date"]'), {
+      target: { value: '2099-01-01' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith('Please enter a valid birthdate that is not in the future');
+    });
+    expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
+  });
+
+  it('shows a known backend validation message instead of generic HTTP 400', async () => {
+    const userId = '507f1f77bcf86cd799439014';
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: userId, display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
+      isAuthenticated: true,
+    };
+    mockBase44.functions.invoke.mockRejectedValueOnce({
+      message: 'Request failed with status code 400',
+      response: { data: { error: 'Invalid birthdate' } },
+    });
+    renderInRouter(<Onboarding />);
+    fireEvent.change(screen.getByPlaceholderText('What should we call you?'), {
+      target: { value: 'New Artist' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith('Invalid birthdate');
+    });
+  });
+
   it('saves onboarding profile data and refreshes auth state', async () => {
     const checkUserAuth = vi.fn().mockResolvedValue({ id: '507f1f77bcf86cd799439012', onboarding_completed: true });
     mockAuthState.current = {

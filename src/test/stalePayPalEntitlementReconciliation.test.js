@@ -48,6 +48,34 @@ describe('stale active PayPal subscription reconciliation', () => {
     }
   });
 
+  it('isolates scheduled provider failures to one subscription rather than aborting the batch', async () => {
+    for (const path of [
+      'base44/functions/reconcilePendingPayPal/entry.ts',
+      'base44/functions/reconcilePendingPayPal/main.ts',
+    ]) {
+      const code = await readFile(path, 'utf8');
+      const loopStart = code.indexOf('for (const subscription of pending)');
+      const rowCatch = code.indexOf("result: 'record_failed'");
+      const batchReturn = code.indexOf("action: 'reconcile_pending_paypal'");
+      expect(loopStart, path).toBeGreaterThan(0);
+      expect(code.slice(loopStart, rowCatch), path).toContain('try {');
+      expect(rowCatch, path).toBeGreaterThan(loopStart);
+      expect(batchReturn, path).toBeGreaterThan(rowCatch);
+      expect(code, path).toContain("console.error('PayPal per-subscription reconciliation failed', error)");
+    }
+  });
+
+  it('continues authenticated PayPal checks after a per-record exception', async () => {
+    const code = await source();
+    const loopStart = code.indexOf('for (const subscription of candidates)');
+    const rowCatch = code.indexOf("console.error('PayPal subscription lookup or update failed', error)");
+    const outerCatch = code.indexOf("console.error('PayPal status reconciliation failed', error)");
+    expect(loopStart).toBeGreaterThan(0);
+    expect(rowCatch).toBeGreaterThan(loopStart);
+    expect(outerCatch).toBeGreaterThan(rowCatch);
+    expect(code.slice(loopStart, rowCatch)).toContain('try {');
+  });
+
   it('keeps incomplete webhook activations retryable rather than granting access', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     expect(code).toContain('requiresPayPalBillingVerification(record.status, newStatus, periodEnd)');

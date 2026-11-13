@@ -1402,6 +1402,7 @@ export default function Studio() {
       const recordedStartTime = recordingStartTime !== null ? recordingStartTime : recordedStopTime;
       const recordedStopBeat = recordedStopTime * (bpmRef.current / 60);
       const recorderBeingFinalized = mediaRecorderRef.current;
+      const recordedChunks = recorderBeingFinalized.recordedChunks || [];
       const heldMidiNotesAtStop = midiRecordingRef.current ? [...midiActiveNotesRef.current.values()] : [];
       const recordingTargets = new Map(tracksRef.current.filter(t => t.armed).map(t => [String(t.id), {
         track: t,
@@ -1430,9 +1431,9 @@ export default function Studio() {
         if (recordingEpoch !== historyEpochRef.current || mediaRecorderRef.current !== recorderBeingFinalized) return;
         const recordingMimeType =
           recorderBeingFinalized.mimeType ||
-          audioChunksRef.current.find((chunk) => chunk?.type)?.type ||
+          recordedChunks.find((chunk) => chunk?.type)?.type ||
           'audio/webm';
-        const blob = new Blob(audioChunksRef.current, { type: recordingMimeType });
+        const blob = new Blob(recordedChunks, { type: recordingMimeType });
         if (blob.size === 0) {
           // Never discard an existing waveform when capture yields no data.
           setTracksWithHistory(prev => prev.map(t => matchesRecordingTarget(t) ? { ...t, armed: false } : t));
@@ -1670,9 +1671,13 @@ export default function Studio() {
         const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? { mimeType: 'audio/webm;codecs=opus' } : {};
         const mediaRecorder = new MediaRecorder(stream, options);
         mediaRecorderRef.current = mediaRecorder;
-        audioChunksRef.current = [];
+        // Each recorder owns its chunks. Late events from an old take must not
+        // append to the chunk array of a subsequently started recording.
+        const recordedChunks = [];
+        mediaRecorder.recordedChunks = recordedChunks;
+        audioChunksRef.current = recordedChunks;
         mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+          if (e.data.size > 0) recordedChunks.push(e.data);
         };
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
 

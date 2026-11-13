@@ -144,6 +144,24 @@ describe('stale active PayPal subscription reconciliation', () => {
     }
   });
 
+  it('paginates all subscriber records before PayPal and Wix duplicate-billing checks', async () => {
+    for (const path of [
+      'base44/functions/createPayPalSubscription/entry.ts',
+      'base44/functions/create-checkout/entry.ts',
+    ]) {
+      const code = await readFile(path, 'utf8');
+      expect(code, path).toContain('async function loadUserSubscriptions(entity: any, userId: string)');
+      expect(code, path).toContain('for (let skip = 0; ; skip += pageSize)');
+      expect(code, path).toContain("'-created_date', pageSize, skip");
+      expect(code, path).toContain('if (page.length < pageSize) return rows;');
+      const load = code.indexOf('const allSubs = await loadUserSubscriptions(');
+      const existing = code.indexOf('const alreadyPaid = allSubs.some');
+      expect(load, path).toBeGreaterThan(0);
+      expect(existing, path).toBeGreaterThan(load);
+      expect(code, path).not.toContain("{ user_id: user.id }, '-created_date', 100,");
+    }
+  });
+
   it('blocks a second PayPal checkout for an unresolved existing active subscription', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(code).toContain("const unresolvedActivePayPal = allSubs.some");

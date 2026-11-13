@@ -84,10 +84,14 @@ Deno.serve(async (req) => {
       const remote = await lookup.json();
       const remoteStatus = await resolvePayPalSubscriptionStatus(apiBase(), token, pending.subscription_id, remote);
       if (remoteStatus === 'ACTIVE') {
-        const update: Record<string, unknown> = { status: 'active' };
         const periodEnd = paypalPeriodEndForStatus('active', remote?.billing_info?.next_billing_time);
-        if (periodEnd !== undefined) update.current_period_end = periodEnd;
-        await base44.asServiceRole.entities.Subscription.update(pending.id, update);
+        if (typeof periodEnd !== 'string' || Date.parse(periodEnd) <= Date.now()) {
+          return Response.json({ error: 'PayPal subscription is active but its billing period requires verification' }, { status: 409 });
+        }
+        await base44.asServiceRole.entities.Subscription.update(pending.id, {
+          status: 'active',
+          current_period_end: periodEnd,
+        });
         return Response.json({ error: 'This account already has a paid subscription; use the billing portal' }, { status: 409 });
       }
       if (remoteStatus !== 'APPROVAL_PENDING' || remote.plan_id !== planId ||

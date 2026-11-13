@@ -414,4 +414,25 @@ describe("NaliStudio portable exports", () => {
     expect(welcome).toContain("Restore Backup from Device");
     expect(welcome).toContain('onChange={handleSessionImport}');
   });
+
+  it("serializes ZIP export with cloud saves, restores and session replacement", async () => {
+    const studio = await source();
+    const start = studio.indexOf("const handleSaveSessionToDevice = async () => {");
+    const end = studio.indexOf("const sessionImportRef = useRef(null);", start);
+    const handler = studio.slice(start, end);
+    expect(handler).toContain("studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current");
+    expect(handler).toContain("studioDeviceExportInFlightRef.current = true;");
+    expect(handler).toContain("studioDeviceExportInFlightRef.current = false;");
+    expect(handler).toContain("} finally {");
+    expect(handler).toContain("const exportTracks = tracks.map(");
+    expect(handler).toContain("for (const [index, track] of exportTracks.entries())");
+    expect(handler).toContain("...exportMetadata");
+    expect(studio).toContain("Finish the Studio device backup before saving.");
+    const restore = studio.slice(studio.indexOf("const handleSessionImport = async"), studio.indexOf("const [isDownloading", start));
+    expect(restore).toContain("studioDeviceExportInFlightRef.current");
+    for (const name of ["handleStartBlank", "handleLoadAutosave", "handleLoadDemo"]) {
+      const index = studio.indexOf(`const ${name} =`);
+      expect(studio.slice(index, index + 250)).toContain("studioDeviceExportInFlightRef.current");
+    }
+  });
 });

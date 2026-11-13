@@ -60,6 +60,16 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('uses fresh provider billing date instead of event date for pending activation', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    expect(code).toContain('const billingTime = needsCurrentProviderStatus');
+    expect(code).toContain('? remoteSubscription?.nextBillingTime');
+    expect(code).toContain('const providerMismatch = needsCurrentProviderStatus');
+    expect(code.indexOf('const billingTime = needsCurrentProviderStatus')).toBeLessThan(
+      code.indexOf('requiresPayPalBillingVerification(record.status, newStatus, periodEnd)')
+    );
+  });
+
   it('does not activate pending records in on-demand status checks without a future billing date', async () => {
     const code = await source();
     expect(code).toContain("subscription.status === 'pending' && status === 'active'");

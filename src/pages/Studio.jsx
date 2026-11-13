@@ -193,6 +193,7 @@ export default function Studio() {
   const midiSustainRef = useRef(new Map()), midiAccessRef = useRef(null);
   const studioSaveInFlightRef = useRef(false);
   const studioRestoreInFlightRef = useRef(false);
+  const studioDeviceExportInFlightRef = useRef(false);
   // Newly generated demo URLs awaiting an applied track-state commit.
   const pendingDemoAudioCleanupRef = useRef([]);
   // A newly created project already has this tab's working tracks. Skip only
@@ -558,7 +559,7 @@ export default function Studio() {
   }, [roomId, inviteToken, user?.id, projectLoadRetryKey, setSearchParams]);
 
   const handleStartBlank = () => {
-    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current) {
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
       toast.error("Finish saving or restoring before starting a blank session.");
       return;
     }
@@ -582,7 +583,7 @@ export default function Studio() {
       toast.error("Leave the cloud project before opening a standalone draft recovery.");
       return;
     }
-    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current) {
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
       toast.error("Finish saving or restoring before loading a local session.");
       return;
     }
@@ -622,7 +623,7 @@ export default function Studio() {
 
   // Demo audio is generated locally so it always plays (the old hosted sample 404'd)
   const handleLoadDemo = async () => {
-    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current) {
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
       toast.error("Finish saving or restoring before loading the demo.");
       return;
     }
@@ -2194,6 +2195,10 @@ export default function Studio() {
   };
 
   const handleSave = async () => {
+    if (studioDeviceExportInFlightRef.current) {
+      toast.error("Finish the Studio device backup before saving.");
+      return false;
+    }
     if (studioRestoreInFlightRef.current) {
       toast.error("Finish restoring the Studio backup before saving.");
       return false;
@@ -2520,21 +2525,40 @@ export default function Studio() {
 
   // Export a portable archive: never save ephemeral blob: URLs in device backups.
   const handleSaveSessionToDevice = async () => {
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
+      toast.error("Finish the current Studio save, backup, or restore first.");
+      return;
+    }
+    if (isPlaying || isRecording) {
+      toast.error("Stop recording and playback before backing up the session.");
+      return;
+    }
+    studioDeviceExportInFlightRef.current = true;
+    // Capture one immutable view of track metadata before awaiting media downloads.
+    const exportTracks = tracks.map(track => ({
+      ...track,
+      playlists: Array.isArray(track?.playlists) ? track.playlists.map(take => ({ ...take })) : [],
+    }));
+    const exportMetadata = {
+      title: projectName.trim() || "Untitled Project", bpm, key: songKey,
+      timeSignature, masterVolume, masterFx: { ...(masterFx || {}) },
+      audioSettings: { ...(audioSettings || {}) },
+    };
     const toastId = toast.loading("Packaging Studio session and audio...");
     try {
       const zip = new JSZip();
       const portableTracks = [];
-      if (tracks.length > MAX_TRACKS) {
+      if (exportTracks.length > MAX_TRACKS) {
         throw new Error("Too many tracks for a restorable Studio backup.");
       }
-      const totalMediaCount = tracks.reduce(
+      const totalMediaCount = exportTracks.reduce(
         (count, track) => count + 1 + (Array.isArray(track.playlists) ? track.playlists.length : 0), 0
       );
       if (totalMediaCount > 10000) throw new Error("Too many tracks and takes for a portable backup.");
       // Match the cloud-save ID requirements before producing a backup.
       // Otherwise this ZIP could restore but be impossible to save to My Sessions.
       const backupTrackIds = new Set();
-      for (const track of tracks) {
+      for (const track of exportTracks) {
         if (!track || (typeof track.id !== "string" && typeof track.id !== "number") || !String(track.id).trim()) {
           throw new Error("Cannot back up: a Studio track has no valid ID.");
         }
@@ -2572,7 +2596,7 @@ export default function Studio() {
         zip.file(mediaPath, audio);
         return mediaPath;
       };
-      for (const [index, track] of tracks.entries()) {
+      for (const [index, track] of exportTracks.entries()) {
         const source = track.audioUrl || track.file_url || "";
         const savedAudioPath = await addAudioToArchive(source, `audio/track_${index + 1}`, track.name || `Track ${index + 1}`);
         const playlists = Array.isArray(track.playlists) ? track.playlists : [];
@@ -2597,13 +2621,7 @@ export default function Studio() {
         version: 2,
         saved_at: new Date().toISOString(),
         project: {
-          title: projectName.trim() || "Untitled Project",
-          bpm,
-          key: songKey,
-          timeSignature,
-          masterVolume,
-          masterFx: masterFx || {},
-          audioSettings,
+          ...exportMetadata,
           tracks: portableTracks,
         },
       };
@@ -2623,7 +2641,7 @@ export default function Studio() {
       }
       const url = URL.createObjectURL(archive);
       const link = document.createElement("a");
-      const safeName = (projectName.trim() || "Untitled Project").replace(/[^a-z0-9_-]+/gi, "_");
+      const safeName = exportMetadata.title.replace(/[^a-z0-9_-]+/gi, "_");
       link.href = url;
       link.download = `${safeName}.nalistudio.zip`;
       document.body.appendChild(link);
@@ -2634,6 +2652,8 @@ export default function Studio() {
     } catch (error) {
       console.error("Device session save failed", error);
       toast.error(error.message || "Could not save this Studio session to your device.", { id: toastId });
+    } finally {
+      studioDeviceExportInFlightRef.current = false;
     }
   };
 
@@ -2642,7 +2662,7 @@ export default function Studio() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current) {
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
       toast.error("Finish the current Studio save or restore before importing another backup.");
       return;
     }

@@ -127,6 +127,51 @@ describe('ThankYou purchase verification', () => {
     expect(window.gtag).not.toHaveBeenCalled();
   });
 
+  it('does not count a subscription return as a donation conversion', async () => {
+    localStorage.setItem('gads_purchase_value:cs_test_123', '25');
+    pollForSubscriptionConfirmation.mockResolvedValue({
+      outcome: 'confirmed',
+      subscription: { hasPaidAccess: true, plan: 'premium', billingPeriod: 'monthly', isTrialing: false },
+    });
+    renderPage('/ThankYou?subscription=1&checkout_id=cs_test_123');
+
+    await waitFor(() => expect(trackPaywallEvent).toHaveBeenCalledWith(
+      'purchase_completed',
+      expect.anything(),
+    ));
+    expect(window.gtag).not.toHaveBeenCalled();
+    expect(base44.functions.invoke).not.toHaveBeenCalledWith('verifyCheckoutPayment', expect.anything());
+    expect(localStorage.getItem('gads_purchase_value:cs_test_123')).toBe('25');
+  });
+
+  it('preserves pending conversion data when Google Ads is unavailable', async () => {
+    localStorage.setItem('gads_purchase_value:cs_test_123', '25');
+    window.gtag = undefined;
+    base44.functions.invoke.mockResolvedValue({ data: {
+      success: true,
+      checkoutId: 'cs_test_123',
+      status: 'paid',
+      items: [{ type: 'donation', name: 'Donation to NaliBase' }],
+    } });
+    renderPage('/ThankYou?checkout_id=cs_test_123&purchase_token=test-token');
+    expect(await screen.findByText('Purchase Complete!')).toBeTruthy();
+    expect(localStorage.getItem('gads_purchase_value:cs_test_123')).toBe('25');
+    expect(localStorage.getItem('gads_purchase_sent:cs_test_123')).toBeNull();
+  });
+
+  it('does not count a paid checkout containing non-donation items', async () => {
+    localStorage.setItem('gads_purchase_value:cs_test_123', '25');
+    base44.functions.invoke.mockResolvedValue({ data: {
+      success: true,
+      checkoutId: 'cs_test_123',
+      status: 'paid',
+      items: [{ type: 'merchandise' }],
+    } });
+    renderPage('/ThankYou?checkout_id=cs_test_123&purchase_token=test-token');
+    expect(await screen.findByText('Payment not verified')).toBeTruthy();
+    expect(window.gtag).not.toHaveBeenCalled();
+  });
+
   it('shows success only after the backend confirms paid status', async () => {
     base44.functions.invoke.mockResolvedValue({
       data: {

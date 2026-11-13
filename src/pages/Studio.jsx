@@ -778,16 +778,45 @@ export default function Studio() {
     setHistoryIndex(historyIndexRef.current);
   };
 
-  const undo = () => { if (historyIndexRef.current > 0) { historyIndexRef.current -= 1; setHistoryIndex(historyIndexRef.current); setTracks(historyRef.current[historyIndexRef.current]); } };
-  const redo = () => { if (historyIndexRef.current < historyRef.current.length - 1) { historyIndexRef.current += 1; setHistoryIndex(historyIndexRef.current); setTracks(historyRef.current[historyIndexRef.current]); } };
+  // History updates are queued after React state calculation. Flush them before
+  // Undo/Redo so an edit followed by an immediate shortcut is not skipped.
+  const pendingHistoryRef = useRef([]);
+  const flushPendingHistory = () => {
+    const pending = pendingHistoryRef.current.splice(0);
+    pending.forEach(entry => {
+      clearTimeout(entry.timer);
+      if (historyEpochRef.current === entry.epoch) pushToHistory(entry.tracks);
+    });
+  };
+
+  const undo = () => {
+    flushPendingHistory();
+    if (historyIndexRef.current > 0) {
+      historyIndexRef.current -= 1;
+      setHistoryIndex(historyIndexRef.current);
+      setTracks(historyRef.current[historyIndexRef.current]);
+    }
+  };
+  const redo = () => {
+    flushPendingHistory();
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+      historyIndexRef.current += 1;
+      setHistoryIndex(historyIndexRef.current);
+      setTracks(historyRef.current[historyIndexRef.current]);
+    }
+  };
 
   const setTracksWithHistory = (updater) => {
     setTracks(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      const historyEpoch = historyEpochRef.current;
-      setTimeout(() => {
-        if (historyEpochRef.current === historyEpoch) pushToHistory(next);
+      const entry = { tracks: next, epoch: historyEpochRef.current, timer: null };
+      entry.timer = setTimeout(() => {
+        const index = pendingHistoryRef.current.indexOf(entry);
+        if (index < 0) return; // Already flushed by Undo/Redo.
+        pendingHistoryRef.current.splice(index, 1);
+        if (historyEpochRef.current === entry.epoch) pushToHistory(entry.tracks);
       }, 0);
+      pendingHistoryRef.current.push(entry);
       return next;
     });
   };

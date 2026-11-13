@@ -23,9 +23,14 @@ describe("NaliStudio portable exports", () => {
     const start = studio.indexOf("const createTakePlaylist = (track) => {");
     const end = studio.indexOf("const recallTakePlaylist =", start);
     const handler = studio.slice(start, end);
+    expect(handler).toContain("setTracksWithHistory(prev => prev.map(current => {");
+    expect(handler).toContain("if (current.id !== track.id) return current;");
+    expect(handler).toContain("const playlists = Array.isArray(current.playlists)");
     expect(handler).toContain("const usedTakeIds = new Set(");
     expect(handler).toContain("while (usedTakeIds.has(takeId))");
     expect(handler).toContain("id: takeId");
+    expect(handler).toContain("playlists: [...playlists, take]");
+    expect(handler).not.toContain("const playlists = Array.isArray(track.playlists)");
   });
 
   it("preserves restored audio codecs when saving to My Sessions", async () => {

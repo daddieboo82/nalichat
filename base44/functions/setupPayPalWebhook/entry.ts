@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     if (existing && !existing.startsWith('REPLACE_')) return Response.json({ success: true, reused: true, webhookId: existing });
 
     const accessToken = await token();
-    const appId = secrets.get('BASE44_APP_ID') || 'cbef744a8545c389ef439ea6';
+    const appId = secrets.get('BASE44_APP_ID') || '6a1f5ee134147461560c2b37';
     const webhookUrl = secrets.get('PAYPAL_WEBHOOK_URL') ||
       `https://base44-dispatcher-production.base44.workers.dev/api/apps/${appId}/functions/paypalWebhook`;
     const r = await fetch(apiBase() + '/v1/notifications/webhooks', {

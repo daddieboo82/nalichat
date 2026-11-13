@@ -351,7 +351,7 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain('file.name.toLowerCase().endsWith(".nalistudio.json")');
     expect(handler).toContain("Importing it could lose recorded tracks.");
     expect(handler).toContain('Leave the shared Jam Room');
-    expect(handler).toContain("if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current)");
+    expect(handler).toContain("if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current)");
     expect(handler).toContain("studioRestoreInFlightRef.current = true;");
     expect(handler).toContain("studioRestoreInFlightRef.current = false;");
     expect(handler).toContain("if (isRecording || isPlaying)");
@@ -401,7 +401,7 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("Session archive includes unreferenced media files.");
     expect(handler).toContain("Session contains a track with an invalid ID.");
     expect(handler).toContain("temporaryUrls.forEach((url) => URL.revokeObjectURL(url))");
-    expect(handler).toContain("setTracksWithHistory(restoredTracks)");
+    expect(handler).not.toContain("setTracksWithHistory(restoredTracks)");
   });
 
   it("exposes the device session restore control", async () => {

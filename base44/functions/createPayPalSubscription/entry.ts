@@ -62,6 +62,13 @@ Deno.serve(async (req) => {
     if (!/^[A-Za-z0-9._~-]{16,128}$/.test(idempotencyKey)) {
       return Response.json({ error: 'Invalid checkout request key' }, { status: 400 });
     }
+    // PayPal-Request-Id has a fixed header limit. Check the *complete*
+    // value, not just the browser-supplied key, before any provider request.
+    // Keep the established ID format for existing retry compatibility.
+    const providerRequestId = 'nalichat-' + user.id + '-' + idempotencyKey;
+    if (providerRequestId.length > 108) {
+      return Response.json({ error: 'Checkout request key is too long for this account' }, { status: 400 });
+    }
     const item = CATALOG[sku];
     if (!item) return Response.json({ error: 'Unknown subscription plan' }, { status: 400 });
     const planId = secrets.get(item.secret);
@@ -71,6 +78,16 @@ Deno.serve(async (req) => {
     const allSubs = await loadUserSubscriptions(
       base44.asServiceRole.entities.Subscription, user.id,
     );
+    // A previously persisted browser request key must never switch plans.
+    // A new plan requires a fresh request key to avoid PayPal returning the
+    // earlier agreement for a different body under the same idempotency ID.
+    if (allSubs.some((sub: any) =>
+      sub.provider === 'paypal' &&
+      sub.checkout_request_key === idempotencyKey &&
+      sub.sku !== sku
+    )) {
+      return Response.json({ error: 'Checkout request key was already used for another plan' }, { status: 409 });
+    }
     const now = new Date().toISOString();
     const alreadyPaid = allSubs.some((sub: any) => {
       const plan = normalizePlan(sub.plan);
@@ -190,7 +207,7 @@ Deno.serve(async (req) => {
         Authorization: 'Bearer ' + token,
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'PayPal-Request-Id': 'nalichat-' + user.id + '-' + idempotencyKey,
+        'PayPal-Request-Id': providerRequestId,
       },
       body: JSON.stringify({
         plan_id: planId,
@@ -218,6 +235,7 @@ Deno.serve(async (req) => {
       provider: 'paypal',
       billing_period: item.billingPeriod,
       sku,
+      checkout_request_key: idempotencyKey,
       subscription_id: data.id,
       paypal_plan_id: planId,
       paypal_environment: (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase(),

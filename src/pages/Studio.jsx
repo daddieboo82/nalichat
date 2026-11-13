@@ -743,6 +743,9 @@ export default function Studio() {
   }, [showWelcome, tracks]);
 
   const pushToHistory = (newTracks) => {
+    // A queued no-op or duplicate callback should not make Undo appear to
+    // advance while leaving the timeline unchanged.
+    if (historyRef.current[historyIndexRef.current] === newTracks) return;
     let newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
     newHistory.push(newTracks);
     if (newHistory.length > 50) {

@@ -29,6 +29,27 @@ describe('signed PayPal webhook event ordering', () => {
     expect(shouldApplyPayPalEvent('last', older, 'next', newer)).toBe(true);
   });
 
+  it('rejects unordered legacy recorded event history without losing first-event recovery', () => {
+    expect(shouldApplyPayPalEvent('old-event', null, 'new-event',
+      '2026-11-13T17:00:00.000Z')).toBe(false);
+    expect(shouldApplyPayPalEvent('old-event', 'invalid', 'new-event',
+      '2026-11-13T17:00:00.000Z')).toBe(false);
+    expect(shouldApplyPayPalEvent(null, null, 'new-event',
+      '2026-11-13T17:00:00.000Z')).toBe(true);
+  });
+
+  it('retains missing legacy event timestamps as retryable reconciliation failures', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const guard = code.indexOf('!Number.isFinite(lastEventTimeMs)');
+    const equalTime = code.indexOf('lastEventTimeMs === eventCreatedAt');
+    expect(guard).toBeGreaterThan(0);
+    expect(equalTime).toBeGreaterThan(guard);
+    const conflict = code.slice(guard, equalTime);
+    expect(conflict).toContain("processing_state: 'failed'");
+    expect(conflict).toContain('Recorded PayPal event timestamp requires reconciliation');
+    expect(conflict).toContain('status: 503');
+  });
+
   it('keeps different equal-timestamp lifecycle events retryable instead of ignored', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     const guard = code.indexOf('lastEventTimeMs === eventCreatedAt');

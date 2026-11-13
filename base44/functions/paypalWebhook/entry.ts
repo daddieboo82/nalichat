@@ -237,6 +237,25 @@ Deno.serve(async (req) => {
       });
       return Response.json({ error: 'PayPal event order requires reconciliation' }, { status: 503 });
     }
+    // Financial adjustments are independent of subscription lifecycle order.
+    // A late refund/reversal may have an older create_time than the latest
+    // applied activation or cancellation. Never discard its accounting review
+    // simply because it cannot change the current subscription state.
+    const lateFinancialAdjustment = (
+      event.event_type === 'PAYMENT.SALE.REFUNDED' ||
+      event.event_type === 'PAYMENT.SALE.REVERSED'
+    ) && Number.isFinite(lastEventTimeMs) && eventCreatedAt < lastEventTimeMs;
+    if (lateFinancialAdjustment) {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'Older refund/reversal requires financial review without lifecycle update',
+      });
+      return Response.json({
+        error: 'Historical PayPal financial adjustment requires reconciliation',
+        reviewRequired: true,
+      }, { status: 503 });
+    }
     if (
       !shouldApplyPayPalEvent(
         record.paypal_event_id,

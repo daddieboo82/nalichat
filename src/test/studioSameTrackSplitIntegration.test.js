@@ -66,6 +66,21 @@ describe("Studio same-track split integration", () => {
     expect(stop).toContain("recordingFromPreRollRef.current = false");
   });
 
+  it("keeps the transport clock active until post-roll completes", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const recording = studio.slice(
+      studio.indexOf("const toggleRecord = async () => {"),
+      studio.indexOf("// Keep ref in sync so the RAF loop")
+    );
+    expect(recording).toContain("pendingStopAfterRef.current = currentTimeRef.current + postRoll;");
+    expect(recording).toContain("transportPlayingRef.current = true;\n        setIsPlaying(true);");
+    expect(recording).toContain("invalidateTransportPlayback();\n        setIsPlaying(false);");
+    const frame = studio.slice(studio.indexOf("// Post-roll check:"), studio.indexOf("// Punch-in/out:"));
+    expect(frame).toContain("currentTimeRef.current >= pendingStopAfterRef.current");
+    expect(frame).toContain("invalidateTransportPlayback()");
+    expect(frame).toContain("setIsPlaying(false)");
+  });
+
   it("invalidates late pre-roll, post-roll, punch-out and Stop playback callbacks", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     expect(studio).toContain("const invalidateTransportPlayback = () => {");

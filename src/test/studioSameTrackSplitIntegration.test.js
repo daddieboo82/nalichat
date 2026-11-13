@@ -92,7 +92,7 @@ describe("Studio same-track split integration", () => {
     expect(save).toContain("track.playlists != null && !Array.isArray(track.playlists)");
     expect(save).toContain("Cannot save: invalid take playlist metadata.");
     expect(save).toContain("...portableTrackState(track, audioUrl)");
-    expect(studio).toContain("...rest,\\n    audioUrl,");
+    expect(studio).toContain("...rest,\n    audioUrl,");
     expect(save).toContain("tracks: portableTracks");
   });
 

@@ -33,6 +33,21 @@ describe("NaliStudio portable exports", () => {
     expect(handler).not.toContain("const playlists = Array.isArray(track.playlists)");
   });
 
+  it("resets undo history on blank and locally recovered sessions", async () => {
+    const studio = await source();
+    const start = studio.indexOf("const handleStartBlank = () => {");
+    const load = studio.indexOf("const handleLoadAutosave = () => {", start);
+    const demo = studio.indexOf("const handleLoadDemo =", load);
+    const blank = studio.slice(start, load);
+    const autosave = studio.slice(load, demo);
+    expect(blank).toContain("historyEpochRef.current += 1");
+    expect(blank).toContain("historyRef.current = [[]]");
+    expect(blank).toContain("historyIndexRef.current = 0");
+    expect(autosave).toContain("historyEpochRef.current += 1");
+    expect(autosave).toContain("historyRef.current = [parsed]");
+    expect(autosave).toContain("setSelectedTrackIds([])");
+  });
+
   it("invalidates queued history callbacks when restoring another session", async () => {
     const studio = await source();
     expect(studio).toContain("const historyEpochRef = useRef(0)");

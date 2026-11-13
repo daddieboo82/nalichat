@@ -167,17 +167,20 @@ Deno.serve(async (req) => {
     }
 
     // ── Resolve subscription record ──
-    let subscriptionId = event.resource?.id || event.resource?.billing_agreement_id || '';
-    if (event.event_type.startsWith('PAYMENT.') && event.resource?.billing_agreement_id) {
-      subscriptionId = event.resource.billing_agreement_id;
-    }
+    // PAYMENT.SALE.* resource.id is a *sale* ID, not a subscription ID.
+    // Never use it to look up or mutate a Subscription record. A missing
+    // billing_agreement_id needs operator/provider verification and retry.
+    const paymentEvent = event.event_type.startsWith('PAYMENT.');
+    const subscriptionId = paymentEvent
+      ? (typeof event.resource?.billing_agreement_id === 'string' ? event.resource.billing_agreement_id : '')
+      : (typeof event.resource?.id === 'string' ? event.resource.id : '');
     if (!subscriptionId) {
       await entities.PayPalWebhookEvent.update(ledger.id, {
-        processing_state: 'ignored',
+        processing_state: 'failed',
         processed_at: new Date().toISOString(),
-        last_error: '',
+        last_error: 'Signed event has no usable subscription reference',
       });
-      return Response.json({ received: true, ignored: true });
+      return Response.json({ error: 'Subscription reference verification required' }, { status: 503 });
     }
 
     const records = await entities.Subscription.filter({ provider: 'paypal', subscription_id: subscriptionId }, '-created_date', 2);

@@ -114,6 +114,16 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       });
       if (!response.ok) continue;
       const remote = await response.json();
+      // APPROVED may be activated by the helper below. For pending records,
+      // verify ownership and plan before any provider-side activation or local
+      // promotion, even if the remote record already says ACTIVE.
+      if (subscription.status === 'pending' &&
+          (typeof subscription.paypal_plan_id !== 'string' ||
+            typeof subscription.sku !== 'string' ||
+            remote?.plan_id !== subscription.paypal_plan_id ||
+            remote?.custom_id !== subscription.user_id + ':' + subscription.sku)) {
+        continue;
+      }
       const remoteStatus = await resolvePayPalSubscriptionStatus(
         paypalApiBase(),
         token,

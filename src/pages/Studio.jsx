@@ -1398,6 +1398,11 @@ export default function Studio() {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       // Snapshot the target tracks before async recorder finalization.
       const recordingEpoch = historyEpochRef.current;
+      const recordedStopTime = currentTimeRef.current;
+      const recordedStartTime = recordingStartTime !== null ? recordingStartTime : recordedStopTime;
+      const recordedStopBeat = recordedStopTime * (bpmRef.current / 60);
+      const recorderBeingFinalized = mediaRecorderRef.current;
+      const heldMidiNotesAtStop = midiRecordingRef.current ? [...midiActiveNotesRef.current.values()] : [];
       const recordingTargets = new Map(tracksRef.current.filter(t => t.armed).map(t => [String(t.id), {
         track: t,
         // Region-only edits retain the same audio URL but must not be overwritten.
@@ -1421,17 +1426,16 @@ export default function Studio() {
           waveform: track.waveform,
         }) === original.editSignature);
       };
-      mediaRecorderRef.current.onstop = async () => {
-        if (recordingEpoch !== historyEpochRef.current) return;
+      recorderBeingFinalized.onstop = async () => {
+        if (recordingEpoch !== historyEpochRef.current || mediaRecorderRef.current !== recorderBeingFinalized) return;
         const recordingMimeType =
-          mediaRecorderRef.current?.mimeType ||
+          recorderBeingFinalized.mimeType ||
           audioChunksRef.current.find((chunk) => chunk?.type)?.type ||
           'audio/webm';
         const blob = new Blob(audioChunksRef.current, { type: recordingMimeType });
         if (blob.size === 0) {
-          setTracksWithHistory(prev => prev.map(t => (
-            t.armed ? { ...t, waveform: [], armed: false } : t
-          )));
+          // Never discard an existing waveform when capture yields no data.
+          setTracksWithHistory(prev => prev.map(t => matchesRecordingTarget(t) ? { ...t, armed: false } : t));
           setRecordingStartTime(null);
           toast.error("No audio was captured. Please check your microphone and try again.");
           return;
@@ -1480,8 +1484,8 @@ export default function Studio() {
           }
         }
         
-        const stopBeat = currentTimeRef.current * (bpmRef.current / 60);
-        const heldMidiNotes = midiRecordingRef.current ? [...midiActiveNotesRef.current.values()] : [];
+        const stopBeat = recordedStopBeat;
+        const heldMidiNotes = heldMidiNotesAtStop;
         midiRecordingRef.current = false;
         midiActiveNotesRef.current.clear();
         const hasEligibleTarget = tracksRef.current.some(matchesRecordingTarget);
@@ -1504,14 +1508,14 @@ export default function Studio() {
             ...t, waveform: realWaveform, armed: false, audioUrl, file_url: audioUrl,
             // New recorded media starts with an unedited source timeline.
             clipRegions: undefined, clipStart: 0, fullDuration: recordedDuration || 0,
-            startTime: recordingStartTime !== null ? recordingStartTime : currentTimeRef.current,
-            duration: recordedDuration || (recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10)
+            startTime: recordedStartTime,
+            duration: recordedDuration || Math.max(1, recordedStopTime - recordedStartTime)
           };
         }));
         setRecordingStartTime(null);
         toast.success("Recording saved!");
       };
-      mediaRecorderRef.current.stop();
+      recorderBeingFinalized.stop();
     } else {
       setTracksWithHistory(prev => prev.map(t => {
         if (t.armed) {

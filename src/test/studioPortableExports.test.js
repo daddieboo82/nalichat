@@ -78,7 +78,10 @@ describe("NaliStudio portable exports", () => {
     expect(cloudConfirmed).toBeGreaterThan(0);
     expect(localSnapshot).toBeGreaterThan(cloudConfirmed);
     expect(handler).not.toContain('throw new Error("This browser could not save the project locally.")');
-    expect(handler).toContain("uploadedAudioUrls.set(source, uploaded.file_url)");
+    expect(handler).toContain("const uploadedUrl = uploaded?.file_url");
+    expect(handler).toContain('!/^https:\\/\\//i.test(uploadedUrl)');
+    expect(handler).toContain("audio upload did not return a valid secure file URL.");
+    expect(handler).toContain("uploadedAudioUrls.set(source, uploadedUrl)");
     expect(handler).toContain("for (const take of playlists)");
     expect(handler).toContain("savedPlaylists.push({ ...take, audioUrl: takeUrl, file_url: takeUrl })");
     expect(handler).toContain("const savedTracksById = new Map(portableTracks.map((track) => [String(track.id), track]))");

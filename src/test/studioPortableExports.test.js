@@ -56,6 +56,10 @@ describe("NaliStudio portable exports", () => {
     expect(demo).toContain("if (historyEpochRef.current !== demoEpoch)");
     expect(demo).toContain("track.waveform !== initial.waveform");
     expect(demo).toContain("setTracks(prev => prev.map(track => {");
+    expect(demo).toContain("Promise.allSettled([");
+    expect(demo).toContain("results.some(result => result.status === \"rejected\")");
+    expect(demo).toContain("results.forEach(releaseResult)");
+    expect(demo).toContain("URL.revokeObjectURL(url)");
     expect(demo).not.toContain("setTracks([");
   });
 

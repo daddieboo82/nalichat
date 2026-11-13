@@ -51,8 +51,8 @@ describe('media storage resilience', () => {
 
   it('preserves Studio recorder MIME type and closes waveform decode contexts', async () => {
     const source = await readText('src/pages/Studio.jsx');
-    expect(source).toContain("mediaRecorderRef.current?.mimeType");
-    expect(source).toContain("audioChunksRef.current.find((chunk) => chunk?.type)?.type");
+    expect(source).toContain("recorderBeingFinalized.mimeType");
+    expect(source).toContain("recordedChunks.find((chunk) => chunk?.type)?.type");
     expect(source).toContain("if (blob.size === 0)");
     expect(source).toContain("void waveformAudioCtx.close().catch(() => {})");
   });

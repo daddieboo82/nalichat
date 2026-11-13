@@ -23,8 +23,8 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, getClipRegionGainAtTime, getSiblingCrossfadeGainAtTime } from '@/lib/audioProcessing';
-import { cutClipRegionSide, getClipSourceTimeAtTime, getTrackClipRegions, splitTrackRegion } from '@/lib/studioClipRegions';
+import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, clampAudioElementVolume, getClipRegionGainAtTime, getSiblingCrossfadeGainAtTime } from '@/lib/audioProcessing';
+import { cutClipRegionSide, cutTrackTimelineRange, getTrackClipRegions, getClipRegionAtTime, getClipSourceTimeAtTime, getHealCandidateRegionIds, healTrackRegions, moveTrackClipRegions, repeatTrackClipRegions, rebaseClipRegionsToRenderedTimeline, remapClipRegionSources, slipClipRegion, splitTrackRegion, trimClipRegionLeft, trimClipRegionRight, withTrackClipRegionBounds } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -542,7 +542,7 @@ export default function Studio() {
               fadeOut: 0,
             }));
             discardPendingHistory();
-          historyEpochRef.current += 1;
+            historyEpochRef.current += 1;
             historyRef.current = [hydrated];
             historyIndexRef.current = 0;
             setHistoryIndex(0);
@@ -588,7 +588,7 @@ export default function Studio() {
     }
     // Starting a new session must not inherit Undo/Redo from the last one.
     discardPendingHistory();
-          historyEpochRef.current += 1;
+    historyEpochRef.current += 1;
     historyRef.current = [[]];
     historyIndexRef.current = 0;
     setHistoryIndex(0);
@@ -668,7 +668,7 @@ export default function Studio() {
     ];
     // A demo replaces the previous session, including its Undo/Redo timeline.
     discardPendingHistory();
-          historyEpochRef.current += 1;
+    historyEpochRef.current += 1;
     const demoEpoch = historyEpochRef.current;
     historyRef.current = [demoTracks];
     historyIndexRef.current = 0;
@@ -959,8 +959,14 @@ export default function Studio() {
             newTime >= item.timelineStart &&
             newTime < item.timelineStart + item.sourceEnd - item.sourceStart
           );
-          if (Math.abs(audio.currentTime - sourceTime) > 0.15) {
+          const regionId = String(region?.id ?? '');
+          const revision = String(Number(track.clipRegionRevision) || 0);
+          if (audio.dataset.activeRegionId !== regionId ||
+              audio.dataset.clipRegionRevision !== revision ||
+              Math.abs(audio.currentTime - sourceTime) > 0.12) {
             audio.currentTime = sourceTime;
+            audio.dataset.activeRegionId = regionId;
+            audio.dataset.clipRegionRevision = revision;
           }
           mixEngineRef.current?.syncClipRegion(track.id, track, region || null, newTime, liveTracks);
           // Plain <audio> bypasses Web Audio, so clip fades and gain must be
@@ -968,9 +974,8 @@ export default function Studio() {
           if (audio.dataset?.fxBypass === '1') {
             const regionGain = getClipRegionGainAtTime(track, region, newTime)
               * getSiblingCrossfadeGainAtTime(track, region, newTime, liveTracks);
-            const baseGain = ((track.volume ?? 75) / 100)
-              * Math.pow(10, (track.clipGain || 0) / 20) * (masterVolume / 100);
-            audio.volume = Math.max(0, Math.min(1, baseGain * regionGain));
+            const baseGain = trackMixGain(track, liveTracks) * (masterVolume / 100);
+            audio.volume = clampAudioElementVolume(baseGain * regionGain);
           }
           if (audio.paused && !pendingAudioStartsRef.current.has(audio)) {
             pendingAudioStartsRef.current.add(audio);
@@ -1123,7 +1128,7 @@ export default function Studio() {
         plain.src = track.audioUrl;
         plain.dataset.srcUrl = track.audioUrl;
         plain.dataset.fxBypass = '1';
-        plain.volume = trackMixGain(track) * (masterVolume / 100);
+        plain.volume = clampAudioElementVolume(trackMixGain(track) * (masterVolume / 100));
         audioElementsRef.current[track.id] = plain;
         if (!fxFallbackNotifiedRef.current) {
           fxFallbackNotifiedRef.current = true;
@@ -1133,7 +1138,7 @@ export default function Studio() {
     }
 
     if (audio.dataset.fxBypass === '1') {
-      audio.volume = trackMixGain(track) * (masterVolume / 100);
+      audio.volume = clampAudioElementVolume(trackMixGain(track) * (masterVolume / 100));
       return audio;
     }
 
@@ -1144,7 +1149,7 @@ export default function Studio() {
       mixEngineRef.current.syncMaster({ masterVolume, masterFx });
     } else {
       audio.dataset.fxBypass = '1';
-      audio.volume = trackMixGain(track) * (masterVolume / 100);
+      audio.volume = clampAudioElementVolume(trackMixGain(track) * (masterVolume / 100));
     }
     return audio;
   };
@@ -1155,6 +1160,7 @@ export default function Studio() {
     if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
     if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
     // A timeline position is not necessarily an audio-file offset after Cut or Split.
+    const liveTracks = tracksRef.current;
     tracksRef.current.forEach(track => {
       const audio = audioElementsRef.current[track.id];
       if (!audio) return;
@@ -1173,7 +1179,7 @@ export default function Studio() {
       mixEngineRef.current?.syncClipRegion(track.id, track, region || null, newTime, tracksRef.current);
     });
     // Scrubbing/seeking must immediately audition the automation state at the destination.
-    mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
+    mixEngineRef.current?.syncAutomationFrame(liveTracks, newTime);
   };
 
   const togglePlay = () => {
@@ -1194,9 +1200,22 @@ export default function Studio() {
           const audio = getTrackAudio(track);
           if (!audio) return;
           
+          // Calculate if playhead is within track bounds
           const sourceTime = getClipSourceTimeAtTime(track, currentTimeRef.current);
           if (sourceTime !== null) {
             audio.currentTime = sourceTime;
+            const region = getClipRegionAtTime(track, currentTimeRef.current);
+            if (audio.dataset.fxBypass === '1') {
+              audio.volume = clampAudioElementVolume(
+                trackMixGain(track) * (masterVolume / 100)
+                * getClipRegionGainAtTime(track, region, currentTimeRef.current)
+                * getSiblingCrossfadeGainAtTime(track, region, currentTimeRef.current, tracksRef.current),
+              );
+            } else {
+              mixEngineRef.current?.syncClipRegion(track.id, track, region, currentTimeRef.current, tracksRef.current);
+            }
+            audio.dataset.activeRegionId = region?.id || '';
+            audio.dataset.clipRegionRevision = String(Number(track.clipRegionRevision) || 0);
             playPromises.push(
               audio.play().catch(e => { console.error("Audio playback error:", e); return { failed: true }; })
             );
@@ -1258,7 +1277,7 @@ export default function Studio() {
       const audio = audioElementsRef.current[track.id];
       if (!audio) return;
       if (audio.dataset?.fxBypass === '1' || !engine?.isRouted(track.id)) {
-        audio.volume = Math.max(0, Math.min(1, trackMixGain(track) * (masterVolume / 100)));
+        audio.volume = clampAudioElementVolume(Math.max(0, Math.min(1, trackMixGain(track) * (masterVolume / 100))));
         return;
       }
       engine.syncTrack(track.id, track, { gain: trackMixGain(track, tracks) });
@@ -1507,6 +1526,10 @@ export default function Studio() {
           }
         }
         
+        if (recordingEpoch !== historyEpochRef.current || mediaRecorderRef.current !== recorderBeingFinalized) {
+          URL.revokeObjectURL(audioUrl);
+          return;
+        }
         const stopBeat = recordedStopBeat;
         const heldMidiNotes = heldMidiNotesAtStop;
         midiRecordingRef.current = false;
@@ -1535,12 +1558,29 @@ export default function Studio() {
             }));
             return { ...t, armed: false, midiNotes: [...(t.midiNotes || []), ...finalized].sort((a, b) => a.startBeat - b.startBeat) };
           }
+          const duration = recordedDuration || Math.max(1, recordedStopTime - recordedStartTime);
           return {
-            ...t, waveform: realWaveform, armed: false, audioUrl, file_url: audioUrl,
-            // New recorded media starts with an unedited source timeline.
-            clipRegions: undefined, clipStart: 0, fullDuration: recordedDuration || 0,
+            ...t,
+            waveform: realWaveform,
+            armed: false,
+            audioUrl,
+            file_url: audioUrl,
             startTime: recordedStartTime,
-            duration: recordedDuration || Math.max(1, recordedStopTime - recordedStartTime)
+            duration,
+            fullDuration: duration,
+            clipStart: 0,
+            // A new recording is a new source file, not a continuation of the
+            // previous take's edited source ranges.
+            clipRegions: [{
+              id: `region-${t.id}-recording-${Date.now()}`,
+              timelineStart: recordedStartTime,
+              sourceStart: 0,
+              sourceEnd: duration,
+              fadeIn: 0,
+              fadeOut: 0,
+              gainDb: 0,
+            }],
+            clipRegionRevision: (Number(t.clipRegionRevision) || 0) + 1,
           };
         }));
         transferredAudioUrl = hasAudioTarget;
@@ -1613,9 +1653,10 @@ export default function Studio() {
         if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
           const audio = getTrackAudio(track);
           if (!audio) return;
-          const sourceTime = getClipSourceTimeAtTime(track, Math.max(0, recordStartPos - preRoll));
-          if (sourceTime === null) return; // No audible region at the pre-roll start point.
-          audio.currentTime = sourceTime;
+          const preRollTime = Math.max(0, recordStartPos - preRoll);
+          const preRollSourceTime = getClipSourceTimeAtTime(track, preRollTime);
+          if (preRollSourceTime === null) return;
+          audio.currentTime = preRollSourceTime;
           preRollPlayPromises.push(
             audio.play().then(() => true).catch((error) => {
               console.error("Pre-roll playback error:", error);
@@ -1883,30 +1924,25 @@ export default function Studio() {
       const rangeStart = Math.min(selectionStart, selectionEnd);
       const rangeEnd = Math.max(selectionStart, selectionEnd);
       const rangeDuration = rangeEnd - rangeStart;
-      let nextId = nextTrackId(tracks);
       let changed = false;
-      const nextTracks = [];
-      tracks.forEach(t => {
-        if (!selectedTrackIds.includes(t.id) || !t.waveform?.length) { nextTracks.push(t); return; }
-        const start = t.startTime || 0;
-        const duration = t.duration || 40;
-        const end = start + duration;
-        const cutStart = Math.max(start, rangeStart);
-        const cutEnd = Math.min(end, rangeEnd);
-        if (cutEnd <= cutStart) { nextTracks.push(t); return; }
+      const nextTracks = tracks.map(track => {
+        if (!selectedTrackIds.includes(track.id) || !track.waveform?.length) {
+          if (editMode === 'shuffle' && (track.startTime || 0) >= rangeEnd) {
+            return moveTrackClipRegions(track, -rangeDuration);
+          }
+          return track;
+        }
+        const result = cutTrackTimelineRange(track, rangeStart, rangeEnd, {
+          shuffle: editMode === 'shuffle',
+          createId: (side, region, index) => `region-${track.id}-${region.id}-${side}-${index}-${Date.now()}`,
+        });
+        if (!result.removed) return track;
         changed = true;
-        const lineage = t.splitFrom || t.id;
-        const leftDuration = cutStart - start;
-        const rightDuration = end - cutEnd;
-        if (leftDuration > 0.001) nextTracks.push({ ...t, duration: leftDuration, splitFrom: lineage });
-        if (rightDuration > 0.001) nextTracks.push({ ...t, id: nextId++, name: `${t.name} (After Clear)`, startTime: editMode === 'shuffle' ? cutStart : cutEnd, duration: rightDuration, clipStart: (t.clipStart || 0) + (cutEnd - start), splitFrom: lineage });
+        const updatedTrack = { ...result };
+        delete updatedTrack.removed;
+        return updatedTrack;
       });
       if (!changed) { toast.error("The selection does not overlap a selected clip"); return; }
-      if (editMode === 'shuffle') {
-        nextTracks.forEach(t => {
-          if (!selectedTrackIds.includes(t.id) && (t.startTime || 0) >= rangeEnd) t.startTime = Math.max(0, (t.startTime || 0) - rangeDuration);
-        });
-      }
       setTracksWithHistory(nextTracks);
       setSelectedTrackIds([]);
       setSelectionStart(null);
@@ -1938,7 +1974,7 @@ export default function Studio() {
               ? sum + (clip.duration || 0)
               : sum;
           }, 0);
-          return shiftLeft > 0 ? { ...t, startTime: Math.max(0, (t.startTime || 0) - shiftLeft) } : t;
+          return shiftLeft > 0 ? moveTrackClipRegions(t, -shiftLeft) : t;
         })
       : remaining;
     setTracksWithHistory(nextTracks);
@@ -1961,16 +1997,18 @@ export default function Studio() {
     tracks.forEach(t => {
       if (selectedTrackIds.includes(t.id)) {
         const duration = t.duration || 40;
-        newTracks.push({
+        const duplicate = {
           ...t,
           id: nextId++,
           name: `${t.name} (Copy)`,
-          // Pro Tools Duplicate places the new clip directly after the source
-          // instead of stacking a second clip at the same timeline position.
-          startTime: (t.startTime || 0) + duration,
           armed: false,
           splitFrom: t.splitFrom || t.id,
-        });
+        };
+        // Region arrangements include internal gaps. Move every region by the
+        // arrangement span instead of changing only the legacy track startTime.
+        newTracks.push(Array.isArray(t.clipRegions)
+          ? moveTrackClipRegions(duplicate, duration)
+          : { ...duplicate, startTime: (t.startTime || 0) + duration });
       }
     });
 
@@ -1980,14 +2018,10 @@ export default function Studio() {
   };
 
   const deleteTrack = (trackId) => {
-    const track = tracks.find(t => t.id === trackId);
     if (audioElementsRef.current[trackId]) {
       audioElementsRef.current[trackId].pause();
       audioElementsRef.current[trackId].src = '';
       delete audioElementsRef.current[trackId];
-    }
-    if (track?.audioUrl?.startsWith('blob:')) {
-      try { URL.revokeObjectURL(track.audioUrl); } catch (e) {}
     }
     setTracksWithHistory(prev => prev.filter(t => t.id !== trackId));
     setSelectedTrackIds(prev => prev.filter(id => id !== trackId));
@@ -1996,7 +2030,9 @@ export default function Studio() {
   const duplicateTrack = (track) => {
     if (tracks.length >= maxTracks) return toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
     const nextId = nextTrackId(tracks);
-    setTracksWithHistory(prev => [...prev, { ...track, id: nextId, name: `${track.name} (Copy)` }]); toast.success("Track duplicated");
+    const duplicate = { ...track, id: nextId, name: `${track.name} (Copy)` };
+    setTracksWithHistory(prev => [...prev, duplicate]);
+    toast.success("Track duplicated");
   };
 
   // Take playlists keep alternate performances on the same track.
@@ -2019,6 +2055,9 @@ export default function Studio() {
         waveform: compactWaveform(current.waveform),
         startTime: current.startTime || 0,
         duration: current.duration || 0,
+        fullDuration: current.fullDuration || current.duration || 0,
+        clipStart: current.clipStart || 0,
+        clipRegions: current.clipRegions?.map(region => ({ ...region })),
         clipGain: current.clipGain || 0,
         fadeIn: current.fadeIn || 0,
         fadeOut: current.fadeOut || 0,
@@ -2045,7 +2084,12 @@ export default function Studio() {
         ...current, activePlaylistId: currentTake.id,
         audioUrl: currentTake.audioUrl, file_url: currentTake.file_url || currentTake.audioUrl,
         waveform: currentTake.waveform || [], startTime: currentTake.startTime || 0,
-        duration: currentTake.duration || 0, clipGain: currentTake.clipGain || 0,
+        duration: currentTake.duration || 0,
+        fullDuration: currentTake.fullDuration || currentTake.duration || 0,
+        clipStart: currentTake.clipStart || 0,
+        clipRegions: currentTake.clipRegions?.map(region => ({ ...region })),
+        clipRegionRevision: (Number(current.clipRegionRevision) || 0) + 1,
+        clipGain: currentTake.clipGain || 0,
         fadeIn: currentTake.fadeIn || 0, fadeOut: currentTake.fadeOut || 0,
       };
     }));
@@ -2055,59 +2099,89 @@ export default function Studio() {
   // Pro Tools-style Heal Split: rejoin two clips that were split from the same source.
   // Finds the "other half" (same splitFrom parent) and merges them back into one clip.
   const handleHealSplit = (track) => {
+    // New same-track splits are healed by joining adjacent source/timeline
+    // regions. Prefer the boundary nearest the playhead (or adjacent to the
+    // region under it) and never create/delete mixer tracks for this action.
+    const regions = getTrackClipRegions(track);
+    if (regions.length > 1) {
+      const selectedRegion = getClipRegionAtTime(track, currentTimeRef.current);
+      const candidates = getHealCandidateRegionIds(
+        regions,
+        selectedRegion?.id,
+        currentTimeRef.current,
+      );
+      for (const regionId of candidates) {
+        const healed = healTrackRegions(track, regionId);
+        if (!healed.healed) continue;
+        setTracksWithHistory(prev => prev.map(item => item.id === track.id ? healed : item));
+        toast.success("Adjacent waveform regions healed on the same track.");
+        sounds.nav();
+        return;
+      }
+      toast.error("Heal requires adjacent regions with continuous source audio and no seam fades.");
+      return;
+    }
+
+    // Retain compatibility with sessions created before same-track regions.
     if (!track.splitFrom) {
-      toast.error("This clip wasn't split — nothing to heal.");
+      toast.error("This clip has no adjacent split to heal.");
       return;
     }
     const lineage = tracks
-      .filter(t => t.splitFrom === track.splitFrom)
+      .filter(item => item.splitFrom === track.splitFrom)
       .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
-    const index = lineage.findIndex(t => t.id === track.id);
+    const index = lineage.findIndex(item => item.id === track.id);
     const candidates = [lineage[index - 1], lineage[index + 1]].filter(Boolean);
     const sibling = candidates.find(candidate => {
-      const [left, right] = (track.startTime || 0) <= (candidate.startTime || 0) ? [track, candidate] : [candidate, track];
-      const timelineContiguous = Math.abs(((left.startTime || 0) + (left.duration || 0)) - (right.startTime || 0)) < 0.002;
-      const sourceContiguous = Math.abs(((left.clipStart || 0) + (left.duration || 0)) - (right.clipStart || 0)) < 0.002;
+      const [left, right] = (track.startTime || 0) <= (candidate.startTime || 0)
+        ? [track, candidate]
+        : [candidate, track];
+      const timelineContiguous = Math.abs(
+        ((left.startTime || 0) + (left.duration || 0)) - (right.startTime || 0)
+      ) < 0.002;
+      const sourceContiguous = Math.abs(
+        ((left.clipStart || 0) + (left.duration || 0)) - (right.clipStart || 0)
+      ) < 0.002;
       return timelineContiguous && sourceContiguous;
     });
     if (!sibling) {
       toast.error("Heal requires adjacent clips from the same original source.");
       return;
     }
-    const [left, right] = (track.startTime || 0) <= (sibling.startTime || 0) ? [track, sibling] : [sibling, track];
+    const [left, right] = (track.startTime || 0) <= (sibling.startTime || 0)
+      ? [track, sibling]
+      : [sibling, track];
     const mergedDuration = (left.duration || 0) + (right.duration || 0);
-    const remainingInLineage = lineage.filter(t => t.id !== left.id && t.id !== right.id);
+    const remainingInLineage = lineage.filter(item => item.id !== left.id && item.id !== right.id);
     setTracksWithHistory(prev => prev
-      .map(t => t.id === left.id ? { ...t, duration: mergedDuration, splitFrom: remainingInLineage.length ? track.splitFrom : undefined, clipStart: left.clipStart || 0, fullDuration: left.fullDuration || mergedDuration } : t)
-      .filter(t => t.id !== right.id)
+      .map(item => item.id === left.id ? {
+        ...item,
+        duration: mergedDuration,
+        splitFrom: remainingInLineage.length ? track.splitFrom : undefined,
+        clipStart: left.clipStart || 0,
+        fullDuration: left.fullDuration || mergedDuration,
+      } : item)
+      .filter(item => item.id !== right.id)
     );
     setSelectedTrackIds([left.id]);
-    toast.success("Adjacent split healed.");
+    toast.success("Adjacent legacy split healed.");
     sounds.nav();
   };
 
   // Pro Tools-style Repeat Clip: duplicate a clip N times to the right, end-to-end.
   const handleRepeatClip = (track, count) => {
-    if (tracks.length + count - 1 > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
+    const repetitions = Math.max(1, Math.min(64, Math.floor(Number(count) || 1)));
+    const repeated = repeatTrackClipRegions(
+      track,
+      repetitions,
+      (region, pass, index) => `region-${track.id}-repeat-${pass}-${index}-${Date.now()}`,
+    );
+    if (repeated.clipRegions.length === getTrackClipRegions(track).length) {
+      toast.error("This track has no clip regions to repeat.");
       return;
     }
-    const clipDur = track.duration || 40;
-    const clipStart = track.startTime || 0;
-    let nextId = nextTrackId(tracks);
-    const newClips = [];
-    for (let i = 1; i <= count; i++) {
-      newClips.push({
-        ...track,
-        id: nextId++,
-        name: `${track.name} (Repeat ${i})`,
-        startTime: clipStart + clipDur * i,
-        splitFrom: track.id,
-        armed: false,
-      });
-    }
-    setTracksWithHistory(prev => [...prev, ...newClips]);
-    toast.success(`Clip repeated ${count}×`);
+    setTracksWithHistory(prev => prev.map(item => item.id === track.id ? repeated : item));
+    toast.success(`Clip repeated ${repetitions}× on the same track.`);
     sounds.success();
   };
 
@@ -2132,35 +2206,88 @@ export default function Studio() {
           audioCtx = new AudioContextClass();
           const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-          // Apply clip start offset and duration trimming.
-          const clipStart = Math.max(0, track.clipStart || 0);
-          const clipDuration = track.duration || Math.max(0, audioBuffer.duration - clipStart);
-          const startSample = Math.min(audioBuffer.length, Math.floor(clipStart * audioBuffer.sampleRate));
-          const endSample = Math.min(
-            audioBuffer.length,
-            startSample + Math.floor(clipDuration * audioBuffer.sampleRate),
+          // Consolidate every audible region into one timeline-aligned file.
+          // Keep intentional gaps as silence and preserve each region's source
+          // in/out points instead of exporting the legacy track-wide trim only.
+          const regions = getTrackClipRegions(track);
+          if (regions.length === 0) throw new Error("Selected track has no audible clip regions");
+          const timelineStart = Math.min(...regions.map(region => region.timelineStart));
+          const timelineEnd = Math.max(...regions.map(
+            region => region.timelineStart + region.sourceEnd - region.sourceStart
+          ));
+          const timelineDuration = timelineEnd - timelineStart;
+          const outputLength = Math.ceil(timelineDuration * audioBuffer.sampleRate);
+          if (outputLength <= 0) throw new Error("Selected clip has no audio to consolidate");
+          const trackFadeIn = Math.min(
+            timelineDuration,
+            Math.max(0, Number(track.fadeIn) || 0) * timelineDuration,
           );
-          if (endSample <= startSample) throw new Error("Selected clip has no audio to consolidate");
-
-          const trimmedBuffer = audioCtx.createBuffer(
+          const trackFadeOut = Math.min(
+            timelineDuration - trackFadeIn,
+            Math.max(0, Number(track.fadeOut) || 0) * timelineDuration,
+          );
+          const consolidatedBuffer = audioCtx.createBuffer(
             audioBuffer.numberOfChannels,
-            endSample - startSample,
+            outputLength,
             audioBuffer.sampleRate,
           );
-          for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
-            const sourceChannel = audioBuffer.getChannelData(ch);
-            const destinationChannel = trimmedBuffer.getChannelData(ch);
-            destinationChannel.set(sourceChannel.subarray(startSample, endSample));
+          for (const region of regions) {
+            const sourceStart = Math.max(0, Math.min(
+              audioBuffer.length,
+              Math.floor(region.sourceStart * audioBuffer.sampleRate),
+            ));
+            const sourceEnd = Math.max(sourceStart, Math.min(
+              audioBuffer.length,
+              Math.floor(region.sourceEnd * audioBuffer.sampleRate),
+            ));
+            const destinationStart = Math.max(0, Math.floor(
+              (region.timelineStart - timelineStart) * audioBuffer.sampleRate,
+            ));
+            const copyLength = Math.min(
+              sourceEnd - sourceStart,
+              outputLength - destinationStart,
+            );
+            if (copyLength <= 0) continue;
+            const regionGainDb = Math.max(-120, Math.min(24, Number(region.gainDb) || 0));
+            const regionGain = Math.pow(10, regionGainDb / 20);
+            const fadeInSamples = Math.max(0, Math.floor((Number(region.fadeIn) || 0) * audioBuffer.sampleRate));
+            const fadeOutSamples = Math.max(0, Math.floor((Number(region.fadeOut) || 0) * audioBuffer.sampleRate));
+            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+              const source = audioBuffer.getChannelData(channel);
+              const destination = consolidatedBuffer.getChannelData(channel);
+              for (let sample = 0; sample < copyLength; sample++) {
+                const fadeInGain = fadeInSamples > 0
+                  ? Math.min(1, sample / fadeInSamples)
+                  : 1;
+                const remaining = copyLength - sample - 1;
+                const fadeOutGain = fadeOutSamples > 0
+                  ? Math.min(1, remaining / fadeOutSamples)
+                  : 1;
+                const timelineOffset = region.timelineStart - timelineStart
+                  + sample / audioBuffer.sampleRate;
+                const trackFadeInGain = trackFadeIn > 0
+                  ? Math.min(1, timelineOffset / trackFadeIn)
+                  : 1;
+                const trackRemaining = timelineDuration - timelineOffset;
+                const trackFadeOutGain = trackFadeOut > 0
+                  ? Math.min(1, trackRemaining / trackFadeOut)
+                  : 1;
+                destination[destinationStart + sample] =
+                  source[sourceStart + sample] * regionGain
+                  * Math.min(fadeInGain, fadeOutGain)
+                  * Math.min(trackFadeInGain, trackFadeOutGain);
+              }
+            }
           }
 
           // Encode the actual trimmed buffer. The previous path decoded/truncated
           // the clip but then exported the original track again.
-          const wavBlob = audioBufferToWav(trimmedBuffer);
+          const wavBlob = audioBufferToWav(consolidatedBuffer);
           const url = URL.createObjectURL(wavBlob);
           try {
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${track.name.replace(/[^a-z0-9]/gi, '_')}_consolidated.wav`;
+            a.download = `${String(track.name || `Track_${track.id}`).replace(/[^a-z0-9_-]/gi, '_')}_consolidated.wav`;
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -2188,9 +2315,11 @@ export default function Studio() {
     const clipBoundaries = [];
     tracks.forEach(t => {
       if (!t.waveform || t.waveform.length === 0) return;
-      const start = t.startTime || 0;
-      const end = start + (t.duration || 40);
-      clipBoundaries.push(start, end);
+      getTrackClipRegions(t).forEach(region => {
+        const start = region.timelineStart;
+        const end = start + region.sourceEnd - region.sourceStart;
+        clipBoundaries.push(start, end);
+      });
     });
     clipBoundaries.sort((a, b) => a - b);
     if (forward) {
@@ -2315,8 +2444,25 @@ export default function Studio() {
       });
       setTracksWithHistory(prev => prev.map(t => {
         if (t.id !== trackId) return t;
-        if (t.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(t.audioUrl); } catch (e) { /* ignore */ } }
-        return { ...t, audioUrl: url, waveform, duration, fullDuration: duration, clipStart: 0 };
+        return {
+          ...t,
+          audioUrl: url,
+          file_url: url,
+          waveform,
+          duration,
+          fullDuration: duration,
+          clipStart: 0,
+          clipRegions: [{
+            id: `region-${t.id}-instrument-render-${Date.now()}`,
+            timelineStart: Math.max(0, Number(t.startTime) || 0),
+            sourceStart: 0,
+            sourceEnd: duration,
+            fadeIn: 0,
+            fadeOut: 0,
+            gainDb: 0,
+          }],
+          clipRegionRevision: (Number(t.clipRegionRevision) || 0) + 1,
+        };
       }));
       toast.success(`${getInstrument(instrumentId).name} rendered`, { id: toastId });
       sounds.success();
@@ -2375,9 +2521,33 @@ export default function Studio() {
     try {
       const { vocals, instrumental } = await separateStems(track.audioUrl);
       const nextId = nextTrackId(tracks);
+      const makeStemTrack = (id, name, stem) => {
+        // Stem separation returns a replacement source with the same audio
+        // timeline. Keep the source in/out points and gaps from the edited
+        // arrangement, clamping only if the stem is shorter than its source.
+        const regions = remapClipRegionSources(
+          getTrackClipRegions(track),
+          stem.duration,
+          'none',
+        );
+        return withTrackClipRegionBounds({
+          ...track,
+          id,
+          name,
+          color: "bg-green-500",
+          audioUrl: stem.url,
+          waveform: stem.waveform,
+          fullDuration: stem.duration,
+          clipStart: 0,
+          duration: 0,
+          segments: undefined,
+          effects: undefined,
+          clipRegionRevision: (Number(track.clipRegionRevision) || 0) + 1,
+        }, regions);
+      };
       setTracksWithHistory(prev => [...prev,
-        { ...track, id: nextId, name: `${track.name} (Vocals/Highs)`, color: "bg-green-500", audioUrl: vocals.url, waveform: vocals.waveform, duration: vocals.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined },
-        { ...track, id: nextId + 1, name: `${track.name} (Instrumental/Lows)`, color: "bg-green-500", audioUrl: instrumental.url, waveform: instrumental.waveform, duration: instrumental.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined }
+        makeStemTrack(nextId, `${track.name} (Vocals/Highs)`, vocals),
+        makeStemTrack(nextId + 1, `${track.name} (Instrumental/Lows)`, instrumental),
       ]);
       toast.success("Stems separated successfully!", { id: toastId });
     } catch (e) {
@@ -3083,7 +3253,7 @@ export default function Studio() {
       // A restored backup replaces the current session. Do not let Undo
       // resurrect tracks from the previous session or redo into its edits.
       discardPendingHistory();
-          historyEpochRef.current += 1;
+      historyEpochRef.current += 1;
       historyRef.current = [restoredTracks];
       historyIndexRef.current = 0;
       setHistoryIndex(0);
@@ -3922,8 +4092,12 @@ export default function Studio() {
                              if (track.audioUrl) {
                                const audio = getTrackAudio(track);
                                if (!audio) return;
-                               const offset = (track.clipStart || 0) + ((track.duration || 40) * clickRatio);
-                               audio.currentTime = Math.max(0, Math.min(offset, (track.fullDuration || track.duration || 40) - 0.1));
+                               const sourceTime = getClipSourceTimeAtTime(track, newTime);
+                               if (sourceTime === null) {
+                                 audio.pause();
+                                 return;
+                               }
+                               audio.currentTime = sourceTime;
                                audio.play().then(() => {
                                  setTimeout(() => audio.pause(), 150);
                                }).catch(() => {});
@@ -3944,37 +4118,44 @@ export default function Studio() {
                         }
 
                         if (activeTool === 'smart' && !isTopHalf && (smartAtLeftEdge || smartAtRightEdge)) {
-                          // Smart Tool lower-corner zones trim the corresponding clip edge.
+                          // Smart Tool trims the outermost region, not legacy
+                          // track-wide bounds that become stale after splitting.
                           const isLeft = smartAtLeftEdge;
                           const startX = e.clientX;
-                          const initialStartTime = track.startTime || 0;
-                          const initialDuration = track.duration || 40;
-                          const initialClipStart = track.clipStart || 0;
-                          const fullDuration = track.fullDuration || initialDuration;
+                          const initialRegions = getTrackClipRegions(track);
+                          const edgeRegion = isLeft
+                            ? initialRegions[0]
+                            : initialRegions[initialRegions.length - 1];
+                          if (!edgeRegion) return;
                           const target = e.currentTarget;
                           target.setPointerCapture(e.pointerId);
                           const handleSmartTrim = (moveEvent) => {
-                            const delta = (moveEvent.clientX - startX) / (20 * zoom);
-                            setTracks(prev => prev.map(t => {
-                              if (t.id !== track.id) return t;
-                              if (isLeft) {
-                                // Extending left is limited by both available source media and
-                                // the session start, so startTime/duration/source offset stay coherent.
-                                const minAmount = Math.max(-initialClipStart, -initialStartTime);
-                                const amount = Math.max(minAmount, Math.min(initialDuration - 0.001, delta));
-                                return { ...t, startTime: initialStartTime + amount, duration: initialDuration - amount, clipStart: initialClipStart + amount };
-                              }
-                              const maxRestore = fullDuration - (initialClipStart + initialDuration);
-                              const amount = Math.max(-initialDuration + 0.001, Math.min(maxRestore, delta));
-                              return { ...t, duration: initialDuration + amount };
+                            const delta = Math.round(
+                              ((moveEvent.clientX - startX) / (20 * zoom)) * 1000
+                            ) / 1000;
+                            setTracks(prev => prev.map(item => {
+                              if (item.id !== track.id) return item;
+                              const snapshot = { ...item, clipRegions: initialRegions };
+                              return isLeft
+                                ? trimClipRegionLeft(snapshot, edgeRegion.id, delta)
+                                : trimClipRegionRight(snapshot, edgeRegion.id, delta, {
+                                    shuffle: editMode === 'shuffle',
+                                  });
                             }));
+                            showEditTooltip(
+                              moveEvent.clientX,
+                              moveEvent.clientY,
+                              isLeft
+                                ? edgeRegion.timelineStart + delta
+                                : edgeRegion.timelineStart
+                                  + edgeRegion.sourceEnd - edgeRegion.sourceStart + delta,
+                            );
                           };
                           const finishSmartTrim = (upEvent) => {
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleSmartTrim);
                             target.removeEventListener('pointerup', finishSmartTrim);
-                            // Snapshot the final React state rather than relying on a ref update
-                            // racing the pointerup event.
+                            hideEditTooltip();
                             setTracksWithHistory(prev => prev);
                           };
                           target.addEventListener('pointermove', handleSmartTrim);
@@ -4022,6 +4203,14 @@ export default function Studio() {
                           const target = e.currentTarget;
                           const startX = e.clientX;
                           const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
+                          const initialRegions = getTrackClipRegions(track);
+                          const clipRect = target.getBoundingClientRect();
+                          const pointerTimelineTime = initialStartTime
+                            + (Math.max(0, Math.min(clipRect.width, e.clientX - clipRect.left)) / Math.max(1, clipRect.width))
+                              * (track.duration || 40);
+                          const slipRegion = editMode === 'slip'
+                            ? getClipRegionAtTime({ ...track, clipRegions: initialRegions }, pointerTimelineTime)
+                            : null;
                           const groupedClipIds = track.groupId ? tracksRef.current.filter(t => t.groupId === track.groupId && !t.locked).map(t => t.id) : [];
                           const groupedInitialStarts = new Map(tracksRef.current.filter(t => groupedClipIds.includes(t.id)).map(t => [t.id, t.startTime || 0]));
                           target.setPointerCapture(e.pointerId);
@@ -4032,7 +4221,24 @@ export default function Studio() {
                             if (!hasDragged) {
                               if (Math.abs(deltaX) < 3) return; // Ignore tiny movement so a plain click doesn't highlight the clip
                               hasDragged = true;
-                              Object.assign(target.style, { zIndex: '50', opacity: '0.94', filter: 'brightness(1.16)', boxShadow: '0 8px 28px hsl(var(--primary)/0.45), inset 0 0 0 2px hsl(var(--primary))', cursor: 'grabbing', willChange: 'left' });
+                              Object.assign(target.style, {
+                                zIndex: '50',
+                                opacity: '0.94',
+                                filter: 'brightness(1.16)',
+                                boxShadow: '0 8px 28px hsl(var(--primary)/0.45), inset 0 0 0 2px hsl(var(--primary))',
+                                cursor: 'grabbing',
+                                willChange: slipRegion ? 'filter' : 'left',
+                              });
+                            }
+                            if (editMode === 'slip') {
+                              if (!slipRegion) return;
+                              const sourceDelta = deltaX / (20 * zoom);
+                              const sourcePosition = Math.max(0, slipRegion.sourceStart + sourceDelta);
+                              setTracks(prev => prev.map(item => item.id === track.id
+                                ? slipClipRegion({ ...item, clipRegions: initialRegions }, slipRegion.id, sourceDelta)
+                                : item));
+                              showEditTooltip(moveEvent.clientX, moveEvent.clientY, sourcePosition);
+                              return;
                             }
                             // 1:1 with the hand — move unsnapped, only the drop commits snapped.
                             const liveStartTime = Math.max(0, initialStartTime + deltaX / (20 * zoom));
@@ -4042,8 +4248,10 @@ export default function Studio() {
                               const beatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
                               const gridSeconds = gridSize === 1 ? secondsPerBeat * beatsPerBar : secondsPerBeat * 4 * gridSize;
                               committedStartTime = Math.round(committedStartTime / gridSeconds) * gridSeconds;
-                            } else if (editMode === 'shuffle') {
-                              const laneKey = track.splitFrom || track.id;
+                            } else if (editMode === 'shuffle' && track.splitFrom) {
+                              // Legacy split-track sessions still snap sibling tracks;
+                              // same-track region arrangements are moved as one clip lane.
+                              const laneKey = track.splitFrom;
                               const otherClips = tracksRef.current.filter(t =>
                                 t.id !== track.id && (t.splitFrom || t.id) === laneKey && t.waveform?.length > 0
                               );
@@ -4063,6 +4271,9 @@ export default function Studio() {
                             target.removeEventListener('pointermove', handleMove);
                             target.removeEventListener('pointerup', handleUp);
                             hideEditTooltip();
+                            if (editMode === 'slip' && slipRegion && hasDragged) {
+                              setTracksWithHistory(prev => prev);
+                            }
                             if (target.dataset.newStartTime !== undefined) {
                               const newStartTime = parseFloat(target.dataset.newStartTime);
                               if (editMode === 'shuffle') {
@@ -4073,7 +4284,10 @@ export default function Studio() {
                                     .map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t)
                                     .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
                                   if (lane.length <= 1) {
-                                    return prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t);
+                                    const delta = newStartTime - initialStartTime;
+                                    return prev.map(t => t.id === track.id
+                                      ? moveTrackClipRegions(t, delta)
+                                      : t);
                                   }
                                   let cursor = Math.min(...lane.map(t => t.startTime || 0));
                                   const positions = new Map();
@@ -4081,16 +4295,18 @@ export default function Studio() {
                                     positions.set(clip.id, cursor);
                                     cursor += clip.duration || 0;
                                   });
-                                  return prev.map(t => positions.has(t.id) ? { ...t, startTime: positions.get(t.id) } : t);
+                                  return prev.map(t => positions.has(t.id)
+                                    ? moveTrackClipRegions(t, positions.get(t.id) - (t.startTime || 0))
+                                    : t);
                                 });
                               } else {
                                 const delta = newStartTime - initialStartTime;
                                 if (groupedClipIds.length > 1) {
                                   const minInitialStart = Math.min(...groupedInitialStarts.values());
                                   const safeDelta = Math.max(-minInitialStart, delta);
-                                  setTracksWithHistory(prev => prev.map(t => groupedInitialStarts.has(t.id) ? { ...t, startTime: groupedInitialStarts.get(t.id) + safeDelta } : t));
+                                  setTracksWithHistory(prev => prev.map(t => groupedInitialStarts.has(t.id) ? (t.clipRegions || t.waveform?.length ? moveTrackClipRegions(t, safeDelta) : { ...t, startTime: groupedInitialStarts.get(t.id) + safeDelta }) : t));
                                 } else {
-                                  setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t));
+                                  setTracksWithHistory(prev => prev.map(t => t.id === track.id ? moveTrackClipRegions(t, newStartTime - initialStartTime) : t));
                                 }
                               }
                               delete target.dataset.newStartTime;
@@ -4124,53 +4340,38 @@ export default function Studio() {
                           e.stopPropagation();
                           const target = e.currentTarget;
                           const startX = e.clientX;
-                          const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
-                          const initialDuration = track.duration !== undefined ? track.duration : 40;
-                          const initialClipStart = track.clipStart || 0;
-                          
+                          const initialRegions = getTrackClipRegions(track);
+                          const edgeRegion = initialRegions[0];
+                          if (!edgeRegion) return;
                           target.setPointerCapture(e.pointerId);
-                          
-                          const MIN_CLIP_DURATION = 0.001; // 1ms — surgical-precision trim floor
-                          const round = (v) => Math.round(v * 1000) / 1000; // snap to 1ms to avoid float drift
+                          const round = (value) => Math.round(value * 1000) / 1000;
                           const handleMove = (moveEvent) => {
-                            const deltaX = moveEvent.clientX - startX;
-                            const deltaTime = round(deltaX / (20 * zoom));
-                            
-                            if (deltaTime < initialDuration - MIN_CLIP_DURATION) { 
-                               // Don't allow an extension past source start or before session zero.
-                               const maxLeftExtension = Math.max(-initialClipStart, -initialStartTime);
-                               const trimAmount = Math.max(maxLeftExtension, deltaTime);
-                               
-                               setTracks(prev => prev.map(t => 
-                                t.id === track.id ? { 
-                                  ...t, 
-                                  startTime: round(initialStartTime + trimAmount),
-                                  duration: round(initialDuration - trimAmount),
-                                  clipStart: round(initialClipStart + trimAmount)
-                                  } : t
-                                  ));
-                                  showEditTooltip(moveEvent.clientX, moveEvent.clientY, initialStartTime + trimAmount);
-                                  }
-                                  };
+                            const deltaTime = round((moveEvent.clientX - startX) / (20 * zoom));
+                            setTracks(prev => prev.map(item => {
+                              if (item.id !== track.id) return item;
+                              // Recalculate from the pointer-down snapshot so each
+                              // pointer move is absolute, not cumulatively applied.
+                              return trimClipRegionLeft(
+                                { ...item, clipRegions: initialRegions },
+                                edgeRegion.id,
+                                deltaTime,
+                              );
+                            }));
+                            showEditTooltip(
+                              moveEvent.clientX,
+                              moveEvent.clientY,
+                              edgeRegion.timelineStart + deltaTime,
+                            );
+                          };
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                            hideEditTooltip();
+                            setTracksWithHistory(prev => prev);
+                          };
 
-                                  const handleUp = (upEvent) => {
-                                  target.releasePointerCapture(upEvent.pointerId);
-                                  target.removeEventListener('pointermove', handleMove);
-                                  target.removeEventListener('pointerup', handleUp);
-                                  setTracksWithHistory(prev => {
-                                    if (editMode !== 'shuffle') return prev;
-                                    const edited = prev.find(t => t.id === track.id);
-                                    if (!edited) return prev;
-                                    const laneKey = track.splitFrom || track.id;
-                                    const oldEnd = initialStartTime + initialDuration;
-                                    const newEnd = (edited.startTime || 0) + (edited.duration || 0);
-                                    const shift = newEnd - oldEnd;
-                                    return prev.map(t => t.id !== track.id && (t.splitFrom || t.id) === laneKey && (t.startTime || 0) >= oldEnd - 0.001 ? { ...t, startTime: Math.max(0, (t.startTime || 0) + shift) } : t);
-                                  });
-                                  hideEditTooltip();
-                                  };
-
-                                  target.addEventListener('pointermove', handleMove);
+                          target.addEventListener('pointermove', handleMove);
                                   target.addEventListener('pointerup', handleUp);
                                             }}
                                           >
@@ -4188,49 +4389,39 @@ export default function Studio() {
                           e.stopPropagation();
                           const target = e.currentTarget;
                           const startX = e.clientX;
-                          const initialDuration = track.duration !== undefined ? track.duration : 40;
-                          const initialClipStart = track.clipStart || 0;
-                          const fullDuration = track.fullDuration || track.duration || 40;
-                          
+                          const initialRegions = getTrackClipRegions(track);
+                          const edgeRegion = initialRegions[initialRegions.length - 1];
+                          if (!edgeRegion) return;
                           target.setPointerCapture(e.pointerId);
-                          
-                          const MIN_CLIP_DURATION_R = 0.001; // 1ms — surgical-precision trim floor
-                          const roundR = (v) => Math.round(v * 1000) / 1000; // snap to 1ms to avoid float drift
+                          const round = (value) => Math.round(value * 1000) / 1000;
                           const handleMove = (moveEvent) => {
-                            const deltaX = moveEvent.clientX - startX;
-                            const deltaTime = roundR(deltaX / (20 * zoom));
-                            
-                            if (-deltaTime < initialDuration - MIN_CLIP_DURATION_R) {
-                               // Allow dragging right to restore the audio, up to its full duration
-                               const maxRightTrim = fullDuration - (initialClipStart + initialDuration);
-                               const trimAmount = Math.max(-maxRightTrim, -deltaTime); 
-                               
-                               setTracks(prev => prev.map(t => 
-                                t.id === track.id ? { 
-                                  ...t, 
-                                  duration: roundR(initialDuration - trimAmount)
-                                  } : t
-                                  ));
-                                  showEditTooltip(moveEvent.clientX, moveEvent.clientY, (track.startTime || 0) + (initialDuration - trimAmount));
-                                  }
-                                  };
-
-                                  const handleUp = (upEvent) => {
-                                  target.releasePointerCapture(upEvent.pointerId);
-                                  target.removeEventListener('pointermove', handleMove);
-                                  target.removeEventListener('pointerup', handleUp);
-                                  setTracksWithHistory(prev => {
-                                    if (editMode !== 'shuffle') return prev;
-                                    const edited = prev.find(t => t.id === track.id);
-                                    if (!edited) return prev;
-                                    const laneKey = track.splitFrom || track.id;
-                                    const oldEnd = (track.startTime || 0) + initialDuration;
-                                    const newEnd = (track.startTime || 0) + (edited.duration || 0);
-                                    const shift = newEnd - oldEnd;
-                                    return prev.map(t => t.id !== track.id && (t.splitFrom || t.id) === laneKey && (t.startTime || 0) >= oldEnd - 0.001 ? { ...t, startTime: Math.max(0, (t.startTime || 0) + shift) } : t);
-                                  });
-                                  hideEditTooltip();
-                                  };
+                            const deltaTime = round((moveEvent.clientX - startX) / (20 * zoom));
+                            setTracks(prev => prev.map(item => {
+                              if (item.id !== track.id) return item;
+                              // Always derive from the original edge so dragging
+                              // back and forth never accumulates rounding or ripple.
+                              return trimClipRegionRight(
+                                { ...item, clipRegions: initialRegions },
+                                edgeRegion.id,
+                                deltaTime,
+                                { shuffle: editMode === 'shuffle' },
+                              );
+                            }));
+                            showEditTooltip(
+                              moveEvent.clientX,
+                              moveEvent.clientY,
+                              edgeRegion.timelineStart
+                                + edgeRegion.sourceEnd - edgeRegion.sourceStart
+                                + deltaTime,
+                            );
+                          };
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                            hideEditTooltip();
+                            setTracksWithHistory(prev => prev);
+                          };
                           
                           target.addEventListener('pointermove', handleMove);
                           target.addEventListener('pointerup', handleUp);
@@ -4344,6 +4535,38 @@ export default function Studio() {
                         <div className="absolute inset-0">
                           <TrackWaveformSVG track={track} />
                         </div>
+                        {getTrackClipRegions(track).map((region, index, regions) => {
+                          const previous = regions[index - 1];
+                          const gapStart = previous
+                            ? previous.timelineStart + previous.sourceEnd - previous.sourceStart
+                            : null;
+                          const gapDuration = previous ? Math.max(0, region.timelineStart - gapStart) : 0;
+                          return (
+                            <React.Fragment key={`region-boundary-${track.id}-${region.id}`}>
+                              {gapDuration > 0.001 && (
+                                <div
+                                  className="absolute inset-y-0 bg-black/45 border-x border-white/10"
+                                  style={{
+                                    left: `${(gapStart - (track.startTime || 0)) * 20 * zoom}px`,
+                                    width: `${gapDuration * 20 * zoom}px`,
+                                    zIndex: 2,
+                                  }}
+                                  aria-label="Removed audio gap"
+                                />
+                              )}
+                              {index > 0 && (
+                                <div
+                                  className="absolute inset-y-0 w-px bg-primary/80"
+                                  style={{
+                                    left: `${(region.timelineStart - (track.startTime || 0)) * 20 * zoom}px`,
+                                    zIndex: 3,
+                                  }}
+                                  aria-label="Clip split boundary"
+                                />
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -4521,7 +4744,7 @@ export default function Studio() {
         timeSignature={timeSignature}
         onSpot={(timeInSeconds) => {
           if (spotClip) {
-            setTracksWithHistory(prev => prev.map(t => t.id === spotClip.id ? { ...t, startTime: Math.max(0, timeInSeconds) } : t));
+            setTracksWithHistory(prev => prev.map(t => t.id === spotClip.id ? moveTrackClipRegions(t, Math.max(0, timeInSeconds) - (t.startTime || 0)) : t));
             toast.success(`Moved "${spotClip.name}" to ${timeInSeconds.toFixed(3)}s`);
             sounds.nav();
           }
@@ -4544,11 +4767,36 @@ export default function Studio() {
         open={showAudioSuite}
         onOpenChange={setShowAudioSuite}
         track={tracks.find(t => selectedTrackIds.includes(t.id))}
-        onProcess={({ audioUrl, waveform, duration }) => {
+        onProcess={({ audioUrl, waveform, duration, transform = 'none', sourceScale = 1 }) => {
           const track = tracks.find(t => selectedTrackIds.includes(t.id));
-          if (!track) return;
-          if (track.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(track.audioUrl); } catch (e) {} }
-          setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, audioUrl, waveform, duration, fullDuration: duration, clipStart: 0 } : t));
+          if (!track) {
+            if (audioUrl?.startsWith('blob:')) URL.revokeObjectURL(audioUrl);
+            return;
+          }
+          const existingRegions = getTrackClipRegions(track);
+          const remappedRegions = remapClipRegionSources(
+            existingRegions,
+            duration,
+            transform,
+            sourceScale,
+          );
+          if (remappedRegions.length === 0) {
+            if (audioUrl?.startsWith('blob:')) URL.revokeObjectURL(audioUrl);
+            toast.error('AudioSuite could not preserve the current clip regions.');
+            return;
+          }
+          setTracksWithHistory(prev => prev.map(t => {
+            if (t.id !== track.id) return t;
+            return withTrackClipRegionBounds({
+              ...t,
+              audioUrl,
+              file_url: audioUrl,
+              waveform,
+              fullDuration: duration,
+              clipStart: 0,
+              duration: 0,
+            }, remappedRegions);
+          }));
         }}
       />
       </Suspense>
@@ -4590,29 +4838,46 @@ export default function Studio() {
         open={showCommitDialog}
         onOpenChange={setShowCommitDialog}
         track={tracks.find(t => selectedTrackIds.includes(t.id))}
-        onCommit={(newAudioUrl) => {
+        onCommit={(newAudioUrl, renderedDuration, renderedWaveform) => {
           const track = tracks.find(t => selectedTrackIds.includes(t.id));
-          if (!track) return;
-          if (track.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(track.audioUrl); } catch (e) {} }
-          // The render bakes fader, pan, inserts and Send 1 into the file — reset them
-          // so committed audio isn't processed twice on playback/export.
+          if (!track) {
+            if (newAudioUrl?.startsWith('blob:')) URL.revokeObjectURL(newAudioUrl);
+            return;
+          }
+          // The render bakes channel-strip and region processing into a timeline-aligned
+          // file. Rebase region source offsets and clear baked envelopes to avoid doubling.
           setTracksWithHistory(prev => prev.map(t => {
             if (t.id !== track.id) return t;
             const { effects: _effects, ...rest } = t;
-            return {
+            const rebasedRegions = rebaseClipRegionsToRenderedTimeline(
+              getTrackClipRegions(t),
+              { resetGain: true, resetFades: true },
+            );
+            return withTrackClipRegionBounds({
               ...rest,
               audioUrl: newAudioUrl,
+              file_url: newAudioUrl,
+              waveform: renderedWaveform,
+              fullDuration: renderedDuration,
+              duration: 0,
+              clipStart: 0,
               clipGain: 0,
               volume: 100,
               pan: 50,
               send1: 0,
               send2: 0,
               send3: 0,
+              automationPoints: [],
+              muteAutomationPoints: [],
+              panAutomationPoints: [],
+              send1AutomationPoints: [],
+              send2AutomationPoints: [],
+              send3AutomationPoints: [],
               plugins: {},
               fadeIn: 0,
               fadeOut: 0,
               committed: true,
-            };
+            }, rebasedRegions);
           }));
         }}
       />

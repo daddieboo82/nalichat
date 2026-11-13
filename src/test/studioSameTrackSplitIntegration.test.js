@@ -48,9 +48,9 @@ describe("Studio same-track split integration", () => {
   it("maps pre-roll and overdub playback through edited clip regions", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const recording = studio.slice(studio.indexOf("const toggleRecord = async () => {"), studio.indexOf("const stop = () => {"));
-    expect(recording).toContain("getClipSourceTimeAtTime(track, Math.max(0, recordStartPos - preRoll))");
+    expect(recording).toContain("getClipSourceTimeAtTime(track, preRollTime)");
     expect(recording).toContain("getClipSourceTimeAtTime(track, currentTimeRef.current)");
-    expect(recording).toContain("if (sourceTime === null) return");
+    expect(recording).toContain("if (preRollSourceTime === null) return");
     expect(recording).not.toContain("recordStartPos - preRoll - (track.startTime || 0)");
     expect(recording).not.toContain("audio.currentTime = currentTimeRef.current;");
   });
@@ -138,7 +138,7 @@ describe("Studio same-track split integration", () => {
     const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));
     expect(finalize).toContain("setTracksWithHistory(prev => prev.map(t => t.armed ? { ...t, armed: false } : t))");
     expect(finalize).toContain("const hasAudioTarget = eligibleTargets.some(t => !['midi', 'instrument'].includes(t.type))");
-    expect(finalize).toContain("if (!hasAudioTarget) URL.revokeObjectURL(audioUrl)");
+    expect(finalize).toContain("if (!hasAudioTarget) {\n          URL.revokeObjectURL(audioUrl)");
     expect(finalize).not.toContain("waveform: [], armed: false");
   });
 
@@ -151,7 +151,7 @@ describe("Studio same-track split integration", () => {
     expect(finalize).toContain("const heldMidiNotesAtStop = midiRecordingRef.current");
     expect(finalize).toContain("mediaRecorderRef.current !== recorderBeingFinalized");
     expect(finalize).toContain("startTime: recordedStartTime");
-    expect(finalize).toContain("duration: recordedDuration || Math.max(1, recordedStopTime - recordedStartTime)");
+    expect(finalize).toContain("const duration = recordedDuration || Math.max(1, recordedStopTime - recordedStartTime)");
     expect(finalize).toContain("matchesRecordingTarget(t) ? { ...t, armed: false } : t");
     expect(finalize).not.toContain("t.armed ? { ...t, waveform: [], armed: false } : t");
   });
@@ -167,10 +167,10 @@ describe("Studio same-track split integration", () => {
     expect(finalize).toContain("const eligibleTargets = tracksRef.current.filter(matchesRecordingTarget)");
     expect(finalize).toContain("eligibleTargets.length === 0");
     expect(finalize).toContain("if (!matchesRecordingTarget(t)) return t;");
-    expect(finalize).toContain("if (recordingEpoch !== historyEpochRef.current) return;");
+    expect(finalize).toContain("if (recordingEpoch !== historyEpochRef.current || mediaRecorderRef.current !== recorderBeingFinalized)");
     expect(finalize).toContain("recordingEpoch !== historyEpochRef.current || eligibleTargets.length === 0");
     expect(finalize).toContain("URL.revokeObjectURL(audioUrl)");
-    expect(finalize).toContain("clipRegions: undefined, clipStart: 0");
+    expect(finalize).toContain("sourceEnd: duration");
   });
 
   it("discards microphone permission granted after Stop or unmount", async () => {
@@ -249,7 +249,7 @@ describe("Studio same-track split integration", () => {
     expect(frame).toContain("audio.dataset?.fxBypass === '1'");
     expect(frame).toContain("getClipRegionGainAtTime(track, region, newTime)");
     expect(frame).toContain("getSiblingCrossfadeGainAtTime(track, region, newTime, liveTracks)");
-    expect(frame).toContain("audio.volume = Math.max(0, Math.min(1, baseGain * regionGain))");
+    expect(frame).toContain("audio.volume = clampAudioElementVolume(baseGain * regionGain)");
   });
 
   it("updates the mixer gain immediately when seeking into or out of a removed gap", async () => {
@@ -306,7 +306,7 @@ describe("Studio same-track split integration", () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     expect(studio).toContain("const discardPendingHistory = () => {");
     expect(studio).toContain("pendingHistoryRef.current.forEach(entry => clearTimeout(entry.timer))");
-    expect(studio).toContain("useEffect(() => () => discardPendingHistory(), [])");
+    expect(studio).toContain("Unmount invalidates in-flight recorder decoding as well as edit history.");
     const resets = [...studio.matchAll(/discardPendingHistory\(\);\s*historyEpochRef\.current \+= 1;/g)];
     expect(resets).toHaveLength(6);
   });

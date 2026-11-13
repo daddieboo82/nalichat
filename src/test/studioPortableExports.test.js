@@ -59,6 +59,7 @@ describe("NaliStudio portable exports", () => {
     expect(demo).toContain("Promise.allSettled([");
     expect(demo).toContain("results.some(result => result.status === \"rejected\")");
     expect(demo).toContain("results.forEach(releaseResult)");
+    expect(demo).toContain("toast.dismiss(toastId)");
     expect(demo).toContain("URL.revokeObjectURL(url)");
     expect(demo).not.toContain("setTracks([");
   });

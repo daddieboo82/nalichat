@@ -205,6 +205,8 @@ export default function Studio() {
   const pendingAudioStartsRef = useRef(new WeakSet());
   const transportPlayingRef = useRef(false);
   const transportPlayGenerationRef = useRef(0);
+  // Cancel an in-flight microphone permission request after Stop/unmount.
+  const recordingRequestGenerationRef = useRef(0);
   const invalidateTransportPlayback = () => {
     transportPlayingRef.current = false;
     transportPlayGenerationRef.current += 1;
@@ -1217,6 +1219,7 @@ export default function Studio() {
     return () => {
       transportPlayingRef.current = false;
       transportPlayGenerationRef.current += 1;
+      recordingRequestGenerationRef.current += 1;
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(t => t.stop());
       }
@@ -1579,6 +1582,7 @@ export default function Studio() {
         sounds.recStart();
         return;
       }
+      const recordingRequestGeneration = ++recordingRequestGenerationRef.current;
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           audio: { 
@@ -1588,6 +1592,11 @@ export default function Studio() {
             latency: 0
           } 
         });
+        // Permission can resolve after the user presses Stop or leaves Studio.
+        if (recordingRequestGeneration !== recordingRequestGenerationRef.current) {
+          stream.getTracks().forEach(input => input.stop());
+          return;
+        }
         mediaStreamRef.current = stream;
 
         // Overdub: play back existing (non-armed) tracks while recording
@@ -1642,7 +1651,16 @@ export default function Studio() {
         toast.success(hasArmedMidi && midiRecordingRef.current ? "Audio + MIDI recording started" : "Recording started (Mic active)");
         sounds.recStart();
       } catch (err) {
-        toast.error("Microphone access denied. Please allow mic permissions in your browser.");
+        if (recordingRequestGeneration !== recordingRequestGenerationRef.current) return;
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(input => input.stop());
+          mediaStreamRef.current = null;
+        }
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+          audioContextRef.current.close().catch(() => {});
+          audioContextRef.current = null;
+        }
+        toast.error("Could not start microphone recording. Check your permissions and audio device.");
         console.error(err);
       }
     } else {
@@ -1667,6 +1685,7 @@ export default function Studio() {
   toggleRecordRef.current = toggleRecord;
 
   const stop = () => {
+    recordingRequestGenerationRef.current += 1;
     invalidateTransportPlayback();
     setIsPlaying(false);
     setCountInActive(false);

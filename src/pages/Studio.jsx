@@ -610,13 +610,23 @@ export default function Studio() {
     setTracks(demoTracks);
     setShowWelcome(false);
     try {
-      const [lead, beat] = await Promise.all([
+      // Wait for both generators to settle. If either fails, dispose of any
+      // successful temporary audio before returning the demo as placeholders.
+      const results = await Promise.allSettled([
         generateMelody({ seconds: 20, bpm: 90 }),
         generateMelody({ seconds: 20, bpm: 120 })
       ]);
+      const releaseResult = (result) => {
+        const url = result.status === "fulfilled" ? result.value?.url : null;
+        if (typeof url === "string" && url.startsWith("blob:")) URL.revokeObjectURL(url);
+      };
+      if (results.some(result => result.status === "rejected")) {
+        results.forEach(releaseResult);
+        throw new Error("One or more demo audio tracks could not be generated.");
+      }
+      const [lead, beat] = results.map(result => result.value);
       if (historyEpochRef.current !== demoEpoch) {
-        if (lead.url?.startsWith("blob:")) URL.revokeObjectURL(lead.url);
-        if (beat.url?.startsWith("blob:")) URL.revokeObjectURL(beat.url);
+        results.forEach(releaseResult);
         return;
       }
       setTracks(prev => prev.map(track => {

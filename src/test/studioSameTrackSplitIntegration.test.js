@@ -45,6 +45,20 @@ describe("Studio same-track split integration", () => {
     expect(getClipSourceTimeAtTime(track, 8)).toBe(8);
   });
 
+  it("invalidates late pre-roll, post-roll, punch-out and Stop playback callbacks", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    expect(studio).toContain("const invalidateTransportPlayback = () => {");
+    expect(studio).toContain("const preRollGeneration = ++transportPlayGenerationRef.current");
+    expect(studio).toContain("if (preRollGeneration !== transportPlayGenerationRef.current) return;");
+    expect(studio).toContain("transportPlayingRef.current = true;\n      setIsPlaying(true);");
+    const stop = studio.slice(studio.indexOf("const stop = () => {"), studio.indexOf("const handleCountInComplete =", studio.indexOf("const stop = () => {")));
+    expect(stop).toContain("invalidateTransportPlayback()");
+    const postRoll = studio.slice(studio.indexOf("// Post-roll check:"), studio.indexOf("// Punch-in/out:", studio.indexOf("// Post-roll check:")));
+    const punchOut = studio.slice(studio.indexOf("// Punch-in/out:"), studio.indexOf("animationFrameId = requestAnimationFrame(updateTime)", studio.indexOf("// Punch-in/out:")));
+    expect(postRoll).toContain("invalidateTransportPlayback()");
+    expect(punchOut).toContain("invalidateTransportPlayback()");
+  });
+
   it("ignores stale play requests after Stop or a rapid transport restart", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     expect(studio).toContain("const transportPlayingRef = useRef(false)");

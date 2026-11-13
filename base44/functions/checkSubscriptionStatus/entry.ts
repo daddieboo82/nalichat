@@ -114,7 +114,8 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
     const token = await paypalAccessToken();
     if (!token) return;
     for (const subscription of candidates) {
-      const response = await fetch(paypalApiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscription.subscription_id as string), {
+      try {
+        const response = await fetch(paypalApiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscription.subscription_id as string), {
         headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
       });
       if (!response.ok) continue;
@@ -160,6 +161,11 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       if (status === 'canceled') update.cancel_at_period_end = false;
       await subscriptionEntity.update(subscription.id as string, update);
       Object.assign(subscription, update);
+      } catch (error) {
+        // Continue verifying other subscriptions even if one provider
+        // lookup or entity update fails; never promote unverified access.
+        console.error('PayPal subscription lookup or update failed', error);
+      }
     }
   } catch (error) {
     console.error('PayPal status reconciliation failed', error);

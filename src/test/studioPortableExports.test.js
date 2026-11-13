@@ -51,6 +51,10 @@ describe("NaliStudio portable exports", () => {
     const start = studio.indexOf("const handleLoadDemo = async () => {");
     const end = studio.indexOf("// Temporary object URLs", start);
     const demo = studio.slice(start, end);
+    expect(demo).toContain("if (isRecording || isPlaying)");
+    expect(demo).toContain("Stop recording and playback before loading the demo.");
+    expect(demo.indexOf("if (isRecording || isPlaying)"))
+      .toBeLessThan(demo.indexOf("historyEpochRef.current += 1"));
     expect(demo).toContain("historyEpochRef.current += 1");
     expect(demo).toContain("historyRef.current = [demoTracks]");
     expect(demo).toContain("if (historyEpochRef.current !== demoEpoch)");

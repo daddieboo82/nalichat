@@ -54,6 +54,18 @@ describe("NaliStudio portable exports", () => {
     expect(handler).not.toContain("const take = (track.playlists || []).find");
   });
 
+  it("preserves live editor changes during the first route handoff after project creation", async () => {
+    const studio = await source();
+    expect(studio).toContain("const newlyCreatedProjectHandoffRef = useRef(null)");
+    expect(studio).toContain("if (newlyCreatedProjectHandoffRef.current === roomId)");
+    expect(studio).toContain("newlyCreatedProjectHandoffRef.current = null");
+    expect(studio).toContain("newlyCreatedProjectHandoffRef.current = targetProjectId");
+    const handoff = studio.indexOf("if (newlyCreatedProjectHandoffRef.current === roomId)");
+    const load = studio.indexOf("const project = await base44.entities.Project.get(roomId)", handoff);
+    expect(handoff).toBeGreaterThan(0);
+    expect(load).toBeGreaterThan(handoff);
+  });
+
   it("preserves restored audio codecs when saving to My Sessions", async () => {
     const studio = await source();
     const start = studio.indexOf("const handleSave = async () => {");

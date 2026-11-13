@@ -2248,27 +2248,45 @@ export default function Studio() {
     try {
       const zip = new JSZip();
       const portableTracks = [];
+      let totalAudioBytes = 0;
+      const addAudioToArchive = async (source, pathPrefix, label) => {
+        if (!source) return "";
+        const response = await fetch(source);
+        if (!response.ok) throw new Error(`Could not read audio for ${label}.`);
+        const audio = await response.blob();
+        if (!audio.size) throw new Error(`Audio is empty for ${label}.`);
+        totalAudioBytes += audio.size;
+        if (audio.size > 512 * 1024 * 1024 || totalAudioBytes > 1024 * 1024 * 1024) {
+          throw new Error("Session audio exceeds the portable backup size limit.");
+        }
+        const extension = studioAudioExtension({
+          mimeType: audio.type,
+          filename: label,
+          sourceUrl: source,
+        });
+        if (!extension) throw new Error(`Unsupported audio format for ${label}. Export a WAV or MP3 first.`);
+        const mediaPath = `${pathPrefix}.${extension}`;
+        zip.file(mediaPath, audio);
+        return mediaPath;
+      };
       for (const [index, track] of tracks.entries()) {
         const source = track.audioUrl || track.file_url || "";
-        let savedAudioPath = "";
-        if (source) {
-          const response = await fetch(source);
-          if (!response.ok) throw new Error(`Could not read audio for ${track.name || index + 1}.`);
-          const audio = await response.blob();
-          if (!audio.size) throw new Error(`Audio is empty for ${track.name || index + 1}.`);
-          const extension = studioAudioExtension({
-            mimeType: audio.type,
-            filename: track.name || "",
-            sourceUrl: source,
-          });
-          if (!extension) throw new Error(`Unsupported audio format for ${track.name || index + 1}. Export a WAV or MP3 first.`);
-          savedAudioPath = `audio/track_${index + 1}.${extension}`;
-          zip.file(savedAudioPath, audio);
+        const savedAudioPath = await addAudioToArchive(source, `audio/track_${index + 1}`, track.name || `Track ${index + 1}`);
+        const playlists = Array.isArray(track.playlists) ? track.playlists : [];
+        const savedPlaylists = [];
+        for (const [takeIndex, take] of playlists.entries()) {
+          if (!take || typeof take !== "object") throw new Error("Invalid take playlist metadata.");
+          const takeSource = take.audioUrl || take.file_url || "";
+          const takePath = await addAudioToArchive(
+            takeSource,
+            `audio/track_${index + 1}_take_${takeIndex + 1}`,
+            take.name || `Track ${index + 1} take ${takeIndex + 1}`
+          );
+          savedPlaylists.push({ ...take, audioUrl: takePath, file_url: takePath });
         }
         portableTracks.push({
           ...portableTrackState(track, savedAudioPath),
-          audioUrl: savedAudioPath,
-          file_url: savedAudioPath,
+          playlists: savedPlaylists,
         });
       }
       const payload = {

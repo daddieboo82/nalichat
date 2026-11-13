@@ -37,13 +37,14 @@ export function shouldApplyPayPalEvent(
   // events. Allow modest provider/merchant clock skew, but never apply an
   // event more than five minutes ahead of the server's clock.
   if (!Number.isFinite(incomingMs) || incomingMs > nowMs + 5 * 60_000) return false;
+  // A legacy record may have an event ID but no usable time. That does
+  // not establish whether the incoming event precedes an already-applied
+  // lifecycle change. Require reconciliation rather than guessing.
   if (typeof lastEventTime !== 'string' || lastEventTime.length === 0) {
-    return true;
+    return typeof lastEventId !== 'string' || lastEventId.length === 0;
   }
   const lastMs = Date.parse(lastEventTime);
-  // A malformed legacy stored time cannot establish ordering. The caller
-  // must still verify subscription state for activation-capable events.
-  if (!Number.isFinite(lastMs)) return true;
+  if (!Number.isFinite(lastMs)) return false;
   // Distinct lifecycle events at the exact same provider timestamp cannot be
   // reliably ordered. Do not let delivery order decide subscription access.
   // A later provider reconciliation can resolve the actual current state.

@@ -868,6 +868,30 @@ export default function Studio() {
 
       // Drive the full automation frame in one pass for responsive large sessions.
       mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
+
+      // Follow audible clip regions, not the track's outer bounds. A Cut can
+      // leave gaps, and Split can map adjacent timeline regions to source offsets.
+      if (isPlaying) {
+        tracksRef.current.forEach(track => {
+          const audio = audioElementsRef.current[track.id];
+          if (!audio) return;
+          const sourceTime = getClipSourceTimeAtTime(track, newTime);
+          if (sourceTime === null) {
+            if (!audio.paused) audio.pause();
+            mixEngineRef.current?.syncClipRegion(track.id, track, null, newTime, tracksRef.current);
+            return;
+          }
+          const region = getTrackClipRegions(track).find(item =>
+            newTime >= item.timelineStart &&
+            newTime < item.timelineStart + item.sourceEnd - item.sourceStart
+          );
+          if (Math.abs(audio.currentTime - sourceTime) > 0.15) {
+            audio.currentTime = sourceTime;
+          }
+          mixEngineRef.current?.syncClipRegion(track.id, track, region || null, newTime, tracksRef.current);
+          if (audio.paused && !track.muted) audio.play().catch(() => {});
+        });
+      }
       
       if (isRecording && recordingStartTime !== null) {
         // Use real elapsed time (performance.now) for accurate sync with the actual audio recording

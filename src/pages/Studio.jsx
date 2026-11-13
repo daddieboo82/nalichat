@@ -205,6 +205,10 @@ export default function Studio() {
   const pendingAudioStartsRef = useRef(new WeakSet());
   const transportPlayingRef = useRef(false);
   const transportPlayGenerationRef = useRef(0);
+  const invalidateTransportPlayback = () => {
+    transportPlayingRef.current = false;
+    transportPlayGenerationRef.current += 1;
+  };
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
   if (!mixEngineRef.current) mixEngineRef.current = createMixEngine();
@@ -1036,6 +1040,7 @@ export default function Studio() {
       // Post-roll check: when playhead reaches the pending stop point, stop playback
       if (pendingStopAfterRef.current !== null && currentTimeRef.current >= pendingStopAfterRef.current) {
         pendingStopAfterRef.current = null;
+        invalidateTransportPlayback();
         Object.values(audioElementsRef.current).forEach(audio => audio.pause());
         setIsPlaying(false);
       }
@@ -1044,6 +1049,7 @@ export default function Studio() {
       if (isRecording && selectionStartRef.current !== null && selectionEndRef.current !== null && currentTimeRef.current >= selectionEndRef.current) {
         setIsRecording(false);
         stopRecordingProcess();
+        invalidateTransportPlayback();
         Object.values(audioElementsRef.current).forEach(audio => audio.pause());
         setIsPlaying(false);
       }
@@ -1510,6 +1516,7 @@ export default function Studio() {
     // Pre-roll: jump back and start playback so the user hears context before the record point
     if (!isRecording && preRoll > 0) {
       const recordStartPos = currentTimeRef.current;
+      const preRollGeneration = ++transportPlayGenerationRef.current;
       pendingRecordStartRef.current = recordStartPos;
       updateCurrentTime(Math.max(0, recordStartPos - preRoll));
       sounds.nav();
@@ -1531,17 +1538,23 @@ export default function Studio() {
       });
       if (preRollPlayPromises.length > 0) {
         const started = await Promise.all(preRollPlayPromises);
+        if (preRollGeneration !== transportPlayGenerationRef.current) return;
         if (!started.some(Boolean)) {
           pendingRecordStartRef.current = null;
           toast.error("Pre-roll audio couldn't start. Click Record again to retry.");
           return;
         }
       }
+      if (preRollGeneration !== transportPlayGenerationRef.current) return;
+      transportPlayingRef.current = true;
       setIsPlaying(true);
       return; // RAF loop will call toggleRecord when playhead reaches recordStartPos
     }
 
-    if (isPlaying) setIsPlaying(false);
+    if (isPlaying) {
+      invalidateTransportPlayback();
+      setIsPlaying(false);
+    }
 
     if (!isRecording) {
       const armedMidiOnly = tracks.some(t => t.armed && ['midi', 'instrument'].includes(t.type)) && !tracks.some(t => t.armed && !['midi', 'instrument'].includes(t.type));
@@ -1640,6 +1653,7 @@ export default function Studio() {
   toggleRecordRef.current = toggleRecord;
 
   const stop = () => {
+    invalidateTransportPlayback();
     setIsPlaying(false);
     setCountInActive(false);
     skipCountInRef.current = false;

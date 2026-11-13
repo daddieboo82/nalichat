@@ -123,6 +123,12 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       if (!status) continue;
       const update: Record<string, unknown> = { status };
       const periodEnd = paypalPeriodEndForStatus(status, remote?.billing_info?.next_billing_time);
+      // A newly approved checkout must not turn into indefinite access if
+      // PayPal omits a usable future billing boundary.
+      if (subscription.status === 'pending' && status === 'active' &&
+          (typeof periodEnd !== 'string' || Date.parse(periodEnd) <= nowMs)) {
+        continue;
+      }
       if (periodEnd !== undefined) update.current_period_end = periodEnd;
       // A remotely ACTIVE status alone does not establish a paid-through date.
       // For an overdue local record, retain its expired period unless PayPal

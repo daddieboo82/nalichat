@@ -589,23 +589,42 @@ export default function Studio() {
 
   // Demo audio is generated locally so it always plays (the old hosted sample 404'd)
   const handleLoadDemo = async () => {
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current) {
+      toast.error("Finish saving or restoring before loading the demo.");
+      return;
+    }
     const toastId = toast.loading("Preparing demo session...");
     const base = { volume: 75, pan: 50, muted: false, solo: false, armed: false, startTime: 0, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 };
-    // Enter the editor immediately so slower mobile devices never appear stuck on Welcome.
-    setTracks([
+    const demoTracks = [
       { ...base, id: 1, name: "Demo Lead", color: "bg-purple-500", waveform: generateWaveform(400), duration: 20, audioUrl: null },
       { ...base, id: 2, name: "Demo Bassline", color: "bg-blue-500", waveform: generateWaveform(400), duration: 20, audioUrl: null },
-    ]);
+    ];
+    // A demo replaces the previous session, including its Undo/Redo timeline.
+    historyEpochRef.current += 1;
+    const demoEpoch = historyEpochRef.current;
+    historyRef.current = [demoTracks];
+    historyIndexRef.current = 0;
+    setHistoryIndex(0);
+    setSelectedTrackIds([]);
+    setFxTarget(null);
+    setTracks(demoTracks);
     setShowWelcome(false);
     try {
       const [lead, beat] = await Promise.all([
         generateMelody({ seconds: 20, bpm: 90 }),
         generateMelody({ seconds: 20, bpm: 120 })
       ]);
-      setTracks([
-        { ...base, id: 1, name: "Demo Lead", color: "bg-purple-500", waveform: lead.waveform, duration: lead.duration, audioUrl: lead.url },
-        { ...base, id: 2, name: "Demo Bassline", color: "bg-blue-500", waveform: beat.waveform, duration: beat.duration, audioUrl: beat.url },
-      ]);
+      if (historyEpochRef.current !== demoEpoch) {
+        if (lead.url?.startsWith("blob:")) URL.revokeObjectURL(lead.url);
+        if (beat.url?.startsWith("blob:")) URL.revokeObjectURL(beat.url);
+        return;
+      }
+      setTracks(prev => prev.map(track => {
+        const initial = demoTracks.find(item => item.id === track.id);
+        if (!initial || track.audioUrl || track.waveform !== initial.waveform) return track;
+        const rendered = track.id === 1 ? lead : beat;
+        return { ...track, waveform: rendered.waveform, duration: rendered.duration, audioUrl: rendered.url };
+      }));
       toast.success("Demo session ready", { id: toastId });
     } catch (e) {
       console.error("Demo session failed", e);

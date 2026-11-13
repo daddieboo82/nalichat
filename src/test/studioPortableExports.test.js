@@ -4,12 +4,19 @@ import { readFile } from "node:fs/promises";
 const source = () => readFile("src/pages/Studio.jsx", "utf8");
 
 describe("NaliStudio portable exports", () => {
+  it("keeps cloud-room autosaves separate from standalone draft recovery", async () => {
+    const studio = await source();
+    expect(studio).toContain("if (!autosaveStorageKey || roomId || !tracks");
+    expect(studio).toContain("}, [tracks, autosaveStorageKey, roomId]);");
+    expect(studio).toContain("if (autosaveStorageKey && !roomId && !editsDuringSave)");
+  });
+
   it("does not advertise expired object-URL autosaves as recoverable", async () => {
     const studio = await source();
     expect(studio).toContain("const hasTransientStudioAudio = (tracks)");
     expect(studio).toContain("track.playlists.forEach((take) => sources.push(take?.audioUrl, take?.file_url))");
     expect(studio).toContain("!hasTransientStudioAudio(parsed)");
-    expect(studio).toContain("tracks.length === 0 || hasTransientStudioAudio(tracks)) return;");
+    expect(studio).toContain("roomId || !tracks || tracks.length === 0 || hasTransientStudioAudio(tracks)) return;");
     expect(studio).toContain("localStorage.setItem(autosaveStorageKey, JSON.stringify(tracks))");
     expect(studio).toContain("if (hasTransientStudioAudio(parsed))");
     expect(studio).toContain("This autosave contains temporary audio that expired after reload.");
@@ -72,7 +79,7 @@ describe("NaliStudio portable exports", () => {
     const end = studio.indexOf("const handleImportClick =", start);
     const save = studio.slice(start, end);
     expect(save).toContain("const editsDuringSave = tracksRef.current !== tracks");
-    expect(save).toContain("if (autosaveStorageKey && !editsDuringSave)");
+    expect(save).toContain("if (autosaveStorageKey && !roomId && !editsDuringSave)");
     expect(save).toContain("Newer edits are not yet saved to My Sessions; save again.");
     expect(save.indexOf("Project save was not confirmed."))
       .toBeLessThan(save.indexOf("const editsDuringSave ="));

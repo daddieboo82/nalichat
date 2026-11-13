@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
 
     if (action === 'delete') {
       const contactId = String(body?.contactId || '').trim();
-      if (!/^contact_[0-9a-f]{64}$/.test(contactId)) {
+      if (!/^(?:contact_[0-9a-f]{64}|[0-9a-f]{24})$/.test(contactId)) {
         return Response.json({ error: 'Valid contactId is required' }, { status: 400 });
       }
       const contact = await entities.Contact.get(contactId).catch(() => null);

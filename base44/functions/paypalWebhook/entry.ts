@@ -66,7 +66,7 @@ function state(type: string, resource: any) {
 
 // For PAYMENT.SALE.* events the billing_info lives on the subscription resource,
 // not the sale resource. Fetch the subscription to get next_billing_time.
-async function fetchSubscriptionBillingInfo(token: string, subscriptionId: string): Promise<{ nextBillingTime: string | null } | null> {
+async function fetchSubscriptionBillingInfo(token: string, subscriptionId: string): Promise<{ nextBillingTime: string | null; status: string; planId: string | null } | null> {
   try {
     const response = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId), {
       headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
@@ -74,7 +74,11 @@ async function fetchSubscriptionBillingInfo(token: string, subscriptionId: strin
     if (!response.ok) return null;
     const remote = await response.json();
     const nextBilling = remote?.billing_info?.next_billing_time;
-    return { nextBillingTime: typeof nextBilling === 'string' ? nextBilling : null };
+    return {
+      nextBillingTime: typeof nextBilling === 'string' ? nextBilling : null,
+      status: String(remote?.status || '').toUpperCase(),
+      planId: typeof remote?.plan_id === 'string' ? remote.plan_id : null,
+    };
   } catch {
     return null;
   }
@@ -213,20 +217,29 @@ Deno.serve(async (req) => {
       };
       if (newStatus === 'canceled') update.cancel_at_period_end = false;
 
-      // Sale events don't carry subscription billing_info. For ACTIVE,
-      // final_payment_time is not a substitute for a future renewal boundary.
-      const billingTime = event.event_type.startsWith('PAYMENT.')
-        ? (await fetchSubscriptionBillingInfo(token, subscriptionId))?.nextBillingTime
-        : (event.resource?.billing_info?.next_billing_time ||
-          (newStatus !== 'active' ? event.resource?.billing_info?.final_payment_time : null));
+      // Sale events do not contain the current subscription lifecycle. A
+      // verified sale for an earlier billing period cannot activate a locally
+      // pending subscription that PayPal now marks canceled or suspended.
+      const isPaymentEvent = event.event_type.startsWith('PAYMENT.');
+      const needsCurrentProviderStatus = record.status === 'pending' && newStatus === 'active';
+      const remoteSubscription = (isPaymentEvent || needsCurrentProviderStatus)
+        ? await fetchSubscriptionBillingInfo(token, subscriptionId)
+        : null;
+      const billingTime = remoteSubscription?.nextBillingTime ||
+        (!isPaymentEvent ? (event.resource?.billing_info?.next_billing_time ||
+          (newStatus !== 'active' ? event.resource?.billing_info?.final_payment_time : null)) : null);
       const periodEnd = paypalPeriodEndForStatus(newStatus, billingTime);
-      if (requiresPayPalBillingVerification(record.status, newStatus, periodEnd)) {
+      const providerMismatch = needsCurrentProviderStatus &&
+        (remoteSubscription?.status !== 'ACTIVE' ||
+          !remoteSubscription.planId ||
+          remoteSubscription.planId !== record.paypal_plan_id);
+      if (providerMismatch || requiresPayPalBillingVerification(record.status, newStatus, periodEnd)) {
         // Keep the ledger retryable so an incomplete event is not silently
         // acknowledged while its pending checkout has no verified paid period.
         await entities.PayPalWebhookEvent.update(ledger.id, {
           processing_state: 'failed',
           processed_at: new Date().toISOString(),
-          last_error: 'Active PayPal subscription has no verified future billing boundary',
+          last_error: 'Active PayPal subscription status, plan, or billing period could not be verified',
         });
         return Response.json({ error: 'PayPal billing period verification required' }, { status: 503 });
       }

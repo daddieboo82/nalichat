@@ -67,6 +67,35 @@ describe("Studio same-track split integration", () => {
     expect(waveform).toContain('strokeDasharray="3 2"');
   });
 
+  it("preserves cut and split region metadata through JSON project snapshots", () => {
+    const source = { id: "lane-1", startTime: 2, duration: 10, clipStart: 3, fullDuration: 20, waveform: [0.2] };
+    const split = splitTrackRegion(source, 6, side => `lane-1-${side}`);
+    const cut = cutClipRegionSide(split, "lane-1-right", 9, { direction: "right" });
+    expect(cut.removed).toBe(true);
+    const cloudState = { version: 1, tracks: [{ ...cut, audioUrl: "https://example.com/audio.wav" }] };
+    const zipState = { format: "nalichat-studio-session", version: 2, project: { tracks: cloudState.tracks } };
+    for (const saved of [cloudState, zipState.project]) {
+      const restored = JSON.parse(JSON.stringify(saved)).tracks[0];
+      expect(restored.id).toBe("lane-1");
+      expect(restored.clipRegions).toHaveLength(2);
+      expect(getTrackClipRegions(restored)).toEqual(getTrackClipRegions(cut));
+      expect(getClipSourceTimeAtTime(restored, 8)).toBe(9);
+      expect(getClipSourceTimeAtTime(restored, 10)).toBeNull();
+    }
+  });
+
+  it("validates take metadata before cloud save and carries region objects in saved tracks", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const saveStart = studio.indexOf("const handleSave = async () => {");
+    const saveEnd = studio.indexOf("const handleSaveSessionToDevice = async () => {", saveStart);
+    const save = studio.slice(saveStart, saveEnd);
+    expect(save).toContain("track.playlists != null && !Array.isArray(track.playlists)");
+    expect(save).toContain("Cannot save: invalid take playlist metadata.");
+    expect(save).toContain("...portableTrackState(track, audioUrl)");
+    expect(studio).toContain("...rest,\\n    audioUrl,");
+    expect(save).toContain("tracks: portableTracks");
+  });
+
   it("separates toolbar Split from directional Cut while keeping backup handlers", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     for (const name of ["handleSaveSessionToDevice", "handleSessionImport",

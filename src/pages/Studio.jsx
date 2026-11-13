@@ -653,12 +653,20 @@ export default function Studio() {
     const pending = pendingDemoAudioCleanupRef.current;
     pendingDemoAudioCleanupRef.current = [];
     const retained = new Set();
-    tracks.forEach(track => {
-      [track.audioUrl, track.file_url].forEach(url => { if (url) retained.add(url); });
-      (Array.isArray(track.playlists) ? track.playlists : []).forEach(take => {
-        [take.audioUrl, take.file_url].forEach(url => { if (url) retained.add(url); });
+    const retainTrackAudio = (snapshotTracks) => {
+      if (!Array.isArray(snapshotTracks)) return;
+      snapshotTracks.forEach(track => {
+        if (!track) return;
+        [track.audioUrl, track.file_url].forEach(url => { if (url) retained.add(url); });
+        (Array.isArray(track.playlists) ? track.playlists : []).forEach(take => {
+          [take?.audioUrl, take?.file_url].forEach(url => { if (url) retained.add(url); });
+        });
       });
-    });
+    };
+    retainTrackAudio(tracks);
+    // Audio may no longer appear on the active tracks but still be reachable
+    // through Undo/Redo. Revoking it here would break restored history clips.
+    historyRef.current.forEach(retainTrackAudio);
     pending.forEach(url => {
       if (typeof url === "string" && url.startsWith("blob:") && !retained.has(url)) {
         URL.revokeObjectURL(url);

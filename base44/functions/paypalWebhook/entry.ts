@@ -56,7 +56,10 @@ function state(type: string, resource: any) {
   if (type === 'BILLING.SUBSCRIPTION.ACTIVATED' || type === 'PAYMENT.SALE.COMPLETED') return 'active';
   if (type === 'BILLING.SUBSCRIPTION.CANCELLED' || type === 'BILLING.SUBSCRIPTION.EXPIRED') return 'canceled';
   if (type === 'BILLING.SUBSCRIPTION.SUSPENDED' || type === 'BILLING.SUBSCRIPTION.PAYMENT.FAILED') return 'unpaid';
-  if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return 'canceled';
+  // A refund or reversal affects an individual sale, not necessarily the
+  // entire recurring agreement. Resolve these events from the current
+  // subscription state below instead of unconditionally canceling access.
+  if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return null;
   const s = String(resource?.status || '').toUpperCase();
   if (s === 'ACTIVE') return 'active';
   if (s === 'CANCELLED' || s === 'EXPIRED') return 'canceled';
@@ -209,7 +212,49 @@ Deno.serve(async (req) => {
     }
 
     // ── Apply status update ──
-    const newStatus = state(event.event_type, event.resource);
+    // A refunded/reversed sale does not prove that the entire PayPal
+    // agreement was canceled. Re-read the subscription and verify owner/plan.
+    // If the agreement remains ACTIVE, preserve local lifecycle status and
+    // surface the adjustment for financial review rather than revoking access.
+    const isPaymentAdjustment = event.event_type === 'PAYMENT.SALE.REFUNDED' ||
+      event.event_type === 'PAYMENT.SALE.REVERSED';
+    let adjustmentStatus: string | null = null;
+    if (isPaymentAdjustment) {
+      const current = await fetchSubscriptionBillingInfo(token, subscriptionId);
+      if (!current || !current.planId ||
+          current.planId !== record.paypal_plan_id ||
+          typeof record.user_id !== 'string' ||
+          typeof record.sku !== 'string' ||
+          current.customId !== record.user_id + ':' + record.sku) {
+        await entities.PayPalWebhookEvent.update(ledger.id, {
+          processing_state: 'failed',
+          processed_at: new Date().toISOString(),
+          last_error: 'Refund/reversal subscription ownership or status could not be verified',
+        });
+        return Response.json({ error: 'PayPal subscription verification required' }, { status: 503 });
+      }
+      if (current.status === 'ACTIVE') {
+        await entities.PayPalWebhookEvent.update(ledger.id, {
+          processing_state: 'processed',
+          processed_at: new Date().toISOString(),
+          last_error: 'Refund/reversal recorded; active recurring agreement requires financial review',
+        });
+        return Response.json({ received: true, processed: true, reviewRequired: true });
+      }
+      if (current.status === 'CANCELLED' || current.status === 'EXPIRED') {
+        adjustmentStatus = 'canceled';
+      } else if (current.status === 'SUSPENDED') {
+        adjustmentStatus = 'unpaid';
+      } else {
+        await entities.PayPalWebhookEvent.update(ledger.id, {
+          processing_state: 'failed',
+          processed_at: new Date().toISOString(),
+          last_error: 'Refund/reversal subscription lifecycle could not be resolved',
+        });
+        return Response.json({ error: 'PayPal subscription lifecycle verification required' }, { status: 503 });
+      }
+    }
+    const newStatus = isPaymentAdjustment ? adjustmentStatus : state(event.event_type, event.resource);
     if (newStatus) {
       const update: Record<string, unknown> = {
         status: newStatus,

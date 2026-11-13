@@ -58,6 +58,14 @@ describe("NaliStudio portable exports", () => {
     expect(loader).not.toContain("new URLSearchParams(searchParams)");
   });
 
+  it("reads the latest committed track state when checking an in-flight save", async () => {
+    const studio = await source();
+    expect(studio).toContain("useEffect, useLayoutEffect, useRef");
+    expect(studio).toContain("useLayoutEffect(() => {\n    tracksRef.current = tracks;\n  }, [tracks]);");
+    expect(studio).toContain("const editsDuringSave = tracksRef.current !== tracks");
+    expect(studio).not.toContain("useEffect(() => {\n    tracksRef.current = tracks;\n  }, [tracks]);");
+  });
+
   it("does not replace newer recovery when tracks change during a cloud save", async () => {
     const studio = await source();
     const start = studio.indexOf("const handleSave = async () => {");

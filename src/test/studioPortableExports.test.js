@@ -372,6 +372,10 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain('Studio session manifest is too large.');
     expect(handler).toContain('Object.values(archive.files).filter((entry) => !entry.dir)');
     expect(handler).toContain("archiveEntries.length > 10001");
+    expect(handler).toContain("track?.playlists != null && !Array.isArray(track.playlists)");
+    expect(handler).toContain('throw new Error("Session has invalid take playlist metadata.")');
+    expect(handler.indexOf("track?.playlists != null && !Array.isArray(track.playlists)"))
+      .toBeLessThan(handler.indexOf("const restoredTracks = []"));
     expect(handler).toContain("savedTakeCount > 10000 - payload.project.tracks.length");
     expect(handler).toContain("restoredPlaylists.push({ ...take, audioUrl: takeUrl, file_url: takeUrl })");
     expect(handler).toContain("playlists: restoredPlaylists");

@@ -201,6 +201,8 @@ export default function Studio() {
   // its first route-triggered hydration so edits made during upload survive.
   const newlyCreatedProjectHandoffRef = useRef(null);
   const audioElementsRef = useRef({});
+  // Avoid repeated HTMLMediaElement.play() calls while an earlier request is pending.
+  const pendingAudioStartsRef = useRef(new WeakSet());
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
   if (!mixEngineRef.current) mixEngineRef.current = createMixEngine();
@@ -944,7 +946,19 @@ export default function Studio() {
               * Math.pow(10, (track.clipGain || 0) / 20) * (masterVolume / 100);
             audio.volume = Math.max(0, Math.min(1, baseGain * regionGain));
           }
-          if (audio.paused) audio.play().catch(() => {});
+          if (audio.paused && !pendingAudioStartsRef.current.has(audio)) {
+            pendingAudioStartsRef.current.add(audio);
+            audio.play().catch(() => {}).finally(() => {
+              pendingAudioStartsRef.current.delete(audio);
+              // The user may have stopped playback or edited into silence while play() was pending.
+              const liveTrack = tracksRef.current.find(item => item.id === track.id);
+              const soloActive = tracksRef.current.some(item => item.solo);
+              const shouldPlay = liveTrack?.audioUrl === audio.dataset?.srcUrl &&
+                !liveTrack.muted && (!soloActive || liveTrack.solo) &&
+                getClipSourceTimeAtTime(liveTrack, currentTimeRef.current) !== null;
+              if (!shouldPlay || audioElementsRef.current[track.id] !== audio) audio.pause();
+            });
+          }
         });
       }
       
@@ -1071,7 +1085,8 @@ export default function Studio() {
       // Cross-origin media without CORS headers can't be tapped by Web Audio —
       // retry once without the crossOrigin hint and run that track dry.
       audio.addEventListener('error', () => {
-        if (audio.crossOrigin !== 'anonymous') return;
+        // A stale element must not overwrite a newer track source after an edit.
+        if (audioElementsRef.current[track.id] !== audio || audio.crossOrigin !== 'anonymous') return;
         mixEngineRef.current?.detach(track.id);
         const plain = new Audio();
         plain.preload = 'auto';

@@ -339,6 +339,19 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('bounds PayPal request IDs and prevents persisted request-key plan reuse', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    expect(code).toContain("const providerRequestId = 'nalichat-' + user.id + '-' + idempotencyKey;");
+    expect(code).toContain('if (providerRequestId.length > 108)');
+    expect(code).toContain("'PayPal-Request-Id': providerRequestId");
+    expect(code).toContain('sub.checkout_request_key === idempotencyKey');
+    expect(code).toContain('sub.sku !== sku');
+    expect(code).toContain('checkout_request_key: idempotencyKey,');
+    expect(code.indexOf('if (providerRequestId.length > 108)')).toBeLessThan(
+      code.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions'")
+    );
+  });
+
   it('does not create another PayPal agreement while an older pending agreement is unresolved', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(code).toContain("const existing = allSubs.filter((sub: any)");

@@ -26,6 +26,7 @@ The scheduled PayPal workflow definition and both backend entrypoints contain an
 - [ ] Check that one lookup/API exception does not stop later reconciliation records and failures are observable and retried.
 - [ ] Test an active paid PayPal subscription with temporarily missing billing metadata so a legitimate payer is not locked out indefinitely; provide a bounded, provider-evidence-backed recovery route.
 - [ ] Test an expired/canceled subscription that should legitimately be allowed to purchase a new plan; prevent duplicate recurring charges.
+- [ ] **Parallel checkout race (#1047):** run two simultaneous same-user PayPal create requests with different client idempotency keys and verify a single provider agreement. Require a provider-safe, atomically reserved per-user billing intent before considering launch; independent client keys alone cannot prevent distinct concurrent creates. Test an uncertain PayPal response and local write failure, too.
 - [ ] Validate older records with missing `sku`, `paypal_plan_id`, or `custom_id` without silently granting access or creating another subscription.
 - [ ] Validate live user journey on desktop, Android-sized mobile, iPhone-sized mobile, including login, pricing, checkout return, subscription display, and Premium gating.
 

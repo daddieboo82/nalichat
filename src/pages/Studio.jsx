@@ -1442,6 +1442,8 @@ export default function Studio() {
       };
       recordingFinalizePendingRef.current = true;
       recorderBeingFinalized.onstop = async () => {
+        let createdAudioUrl = null;
+        let transferredAudioUrl = false;
         try {
         if (recordingEpoch !== historyEpochRef.current || mediaRecorderRef.current !== recorderBeingFinalized) return;
         const recordingMimeType =
@@ -1457,7 +1459,8 @@ export default function Studio() {
           return;
         }
         const audioUrl = URL.createObjectURL(blob);
-        
+        createdAudioUrl = audioUrl;
+
         let realWaveform = generateWaveform(WAVEFORM_POINTS);
         let recordedDuration = null;
         let waveformAudioCtx = null;
@@ -1507,12 +1510,16 @@ export default function Studio() {
         const eligibleTargets = tracksRef.current.filter(matchesRecordingTarget);
         if (recordingEpoch !== historyEpochRef.current || eligibleTargets.length === 0) {
           URL.revokeObjectURL(audioUrl);
+          createdAudioUrl = null;
           return;
         }
         const hasAudioTarget = eligibleTargets.some(t => !['midi', 'instrument'].includes(t.type));
         // MIDI-only destinations can retain notes, but cannot use a recorded
         // audio object URL; release it rather than leaking detached media.
-        if (!hasAudioTarget) URL.revokeObjectURL(audioUrl);
+        if (!hasAudioTarget) {
+          URL.revokeObjectURL(audioUrl);
+          createdAudioUrl = null;
+        }
         setTracksWithHistory(prev => prev.map(t => {
           if (!matchesRecordingTarget(t)) return t;
           if (['midi', 'instrument'].includes(t.type)) {
@@ -1532,9 +1539,11 @@ export default function Studio() {
             duration: recordedDuration || Math.max(1, recordedStopTime - recordedStartTime)
           };
         }));
+        transferredAudioUrl = hasAudioTarget;
         setRecordingStartTime(null);
         toast.success("Recording saved!");
         } catch (error) {
+          if (createdAudioUrl && !transferredAudioUrl) URL.revokeObjectURL(createdAudioUrl);
           console.error("Studio recording finalization failed", error);
           toast.error("Recording could not be finalized. Check your audio device and try again.");
         } finally {

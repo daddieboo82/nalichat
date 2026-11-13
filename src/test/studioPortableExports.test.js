@@ -4,6 +4,22 @@ import { readFile } from "node:fs/promises";
 const source = () => readFile("src/pages/Studio.jsx", "utf8");
 
 describe("NaliStudio portable exports", () => {
+  it("hides and blocks standalone recovery while a cloud room is open", async () => {
+    const studio = await source();
+    const checkStart = studio.indexOf("useEffect(() => {\n    setHasAutosave(false);");
+    const checkEnd = studio.indexOf("useEffect(() => {\n    if (!roomId || !user?.id)", checkStart);
+    const availability = studio.slice(checkStart, checkEnd);
+    const loadStart = studio.indexOf("const handleLoadAutosave = () => {");
+    const loadEnd = studio.indexOf("const handleLoadDemo =", loadStart);
+    const loader = studio.slice(loadStart, loadEnd);
+    expect(availability).toContain("if (!autosaveStorageKey || roomId) return;");
+    expect(availability).toContain("}, [autosaveStorageKey, roomId]);");
+    expect(loader).toContain("if (roomId) {");
+    expect(loader).toContain("Leave the cloud project before opening a standalone draft recovery.");
+    expect(loader.indexOf("if (roomId) {"))
+      .toBeLessThan(loader.indexOf("localStorage.getItem(autosaveStorageKey)"));
+  });
+
   it("keeps cloud-room autosaves separate from standalone draft recovery", async () => {
     const studio = await source();
     expect(studio).toContain("if (!autosaveStorageKey || roomId || !tracks");

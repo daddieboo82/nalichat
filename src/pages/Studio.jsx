@@ -4099,7 +4099,9 @@ export default function Studio() {
                       />
 
                       <div data-testid={`studio-waveform-${track.id}`} className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
-                        <div style={{ position: 'absolute', left: `${-(track.clipStart || 0) * 20 * zoom}px`, width: `${(track.fullDuration || track.duration || 40) * 20 * zoom}px`, height: '100%' }}>
+                        {/* Renderer maps source samples into each surviving timeline region.
+                            Do not apply the legacy clipStart/fullDuration transform twice. */}
+                        <div className="absolute inset-0">
                           <TrackWaveformSVG track={track} />
                         </div>
                       </div>

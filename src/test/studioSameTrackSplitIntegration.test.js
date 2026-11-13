@@ -144,7 +144,7 @@ describe("Studio same-track split integration", () => {
     expect(finalize).toContain("eligibleTargets.length === 0");
     expect(finalize).toContain("if (!matchesRecordingTarget(t)) return t;");
     expect(finalize).toContain("if (recordingEpoch !== historyEpochRef.current) return;");
-    expect(finalize).toContain("recordingEpoch !== historyEpochRef.current || !hasEligibleTarget");
+    expect(finalize).toContain("recordingEpoch !== historyEpochRef.current || eligibleTargets.length === 0");
     expect(finalize).toContain("URL.revokeObjectURL(audioUrl)");
     expect(finalize).toContain("clipRegions: undefined, clipStart: 0");
   });

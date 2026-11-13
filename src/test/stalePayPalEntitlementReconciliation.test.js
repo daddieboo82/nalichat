@@ -154,6 +154,19 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('verifies stale ACTIVE PayPal records before using activation-capable status helper', async () => {
+    const code = await source();
+    const remoteRead = code.indexOf('const remote = await response.json();');
+    const ownership = code.indexOf("remote?.custom_id !== subscription.user_id + ':' + subscription.sku");
+    const resolver = code.indexOf('const remoteStatus = await resolvePayPalSubscriptionStatus(');
+    expect(remoteRead).toBeGreaterThan(0);
+    expect(ownership).toBeGreaterThan(remoteRead);
+    expect(resolver).toBeGreaterThan(ownership);
+    const verification = code.slice(remoteRead, resolver);
+    expect(verification).toContain("remote?.plan_id !== subscription.paypal_plan_id");
+    expect(verification).not.toContain("subscription.status === 'pending' &&");
+  });
+
   it('checks PayPal owner and plan before any APPROVED activation in all callers', async () => {
     for (const path of [
       'base44/functions/createPayPalSubscription/entry.ts',

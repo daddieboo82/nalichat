@@ -10,6 +10,8 @@ describe("NaliStudio portable exports", () => {
     expect(studio).toContain("!hasTransientStudioAudio(parsed)");
     expect(studio).toContain("if (hasTransientStudioAudio(parsed))");
     expect(studio).toContain("This autosave contains temporary audio that expired after reload.");
+    expect(studio).toContain('window.addEventListener("beforeunload", warnOnUnload)');
+    expect(studio).toContain('window.removeEventListener("beforeunload", warnOnUnload)');
     expect(studio).toContain("Save to My Sessions or keep your ZIP backup before leaving.");
   });
 

@@ -2356,6 +2356,10 @@ export default function Studio() {
       toast.error("Leave the shared Jam Room before restoring a device session.");
       return;
     }
+    if (isRecording || isPlaying) {
+      toast.error("Stop playback and recording before restoring a Studio backup.");
+      return;
+    }
     if (tracks.length > 0 && !window.confirm("Restoring a backup will replace the tracks currently open in Studio. Save your current session first. Continue?")) {
       return;
     }
@@ -2462,6 +2466,8 @@ export default function Studio() {
         temporaryUrls.forEach((url) => URL.revokeObjectURL(url));
         throw restoreError;
       }
+      setSelectedTrackIds([]);
+      setFxTarget(null);
       setTracksWithHistory(restoredTracks);
       setProjectName(payload.project.title || "Restored Project");
       if (Number.isFinite(Number(payload.project.bpm))) setBpm(Number(payload.project.bpm));

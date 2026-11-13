@@ -9,7 +9,10 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain("subscription.status === 'pending'");
     expect(code).toContain("subscription.status !== 'active'");
     expect(code).toContain("periodEndMs <= nowMs");
-    expect(code).toContain("Number(right.status === 'active') - Number(left.status === 'active')");
+    expect(code).toContain("const staleActive = unresolved.filter");
+    expect(code).toContain("const pending = unresolved.filter");
+    expect(code).toContain('...selectRotating(staleActive, 5)');
+    expect(code).toContain('...selectRotating(pending, 5)');
   });
 
   it('revalidates active PayPal subscriptions with absent or malformed billing ends', async () => {
@@ -19,7 +22,15 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain('Number.NaN');
     expect(code).toContain('!Number.isFinite(periodEndMs) || periodEndMs <= nowMs');
     expect(code.indexOf('!Number.isFinite(periodEndMs) || periodEndMs <= nowMs'))
-      .toBeLessThan(code.indexOf('.slice(0, 10)'));
+      .toBeLessThan(code.indexOf('const staleActive = unresolved.filter'));
+  });
+
+  it('rotates pending and stale active retries so one group cannot starve the other', async () => {
+    const code = await source();
+    expect(code).toContain('Math.floor(nowMs / 60_000) % rows.length');
+    expect(code).toContain('const selectedIds = new Set(candidates.map((row) => row.id))');
+    expect(code).toContain('candidates.push(...selectRotating(remaining, 10 - candidates.length))');
+    expect(code).not.toContain("Number(right.status === 'active') - Number(left.status === 'active')");
   });
 
   it('requires a successful provider lookup and never grants an unbounded period', async () => {

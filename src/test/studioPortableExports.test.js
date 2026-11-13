@@ -68,6 +68,10 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("if (studioSaveInFlightRef.current)");
     expect(handler).toContain("studioSaveInFlightRef.current = true;");
     expect(handler).toContain("studioSaveInFlightRef.current = false;");
+    expect(handler).toContain("const reason = typeof e?.message");
+    expect(handler).toContain('e.message.trim().slice(0, 240)');
+    expect(handler).toContain("Could not save Studio project:");
+    expect(handler).not.toContain('toast.error("Failed to save project."');
     expect(handler).toContain("} finally {");
     expect(handler).toContain("Cannot save: duplicate Studio track IDs.");
     expect(handler).toContain("Cannot save: duplicate take playlist IDs.");

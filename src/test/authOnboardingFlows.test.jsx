@@ -296,6 +296,27 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
   });
 
+  it('shows a known backend validation message instead of generic HTTP 400', async () => {
+    const userId = '507f1f77bcf86cd799439014';
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: userId, display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
+      isAuthenticated: true,
+    };
+    mockBase44.functions.invoke.mockRejectedValueOnce({
+      message: 'Request failed with status code 400',
+      response: { data: { error: 'Invalid birthdate' } },
+    });
+    renderInRouter(<Onboarding />);
+    fireEvent.change(screen.getByPlaceholderText('What should we call you?'), {
+      target: { value: 'New Artist' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith('Invalid birthdate');
+    });
+  });
+
   it('saves onboarding profile data and refreshes auth state', async () => {
     const checkUserAuth = vi.fn().mockResolvedValue({ id: '507f1f77bcf86cd799439012', onboarding_completed: true });
     mockAuthState.current = {

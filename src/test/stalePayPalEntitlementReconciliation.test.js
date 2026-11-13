@@ -304,10 +304,35 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain("current.customId !== record.user_id + ':' + record.sku");
     expect(code).toContain("if (current.status === 'ACTIVE') {");
     expect(code).toContain('reviewRequired: true');
-    expect(code).toContain("adjustmentStatus = 'canceled'");
-    expect(code).toContain("adjustmentStatus = 'unpaid'");
-    expect(code).toContain('const newStatus = isPaymentAdjustment ? adjustmentStatus : state(');
+    expect(code).toContain('const newStatus = state(event.event_type, event.resource);');
+    expect(code).not.toContain("adjustmentStatus = 'canceled'");
+    expect(code).not.toContain("adjustmentStatus = 'unpaid'");
+    const verifiedAdjustment = code.slice(
+      code.indexOf('if (isPaymentAdjustment) {'),
+      code.indexOf('const newStatus = state(event.event_type, event.resource);'),
+    );
+    expect(verifiedAdjustment).toContain("processing_state: 'failed'");
+    expect(verifiedAdjustment).toContain('lifecycle status is unchanged');
+    expect(verifiedAdjustment).toContain('reviewRequired: true');
+    expect(verifiedAdjustment).toContain('status: 503');
+    expect(verifiedAdjustment).not.toContain('Subscription.update(');
     expect(code).not.toContain("type === 'PAYMENT.SALE.REVERSED') return 'canceled'");
+  });
+
+  it('does not use refunded or reversed sale events as subscription lifecycle transitions', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const adjustment = code.indexOf('if (isPaymentAdjustment) {');
+    const lifecycle = code.indexOf('const newStatus = state(event.event_type, event.resource);');
+    const subscriptionUpdate = code.indexOf('await entities.Subscription.update(record.id, update)');
+    expect(adjustment).toBeGreaterThan(0);
+    expect(lifecycle).toBeGreaterThan(adjustment);
+    expect(subscriptionUpdate).toBeGreaterThan(lifecycle);
+    const adjustmentBranch = code.slice(adjustment, lifecycle);
+    expect(adjustmentBranch).toContain('return Response.json({');
+    expect(adjustmentBranch).toContain('reviewRequired: true');
+    expect(adjustmentBranch).not.toContain('paypal_event_time: incomingEventTime');
+    expect(adjustmentBranch).not.toContain('Subscription.update(');
+    expect(code).toContain("if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return null;");
   });
 
   it('requires current PayPal ACTIVE, owner and plan before any webhook reactivation', async () => {

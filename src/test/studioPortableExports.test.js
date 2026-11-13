@@ -429,6 +429,11 @@ describe("NaliStudio portable exports", () => {
     expect(handler.indexOf("try {")).toBeLessThan(handler.indexOf("const exportTracks = tracks.map("));
     expect(handler.indexOf("const exportTracks = tracks.map(")).toBeLessThan(handler.indexOf("} finally {"));
     expect(handler).toContain("let toastId;");
+    expect(handler).toContain("let downloadTriggered = false;");
+    expect(handler).toContain("downloadTriggered = true;");
+    expect(handler).toContain("link?.remove();");
+    expect(handler).toContain("if (downloadTriggered) setTimeout(() => URL.revokeObjectURL(url), 60_000)");
+    expect(handler).toContain("else URL.revokeObjectURL(url)");
     expect(handler).toContain("...exportMetadata");
     expect(studio).toContain("Finish the Studio device backup before saving.");
     const restore = studio.slice(studio.indexOf("const handleSessionImport = async"), studio.indexOf("const [isDownloading", start));

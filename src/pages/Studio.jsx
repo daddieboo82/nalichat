@@ -1398,7 +1398,29 @@ export default function Studio() {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       // Snapshot the target tracks before async recorder finalization.
       const recordingEpoch = historyEpochRef.current;
-      const recordingTargets = new Map(tracksRef.current.filter(t => t.armed).map(t => [String(t.id), t]));
+      const recordingTargets = new Map(tracksRef.current.filter(t => t.armed).map(t => [String(t.id), {
+        track: t,
+        // Region-only edits retain the same audio URL but must not be overwritten.
+        editSignature: JSON.stringify({
+          audioUrl: t.audioUrl || t.file_url || '',
+          clipRegions: getTrackClipRegions(t),
+          startTime: t.startTime,
+          duration: t.duration,
+          clipStart: t.clipStart,
+          waveform: t.waveform,
+        }),
+      }]));
+      const matchesRecordingTarget = (track) => {
+        const original = recordingTargets.get(String(track.id));
+        return Boolean(original && track.armed && JSON.stringify({
+          audioUrl: track.audioUrl || track.file_url || '',
+          clipRegions: getTrackClipRegions(track),
+          startTime: track.startTime,
+          duration: track.duration,
+          clipStart: track.clipStart,
+          waveform: track.waveform,
+        }) === original.editSignature);
+      };
       mediaRecorderRef.current.onstop = async () => {
         if (recordingEpoch !== historyEpochRef.current) return;
         const recordingMimeType =
@@ -1462,17 +1484,13 @@ export default function Studio() {
         const heldMidiNotes = midiRecordingRef.current ? [...midiActiveNotesRef.current.values()] : [];
         midiRecordingRef.current = false;
         midiActiveNotesRef.current.clear();
-        const hasEligibleTarget = tracksRef.current.some(t => {
-          const original = recordingTargets.get(String(t.id));
-          return original && t.armed && (t.audioUrl || t.file_url || '') === (original.audioUrl || original.file_url || '');
-        });
+        const hasEligibleTarget = tracksRef.current.some(matchesRecordingTarget);
         if (recordingEpoch !== historyEpochRef.current || !hasEligibleTarget) {
           URL.revokeObjectURL(audioUrl);
           return;
         }
         setTracksWithHistory(prev => prev.map(t => {
-          const original = recordingTargets.get(String(t.id));
-          if (!original || !t.armed || (t.audioUrl || t.file_url || '') !== (original.audioUrl || original.file_url || '')) return t;
+          if (!matchesRecordingTarget(t)) return t;
           if (['midi', 'instrument'].includes(t.type)) {
             const finalized = heldMidiNotes.filter(note => note.trackId === t.id).map(note => ({
               id: crypto.randomUUID(), note: note.note,

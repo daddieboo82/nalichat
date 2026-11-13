@@ -1,7 +1,38 @@
 import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
+import { shouldApplyPayPalEvent } from '../../base44/shared/paypalWebhookLedger.ts';
 
 const source = () => readFile('base44/functions/checkSubscriptionStatus/entry.ts', 'utf8');
+
+describe('signed PayPal webhook event ordering', () => {
+  const newer = '2026-11-13T17:00:00.000Z';
+  const older = '2026-11-12T17:00:00.000Z';
+
+  it('rejects an invalid incoming timestamp rather than treating it as newest', () => {
+    expect(shouldApplyPayPalEvent('last', newer, 'next', '')).toBe(false);
+    expect(shouldApplyPayPalEvent('last', newer, 'next', 'not-a-date')).toBe(false);
+    expect(shouldApplyPayPalEvent(null, null, 'first', 'not-a-date')).toBe(false);
+  });
+
+  it('rejects stale or duplicate events while allowing newer valid events', () => {
+    expect(shouldApplyPayPalEvent('last', newer, 'last', newer)).toBe(false);
+    expect(shouldApplyPayPalEvent('last', newer, 'older', older)).toBe(false);
+    expect(shouldApplyPayPalEvent('last', older, 'next', newer)).toBe(true);
+  });
+
+  it('requires a valid signed creation time before the webhook ledger is touched', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const verification = code.indexOf('if (!(await verify(req, event, token)))');
+    const timeGuard = code.indexOf("typeof event.create_time !== 'string'");
+    const ledger = code.indexOf('const existing = await entities.PayPalWebhookEvent.filter(');
+    expect(verification).toBeGreaterThan(0);
+    expect(timeGuard).toBeGreaterThan(verification);
+    expect(ledger).toBeGreaterThan(timeGuard);
+    expect(code).toContain("event_time: event.create_time,");
+    expect(code).toContain('const incomingEventTime = event.create_time;');
+    expect(code).not.toContain('event.create_time || new Date().toISOString()');
+  });
+});
 
 describe('stale active PayPal subscription reconciliation', () => {
   it('selects expired active PayPal records as well as pending records', async () => {

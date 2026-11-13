@@ -66,6 +66,15 @@ Deno.serve(async (req) => {
         continue;
       }
       const remote = await response.json();
+      // resolvePayPalSubscriptionStatus can POST /activate for APPROVED.
+      // Check the pending record's plan and owner before that side effect.
+      if (remote?.plan_id !== subscription.paypal_plan_id ||
+          typeof subscription.user_id !== 'string' ||
+          typeof subscription.sku !== 'string' ||
+          remote?.custom_id !== subscription.user_id + ':' + subscription.sku) {
+        results.push({ subscriptionId, result: 'ownership_or_plan_unverified' });
+        continue;
+      }
       const remoteStatus = await resolvePayPalSubscriptionStatus(apiBase(), token, subscriptionId, remote);
       const status = localStatus(remoteStatus);
       if (!status) {

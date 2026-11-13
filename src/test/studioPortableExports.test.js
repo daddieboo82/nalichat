@@ -452,7 +452,7 @@ describe("NaliStudio portable exports", () => {
     expect(restore).toContain("studioDeviceExportInFlightRef.current");
     for (const name of ["handleStartBlank", "handleLoadAutosave", "handleLoadDemo"]) {
       const index = studio.indexOf(`const ${name} =`);
-      expect(studio.slice(index, index + 250)).toContain("studioDeviceExportInFlightRef.current");
+      expect(studio.slice(index, studio.indexOf("historyEpochRef.current += 1;", index))).toContain("studioDeviceExportInFlightRef.current");
     }
   });
 });

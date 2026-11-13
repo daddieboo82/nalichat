@@ -12,7 +12,7 @@ describe("Studio account-switch storage isolation", () => {
     expect(source).toContain('nalistudio_master_fx:${studioStorageOwner}');
     expect(source).toContain('nalistudio_project_autosave:${studioStorageOwner}');
     expect(source).toContain('if (!masterFxStorageKey) return null;');
-    expect(source).toContain('if (!autosaveStorageKey) return;');
+    expect(source).toContain('if (!autosaveStorageKey || roomId) return;');
     expect(source).toContain('setTracks([]);');
     expect(source).toContain('setMasterFx({});');
     expect(source).toContain('setHasAutosave(false);');

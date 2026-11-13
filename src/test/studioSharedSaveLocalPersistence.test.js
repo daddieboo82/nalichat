@@ -6,8 +6,8 @@ describe('Studio shared save local persistence', () => {
     const s = await readFile('src/pages/Studio.jsx', 'utf8');
     expect(s).toContain('let localPersistenceFailed = false;');
     expect(s).toContain('console.error("Studio local persistence failed", storageError);');
-    expect(s).toContain('if (!roomId) {');
-    expect(s).toContain('throw new Error("This browser could not save the project locally.");');
-    expect(s).toContain('Shared project saved. Local autosave is unavailable on this device.');
+    expect(s).toContain('if (autosaveStorageKey && !roomId && !editsDuringSave) {');
+    expect(s).toContain('localPersistenceFailed = true;');
+    expect(s).toContain('Studio project saved to My Sessions. Local autosave is unavailable on this device.');
   });
 });

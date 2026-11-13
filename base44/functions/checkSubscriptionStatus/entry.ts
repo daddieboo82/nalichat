@@ -88,15 +88,24 @@ function paypalStatus(status: unknown) {
 }
 
 async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, subscriptions: SubscriptionRecord[]) {
-  const pending = subscriptions.filter((subscription) =>
-    subscription.provider === 'paypal' && subscription.status === 'pending' &&
-    typeof subscription.id === 'string' && typeof subscription.subscription_id === 'string'
-  ).slice(0, 10);
-  if (!pending.length) return;
+  const nowMs = Date.now();
+  // Recover pending approvals and revalidate active PayPal records whose
+  // locally stored billing boundary is already past. A stale local period
+  // must not permanently deny a subscriber who renewed at the provider.
+  const candidates = subscriptions.filter((subscription) => {
+    if (subscription.provider !== 'paypal' ||
+        typeof subscription.id !== 'string' ||
+        typeof subscription.subscription_id !== 'string') return false;
+    if (subscription.status === 'pending') return true;
+    if (subscription.status !== 'active' || typeof subscription.current_period_end !== 'string') return false;
+    const periodEndMs = Date.parse(subscription.current_period_end);
+    return Number.isFinite(periodEndMs) && periodEndMs <= nowMs;
+  }).slice(0, 10);
+  if (!candidates.length) return;
   try {
     const token = await paypalAccessToken();
     if (!token) return;
-    for (const subscription of pending) {
+    for (const subscription of candidates) {
       const response = await fetch(paypalApiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscription.subscription_id as string), {
         headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
       });
@@ -113,6 +122,13 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       const update: Record<string, unknown> = { status };
       const periodEnd = paypalPeriodEndForStatus(status, remote?.billing_info?.next_billing_time);
       if (periodEnd !== undefined) update.current_period_end = periodEnd;
+      // A provider-confirmed ACTIVE subscription can have a missing billing
+      // boundary. Clear an expired local one, but never do so on failed lookup.
+      if (status === 'active' && periodEnd === undefined &&
+          typeof subscription.current_period_end === 'string' &&
+          Date.parse(subscription.current_period_end) <= nowMs) {
+        update.current_period_end = null;
+      }
       if (status === 'canceled') update.cancel_at_period_end = false;
       await subscriptionEntity.update(subscription.id as string, update);
       Object.assign(subscription, update);

@@ -7,6 +7,7 @@ describe("NaliStudio portable exports", () => {
   it("does not advertise expired object-URL autosaves as recoverable", async () => {
     const studio = await source();
     expect(studio).toContain("const hasTransientStudioAudio = (tracks)");
+    expect(studio).toContain("track.playlists.forEach((take) => sources.push(take?.audioUrl, take?.file_url))");
     expect(studio).toContain("!hasTransientStudioAudio(parsed)");
     expect(studio).toContain("if (hasTransientStudioAudio(parsed))");
     expect(studio).toContain("This autosave contains temporary audio that expired after reload.");
@@ -48,7 +49,10 @@ describe("NaliStudio portable exports", () => {
     const handler = studio.slice(start, end);
     expect(start).toBeGreaterThan(0);
     expect(handler).toContain("const response = await fetch(source)");
-    expect(handler).toContain("zip.file(savedAudioPath, audio)");
+    expect(handler).toContain("zip.file(mediaPath, audio)");
+    expect(handler).toContain("for (const [takeIndex, take] of playlists.entries())");
+    expect(handler).toContain("playlists: savedPlaylists");
+    expect(handler).toContain("Too many tracks and takes for a portable backup.");
     expect(handler).toContain("studioAudioExtension({");
     expect(handler).toContain("if (!extension) throw new Error");
     expect(handler).toContain('zip.file("session.json", JSON.stringify(payload, null, 2))');
@@ -71,7 +75,10 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain('tracks.length > 0 && !window.confirm(');
     expect(handler).toContain('Studio session manifest is too large.');
     expect(handler).toContain('Object.values(archive.files).filter((entry) => !entry.dir)');
-    expect(handler).toContain('archiveEntries.length > MAX_TRACKS + 1');
+    expect(handler).toContain("archiveEntries.length > 10001");
+    expect(handler).toContain("savedTakeCount > 10000 - payload.project.tracks.length");
+    expect(handler).toContain("restoredPlaylists.push({ ...take, audioUrl: takeUrl, file_url: takeUrl })");
+    expect(handler).toContain("playlists: restoredPlaylists");
     expect(handler).toContain('totalUncompressedBytes > 1024 * 1024 * 1024');
     expect(handler).toContain('Uncompressed session contents exceed the 1 GB safety limit.');
     expect(handler).toContain('Session audio exceeds the per-track size limit:');

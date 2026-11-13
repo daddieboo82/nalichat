@@ -62,6 +62,23 @@ describe('stale active PayPal subscription reconciliation', () => {
     }
   });
 
+  it('paginates scheduled pending PayPal records beyond the newest 500 and caps work per run', async () => {
+    for (const path of [
+      'base44/functions/reconcilePendingPayPal/entry.ts',
+      'base44/functions/reconcilePendingPayPal/main.ts',
+    ]) {
+      const code = await readFile(path, 'utf8');
+      expect(code, path).toContain('for (let skip = 0; ; skip += pageSize)');
+      expect(code, path).toContain("'-created_date',");
+      expect(code, path).toContain('allPending.push(...page)');
+      expect(code, path).toContain('if (page.length < pageSize) break;');
+      expect(code, path).toContain('const BATCH_SIZE = 100;');
+      expect(code, path).toContain('Math.floor(Date.now() / 60_000) * 53');
+      expect(code, path).toContain('allPending.slice(start).concat(allPending.slice(0, start)).slice(0, BATCH_SIZE)');
+      expect(code, path).not.toContain("'-created_date',\n      500,");
+    }
+  });
+
   it('isolates scheduled provider failures to one subscription rather than aborting the batch', async () => {
     for (const path of [
       'base44/functions/reconcilePendingPayPal/entry.ts',

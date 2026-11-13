@@ -66,6 +66,18 @@ describe("Studio same-track split integration", () => {
     expect(stop).toContain("recordingFromPreRollRef.current = false");
   });
 
+  it("keeps recorded chunks isolated per recorder when another take starts", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));
+    const start = studio.slice(studio.indexOf("const toggleRecord = async"), studio.indexOf("// Keep ref in sync so the RAF loop"));
+    expect(start).toContain("const recordedChunks = [];");
+    expect(start).toContain("mediaRecorder.recordedChunks = recordedChunks;");
+    expect(start).toContain("if (e.data.size > 0) recordedChunks.push(e.data)");
+    expect(finalize).toContain("const recordedChunks = recorderBeingFinalized.recordedChunks || []");
+    expect(finalize).toContain("new Blob(recordedChunks, { type: recordingMimeType })");
+    expect(finalize).not.toContain("new Blob(audioChunksRef.current");
+  });
+
   it("snapshots stop-time recording duration and avoids erasing clips on empty capture", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));

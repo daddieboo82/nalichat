@@ -45,6 +45,17 @@ describe("Studio same-track split integration", () => {
     expect(getClipSourceTimeAtTime(track, 8)).toBe(8);
   });
 
+  it("hands pre-roll into recording once, without repeating count-in", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    expect(studio).toContain("const recordingFromPreRollRef = useRef(false)");
+    expect(studio).toContain("recordingFromPreRollRef.current = true;\n        toggleRecordRef.current()");
+    expect(studio).toContain("metronomeEnabled && !skipCountInRef.current && !recordingFromPreRollRef.current");
+    expect(studio).toContain("preRoll > 0 && !recordingFromPreRollRef.current");
+    expect(studio).toContain("recordingFromPreRollRef.current = false;\n    if (isPlaying)");
+    const stop = studio.slice(studio.indexOf("const stop = () => {"), studio.indexOf("const handleCountInComplete =", studio.indexOf("const stop = () => {")));
+    expect(stop).toContain("recordingFromPreRollRef.current = false");
+  });
+
   it("invalidates late pre-roll, post-roll, punch-out and Stop playback callbacks", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     expect(studio).toContain("const invalidateTransportPlayback = () => {");

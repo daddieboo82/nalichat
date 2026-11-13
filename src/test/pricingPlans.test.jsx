@@ -115,12 +115,13 @@ describe("pricing plans", () => {
     });
   });
 
-  it("records an explicit PayPal cancel return with the original Studio source", () => {
+  it("records an explicit PayPal cancel return with the original Studio source and account", () => {
     sessionStorage.setItem("nalichat_subscription_checkout_started", "1");
     sessionStorage.setItem("checkout-attribution", JSON.stringify({
       source: "studio_bounce",
       feature: "studio.ai_mastering",
       sku: "premium_monthly",
+      userId: "checkout-account",
     }));
 
     renderPricing({}, "/pricing?checkout=paypal_canceled");
@@ -130,7 +131,7 @@ describe("pricing plans", () => {
       source: "studio_bounce",
       upgrade_feature: "studio.ai_mastering",
       checkout_sku: "premium_monthly",
-    });
+    }, "checkout-account");
     expect(sessionStorage.getItem("nalichat_subscription_checkout_started")).toBeNull();
   });
 

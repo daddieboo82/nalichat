@@ -164,6 +164,28 @@ Deno.serve(async (req) => {
       }, { status: 409 });
     }
 
+    const now = new Date().toISOString();
+    const existingPaidSubscription = subscriptions.find(
+      (subscription: Record<string, unknown>) => (
+        normalizePlan(subscription.plan) !== 'free'
+        && hasPaidTierAccess(normalizeStatus(subscription.status), {
+          currentPeriodEnd: typeof subscription.current_period_end === 'string'
+            ? subscription.current_period_end
+            : null,
+          trialEndDate: typeof subscription.trial_end_date === 'string'
+            ? subscription.trial_end_date
+            : null,
+          now,
+        })
+      ),
+    );
+    if (existingPaidSubscription) {
+      const message = existingPaidSubscription.grandfathered === true
+        ? 'This account already has grandfathered Premium Plus billing'
+        : 'This account already has a paid subscription; use the billing portal';
+      return Response.json({ error: message }, { status: 409 });
+    }
+
     if (
       pendingSubscription?.checkout_url
       && pendingSubscription.checkout_id
@@ -185,28 +207,6 @@ Deno.serve(async (req) => {
         ),
         reused: true,
       });
-    }
-
-    const now = new Date().toISOString();
-    const existingPaidSubscription = subscriptions.find(
-      (subscription: Record<string, unknown>) => (
-        normalizePlan(subscription.plan) !== 'free'
-        && hasPaidTierAccess(normalizeStatus(subscription.status), {
-          currentPeriodEnd: typeof subscription.current_period_end === 'string'
-            ? subscription.current_period_end
-            : null,
-          trialEndDate: typeof subscription.trial_end_date === 'string'
-            ? subscription.trial_end_date
-            : null,
-          now,
-        })
-      ),
-    );
-    if (existingPaidSubscription) {
-      const message = existingPaidSubscription.grandfathered === true
-        ? 'This account already has grandfathered Premium Plus billing'
-        : 'This account already has a paid subscription; use the billing portal';
-      return Response.json({ error: message }, { status: 409 });
     }
 
     // Reuse any still-valid pending checkout for this SKU before taking a new

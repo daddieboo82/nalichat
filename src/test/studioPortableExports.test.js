@@ -77,6 +77,10 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain('file.name.toLowerCase().endsWith(".nalistudio.json")');
     expect(handler).toContain("Importing it could lose recorded tracks.");
     expect(handler).toContain('Leave the shared Jam Room');
+    expect(handler).toContain("if (isRecording || isPlaying)");
+    expect(handler).toContain("Stop playback and recording before restoring a Studio backup.");
+    expect(handler).toContain("setSelectedTrackIds([])");
+    expect(handler).toContain("setFxTarget(null)");
     expect(handler).toContain('tracks.length > 0 && !window.confirm(');
     expect(handler).toContain('Studio session manifest is too large.');
     expect(handler).toContain('Object.values(archive.files).filter((entry) => !entry.dir)');

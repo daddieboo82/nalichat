@@ -24,6 +24,11 @@ describe("NaliStudio portable exports", () => {
     expect(start).toBeGreaterThan(0);
     expect(handler).toContain("studioAudioExtension({");
     expect(handler).toContain("studioAudioMimeForExtension(extension)");
+    expect(handler).toContain("const uploadedAudioUrls = new Map()");
+    expect(handler).toContain("uploadedAudioUrls.set(source, uploaded.file_url)");
+    expect(handler).toContain("for (const take of playlists)");
+    expect(handler).toContain("savedPlaylists.push({ ...take, audioUrl: takeUrl, file_url: takeUrl })");
+    expect(handler).toContain("playlists: portableTracks[index]?.playlists || track.playlists");
     expect(handler).toContain("unsupported audio format");
     expect(handler).not.toContain('blob.type || "audio/wav"');
   });

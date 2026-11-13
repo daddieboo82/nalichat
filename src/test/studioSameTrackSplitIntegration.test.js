@@ -24,7 +24,10 @@ describe("Studio same-track split integration", () => {
     expect(studio).toContain("handleSessionImport");
     expect(studio).toContain("studioDeviceExportInFlightRef");
     expect(studio).toContain("studioRestoreInFlightRef");
-    const start = studio.indexOf("if (activeTool === 'cut') {", studio.indexOf("{/* Audio Region (Clip) */}"));
+    const clipStart = studio.indexOf("{/* Audio Region (Clip) */}");
+    const pointerDown = studio.indexOf("onPointerDown={(e) =>", clipStart);
+    const start = studio.indexOf("if (activeTool === 'cut') {", pointerDown);
+    expect(start).toBeGreaterThan(pointerDown);
     const end = studio.indexOf("if (activeTool === 'scrub')", start);
     const handler = studio.slice(start, end);
     expect(handler).toContain("splitTrackRegion(item, splitTime");

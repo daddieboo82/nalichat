@@ -9,6 +9,8 @@ describe("NaliStudio portable exports", () => {
     expect(studio).toContain("const hasTransientStudioAudio = (tracks)");
     expect(studio).toContain("track.playlists.forEach((take) => sources.push(take?.audioUrl, take?.file_url))");
     expect(studio).toContain("!hasTransientStudioAudio(parsed)");
+    expect(studio).toContain("tracks.length === 0 || hasTransientStudioAudio(tracks)) return;");
+    expect(studio).toContain("localStorage.setItem(autosaveStorageKey, JSON.stringify(tracks))");
     expect(studio).toContain("if (hasTransientStudioAudio(parsed))");
     expect(studio).toContain("This autosave contains temporary audio that expired after reload.");
     expect(studio).toContain('window.addEventListener("beforeunload", warnOnUnload)');

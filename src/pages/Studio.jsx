@@ -489,6 +489,7 @@ export default function Studio() {
               : generateWaveform(waveformPointsRef.current),
           }));
           if (cancelled) return;
+          discardPendingHistory();
           historyEpochRef.current += 1;
           historyRef.current = [hydrated];
           historyIndexRef.current = 0;
@@ -528,7 +529,8 @@ export default function Studio() {
               fadeIn: 0,
               fadeOut: 0,
             }));
-            historyEpochRef.current += 1;
+            discardPendingHistory();
+          historyEpochRef.current += 1;
             historyRef.current = [hydrated];
             historyIndexRef.current = 0;
             setHistoryIndex(0);
@@ -569,7 +571,8 @@ export default function Studio() {
       return;
     }
     // Starting a new session must not inherit Undo/Redo from the last one.
-    historyEpochRef.current += 1;
+    discardPendingHistory();
+          historyEpochRef.current += 1;
     historyRef.current = [[]];
     historyIndexRef.current = 0;
     setHistoryIndex(0);
@@ -607,6 +610,7 @@ export default function Studio() {
             return;
           }
           // Loading a local session is also a full session replacement.
+          discardPendingHistory();
           historyEpochRef.current += 1;
           historyRef.current = [parsed];
           historyIndexRef.current = 0;
@@ -639,7 +643,8 @@ export default function Studio() {
       { ...base, id: 2, name: "Demo Bassline", color: "bg-blue-500", waveform: generateWaveform(400), duration: 20, audioUrl: null },
     ];
     // A demo replaces the previous session, including its Undo/Redo timeline.
-    historyEpochRef.current += 1;
+    discardPendingHistory();
+          historyEpochRef.current += 1;
     const demoEpoch = historyEpochRef.current;
     historyRef.current = [demoTracks];
     historyIndexRef.current = 0;
@@ -781,6 +786,11 @@ export default function Studio() {
   // History updates are queued after React state calculation. Flush them before
   // Undo/Redo so an edit followed by an immediate shortcut is not skipped.
   const pendingHistoryRef = useRef([]);
+  const discardPendingHistory = () => {
+    pendingHistoryRef.current.forEach(entry => clearTimeout(entry.timer));
+    pendingHistoryRef.current = [];
+  };
+  useEffect(() => () => discardPendingHistory(), []);
   const flushPendingHistory = () => {
     const pending = pendingHistoryRef.current.splice(0);
     pending.forEach(entry => {
@@ -2875,7 +2885,8 @@ export default function Studio() {
       }
       // A restored backup replaces the current session. Do not let Undo
       // resurrect tracks from the previous session or redo into its edits.
-      historyEpochRef.current += 1;
+      discardPendingHistory();
+          historyEpochRef.current += 1;
       historyRef.current = [restoredTracks];
       historyIndexRef.current = 0;
       setHistoryIndex(0);

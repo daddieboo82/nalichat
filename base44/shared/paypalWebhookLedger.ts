@@ -26,16 +26,19 @@ export function shouldApplyPayPalEvent(
   incomingEventId: string,
   incomingEventTime: string,
 ): boolean {
-  if (lastEventId === incomingEventId) {
-    return false;
-  }
+  if (lastEventId === incomingEventId) return false;
+  // An invalid incoming event time cannot be ordered against previous
+  // lifecycle events. Never substitute receipt time and apply it as newest.
+  const incomingMs = typeof incomingEventTime === 'string'
+    ? Date.parse(incomingEventTime)
+    : Number.NaN;
+  if (!Number.isFinite(incomingMs)) return false;
   if (typeof lastEventTime !== 'string' || lastEventTime.length === 0) {
     return true;
   }
   const lastMs = Date.parse(lastEventTime);
-  const incomingMs = Date.parse(incomingEventTime);
-  if (!Number.isFinite(lastMs) || !Number.isFinite(incomingMs)) {
-    return true;
-  }
+  // A malformed legacy stored time cannot establish ordering. The caller
+  // must still verify subscription state for activation-capable events.
+  if (!Number.isFinite(lastMs)) return true;
   return incomingMs >= lastMs;
 }

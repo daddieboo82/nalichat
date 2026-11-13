@@ -81,6 +81,24 @@ describe('PayPal subscription access', () => {
     )).toBe('SUSPENDED');
   });
 
+  it('does not reuse pre-activation billing metadata when the refreshed ACTIVE response omits it', async () => {
+    const remote = {
+      status: 'APPROVED',
+      billing_info: { next_billing_time: '2026-11-30T12:00:00.000Z' },
+    };
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (String(url).endsWith('/activate')) return new Response(null, { status: 204 });
+      return Response.json({ status: 'ACTIVE' });
+    }));
+    const status = await resolvePayPalSubscriptionStatus(
+      'https://api-m.paypal.com', 'token', 'I-NO-NEW-BILLING', remote,
+    );
+    expect(status).toBe('ACTIVE');
+    expect(remote.billing_info).toBeUndefined();
+    expect(paypalPeriodEndForStatus('active', remote.billing_info?.next_billing_time, NOW)).toBeUndefined();
+    expect(requiresPayPalBillingVerification('pending', 'active', undefined, NOW)).toBe(true);
+  });
+
   it('grants access when activation loses a race but PayPal is already active', async () => {
     const remote = { status: 'APPROVED' };
     vi.stubGlobal('fetch', vi.fn(async (url) => {

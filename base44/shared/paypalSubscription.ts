@@ -41,7 +41,10 @@ export async function resolvePayPalSubscriptionStatus(
       const freshStatus = String(fresh?.status || '').toUpperCase();
       if (freshStatus) {
         remoteStatus = freshStatus;
-        if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
+        // The follow-up read is the authoritative billing snapshot. Do not
+        // combine its ACTIVE status with a next_billing_time from the older
+        // APPROVED response when the fresh payload omitted billing_info.
+        remote.billing_info = fresh?.billing_info ?? undefined;
       }
     }
   } catch {

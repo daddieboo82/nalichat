@@ -84,6 +84,15 @@ describe("Studio same-track split integration", () => {
     }
   });
 
+  it("cancels queued history timers before replacing a Studio session", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    expect(studio).toContain("const discardPendingHistory = () => {");
+    expect(studio).toContain("pendingHistoryRef.current.forEach(entry => clearTimeout(entry.timer))");
+    expect(studio).toContain("useEffect(() => () => discardPendingHistory(), [])");
+    const resets = [...studio.matchAll(/discardPendingHistory\(\);\s*historyEpochRef\.current \+= 1;/g)];
+    expect(resets).toHaveLength(6);
+  });
+
   it("flushes pending region edits before Undo and Redo", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const historyStart = studio.indexOf("const pendingHistoryRef = useRef([])");

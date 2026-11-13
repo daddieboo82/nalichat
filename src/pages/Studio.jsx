@@ -23,7 +23,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
+import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav, getClipRegionGainAtTime, getSiblingCrossfadeGainAtTime } from '@/lib/audioProcessing';
 import { cutClipRegionSide, getClipSourceTimeAtTime, getTrackClipRegions, splitTrackRegion } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
@@ -911,9 +911,16 @@ export default function Studio() {
       // Follow audible clip regions, not the track's outer bounds. A Cut can
       // leave gaps, and Split can map adjacent timeline regions to source offsets.
       if (isPlaying) {
-        tracksRef.current.forEach(track => {
+        const liveTracks = tracksRef.current;
+        const anySolo = liveTracks.some(item => item.solo);
+        liveTracks.forEach(track => {
           const audio = audioElementsRef.current[track.id];
           if (!audio) return;
+          // Muted, non-soloed and unsourced tracks must never auto-restart.
+          if (!track.audioUrl || track.muted || (anySolo && !track.solo)) {
+            if (!audio.paused) audio.pause();
+            return;
+          }
           const sourceTime = getClipSourceTimeAtTime(track, newTime);
           if (sourceTime === null) {
             if (!audio.paused) audio.pause();
@@ -927,8 +934,17 @@ export default function Studio() {
           if (Math.abs(audio.currentTime - sourceTime) > 0.15) {
             audio.currentTime = sourceTime;
           }
-          mixEngineRef.current?.syncClipRegion(track.id, track, region || null, newTime, tracksRef.current);
-          if (audio.paused && !track.muted) audio.play().catch(() => {});
+          mixEngineRef.current?.syncClipRegion(track.id, track, region || null, newTime, liveTracks);
+          // Plain <audio> bypasses Web Audio, so clip fades and gain must be
+          // applied to element volume explicitly to match the routed graph.
+          if (audio.dataset?.fxBypass === '1') {
+            const regionGain = getClipRegionGainAtTime(track, region, newTime)
+              * getSiblingCrossfadeGainAtTime(track, region, newTime, liveTracks);
+            const baseGain = ((track.volume ?? 75) / 100)
+              * Math.pow(10, (track.clipGain || 0) / 20) * (masterVolume / 100);
+            audio.volume = Math.max(0, Math.min(1, baseGain * regionGain));
+          }
+          if (audio.paused) audio.play().catch(() => {});
         });
       }
       

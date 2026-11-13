@@ -85,12 +85,24 @@ describe("NaliStudio portable exports", () => {
       .toBeLessThan(save.indexOf("const editsDuringSave ="));
   });
 
+  it("retires a saved draft after successful project creation without losing newer edits", async () => {
+    const studio = await source();
+    const start = studio.indexOf("const handleSave = async () => {");
+    const end = studio.indexOf("const handleImportClick =", start);
+    const save = studio.slice(start, end);
+    expect(save).toContain("if (autosaveStorageKey && !roomId && !editsDuringSave)");
+    expect(save).toContain("if (createdNewProject || portableTracks.length === 0)");
+    expect(save).toContain("localStorage.removeItem(autosaveStorageKey)");
+    expect(save.indexOf("Project save was not confirmed."))
+      .toBeLessThan(save.indexOf("if (createdNewProject || portableTracks.length === 0)"));
+  });
+
   it("clears the local recovery indicator after a confirmed empty cloud save", async () => {
     const studio = await source();
     const start = studio.indexOf("const handleSave = async () => {");
     const end = studio.indexOf("const handleImportClick =", start);
     const save = studio.slice(start, end);
-    expect(save).toContain("if (portableTracks.length === 0)");
+    expect(save).toContain("if (createdNewProject || portableTracks.length === 0)");
     expect(save).toContain("localStorage.removeItem(autosaveStorageKey)");
     expect(save).toContain("setHasAutosave(false)");
     expect(save).toContain("localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks))");

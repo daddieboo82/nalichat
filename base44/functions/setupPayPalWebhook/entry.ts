@@ -40,12 +40,36 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user || user.role !== 'admin') return Response.json({ error: 'Admin required' }, { status: 403 });
     const existing = secrets.get('PAYPAL_WEBHOOK_ID');
-    if (existing && !existing.startsWith('REPLACE_')) return Response.json({ success: true, reused: true, webhookId: existing });
-
-    const accessToken = await token();
     const appId = secrets.get('BASE44_APP_ID') || '6a1f5ee134147461560c2b37';
     const webhookUrl = secrets.get('PAYPAL_WEBHOOK_URL') ||
       `https://base44-dispatcher-production.base44.workers.dev/api/apps/${appId}/functions/paypalWebhook`;
+    const accessToken = await token();
+
+    // Existing webhook IDs are only meaningful if PayPal registered the
+    // correct destination. Read details without creating or updating a webhook.
+    if (existing && !existing.startsWith('REPLACE_')) {
+      const inspect = await fetch(
+        apiBase() + '/v1/notifications/webhooks/' + encodeURIComponent(existing),
+        { headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json' } },
+      );
+      if (!inspect.ok) {
+        console.error('Unable to inspect registered PayPal webhook', inspect.status);
+        return Response.json({ error: 'Unable to verify existing PayPal webhook registration' }, { status: 502 });
+      }
+      const registration = await inspect.json();
+      const eventTypes = Array.isArray(registration?.event_types)
+        ? registration.event_types.map((event: any) => event?.name).filter((name: any) => typeof name === 'string')
+        : [];
+      return Response.json({
+        success: true,
+        reused: true,
+        webhookId: existing,
+        webhookUrl: registration?.url || null,
+        expectedWebhookUrl: webhookUrl,
+        destinationMatches: registration?.url === webhookUrl,
+        missingEvents: EVENTS.filter((event) => !eventTypes.includes(event)),
+      });
+    }
     const r = await fetch(apiBase() + '/v1/notifications/webhooks', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },

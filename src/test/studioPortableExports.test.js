@@ -33,6 +33,19 @@ describe("NaliStudio portable exports", () => {
     expect(handler).not.toContain("const playlists = Array.isArray(track.playlists)");
   });
 
+  it("resets undo history on both cloud-project loading paths", async () => {
+    const studio = await source();
+    const start = studio.indexOf("if (!roomId || !user?.id)");
+    const end = studio.indexOf("const handleStartBlank =", start);
+    const loader = studio.slice(start, end);
+    expect(loader).toContain("historyRef.current = [hydrated]");
+    expect((loader.match(/historyRef\\.current = \\[hydrated\\]/g) || []).length).toBe(2);
+    expect(loader).toContain("historyEpochRef.current += 1");
+    expect(loader).toContain("if (cancelled) return;");
+    expect(loader).toContain("setSelectedTrackIds([])");
+    expect(loader).toContain("setFxTarget(null)");
+  });
+
   it("resets undo history on blank and locally recovered sessions", async () => {
     const studio = await source();
     const start = studio.indexOf("const handleStartBlank = () => {");

@@ -14,6 +14,14 @@ describe('signed PayPal webhook event ordering', () => {
     expect(shouldApplyPayPalEvent(null, null, 'first', 'not-a-date')).toBe(false);
   });
 
+  it('rejects implausibly future-dated events before they can outrank later events', () => {
+    const now = Date.parse('2026-11-13T17:00:00.000Z');
+    expect(shouldApplyPayPalEvent(null, null, 'future',
+      '2026-11-13T17:05:01.000Z', now)).toBe(false);
+    expect(shouldApplyPayPalEvent(null, null, 'skew',
+      '2026-11-13T17:04:59.000Z', now)).toBe(true);
+  });
+
   it('rejects stale or duplicate events while allowing newer valid events', () => {
     expect(shouldApplyPayPalEvent('last', newer, 'last', newer)).toBe(false);
     expect(shouldApplyPayPalEvent('last', newer, 'older', older)).toBe(false);
@@ -23,11 +31,12 @@ describe('signed PayPal webhook event ordering', () => {
   it('requires a valid signed creation time before the webhook ledger is touched', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     const verification = code.indexOf('if (!(await verify(req, event, token)))');
-    const timeGuard = code.indexOf("typeof event.create_time !== 'string'");
+    const timeGuard = code.indexOf("const eventCreatedAt = typeof event.create_time === 'string'");
     const ledger = code.indexOf('const existing = await entities.PayPalWebhookEvent.filter(');
     expect(verification).toBeGreaterThan(0);
     expect(timeGuard).toBeGreaterThan(verification);
     expect(ledger).toBeGreaterThan(timeGuard);
+    expect(code.slice(timeGuard, ledger)).toContain('eventCreatedAt > Date.now() + 5 * 60_000');
     expect(code).toContain("event_time: event.create_time,");
     expect(code).toContain('const incomingEventTime = event.create_time;');
     expect(code).not.toContain('event.create_time || new Date().toISOString()');

@@ -109,6 +109,15 @@ describe("Studio same-track split integration", () => {
     expect(finalize).not.toContain("new Blob(audioChunksRef.current");
   });
 
+  it("preserves existing waveforms on no-recorder Stop and releases audio without an audio target", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));
+    expect(finalize).toContain("setTracksWithHistory(prev => prev.map(t => t.armed ? { ...t, armed: false } : t))");
+    expect(finalize).toContain("const hasAudioTarget = eligibleTargets.some(t => !['midi', 'instrument'].includes(t.type))");
+    expect(finalize).toContain("if (!hasAudioTarget) URL.revokeObjectURL(audioUrl)");
+    expect(finalize).not.toContain("waveform: [], armed: false");
+  });
+
   it("snapshots stop-time recording duration and avoids erasing clips on empty capture", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));
@@ -131,7 +140,8 @@ describe("Studio same-track split integration", () => {
     expect(finalize).toContain("const matchesRecordingTarget = (track) => {");
     expect(finalize).toContain("clipRegions: getTrackClipRegions(track)");
     expect(finalize).toContain("editSignature: JSON.stringify({");
-    expect(finalize).toContain("const hasEligibleTarget = tracksRef.current.some(matchesRecordingTarget)");
+    expect(finalize).toContain("const eligibleTargets = tracksRef.current.filter(matchesRecordingTarget)");
+    expect(finalize).toContain("eligibleTargets.length === 0");
     expect(finalize).toContain("if (!matchesRecordingTarget(t)) return t;");
     expect(finalize).toContain("if (recordingEpoch !== historyEpochRef.current) return;");
     expect(finalize).toContain("recordingEpoch !== historyEpochRef.current || !hasEligibleTarget");

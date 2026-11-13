@@ -2104,8 +2104,13 @@ export default function Studio() {
         const validation = validateUpload(file, { accept: "audio" });
         if (!validation.ok) throw new Error(`${label}: ${validation.error}`);
         const uploaded = await secureUploadFile({ file });
-        uploadedAudioUrls.set(source, uploaded.file_url);
-        return uploaded.file_url;
+        const uploadedUrl = uploaded?.file_url;
+        if (typeof uploadedUrl !== "string" ||
+            !/^https:\/\//i.test(uploadedUrl)) {
+          throw new Error(`${label}: audio upload did not return a valid secure file URL.`);
+        }
+        uploadedAudioUrls.set(source, uploadedUrl);
+        return uploadedUrl;
       };
       for (const track of tracks) {
         const audioUrl = await persistAudioUrl(track.audioUrl || track.file_url || "", track.name || "track");

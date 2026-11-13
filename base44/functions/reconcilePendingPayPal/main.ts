@@ -78,7 +78,13 @@ Deno.serve(async (req) => {
     const results = [];
     for (const subscription of pending) {
       const subscriptionId = String(subscription.subscription_id || '');
-      if (!subscriptionId) continue;
+      if (!subscriptionId) {
+        // A pending record without a provider ID cannot be reconciled.
+        // Surface it for administrative repair rather than silently counting
+        // it as a completed provider check.
+        results.push({ result: 'missing_subscription_id' });
+        continue;
+      }
       try {
         const response = await fetch(
         apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId),
@@ -130,7 +136,10 @@ Deno.serve(async (req) => {
     return Response.json({
       success: true,
       action: 'reconcile_pending_paypal',
-      checked: pending.length,
+      discovered: allPending.length,
+      selected: pending.length,
+      checked: results.filter((x) => x.result !== 'missing_subscription_id').length,
+      missingProviderId: results.filter((x) => x.result === 'missing_subscription_id').length,
       updated: results.filter((x) => x.result === 'updated').length,
       results,
     });

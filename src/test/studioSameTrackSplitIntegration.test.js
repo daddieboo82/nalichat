@@ -66,6 +66,19 @@ describe("Studio same-track split integration", () => {
     expect(stop).toContain("recordingFromPreRollRef.current = false");
   });
 
+  it("discards microphone permission granted after Stop or unmount", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    expect(studio).toContain("const recordingRequestGenerationRef = useRef(0)");
+    const record = studio.slice(studio.indexOf("const toggleRecord = async () => {"), studio.indexOf("// Keep ref in sync so the RAF loop"));
+    expect(record).toContain("const recordingRequestGeneration = ++recordingRequestGenerationRef.current");
+    expect(record).toContain("recordingRequestGeneration !== recordingRequestGenerationRef.current");
+    expect(record).toContain("stream.getTracks().forEach(input => input.stop())");
+    expect(record).toContain("mediaStreamRef.current.getTracks().forEach(input => input.stop())");
+    const stop = studio.slice(studio.indexOf("const stop = () => {"), studio.indexOf("const handleCountInComplete ="));
+    expect(stop).toContain("recordingRequestGenerationRef.current += 1");
+    expect(studio).toContain("recordingRequestGenerationRef.current += 1;\n      if (mediaStreamRef.current)");
+  });
+
   it("keeps the transport clock active until post-roll completes", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const recording = studio.slice(

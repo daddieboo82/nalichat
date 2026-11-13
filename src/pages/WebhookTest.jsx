@@ -94,7 +94,7 @@ export default function WebhookTest() {
                     )}
                     {sub.subscription_id && (
                       <div className="text-xs text-muted-foreground mt-1">
-                        Stripe Sub: {sub.subscription_id}
+                        {sub.provider === 'paypal' ? 'PayPal' : sub.provider === 'stripe' ? 'Stripe' : 'Billing'} Sub: {sub.subscription_id}
                       </div>
                     )}
                   </div>
@@ -119,7 +119,7 @@ export default function WebhookTest() {
               </div>
               <div className="flex items-start gap-2">
                 <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">2</span>
-                <p>Add endpoint: <code className="text-primary bg-secondary px-1.5 py-0.5 rounded text-xs">https://base44-dispatcher-production.base44.workers.dev/api/apps/cbef744a8545c389ef439ea6/functions/stripeWebhook</code></p>
+                <p>Add endpoint: <code className="text-primary bg-secondary px-1.5 py-0.5 rounded text-xs">https://base44-dispatcher-production.base44.workers.dev/api/apps/6a1f5ee134147461560c2b37/functions/stripeWebhook</code></p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">3</span>

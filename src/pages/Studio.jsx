@@ -1619,13 +1619,26 @@ export default function Studio() {
   };
 
   const recallTakePlaylist = (track, playlistId) => {
-    const take = (track.playlists || []).find(p => p.id === playlistId);
-    if (!take) return;
-    setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
-      ...t, activePlaylistId: take.id, audioUrl: take.audioUrl, file_url: take.file_url || take.audioUrl,
-      waveform: take.waveform || [], startTime: take.startTime || 0, duration: take.duration || 0,
-      clipGain: take.clipGain || 0, fadeIn: take.fadeIn || 0, fadeOut: take.fadeOut || 0,
-    } : t));
+    // Resolve the take from current state, not the potentially stale track
+    // object captured when the playlist menu was rendered.
+    const currentTrack = tracks.find(item => item.id === track.id);
+    const take = currentTrack?.playlists?.find(item => item.id === playlistId);
+    if (!take) {
+      toast.error("That take is no longer available.");
+      return;
+    }
+    setTracksWithHistory(prev => prev.map(current => {
+      if (current.id !== track.id) return current;
+      const currentTake = current.playlists?.find(item => item.id === playlistId);
+      if (!currentTake) return current;
+      return {
+        ...current, activePlaylistId: currentTake.id,
+        audioUrl: currentTake.audioUrl, file_url: currentTake.file_url || currentTake.audioUrl,
+        waveform: currentTake.waveform || [], startTime: currentTake.startTime || 0,
+        duration: currentTake.duration || 0, clipGain: currentTake.clipGain || 0,
+        fadeIn: currentTake.fadeIn || 0, fadeOut: currentTake.fadeOut || 0,
+      };
+    }));
     toast.success(`Recalled ${take.name}`);
   };
 

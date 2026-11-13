@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
-import { cutClipRegionSide, getTrackClipRegions, splitTrackRegion } from "@/lib/studioClipRegions";
+import { cutClipRegionSide, getClipSourceTimeAtTime, getTrackClipRegions, splitTrackRegion } from "@/lib/studioClipRegions";
 
 describe("Studio same-track split integration", () => {
   it("retains one track ID and preserves source mapping on both sides", () => {
@@ -30,6 +30,28 @@ describe("Studio same-track split integration", () => {
     expect(getTrackClipRegions(removeRight)[0].sourceEnd).toBe(7);
     expect(getTrackClipRegions(removeLeft)).toHaveLength(1);
     expect(getTrackClipRegions(removeRight)).toHaveLength(1);
+  });
+
+  it("maps transport times to source offsets and returns silence in a removed gap", () => {
+    const track = {
+      id: 12, startTime: 0, duration: 10, clipStart: 0,
+      clipRegions: [
+        { id: "a", timelineStart: 0, sourceStart: 0, sourceEnd: 3 },
+        { id: "b", timelineStart: 7, sourceStart: 7, sourceEnd: 10 },
+      ],
+    };
+    expect(getClipSourceTimeAtTime(track, 1)).toBe(1);
+    expect(getClipSourceTimeAtTime(track, 5)).toBeNull();
+    expect(getClipSourceTimeAtTime(track, 8)).toBe(8);
+  });
+
+  it("uses region mapping for seek, playback start, and live transport sync", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    expect(studio).toContain("getClipSourceTimeAtTime(track, newTime)");
+    expect(studio).toContain("getClipSourceTimeAtTime(track, currentTimeRef.current)");
+    expect(studio).toContain("mixEngineRef.current?.syncClipRegion(track.id, track, region || null");
+    expect(studio).toContain("if (sourceTime === null)");
+    expect(studio).toContain("if (!audio.paused) audio.pause()");
   });
 
   it("separates toolbar Split from directional Cut while keeping backup handlers", async () => {

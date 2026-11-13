@@ -2145,14 +2145,39 @@ export default function Studio() {
         setJamRoomActive(false);
       }
 
-      // Replace transient blob URLs in memory with their uploaded URLs so future
-      // saves do not re-upload the same audio.
-      setTracks((prev) => prev.map((track, index) => ({
-        ...track,
-        audioUrl: portableTracks[index]?.audioUrl || track.audioUrl,
-        file_url: portableTracks[index]?.file_url || track.file_url,
-        playlists: portableTracks[index]?.playlists || track.playlists,
-      })));
+      // Uploads are asynchronous: tracks and takes may be edited or reordered
+      // while the request is in flight. Match by identity and only replace URLs
+      // if the original audio source is still present; preserve newer edits.
+      const savedTracksById = new Map(portableTracks.map((track) => [String(track.id), track]));
+      const originalTracksById = new Map(tracks.map((track) => [String(track.id), track]));
+      setTracks((prev) => prev.map((track) => {
+        const id = String(track.id);
+        const saved = savedTracksById.get(id);
+        const original = originalTracksById.get(id);
+        if (!saved || !original) return track;
+        const sourceUnchanged = (track.audioUrl || track.file_url || "") ===
+          (original.audioUrl || original.file_url || "");
+        const originalTakes = Array.isArray(original.playlists) ? original.playlists : [];
+        const savedTakes = Array.isArray(saved.playlists) ? saved.playlists : [];
+        const savedTakesById = new Map(savedTakes.map((take) => [String(take.id), take]));
+        const originalTakesById = new Map(originalTakes.map((take) => [String(take.id), take]));
+        const currentTakes = Array.isArray(track.playlists) ? track.playlists : [];
+        const playlists = currentTakes.map((take) => {
+          const takeId = String(take.id);
+          const originalTake = originalTakesById.get(takeId);
+          const savedTake = savedTakesById.get(takeId);
+          if (!originalTake || !savedTake ||
+              (take.audioUrl || take.file_url || "") !== (originalTake.audioUrl || originalTake.file_url || "")) {
+            return take;
+          }
+          return { ...take, audioUrl: savedTake.audioUrl, file_url: savedTake.file_url };
+        });
+        return {
+          ...track,
+          ...(sourceUnchanged ? { audioUrl: saved.audioUrl, file_url: saved.file_url } : {}),
+          playlists,
+        };
+      }));
 
       toast.success(
         localPersistenceFailed

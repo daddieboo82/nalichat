@@ -45,6 +45,17 @@ describe("Studio same-track split integration", () => {
     expect(getClipSourceTimeAtTime(track, 8)).toBe(8);
   });
 
+  it("deduplicates pending playback starts and blocks stale cross-origin fallback", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    expect(studio).toContain("const pendingAudioStartsRef = useRef(new WeakSet())");
+    expect(studio).toContain("audio.paused && !pendingAudioStartsRef.current.has(audio)");
+    expect(studio).toContain("pendingAudioStartsRef.current.add(audio)");
+    expect(studio).toContain("pendingAudioStartsRef.current.delete(audio)");
+    expect(studio).toContain("audioElementsRef.current[track.id] !== audio || audio.crossOrigin !== 'anonymous'");
+    expect(studio).toContain("getClipSourceTimeAtTime(liveTrack, currentTimeRef.current) !== null");
+    expect(studio).toContain("if (!shouldPlay || audioElementsRef.current[track.id] !== audio) audio.pause()");
+  });
+
   it("respects solo routing and region gain for FX-bypass playback", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const frameStart = studio.indexOf("// Follow audible clip regions, not the track's outer bounds.");

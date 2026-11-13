@@ -188,6 +188,7 @@ export default function Studio() {
   const mediaStreamRef = useRef(null);
   const audioContextRef = useRef(null);
   const mediaRecorderRef = useRef(null);
+  const recordingFinalizePendingRef = useRef(false);
   const audioChunksRef = useRef([]);
   const midiActiveNotesRef = useRef(new Map());
   const midiRecordingRef = useRef(false);
@@ -1427,7 +1428,9 @@ export default function Studio() {
           waveform: track.waveform,
         }) === original.editSignature);
       };
+      recordingFinalizePendingRef.current = true;
       recorderBeingFinalized.onstop = async () => {
+        try {
         if (recordingEpoch !== historyEpochRef.current || mediaRecorderRef.current !== recorderBeingFinalized) return;
         const recordingMimeType =
           recorderBeingFinalized.mimeType ||
@@ -1515,8 +1518,16 @@ export default function Studio() {
         }));
         setRecordingStartTime(null);
         toast.success("Recording saved!");
+        } finally {
+          recordingFinalizePendingRef.current = false;
+        }
       };
-      recorderBeingFinalized.stop();
+      try {
+        recorderBeingFinalized.stop();
+      } catch (error) {
+        recordingFinalizePendingRef.current = false;
+        throw error;
+      }
     } else {
       setTracksWithHistory(prev => prev.map(t => {
         if (t.armed) {
@@ -2381,6 +2392,10 @@ export default function Studio() {
   };
 
   const handleSave = async () => {
+    if (isRecording || recordingFinalizePendingRef.current || mediaRecorderRef.current?.state === 'recording') {
+      toast.error("Stop recording and finish processing the take before saving this Studio project.");
+      return false;
+    }
     if (studioDeviceExportInFlightRef.current) {
       toast.error("Finish the Studio device backup before saving.");
       return false;
@@ -2714,6 +2729,10 @@ export default function Studio() {
 
   // Export a portable archive: never save ephemeral blob: URLs in device backups.
   const handleSaveSessionToDevice = async () => {
+    if (recordingFinalizePendingRef.current) {
+      toast.error("Finish processing the recorded take before exporting a backup.");
+      return;
+    }
     if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
       toast.error("Finish the current Studio save, backup, or restore first.");
       return;

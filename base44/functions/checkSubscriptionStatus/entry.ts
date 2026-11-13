@@ -119,6 +119,7 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       // promotion, even if the remote record already says ACTIVE.
       if (subscription.status === 'pending' &&
           (typeof subscription.paypal_plan_id !== 'string' ||
+            typeof subscription.user_id !== 'string' ||
             typeof subscription.sku !== 'string' ||
             remote?.plan_id !== subscription.paypal_plan_id ||
             remote?.custom_id !== subscription.user_id + ':' + subscription.sku)) {

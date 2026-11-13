@@ -66,6 +66,19 @@ export default function Onboarding() {
       toast.error("Please enter your display name");
       return;
     }
+    if (form.birthdate) {
+      const selectedDate = new Date(`${form.birthdate}T00:00:00Z`);
+      const todayUtc = new Date().toISOString().slice(0, 10);
+      if (
+        !/^\d{4}-\d{2}-\d{2}$/.test(form.birthdate) ||
+        Number.isNaN(selectedDate.getTime()) ||
+        selectedDate.toISOString().slice(0, 10) !== form.birthdate ||
+        form.birthdate > todayUtc
+      ) {
+        toast.error("Please enter a valid birthdate that is not in the future");
+        return;
+      }
+    }
     trackProductEvent("onboarding_submit", { source: "profile_setup" });
     setLoading(true);
     try {
@@ -149,6 +162,7 @@ export default function Onboarding() {
             <label className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />Birthdate <span className="font-normal text-muted-foreground">(optional)</span></label>
             <Input
               type="date"
+              max={new Date().toISOString().slice(0, 10)}
               value={form.birthdate}
               onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, birthdate: e.target.value })); }}
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />

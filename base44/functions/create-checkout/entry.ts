@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
-import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
+import { hasPaidTierAccess, normalizePlan, normalizeStatus, requiresExistingPayPalCheckoutReview } from '../../shared/subscription.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -84,6 +84,19 @@ Deno.serve(async (req) => {
     });
     if (alreadyPaid) {
       return Response.json({ error: 'This account already has a paid subscription; use the billing portal' }, { status: 409 });
+    }
+
+    // An active PayPal subscription with an expired or missing local billing
+    // period may still be billing at PayPal. Block a new cross-provider
+    // recurring checkout until its status is reconciled, preventing double
+    // subscriptions across PayPal, Stripe and Wix.
+    const unresolvedPayPal = allSubs.some((sub: any) => requiresExistingPayPalCheckoutReview(
+      sub.provider, sub.plan, sub.status, sub.current_period_end, now,
+    ));
+    if (unresolvedPayPal) {
+      return Response.json({
+        error: 'Existing PayPal subscription needs verification before another checkout',
+      }, { status: 409 });
     }
 
     // Reuse any still-pending Wix checkout for this SKU

@@ -137,7 +137,7 @@ export default function Onboarding() {
     );
   }
 
-  const profileComplete = !!form.display_name;
+  const profileComplete = Boolean(form.display_name.trim());
 
   return (
     <>

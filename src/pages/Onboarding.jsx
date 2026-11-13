@@ -61,7 +61,8 @@ export default function Onboarding() {
       toast.error("Your account changed. Please wait for setup to reload.");
       return;
     }
-    if (!form.display_name) {
+    const displayName = form.display_name.trim();
+    if (!displayName) {
       toast.error("Please enter your display name");
       return;
     }
@@ -69,7 +70,7 @@ export default function Onboarding() {
     setLoading(true);
     try {
       const res = await base44.functions.invoke("completeOnboarding", {
-        display_name: form.display_name,
+        display_name: displayName,
         birthdate: form.birthdate,
         bio: form.bio,
         location: form.location,

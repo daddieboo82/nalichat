@@ -251,6 +251,31 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
   });
 
+  it('submits a trimmed valid display name to onboarding', async () => {
+    const userId = '507f1f77bcf86cd799439013';
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: userId, display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
+      isAuthenticated: true,
+      checkUserAuth: vi.fn().mockResolvedValue({ id: userId, onboarding_completed: true }),
+    };
+    mockBase44.functions.invoke.mockResolvedValueOnce({ data: {
+      success: true,
+      action: 'complete_onboarding',
+      userId,
+      onboardingCompleted: true,
+    } });
+    renderInRouter(<Onboarding />);
+    fireEvent.change(screen.getByPlaceholderText('What should we call you?'), {
+      target: { value: '  Fresh Artist  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+    await waitFor(() => {
+      expect(mockBase44.functions.invoke).toHaveBeenCalledWith('completeOnboarding',
+        expect.objectContaining({ display_name: 'Fresh Artist' }));
+    });
+  });
+
   it('rejects future birthdates before calling the backend', async () => {
     mockAuthState.current = {
       ...mockAuthState.current,

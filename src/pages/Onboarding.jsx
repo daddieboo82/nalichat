@@ -115,11 +115,16 @@ export default function Onboarding() {
       // would just re-download JS and re-run the auth probe for nothing.
       navigate("/", { replace: true });
     } catch (error) {
+      const backendError = error?.response?.data?.error || error?.data?.error;
+      const knownValidationErrors = new Set(["Invalid birthdate", "A display name is required"]);
+      const message = knownValidationErrors.has(backendError)
+        ? backendError
+        : error?.message || "Failed to complete setup";
       trackProductEvent("onboarding_save_failed", {
         source: "profile_setup",
-        reason: String(error?.message || "unknown_error").slice(0, 160),
+        reason: String(message).slice(0, 160),
       });
-      toast.error(error.message || "Failed to complete setup");
+      toast.error(message);
       setLoading(false);
     }
   };

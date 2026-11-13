@@ -147,6 +147,20 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('does not cancel a recurring agreement solely because a sale was refunded or reversed', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    expect(code).toContain("if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return null;");
+    expect(code).toContain('const isPaymentAdjustment =');
+    expect(code).toContain('const current = await fetchSubscriptionBillingInfo(token, subscriptionId)');
+    expect(code).toContain("current.customId !== record.user_id + ':' + record.sku");
+    expect(code).toContain("if (current.status === 'ACTIVE') {");
+    expect(code).toContain('reviewRequired: true');
+    expect(code).toContain("adjustmentStatus = 'canceled'");
+    expect(code).toContain("adjustmentStatus = 'unpaid'");
+    expect(code).toContain('const newStatus = isPaymentAdjustment ? adjustmentStatus : state(');
+    expect(code).not.toContain("type === 'PAYMENT.SALE.REVERSED') return 'canceled'");
+  });
+
   it('requires current PayPal ACTIVE, owner and plan before any webhook reactivation', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     const guard = code.indexOf("const needsCurrentProviderStatus = newStatus === 'active';");

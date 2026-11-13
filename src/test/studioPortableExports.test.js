@@ -90,6 +90,14 @@ describe("NaliStudio portable exports", () => {
     const demo = studio.indexOf("const handleLoadDemo =", load);
     const blank = studio.slice(start, load);
     const autosave = studio.slice(load, demo);
+    expect(blank).toContain("studioSaveInFlightRef.current || studioRestoreInFlightRef.current");
+    expect(blank).toContain("if (isRecording || isPlaying)");
+    expect(blank.indexOf("if (isRecording || isPlaying)"))
+      .toBeLessThan(blank.indexOf("historyEpochRef.current += 1"));
+    expect(autosave).toContain("studioSaveInFlightRef.current || studioRestoreInFlightRef.current");
+    expect(autosave).toContain("if (isRecording || isPlaying)");
+    expect(autosave.indexOf("if (isRecording || isPlaying)"))
+      .toBeLessThan(autosave.indexOf("historyEpochRef.current += 1"));
     expect(blank).toContain("historyEpochRef.current += 1");
     expect(blank).toContain("historyRef.current = [[]]");
     expect(blank).toContain("historyIndexRef.current = 0");

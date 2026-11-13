@@ -60,8 +60,19 @@ describe("NaliStudio portable exports", () => {
     expect(demo).toContain("results.some(result => result.status === \"rejected\")");
     expect(demo).toContain("results.forEach(releaseResult)");
     expect(demo).toContain("toast.dismiss(toastId)");
+    expect(demo).toContain("pendingDemoAudioCleanupRef.current.push(lead.url, beat.url)");
     expect(demo).toContain("URL.revokeObjectURL(url)");
     expect(demo).not.toContain("setTracks([");
+  });
+
+  it("revokes only unused generated demo URLs after React commits the track state", async () => {
+    const studio = await source();
+    expect(studio).toContain("const pendingDemoAudioCleanupRef = useRef([])");
+    expect(studio).toContain("if (!pendingDemoAudioCleanupRef.current.length) return;");
+    expect(studio).toContain("pendingDemoAudioCleanupRef.current = []");
+    expect(studio).toContain("!retained.has(url)");
+    expect(studio).toContain("URL.revokeObjectURL(url)");
+    expect(studio).toContain("}, [tracks]);");
   });
 
   it("resets undo history on blank and locally recovered sessions", async () => {

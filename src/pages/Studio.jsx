@@ -24,7 +24,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
-import { cutClipRegionSide, getTrackClipRegions, splitTrackRegion } from '@/lib/studioClipRegions';
+import { cutClipRegionSide, getClipSourceTimeAtTime, getTrackClipRegions, splitTrackRegion } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -1030,7 +1030,17 @@ export default function Studio() {
     if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
     if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
     if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
-    Object.values(audioElementsRef.current).forEach(audio => { audio.currentTime = newTime; });
+    // A timeline position is not necessarily an audio-file offset after Cut or Split.
+    tracksRef.current.forEach(track => {
+      const audio = audioElementsRef.current[track.id];
+      if (!audio) return;
+      const sourceTime = getClipSourceTimeAtTime(track, newTime);
+      if (sourceTime === null) {
+        audio.pause();
+        return;
+      }
+      audio.currentTime = sourceTime;
+    });
     // Scrubbing/seeking must immediately audition the automation state at the destination.
     mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
   };
@@ -1050,13 +1060,9 @@ export default function Studio() {
           const audio = getTrackAudio(track);
           if (!audio) return;
           
-          // Calculate if playhead is within track bounds
-          const trackStart = track.startTime || 0;
-          const trackEnd = trackStart + (track.duration || 40);
-          const clipStartOffset = track.clipStart || 0;
-          
-          if (currentTimeRef.current >= trackStart && currentTimeRef.current < trackEnd) {
-            audio.currentTime = clipStartOffset + (currentTimeRef.current - trackStart);
+          const sourceTime = getClipSourceTimeAtTime(track, currentTimeRef.current);
+          if (sourceTime !== null) {
+            audio.currentTime = sourceTime;
             playPromises.push(
               audio.play().catch(e => { console.error("Audio playback error:", e); return { failed: true }; })
             );

@@ -120,15 +120,15 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       });
       if (!response.ok) continue;
       const remote = await response.json();
-      // APPROVED may be activated by the helper below. For pending records,
-      // verify ownership and plan before any provider-side activation or local
-      // promotion, even if the remote record already says ACTIVE.
-      if (subscription.status === 'pending' &&
-          (typeof subscription.paypal_plan_id !== 'string' ||
-            typeof subscription.user_id !== 'string' ||
-            typeof subscription.sku !== 'string' ||
-            remote?.plan_id !== subscription.paypal_plan_id ||
-            remote?.custom_id !== subscription.user_id + ':' + subscription.sku)) {
+      // The resolver can POST /activate whenever PayPal reports APPROVED.
+      // Every candidate (including a locally active row with stale billing)
+      // must match the provider plan and account before any such mutation.
+      // An unverifiable legacy row stays unchanged for manual review.
+      if (typeof subscription.paypal_plan_id !== 'string' ||
+          typeof subscription.user_id !== 'string' ||
+          typeof subscription.sku !== 'string' ||
+          remote?.plan_id !== subscription.paypal_plan_id ||
+          remote?.custom_id !== subscription.user_id + ':' + subscription.sku) {
         continue;
       }
       const remoteStatus = await resolvePayPalSubscriptionStatus(

@@ -1,7 +1,7 @@
 import { secureUploadFile } from "@/lib/secureUpload";
 import { validateUpload } from "@/lib/uploadValidation";
 import { markActivationComplete, trackProductEvent } from "@/lib/productAnalytics";
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense } from 'react';
 import JSZip from 'jszip';
 import { studioAudioExtension, studioAudioMimeForExtension } from '@/lib/studioArchiveAudio';
 import { Button } from '@/components/ui/button';
@@ -741,7 +741,9 @@ export default function Studio() {
   const tracksRef = useRef(tracks);
   const automationLatchRef = useRef(new Map());
 
-  useEffect(() => {
+  // Keep save completion and audio callbacks aligned with committed edits.
+  // A passive effect can lag a successful render when an upload resolves.
+  useLayoutEffect(() => {
     tracksRef.current = tracks;
   }, [tracks]);
 

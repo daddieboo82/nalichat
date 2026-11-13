@@ -2538,10 +2538,15 @@ export default function Studio() {
     try {
       // Capture track and project metadata before any asynchronous audio fetch.
       // Keep this inside try/finally so even snapshot failures release the lock.
-      const exportTracks = tracks.map(track => ({
-        ...track,
-        playlists: Array.isArray(track?.playlists) ? track.playlists.map(take => ({ ...take })) : [],
-      }));
+      const exportTracks = tracks.map(track => {
+        if (track?.playlists != null && !Array.isArray(track.playlists)) {
+          throw new Error("Cannot back up: invalid take playlist metadata.");
+        }
+        return {
+          ...track,
+          playlists: Array.isArray(track?.playlists) ? track.playlists.map(take => ({ ...take })) : [],
+        };
+      });
       const exportMetadata = {
         title: projectName.trim() || "Untitled Project", bpm, key: songKey,
         timeSignature, masterVolume, masterFx: { ...(masterFx || {}) },

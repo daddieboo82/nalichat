@@ -353,6 +353,10 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain('Leave the shared Jam Room');
     expect(handler).toContain("if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current)");
     expect(handler).toContain("studioRestoreInFlightRef.current = true;");
+    expect(handler.indexOf("try {")).toBeLessThan(handler.indexOf('toastId = toast.loading("Restoring Studio session...")'));
+    expect(handler).toContain("let toastId;");
+    expect(handler).toContain("} finally {");
+    expect(handler).toContain("studioRestoreInFlightRef.current = false;");
     expect(handler).toContain("studioRestoreInFlightRef.current = false;");
     expect(handler).toContain("if (isRecording || isPlaying)");
     expect(handler).toContain("Stop playback and recording before restoring a Studio backup.");

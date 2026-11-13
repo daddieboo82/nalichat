@@ -2401,16 +2401,25 @@ export default function Studio() {
       if (archiveEntries.length > 10001) {
         throw new Error("Session archive contains too many files.");
       }
-      // Protect against ZIP bombs: compressed upload size alone is insufficient.
+      // JSZip 3.10 exposes the declared expanded size on loaded compressed
+      // entries. Never interpret missing metadata as a harmless zero-byte file.
+      const expandedSize = (entry) => {
+        const size = entry?._data?.uncompressedSize;
+        if (!Number.isSafeInteger(size) || size < 0) {
+          throw new Error("Studio ZIP contains invalid or unknown expanded file sizes.");
+        }
+        return size;
+      };
+      // Protect against ZIP bombs before expanding the manifest or any media.
       const totalUncompressedBytes = archiveEntries.reduce(
-        (sum, entry) => sum + (entry._data?.uncompressedSize || 0), 0
+        (sum, entry) => sum + expandedSize(entry), 0
       );
-      if (!Number.isFinite(totalUncompressedBytes) || totalUncompressedBytes > 1024 * 1024 * 1024) {
+      if (!Number.isSafeInteger(totalUncompressedBytes) || totalUncompressedBytes > 1024 * 1024 * 1024) {
         throw new Error("Uncompressed session contents exceed the 1 GB safety limit.");
       }
       const manifest = archive.file("session.json");
       if (!manifest) throw new Error("This archive has no Studio session manifest.");
-      if (manifest._data?.uncompressedSize > 2 * 1024 * 1024) {
+      if (expandedSize(manifest) > 2 * 1024 * 1024) {
         throw new Error("Studio session manifest is too large.");
       }
       const payload = JSON.parse(await manifest.async("string"));
@@ -2444,7 +2453,7 @@ export default function Studio() {
         restoredAudioPaths.add(audioPath);
         const entry = archive.file(audioPath);
         if (!entry) throw new Error(`Session audio file missing: ${audioPath}`);
-        if (entry._data?.uncompressedSize > 512 * 1024 * 1024) {
+        if (expandedSize(entry) > 512 * 1024 * 1024) {
           throw new Error(`Session audio exceeds the per-track size limit: ${audioPath}`);
         }
         const bytes = await entry.async("uint8array");

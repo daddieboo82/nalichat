@@ -58,6 +58,18 @@ describe("NaliStudio portable exports", () => {
     expect(loader).not.toContain("new URLSearchParams(searchParams)");
   });
 
+  it("does not replace newer recovery when tracks change during a cloud save", async () => {
+    const studio = await source();
+    const start = studio.indexOf("const handleSave = async () => {");
+    const end = studio.indexOf("const handleImportClick =", start);
+    const save = studio.slice(start, end);
+    expect(save).toContain("const editsDuringSave = tracksRef.current !== tracks");
+    expect(save).toContain("if (autosaveStorageKey && !editsDuringSave)");
+    expect(save).toContain("Newer edits are not yet saved to My Sessions; save again.");
+    expect(save.indexOf("Project save was not confirmed."))
+      .toBeLessThan(save.indexOf("const editsDuringSave ="));
+  });
+
   it("clears the local recovery indicator after a confirmed empty cloud save", async () => {
     const studio = await source();
     const start = studio.indexOf("const handleSave = async () => {");

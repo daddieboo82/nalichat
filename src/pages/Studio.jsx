@@ -2253,7 +2253,10 @@ export default function Studio() {
       return true;
     } catch (e) {
       console.error("Studio save failed", e);
-      toast.error("Failed to save project.", { id: toastId });
+      const reason = typeof e?.message === "string" && e.message.trim()
+        ? e.message.trim().slice(0, 240)
+        : "Please try again or export a device backup.";
+      toast.error(`Could not save Studio project: ${reason}`, { id: toastId, duration: 9000 });
       return false;
     } finally {
       studioSaveInFlightRef.current = false;

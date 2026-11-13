@@ -2327,8 +2327,13 @@ export default function Studio() {
         ) throw new Error("Project save was not confirmed.");
       }
 
+      // This save persists the snapshot captured when the user clicked Save.
+      // If they kept editing during the upload, never overwrite a newer local
+      // recovery with that older snapshot (including deleting it for a
+      // zero-track save). Let the regular durable-only autosave handle edits.
+      const editsDuringSave = tracksRef.current !== tracks;
       try {
-        if (autosaveStorageKey) {
+        if (autosaveStorageKey && !editsDuringSave) {
           if (portableTracks.length === 0) {
             localStorage.removeItem(autosaveStorageKey);
             setHasAutosave(false);
@@ -2392,9 +2397,11 @@ export default function Studio() {
       toast.success(
         localPersistenceFailed
           ? "Studio project saved to My Sessions. Local autosave is unavailable on this device."
-          : createdNewProject
-            ? "Studio session saved to My Sessions!"
-            : "Project saved successfully!",
+          : editsDuringSave
+            ? "Saved the earlier Studio snapshot. Newer edits are not yet saved to My Sessions; save again."
+            : createdNewProject
+              ? "Studio session saved to My Sessions!"
+              : "Project saved successfully!",
         { id: toastId },
       );
       return true;

@@ -187,6 +187,7 @@ export default function Studio() {
   const midiActiveNotesRef = useRef(new Map());
   const midiRecordingRef = useRef(false);
   const midiSustainRef = useRef(new Map()), midiAccessRef = useRef(null);
+  const studioSaveInFlightRef = useRef(false);
   const audioElementsRef = useRef({});
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
@@ -2015,11 +2016,16 @@ export default function Studio() {
   };
 
   const handleSave = async () => {
+    if (studioSaveInFlightRef.current) {
+      toast.error("Studio is already saving. Finish the current save before trying again.");
+      return false;
+    }
     if (roomId && !canEditProject) {
       toast.error("This Jam Room invite is view-only. Your changes cannot be saved to the shared project.");
       return false;
     }
 
+    studioSaveInFlightRef.current = true;
     const toastId = toast.loading("Saving Studio project...");
     try {
       const portableTracks = [];
@@ -2191,6 +2197,8 @@ export default function Studio() {
       console.error("Studio save failed", e);
       toast.error("Failed to save project.", { id: toastId });
       return false;
+    } finally {
+      studioSaveInFlightRef.current = false;
     }
   };
 

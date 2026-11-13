@@ -2432,9 +2432,12 @@ export default function Studio() {
       const temporaryUrls = [];
       const restoredIds = new Set();
       const restoredAudioPaths = new Set();
-      const restoreAudioUrl = async (audioPath) => {
+      const restoreAudioUrl = async (audioPath, expectedPrefix) => {
         if (!audioPath) return "";
-        if (!/^audio[/]track_[0-9]+(?:_take_[0-9]+)?[.](wav|mp3|webm|ogg|m4a|aac|flac|aiff)$/.test(audioPath)) {
+        const safePath = /^audio[/]track_[0-9]+(?:_take_[0-9]+)?[.](wav|mp3|webm|ogg|m4a|aac|flac|aiff)$/.test(audioPath);
+        const expectedPath = audioPath.startsWith(`${expectedPrefix}.`) &&
+          studioAudioMimeForExtension(audioPath.slice(expectedPrefix.length + 1));
+        if (!safePath || !expectedPath) {
           throw new Error("Session contains an invalid audio reference.");
         }
         if (restoredAudioPaths.has(audioPath)) throw new Error("Session contains duplicate audio references.");
@@ -2458,7 +2461,7 @@ export default function Studio() {
         return objectUrl;
       };
       try {
-      for (const track of payload.project.tracks) {
+      for (const [trackIndex, track] of payload.project.tracks.entries()) {
         if (!track || typeof track !== "object" || Array.isArray(track)) {
           throw new Error("Session has invalid track metadata.");
         }
@@ -2468,16 +2471,24 @@ export default function Studio() {
         const trackId = String(track.id);
         if (restoredIds.has(trackId)) throw new Error("Session contains duplicate track IDs.");
         restoredIds.add(trackId);
+        if (track.audioUrl && track.file_url && track.audioUrl !== track.file_url) {
+          throw new Error("Session contains conflicting track audio references.");
+        }
         const audioPath = track.audioUrl || track.file_url || "";
-        const audioUrl = await restoreAudioUrl(audioPath);
+        const audioUrl = await restoreAudioUrl(audioPath, `audio/track_${trackIndex + 1}`);
         const savedPlaylists = Array.isArray(track.playlists) ? track.playlists : [];
         const restoredPlaylists = [];
-        for (const take of savedPlaylists) {
+        for (const [takeIndex, take] of savedPlaylists.entries()) {
           if (!take || typeof take !== "object" || Array.isArray(take)) {
             throw new Error("Session has invalid take playlist metadata.");
           }
+          if (take.audioUrl && take.file_url && take.audioUrl !== take.file_url) {
+            throw new Error("Session contains conflicting take audio references.");
+          }
           const takeAudioPath = take.audioUrl || take.file_url || "";
-          const takeUrl = await restoreAudioUrl(takeAudioPath);
+          const takeUrl = await restoreAudioUrl(
+            takeAudioPath, `audio/track_${trackIndex + 1}_take_${takeIndex + 1}`
+          );
           restoredPlaylists.push({ ...take, audioUrl: takeUrl, file_url: takeUrl });
         }
         restoredTracks.push({ ...track, audioUrl, file_url: audioUrl, playlists: restoredPlaylists });

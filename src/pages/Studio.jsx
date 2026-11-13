@@ -722,7 +722,10 @@ export default function Studio() {
   // Only store durable URLs. A transient blob: reference cannot be reopened
   // after reload and must not overwrite the last recoverable local autosave.
   useEffect(() => {
-    if (!autosaveStorageKey || !tracks || tracks.length === 0 || hasTransientStudioAudio(tracks)) return;
+    // This owner-scoped recovery key is for standalone drafts only.
+    // Cloud room projects have their own durable state and must not overwrite
+    // a different draft's recovery in the shared localStorage slot.
+    if (!autosaveStorageKey || roomId || !tracks || tracks.length === 0 || hasTransientStudioAudio(tracks)) return;
     const timeoutId = setTimeout(() => {
       try {
         localStorage.setItem(autosaveStorageKey, JSON.stringify(tracks));
@@ -731,7 +734,7 @@ export default function Studio() {
       }
     }, 1000);
     return () => clearTimeout(timeoutId);
-  }, [tracks, autosaveStorageKey]);
+  }, [tracks, autosaveStorageKey, roomId]);
 
   const [historyIndex, setHistoryIndex] = useState(-1);
   const historyRef = useRef([]);
@@ -2335,7 +2338,8 @@ export default function Studio() {
       // zero-track save). Let the regular durable-only autosave handle edits.
       const editsDuringSave = tracksRef.current !== tracks;
       try {
-        if (autosaveStorageKey && !editsDuringSave) {
+        // Existing cloud rooms must never update another draft's local slot.
+        if (autosaveStorageKey && !roomId && !editsDuringSave) {
           if (portableTracks.length === 0) {
             localStorage.removeItem(autosaveStorageKey);
             setHasAutosave(false);

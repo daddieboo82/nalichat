@@ -38,6 +38,17 @@ describe('stale active PayPal subscription reconciliation', () => {
     }
   });
 
+  it('keeps incomplete webhook activations retryable rather than granting access', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    expect(code).toContain('requiresPayPalBillingVerification(record.status, newStatus, periodEnd)');
+    expect(code).toContain("processing_state: 'failed'");
+    expect(code).toContain("status: 503");
+    expect(code).toContain("newStatus === 'active' && periodEnd === null");
+    expect(code.indexOf('requiresPayPalBillingVerification(record.status, newStatus, periodEnd)')).toBeLessThan(
+      code.indexOf('await entities.Subscription.update(record.id, update)')
+    );
+  });
+
   it('does not activate pending records in on-demand status checks without a future billing date', async () => {
     const code = await source();
     expect(code).toContain("subscription.status === 'pending' && status === 'active'");

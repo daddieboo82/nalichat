@@ -2361,6 +2361,26 @@ export default function Studio() {
         (count, track) => count + 1 + (Array.isArray(track.playlists) ? track.playlists.length : 0), 0
       );
       if (totalMediaCount > 10000) throw new Error("Too many tracks and takes for a portable backup.");
+      // Match the cloud-save ID requirements before producing a backup.
+      // Otherwise this ZIP could restore but be impossible to save to My Sessions.
+      const backupTrackIds = new Set();
+      for (const track of tracks) {
+        if (!track || (typeof track.id !== "string" && typeof track.id !== "number") || !String(track.id).trim()) {
+          throw new Error("Cannot back up: a Studio track has no valid ID.");
+        }
+        const trackId = String(track.id);
+        if (backupTrackIds.has(trackId)) throw new Error("Cannot back up: duplicate Studio track IDs.");
+        backupTrackIds.add(trackId);
+        const takeIds = new Set();
+        for (const take of (Array.isArray(track.playlists) ? track.playlists : [])) {
+          if (!take || (typeof take.id !== "string" && typeof take.id !== "number") || !String(take.id).trim()) {
+            throw new Error("Cannot back up: a take playlist has no valid ID.");
+          }
+          const takeId = String(take.id);
+          if (takeIds.has(takeId)) throw new Error("Cannot back up: duplicate take playlist IDs.");
+          takeIds.add(takeId);
+        }
+      }
       let totalAudioBytes = 0;
       const addAudioToArchive = async (source, pathPrefix, label) => {
         if (!source) return "";
@@ -2571,10 +2591,17 @@ export default function Studio() {
         const audioUrl = await restoreAudioUrl(audioPath, `audio/track_${trackIndex + 1}`);
         const savedPlaylists = Array.isArray(track.playlists) ? track.playlists : [];
         const restoredPlaylists = [];
+        const restoredTakeIds = new Set();
         for (const [takeIndex, take] of savedPlaylists.entries()) {
           if (!take || typeof take !== "object" || Array.isArray(take)) {
             throw new Error("Session has invalid take playlist metadata.");
           }
+          if ((typeof take.id !== "string" && typeof take.id !== "number") || !String(take.id).trim()) {
+            throw new Error("Session contains a take with an invalid ID.");
+          }
+          const takeId = String(take.id);
+          if (restoredTakeIds.has(takeId)) throw new Error("Session contains duplicate take IDs.");
+          restoredTakeIds.add(takeId);
           if (take.audioUrl && take.file_url && take.audioUrl !== take.file_url) {
             throw new Error("Session contains conflicting take audio references.");
           }

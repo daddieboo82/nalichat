@@ -329,6 +329,20 @@ describe('stale active PayPal subscription reconciliation', () => {
     }
   });
 
+  it('blocks PayPal creation while Stripe or Wix recurring checkout is unresolved', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    const guard = code.indexOf('const unresolvedOtherProvider = allSubs.some');
+    const create = code.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions'");
+    expect(guard).toBeGreaterThan(0);
+    expect(create).toBeGreaterThan(guard);
+    const beforeCreate = code.slice(guard, create);
+    expect(beforeCreate).toContain("sub.provider === 'stripe' || sub.provider === 'wix'");
+    expect(beforeCreate).toContain("normalizeStatus(sub.status) === 'pending'");
+    expect(beforeCreate).toContain("normalizeStatus(sub.status) === 'incomplete'");
+    expect(beforeCreate).toContain('An existing Stripe or Wix checkout requires verification before PayPal checkout');
+    expect(beforeCreate).toContain('status: 409');
+  });
+
   it('blocks a second PayPal checkout for an unresolved existing active subscription', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(code).toContain("const unresolvedActivePayPal = allSubs.some");

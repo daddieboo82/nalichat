@@ -46,6 +46,19 @@ describe("NaliStudio portable exports", () => {
     expect(loader).toContain("setFxTarget(null)");
   });
 
+  it("keeps demo generation from restoring old history or overwriting newer edits", async () => {
+    const studio = await source();
+    const start = studio.indexOf("const handleLoadDemo = async () => {");
+    const end = studio.indexOf("// Temporary object URLs", start);
+    const demo = studio.slice(start, end);
+    expect(demo).toContain("historyEpochRef.current += 1");
+    expect(demo).toContain("historyRef.current = [demoTracks]");
+    expect(demo).toContain("if (historyEpochRef.current !== demoEpoch)");
+    expect(demo).toContain("track.waveform !== initial.waveform");
+    expect(demo).toContain("setTracks(prev => prev.map(track => {");
+    expect(demo).not.toContain("setTracks([");
+  });
+
   it("resets undo history on blank and locally recovered sessions", async () => {
     const studio = await source();
     const start = studio.indexOf("const handleStartBlank = () => {");

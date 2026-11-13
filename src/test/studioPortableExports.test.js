@@ -60,6 +60,8 @@ describe("NaliStudio portable exports", () => {
     expect(demo).toContain("results.some(result => result.status === \"rejected\")");
     expect(demo).toContain("results.forEach(releaseResult)");
     expect(demo).toContain("toast.dismiss(toastId)");
+    expect(demo.indexOf("if (historyEpochRef.current !== demoEpoch)"))
+      .toBeLessThan(demo.indexOf('results.some(result => result.status === "rejected")'));
     expect(demo).toContain("pendingDemoAudioCleanupRef.current.push(lead.url, beat.url)");
     expect(demo).toContain("URL.revokeObjectURL(url)");
     expect(demo).not.toContain("setTracks([");

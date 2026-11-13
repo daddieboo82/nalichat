@@ -28,12 +28,14 @@ describe('server subscription entitlement expiry', () => {
     expect(hasPaidTierAccess('active', { now })).toBe(true);
   });
 
-  it('reviews unresolved active PayPal billing before cross-provider checkout', () => {
+  it('reviews unresolved pending and active PayPal billing before cross-provider checkout', () => {
     expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'active', null, now)).toBe(true);
     expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'active', 'invalid', now)).toBe(true);
     expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'active', '2026-09-10T06:00:00Z', now)).toBe(true);
     expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'active', '2026-10-10T06:00:00Z', now)).toBe(false);
-    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'pending', null, now)).toBe(false);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'pending', null, now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium_plus', 'incomplete', null, now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'canceled', null, now)).toBe(false);
     expect(requiresExistingPayPalCheckoutReview('paypal', 'free', 'active', null, now)).toBe(false);
     expect(requiresExistingPayPalCheckoutReview('manual', 'premium_plus', 'active', null, now)).toBe(false);
     expect(requiresExistingPayPalCheckoutReview('stripe', 'premium', 'active', null, now)).toBe(false);

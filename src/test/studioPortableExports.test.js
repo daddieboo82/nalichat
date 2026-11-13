@@ -137,6 +137,11 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("studioRestoreInFlightRef.current = false;");
     expect(handler).toContain("if (isRecording || isPlaying)");
     expect(handler).toContain("Stop playback and recording before restoring a Studio backup.");
+    expect(handler).toContain("historyRef.current = [restoredTracks]");
+    expect(handler).toContain("historyIndexRef.current = 0");
+    expect(handler).toContain("setHistoryIndex(0)");
+    expect(handler).toContain("setTracks(restoredTracks)");
+    expect(handler).not.toContain("setTracksWithHistory(restoredTracks)");
     expect(handler).toContain("setSelectedTrackIds([])");
     expect(handler).toContain("setFxTarget(null)");
     expect(handler).toContain('tracks.length > 0 && !window.confirm(');

@@ -39,7 +39,7 @@ describe("NaliStudio portable exports", () => {
     const end = studio.indexOf("const handleStartBlank =", start);
     const loader = studio.slice(start, end);
     expect(loader).toContain("historyRef.current = [hydrated]");
-    expect((loader.match(/historyRef\\.current = \\[hydrated\\]/g) || []).length).toBe(2);
+    expect((loader.match(/historyRef\.current = \[hydrated\]/g) || []).length).toBe(2);
     expect(loader).toContain("historyEpochRef.current += 1");
     expect(loader).toContain("if (cancelled) return;");
     expect(loader).toContain("setSelectedTrackIds([])");

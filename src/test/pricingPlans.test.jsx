@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import PricingPlans from "@/components/pricing/PricingPlans";
+import BounceDialog from "@/components/studio/BounceDialog";
 
 const mockSubscription = vi.hoisted(() => ({
   current: {
@@ -26,7 +27,7 @@ const mockStartCheckout = vi.hoisted(() => vi.fn());
 const mockTrack = vi.hoisted(() => vi.fn());
 
 vi.mock("@/hooks/useSubscription", () => ({
-  useSubscription: () => mockSubscription.current,
+  useSubscription: () => ({ hasEntitlement: () => false, ...mockSubscription.current }),
 }));
 vi.mock("@/lib/AuthContext", () => ({
   useAuth: () => mockAuth.current,
@@ -49,6 +50,7 @@ vi.mock("@/hooks/useAppleIAP", () => ({
   }),
 }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
+vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 
 function renderPricing(props = {}, entry = "/pricing") {
   return render(
@@ -90,6 +92,27 @@ describe("pricing plans", () => {
   });
 
   afterEach(cleanup);
+
+  it("opens Studio mastering pricing separately without dismissing the bounce dialog", () => {
+    render(
+      <MemoryRouter>
+        <BounceDialog open onOpenChange={vi.fn()} projectTitle="Test mix" tracks={[]} />
+      </MemoryRouter>,
+    );
+
+    const offer = screen.getByRole("link", { name: /Premium \$7.99\/month/ });
+    expect(offer.getAttribute("target")).toBe("_blank");
+    expect(offer.getAttribute("href")).toBe("/pricing?source=studio_bounce&feature=studio.ai_mastering");
+    offer.addEventListener("click", (event) => event.preventDefault());
+    fireEvent.click(offer);
+
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Song name").value).toBe("Test mix");
+    expect(mockTrack).toHaveBeenCalledWith("upgrade_click", {
+      source: "studio_bounce",
+      upgrade_feature: "studio.ai_mastering",
+    });
+  });
 
   it("keeps Studio mastering attribution through checkout", async () => {
     renderPricing({ variantOverride: "A" }, "/pricing?source=studio_bounce&feature=studio.ai_mastering");

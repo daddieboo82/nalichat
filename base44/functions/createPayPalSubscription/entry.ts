@@ -102,6 +102,22 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'This account already has a paid subscription; use the billing portal' }, { status: 409 });
     }
 
+    // An unresolved Stripe or Wix checkout may still be completed after a
+    // PayPal agreement is created. Refuse another recurring agreement until
+    // those attempts are reconciled, including records with missing URLs.
+    // This is a snapshot safety check, not an atomic checkout reservation.
+    const unresolvedOtherProvider = allSubs.some((sub: any) =>
+      (sub.provider === 'stripe' || sub.provider === 'wix') &&
+      normalizePlan(sub.plan) !== 'free' &&
+      (normalizeStatus(sub.status) === 'pending' ||
+        normalizeStatus(sub.status) === 'incomplete')
+    );
+    if (unresolvedOtherProvider) {
+      return Response.json({
+        error: 'An existing Stripe or Wix checkout requires verification before PayPal checkout',
+      }, { status: 409 });
+    }
+
     // An active PayPal subscription with a missing or expired local billing
     // period may have renewed remotely. Do not create a second subscription
     // simply because local entitlements cannot currently verify its renewal.

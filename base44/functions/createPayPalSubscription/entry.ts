@@ -111,16 +111,31 @@ Deno.serve(async (req) => {
     }
 
     const token = await accessToken();
-    const existing = await base44.asServiceRole.entities.Subscription.filter(
-      { user_id: user.id, provider: 'paypal', status: 'pending', sku }, '-created_date', 20,
-    );
+    // Scan all previously loaded records, not just the newest 20 pending
+    // checkouts. An older unresolved PayPal agreement may still be billable.
+    const existing = allSubs.filter((sub: any) => (
+      sub.provider === 'paypal' && sub.status === 'pending'
+    ));
     for (const pending of existing) {
-      if (!pending.subscription_id || pending.paypal_plan_id !== planId ||
-          pending.paypal_environment !== (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase()) continue;
+      // A different SKU or missing provider metadata is not proof that an
+      // existing pending agreement is safe to ignore. Resolve it first.
+      if (!pending.subscription_id || pending.sku !== sku ||
+          pending.paypal_plan_id !== planId ||
+          pending.paypal_environment !== (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase()) {
+        return Response.json({
+          error: 'Existing PayPal checkout requires verification before another subscription',
+        }, { status: 409 });
+      }
       const lookup = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(pending.subscription_id), {
         headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
       });
-      if (!lookup.ok) continue;
+      if (!lookup.ok) {
+        // PayPal being unavailable must not turn a retry into a second
+        // recurring agreement.
+        return Response.json({
+          error: 'Could not verify the previous PayPal checkout',
+        }, { status: 503 });
+      }
       const remote = await lookup.json();
       // Verification must precede resolvePayPalSubscriptionStatus: for an
       // APPROVED PayPal subscription that helper calls /activate (a provider
@@ -142,13 +157,23 @@ Deno.serve(async (req) => {
         });
         return Response.json({ error: 'This account already has a paid subscription; use the billing portal' }, { status: 409 });
       }
-      if (remoteStatus !== 'APPROVAL_PENDING' || remote.plan_id !== planId ||
-          remote.custom_id !== user.id + ':' + sku) continue;
+      // A confirmed terminal subscription can be replaced. Anything else
+      // remains unresolved and must not be silently duplicated.
+      if (remoteStatus === 'CANCELLED' || remoteStatus === 'EXPIRED') continue;
+      if (remoteStatus !== 'APPROVAL_PENDING') {
+        return Response.json({
+          error: 'Existing PayPal checkout requires verification before another subscription',
+        }, { status: 409 });
+      }
       const approval = (Array.isArray(remote.links) ? remote.links.find((link: any) => link.rel === 'approve')?.href : '') || pending.checkout_url;
       const expectedHost = pending.paypal_environment === 'sandbox' ? 'www.sandbox.paypal.com' : 'www.paypal.com';
       let approvalUrl: URL;
-      try { approvalUrl = new URL(approval); } catch { continue; }
-      if (approvalUrl.protocol !== 'https:' || approvalUrl.hostname !== expectedHost) continue;
+      try { approvalUrl = new URL(approval); } catch {
+        return Response.json({ error: 'Existing PayPal approval URL is invalid' }, { status: 409 });
+      }
+      if (approvalUrl.protocol !== 'https:' || approvalUrl.hostname !== expectedHost) {
+        return Response.json({ error: 'Existing PayPal approval URL is invalid' }, { status: 409 });
+      }
       return Response.json({
         success: true, action: 'create_paypal_subscription', userId: user.id, sku,
         checkoutUrl: approval, subscriptionId: pending.subscription_id, resumed: true,

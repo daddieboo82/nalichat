@@ -39,6 +39,13 @@ export async function resolvePayPalSubscriptionStatus(
     if (again.ok) {
       const fresh = await again.json();
       const freshStatus = String(fresh?.status || '').toUpperCase();
+      // A post-activation GET must still refer to the original verified
+      // agreement. A status alone cannot prove this is the user's plan.
+      if (!remote?.plan_id || !remote?.custom_id ||
+          fresh?.plan_id !== remote.plan_id ||
+          fresh?.custom_id !== remote.custom_id) {
+        return 'UNVERIFIED';
+      }
       if (freshStatus) {
         remoteStatus = freshStatus;
         // The follow-up read is the authoritative billing snapshot. Do not

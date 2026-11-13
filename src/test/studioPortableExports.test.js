@@ -95,6 +95,8 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("Session audio file missing:");
     expect(handler).toContain("Session contains duplicate track IDs.");
     expect(handler).toContain("Session contains duplicate audio references.");
+    expect(handler).toContain('entry.name !== "session.json" && !restoredAudioPaths.has(entry.name)');
+    expect(handler).toContain("Session archive includes unreferenced media files.");
     expect(handler).toContain("Session contains a track with an invalid ID.");
     expect(handler).toContain("temporaryUrls.forEach((url) => URL.revokeObjectURL(url))");
     expect(handler).toContain("setTracksWithHistory(restoredTracks)");

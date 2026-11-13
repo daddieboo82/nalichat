@@ -476,7 +476,9 @@ export default function Studio() {
         }
 
         const savedState = project.studio_state;
-        if (savedState?.tracks && Array.isArray(savedState.tracks) && savedState.tracks.length > 0) {
+        // An explicitly saved empty track list is authoritative. Fall back
+        // to legacy Track rows only when no modern track list was saved.
+        if (Array.isArray(savedState?.tracks)) {
           const hydrated = savedState.tracks.map((track) => ({
             ...track,
             audioUrl: track.audioUrl || track.file_url || "",

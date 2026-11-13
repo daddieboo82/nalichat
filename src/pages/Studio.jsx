@@ -2289,6 +2289,9 @@ export default function Studio() {
     try {
       const zip = new JSZip();
       const portableTracks = [];
+      if (tracks.length > MAX_TRACKS) {
+        throw new Error("Too many tracks for a restorable Studio backup.");
+      }
       const totalMediaCount = tracks.reduce(
         (count, track) => count + 1 + (Array.isArray(track.playlists) ? track.playlists.length : 0), 0
       );
@@ -2349,9 +2352,20 @@ export default function Studio() {
           tracks: portableTracks,
         },
       };
-      zip.file("session.json", JSON.stringify(payload, null, 2));
+      const manifestText = JSON.stringify(payload, null, 2);
+      const manifestBytes = new TextEncoder().encode(manifestText).byteLength;
+      if (manifestBytes > 2 * 1024 * 1024) {
+        throw new Error("Studio session metadata exceeds the 2 MB restore limit.");
+      }
+      if (totalAudioBytes + manifestBytes > 1024 * 1024 * 1024) {
+        throw new Error("Session backup exceeds the 1 GB expanded-size restore limit.");
+      }
+      zip.file("session.json", manifestText);
       const archive = await zip.generateAsync({ type: "blob" });
       if (!archive.size) throw new Error("Session archive is empty.");
+      if (archive.size > 1024 * 1024 * 1024) {
+        throw new Error("Studio session ZIP exceeds the 1 GB restore limit.");
+      }
       const url = URL.createObjectURL(archive);
       const link = document.createElement("a");
       const safeName = (projectName.trim() || "Untitled Project").replace(/[^a-z0-9_-]+/gi, "_");

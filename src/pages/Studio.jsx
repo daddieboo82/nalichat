@@ -627,6 +627,7 @@ export default function Studio() {
       const [lead, beat] = results.map(result => result.value);
       if (historyEpochRef.current !== demoEpoch) {
         results.forEach(releaseResult);
+        toast.dismiss(toastId);
         return;
       }
       setTracks(prev => prev.map(track => {

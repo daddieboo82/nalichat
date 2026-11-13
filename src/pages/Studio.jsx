@@ -1504,11 +1504,15 @@ export default function Studio() {
         const heldMidiNotes = heldMidiNotesAtStop;
         midiRecordingRef.current = false;
         midiActiveNotesRef.current.clear();
-        const hasEligibleTarget = tracksRef.current.some(matchesRecordingTarget);
-        if (recordingEpoch !== historyEpochRef.current || !hasEligibleTarget) {
+        const eligibleTargets = tracksRef.current.filter(matchesRecordingTarget);
+        if (recordingEpoch !== historyEpochRef.current || eligibleTargets.length === 0) {
           URL.revokeObjectURL(audioUrl);
           return;
         }
+        const hasAudioTarget = eligibleTargets.some(t => !['midi', 'instrument'].includes(t.type));
+        // MIDI-only destinations can retain notes, but cannot use a recorded
+        // audio object URL; release it rather than leaking detached media.
+        if (!hasAudioTarget) URL.revokeObjectURL(audioUrl);
         setTracksWithHistory(prev => prev.map(t => {
           if (!matchesRecordingTarget(t)) return t;
           if (['midi', 'instrument'].includes(t.type)) {
@@ -1544,12 +1548,8 @@ export default function Studio() {
         throw error;
       }
     } else {
-      setTracksWithHistory(prev => prev.map(t => {
-        if (t.armed) {
-          return { ...t, waveform: [], armed: false };
-        }
-        return t;
-      }));
+      // A Stop without an active recorder must not destroy an existing clip.
+      setTracksWithHistory(prev => prev.map(t => t.armed ? { ...t, armed: false } : t));
       setRecordingStartTime(null);
     }
 

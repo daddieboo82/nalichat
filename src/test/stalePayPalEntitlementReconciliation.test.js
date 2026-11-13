@@ -82,6 +82,21 @@ describe('stale active PayPal subscription reconciliation', () => {
     }
   });
 
+  it('reports missing provider IDs without counting them as checked', async () => {
+    for (const path of [
+      'base44/functions/reconcilePendingPayPal/entry.ts',
+      'base44/functions/reconcilePendingPayPal/main.ts',
+    ]) {
+      const code = await readFile(path, 'utf8');
+      expect(code, path).toContain("results.push({ result: 'missing_subscription_id' });");
+      expect(code, path).toContain('discovered: allPending.length');
+      expect(code, path).toContain('selected: pending.length');
+      expect(code, path).toContain("checked: results.filter((x) => x.result !== 'missing_subscription_id').length");
+      expect(code, path).toContain("missingProviderId: results.filter((x) => x.result === 'missing_subscription_id').length");
+      expect(code, path).not.toContain('checked: pending.length');
+    }
+  });
+
   it('isolates scheduled provider failures to one subscription rather than aborting the batch', async () => {
     for (const path of [
       'base44/functions/reconcilePendingPayPal/entry.ts',

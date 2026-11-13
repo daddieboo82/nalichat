@@ -102,8 +102,11 @@ Deno.serve(async (req) => {
     // PayPal's event creation time is required for safe lifecycle ordering.
     // Never replace it with webhook receipt time: a delayed cancellation
     // could otherwise outrank a newer activation (or the reverse).
-    if (typeof event.create_time !== 'string' ||
-        !Number.isFinite(Date.parse(event.create_time))) {
+    const eventCreatedAt = typeof event.create_time === 'string'
+      ? Date.parse(event.create_time)
+      : Number.NaN;
+    if (!Number.isFinite(eventCreatedAt) ||
+        eventCreatedAt > Date.now() + 5 * 60_000) {
       return Response.json({ error: 'Invalid PayPal event creation time' }, { status: 400 });
     }
 

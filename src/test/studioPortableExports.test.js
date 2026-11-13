@@ -95,6 +95,12 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("savedTakeCount > 10000 - payload.project.tracks.length");
     expect(handler).toContain("restoredPlaylists.push({ ...take, audioUrl: takeUrl, file_url: takeUrl })");
     expect(handler).toContain("playlists: restoredPlaylists");
+    expect(handler).toContain("const expandedSize = (entry) => {");
+    expect(handler).toContain("Number.isSafeInteger(size)");
+    expect(handler).toContain("Studio ZIP contains invalid or unknown expanded file sizes.");
+    expect(handler).toContain("sum + expandedSize(entry)");
+    expect(handler).toContain("expandedSize(manifest) > 2 * 1024 * 1024");
+    expect(handler).toContain("expandedSize(entry) > 512 * 1024 * 1024");
     expect(handler).toContain('totalUncompressedBytes > 1024 * 1024 * 1024');
     expect(handler).toContain('Uncompressed session contents exceed the 1 GB safety limit.');
     expect(handler).toContain('Session audio exceeds the per-track size limit:');

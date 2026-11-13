@@ -33,6 +33,19 @@ describe("NaliStudio portable exports", () => {
     expect(handler).not.toContain("const playlists = Array.isArray(track.playlists)");
   });
 
+  it("recalls takes from the latest track and playlist state", async () => {
+    const studio = await source();
+    const start = studio.indexOf("const recallTakePlaylist = (track, playlistId) => {");
+    const end = studio.indexOf("const handleHealSplit =", start);
+    const handler = studio.slice(start, end);
+    expect(start).toBeGreaterThan(0);
+    expect(handler).toContain("const currentTrack = tracks.find(item => item.id === track.id)");
+    expect(handler).toContain("const currentTake = current.playlists?.find(item => item.id === playlistId)");
+    expect(handler).toContain("audioUrl: currentTake.audioUrl");
+    expect(handler).toContain('toast.error("That take is no longer available.")');
+    expect(handler).not.toContain("const take = (track.playlists || []).find");
+  });
+
   it("preserves restored audio codecs when saving to My Sessions", async () => {
     const studio = await source();
     const start = studio.indexOf("const handleSave = async () => {");

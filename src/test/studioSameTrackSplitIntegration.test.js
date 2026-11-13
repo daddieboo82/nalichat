@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
-import { getTrackClipRegions, splitTrackRegion } from "@/lib/studioClipRegions";
+import { cutClipRegionSide, getTrackClipRegions, splitTrackRegion } from "@/lib/studioClipRegions";
 
 describe("Studio same-track split integration", () => {
   it("retains one track ID and preserves source mapping on both sides", () => {
@@ -18,22 +18,41 @@ describe("Studio same-track split integration", () => {
     expect(split.duration).toBe(10);
   });
 
-  it("preserves merged device backup entry points while integrating the split handler", async () => {
+  it("cuts one side without adding a mixer track or copying removed audio", () => {
+    const track = { id: 7, startTime: 0, duration: 10, clipStart: 0, waveform: [0.1] };
+    const removeLeft = cutClipRegionSide(track, "region-7-0", 3, { direction: "left" });
+    const removeRight = cutClipRegionSide(track, "region-7-0", 7, { direction: "right" });
+    expect(removeLeft.removed).toBe(true);
+    expect(removeRight.removed).toBe(true);
+    expect(removeLeft.id).toBe(track.id);
+    expect(removeRight.id).toBe(track.id);
+    expect(getTrackClipRegions(removeLeft)[0].sourceStart).toBe(3);
+    expect(getTrackClipRegions(removeRight)[0].sourceEnd).toBe(7);
+    expect(getTrackClipRegions(removeLeft)).toHaveLength(1);
+    expect(getTrackClipRegions(removeRight)).toHaveLength(1);
+  });
+
+  it("separates toolbar Split from directional Cut while keeping backup handlers", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
-    expect(studio).toContain("handleSaveSessionToDevice");
-    expect(studio).toContain("handleSessionImport");
-    expect(studio).toContain("studioDeviceExportInFlightRef");
-    expect(studio).toContain("studioRestoreInFlightRef");
+    for (const name of ["handleSaveSessionToDevice", "handleSessionImport",
+      "studioDeviceExportInFlightRef", "studioRestoreInFlightRef"]) {
+      expect(studio).toContain(name);
+    }
+    const toolbarSplitStart = studio.indexOf("const splitSelectedTracks = () => {");
+    const toolbarSplitEnd = studio.indexOf("const addTrack = () => {", toolbarSplitStart);
+    const splitHandler = studio.slice(toolbarSplitStart, toolbarSplitEnd);
+    expect(splitHandler).toContain("splitTrackRegion(result, point");
+    expect(splitHandler).not.toContain("nextTrackId(");
+    expect(splitHandler).not.toContain("updatedTracks = [...updatedTracks, ...additions]");
     const clipStart = studio.indexOf("{/* Audio Region (Clip) */}");
     const pointerDown = studio.indexOf("onPointerDown={(e) =>", clipStart);
     const start = studio.indexOf("if (activeTool === 'cut') {", pointerDown);
-    expect(start).toBeGreaterThan(pointerDown);
     const end = studio.indexOf("if (activeTool === 'scrub')", start);
-    const handler = studio.slice(start, end);
-    expect(handler).toContain("splitTrackRegion(item, splitTime");
-    expect(handler).toContain("setSelectedTrackIds([track.id])");
-    expect(handler).not.toContain("rightClip");
-    expect(handler).not.toContain("nextTrackId(");
-    expect(handler).not.toContain("...prev.map");
+    expect(start).toBeGreaterThan(pointerDown);
+    const cutHandler = studio.slice(start, end);
+    expect(cutHandler).toContain("const direction = cutTime < midpoint ? 'left' : 'right'");
+    expect(cutHandler).toContain("cutClipRegionSide(track, region.id, cutTime");
+    expect(cutHandler).not.toContain("rightClip");
+    expect(cutHandler).not.toContain("nextTrackId(");
   });
 });

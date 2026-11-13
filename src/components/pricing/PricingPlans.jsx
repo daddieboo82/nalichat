@@ -144,7 +144,7 @@ export default function PricingPlans({
             source: checkout?.source || "pricing",
             upgrade_feature: checkout?.feature,
             checkout_sku: checkout?.sku,
-          });
+          }, checkout?.userId);
         }
       }
     } catch {
@@ -225,7 +225,7 @@ export default function PricingPlans({
       }
       try {
         try { sessionStorage.setItem(CHECKOUT_RETURN_KEY, "1"); } catch {}
-        sessionStorage.setItem(CHECKOUT_ATTRIBUTION_KEY, JSON.stringify({ source: upgradeSource || "pricing", feature: upgradeFeature || undefined, sku }));
+        sessionStorage.setItem(CHECKOUT_ATTRIBUTION_KEY, JSON.stringify({ source: upgradeSource || "pricing", feature: upgradeFeature || undefined, sku, userId: user?.id }));
       } catch {}
       const attribution = getMarketingAttribution();
       trackPaywallEvent("checkout_started", {

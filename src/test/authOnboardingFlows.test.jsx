@@ -232,6 +232,25 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
   });
 
+  it('rejects whitespace-only display names before calling the backend', async () => {
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: '507f1f77bcf86cd799439011', display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
+      isAuthenticated: true,
+    };
+
+    renderInRouter(<Onboarding />);
+    fireEvent.change(screen.getByPlaceholderText('What should we call you?'), {
+      target: { value: '   ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith('Please enter your display name');
+    });
+    expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
+  });
+
   it('saves onboarding profile data and refreshes auth state', async () => {
     const checkUserAuth = vi.fn().mockResolvedValue({ id: '507f1f77bcf86cd799439012', onboarding_completed: true });
     mockAuthState.current = {

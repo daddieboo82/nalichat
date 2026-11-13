@@ -1100,9 +1100,16 @@ export default function Studio() {
       const sourceTime = getClipSourceTimeAtTime(track, newTime);
       if (sourceTime === null) {
         audio.pause();
+        // A seek into a deleted region must also silence the routed FX chain.
+        mixEngineRef.current?.syncClipRegion(track.id, track, null, newTime, tracksRef.current);
         return;
       }
       audio.currentTime = sourceTime;
+      const region = getTrackClipRegions(track).find(item =>
+        newTime >= item.timelineStart &&
+        newTime < item.timelineStart + item.sourceEnd - item.sourceStart
+      );
+      mixEngineRef.current?.syncClipRegion(track.id, track, region || null, newTime, tracksRef.current);
     });
     // Scrubbing/seeking must immediately audition the automation state at the destination.
     mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);

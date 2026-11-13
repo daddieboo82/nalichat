@@ -45,6 +45,17 @@ describe("Studio same-track split integration", () => {
     expect(getClipSourceTimeAtTime(track, 8)).toBe(8);
   });
 
+  it("updates the mixer gain immediately when seeking into or out of a removed gap", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const start = studio.indexOf("const updateCurrentTime = (newTime) => {");
+    const end = studio.indexOf("const togglePlay = () => {", start);
+    expect(start).toBeGreaterThan(0);
+    const seek = studio.slice(start, end);
+    expect(seek).toContain("getClipSourceTimeAtTime(track, newTime)");
+    expect(seek).toContain("mixEngineRef.current?.syncClipRegion(track.id, track, null, newTime, tracksRef.current)");
+    expect(seek).toContain("mixEngineRef.current?.syncClipRegion(track.id, track, region || null, newTime, tracksRef.current)");
+  });
+
   it("uses region mapping for seek, playback start, and live transport sync", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     expect(studio).toContain("getClipSourceTimeAtTime(track, newTime)");

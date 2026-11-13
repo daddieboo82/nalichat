@@ -547,6 +547,14 @@ export default function Studio() {
   }, [roomId, inviteToken, WAVEFORM_POINTS, user?.id, projectLoadRetryKey, searchParams, setSearchParams]);
 
   const handleStartBlank = () => {
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current) {
+      toast.error("Finish saving or restoring before starting a blank session.");
+      return;
+    }
+    if (isRecording || isPlaying) {
+      toast.error("Stop recording and playback before starting a blank session.");
+      return;
+    }
     // Starting a new session must not inherit Undo/Redo from the last one.
     historyEpochRef.current += 1;
     historyRef.current = [[]];
@@ -559,6 +567,14 @@ export default function Studio() {
   };
 
   const handleLoadAutosave = () => {
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current) {
+      toast.error("Finish saving or restoring before loading a local session.");
+      return;
+    }
+    if (isRecording || isPlaying) {
+      toast.error("Stop recording and playback before loading a local session.");
+      return;
+    }
     if (!autosaveStorageKey) {
       toast.error("No autosave found");
       return;

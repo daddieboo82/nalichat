@@ -225,9 +225,13 @@ Deno.serve(async (req) => {
       const remoteSubscription = (isPaymentEvent || needsCurrentProviderStatus)
         ? await fetchSubscriptionBillingInfo(token, subscriptionId)
         : null;
-      const billingTime = remoteSubscription?.nextBillingTime ||
-        (!isPaymentEvent ? (event.resource?.billing_info?.next_billing_time ||
-          (newStatus !== 'active' ? event.resource?.billing_info?.final_payment_time : null)) : null);
+      // For pending activation the billing boundary must come from a fresh
+      // provider read. A signed but delayed event may have an old future date.
+      const billingTime = needsCurrentProviderStatus
+        ? remoteSubscription?.nextBillingTime
+        : (remoteSubscription?.nextBillingTime ||
+          (!isPaymentEvent ? (event.resource?.billing_info?.next_billing_time ||
+            (newStatus !== 'active' ? event.resource?.billing_info?.final_payment_time : null)) : null));
       const periodEnd = paypalPeriodEndForStatus(newStatus, billingTime);
       const providerMismatch = needsCurrentProviderStatus &&
         (remoteSubscription?.status !== 'ACTIVE' ||

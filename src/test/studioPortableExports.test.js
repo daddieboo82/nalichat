@@ -119,6 +119,9 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("for (const [takeIndex, take] of playlists.entries())");
     expect(handler).toContain("playlists: savedPlaylists");
     expect(handler).toContain("Too many tracks and takes for a portable backup.");
+    expect(handler).toContain("Cannot back up: duplicate Studio track IDs.");
+    expect(handler).toContain("Cannot back up: duplicate take playlist IDs.");
+    expect(handler).toContain("Cannot back up: a take playlist has no valid ID.");
     expect(handler).toContain("Too many tracks for a restorable Studio backup.");
     expect(handler).toContain("new TextEncoder().encode(manifestText).byteLength");
     expect(handler).toContain("Studio session metadata exceeds the 2 MB restore limit.");
@@ -179,6 +182,9 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("studioAudioMimeForExtension(ext)");
     expect(handler).toContain("Session audio file missing:");
     expect(handler).toContain("Session contains duplicate track IDs.");
+    expect(handler).toContain("const restoredTakeIds = new Set()");
+    expect(handler).toContain("Session contains a take with an invalid ID.");
+    expect(handler).toContain("Session contains duplicate take IDs.");
     expect(handler).toContain("Session contains duplicate audio references.");
     expect(handler).toContain("Session contains conflicting track audio references.");
     expect(handler).toContain("Session contains conflicting take audio references.");

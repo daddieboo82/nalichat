@@ -45,6 +45,16 @@ describe("Studio same-track split integration", () => {
     expect(getClipSourceTimeAtTime(track, 8)).toBe(8);
   });
 
+  it("maps pre-roll and overdub playback through edited clip regions", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const recording = studio.slice(studio.indexOf("const toggleRecord = async () => {"), studio.indexOf("const stop = () => {"));
+    expect(recording).toContain("getClipSourceTimeAtTime(track, Math.max(0, recordStartPos - preRoll))");
+    expect(recording).toContain("getClipSourceTimeAtTime(track, currentTimeRef.current)");
+    expect(recording).toContain("if (sourceTime === null) return");
+    expect(recording).not.toContain("recordStartPos - preRoll - (track.startTime || 0)");
+    expect(recording).not.toContain("audio.currentTime = currentTimeRef.current;");
+  });
+
   it("hands pre-roll into recording once, without repeating count-in", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     expect(studio).toContain("const recordingFromPreRollRef = useRef(false)");

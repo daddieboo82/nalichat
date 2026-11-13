@@ -49,6 +49,17 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('requires current provider ACTIVE status and matching plan for a pending webhook activation', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    expect(code).toContain("record.status === 'pending' && newStatus === 'active'");
+    expect(code).toContain("remoteSubscription?.status !== 'ACTIVE'");
+    expect(code).toContain("remoteSubscription.planId !== record.paypal_plan_id");
+    expect(code).toContain('providerMismatch || requiresPayPalBillingVerification');
+    expect(code.indexOf("remoteSubscription?.status !== 'ACTIVE'")).toBeLessThan(
+      code.indexOf('await entities.Subscription.update(record.id, update)')
+    );
+  });
+
   it('does not activate pending records in on-demand status checks without a future billing date', async () => {
     const code = await source();
     expect(code).toContain("subscription.status === 'pending' && status === 'active'");

@@ -94,9 +94,13 @@ const portableTrackState = (track, audioUrl) => {
 };
 
 // LocalStorage cannot rehydrate object URLs after the browser document closes.
-const hasTransientStudioAudio = (tracks) => Array.isArray(tracks) && tracks.some(
-  (track) => [track?.audioUrl, track?.file_url].some((url) => typeof url === "string" && url.startsWith("blob:"))
-);
+const hasTransientStudioAudio = (tracks) => Array.isArray(tracks) && tracks.some((track) => {
+  const sources = [track?.audioUrl, track?.file_url];
+  if (Array.isArray(track?.playlists)) {
+    track.playlists.forEach((take) => sources.push(take?.audioUrl, take?.file_url));
+  }
+  return sources.some((url) => typeof url === "string" && url.startsWith("blob:"));
+});
 
 async function listPersistedTracks(projectId) {
   const rows = [];
@@ -2248,6 +2252,10 @@ export default function Studio() {
     try {
       const zip = new JSZip();
       const portableTracks = [];
+      const totalMediaCount = tracks.reduce(
+        (count, track) => count + 1 + (Array.isArray(track.playlists) ? track.playlists.length : 0), 0
+      );
+      if (totalMediaCount > 10000) throw new Error("Too many tracks and takes for a portable backup.");
       let totalAudioBytes = 0;
       const addAudioToArchive = async (source, pathPrefix, label) => {
         if (!source) return "";
@@ -2373,6 +2381,9 @@ export default function Studio() {
       const savedTakeCount = payload.project.tracks.reduce(
         (count, track) => count + (Array.isArray(track?.playlists) ? track.playlists.length : 0), 0
       );
+      if (savedTakeCount > 10000 - payload.project.tracks.length) {
+        throw new Error("Session has too many take playlists to restore safely.");
+      }
       if (archiveEntries.length > payload.project.tracks.length + savedTakeCount + 1) {
         throw new Error("Session archive contains unexpected files.");
       }

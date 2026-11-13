@@ -99,6 +99,14 @@ Deno.serve(async (req) => {
     const token = await accessToken();
     if (!(await verify(req, event, token))) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // PayPal's event creation time is required for safe lifecycle ordering.
+    // Never replace it with webhook receipt time: a delayed cancellation
+    // could otherwise outrank a newer activation (or the reverse).
+    if (typeof event.create_time !== 'string' ||
+        !Number.isFinite(Date.parse(event.create_time))) {
+      return Response.json({ error: 'Invalid PayPal event creation time' }, { status: 400 });
+    }
+
     const base44 = createClientFromRequest(req);
     const entities = base44.asServiceRole.entities;
 
@@ -132,7 +140,7 @@ Deno.serve(async (req) => {
         ledger = await entities.PayPalWebhookEvent.create({
           paypal_event_id: event.id,
           event_type: event.event_type,
-          event_time: event.create_time || new Date().toISOString(),
+          event_time: event.create_time,
           processing_state: 'processing',
           attempt_count: 1,
         });
@@ -194,7 +202,7 @@ Deno.serve(async (req) => {
     const record = records[0];
 
     // ── Stale-event protection ──
-    const incomingEventTime = event.create_time || new Date().toISOString();
+    const incomingEventTime = event.create_time;
     if (
       !shouldApplyPayPalEvent(
         record.paypal_event_id,

@@ -245,6 +245,7 @@ export default function Studio() {
   const [preRoll, setPreRoll] = useState(0);
   const [postRoll, setPostRoll] = useState(0);
   const pendingRecordStartRef = useRef(null); // time in seconds when actual recording should begin (after pre-roll)
+  const recordingFromPreRollRef = useRef(false); // one-shot handoff bypasses a second count-in/pre-roll
   const pendingStopAfterRef = useRef(null); // time in seconds when playback should stop (after post-roll)
 
   // Spot mode dialog — lets the user type exact timecode for a clip
@@ -1034,6 +1035,7 @@ export default function Studio() {
       // Pre-roll check: when playhead reaches the pending record start point, begin actual recording
       if (pendingRecordStartRef.current !== null && !isRecording && currentTimeRef.current >= pendingRecordStartRef.current) {
         pendingRecordStartRef.current = null;
+        recordingFromPreRollRef.current = true;
         toggleRecordRef.current();
       }
 
@@ -1507,14 +1509,14 @@ export default function Studio() {
     }
     // Pro Tools count-in: if metronome is on and starting a fresh recording,
     // show a 1-bar count-in overlay first. The onComplete callback re-invokes us.
-    if (!isRecording && metronomeEnabled && !skipCountInRef.current) {
+    if (!isRecording && metronomeEnabled && !skipCountInRef.current && !recordingFromPreRollRef.current) {
       setCountInActive(true);
       return;
     }
     skipCountInRef.current = false;
 
     // Pre-roll: jump back and start playback so the user hears context before the record point
-    if (!isRecording && preRoll > 0) {
+    if (!isRecording && preRoll > 0 && !recordingFromPreRollRef.current) {
       const recordStartPos = currentTimeRef.current;
       const preRollGeneration = ++transportPlayGenerationRef.current;
       pendingRecordStartRef.current = recordStartPos;
@@ -1551,6 +1553,8 @@ export default function Studio() {
       return; // RAF loop will call toggleRecord when playhead reaches recordStartPos
     }
 
+    // Consume the one-shot handoff before requesting microphone access.
+    recordingFromPreRollRef.current = false;
     if (isPlaying) {
       invalidateTransportPlayback();
       setIsPlaying(false);
@@ -1658,6 +1662,7 @@ export default function Studio() {
     setCountInActive(false);
     skipCountInRef.current = false;
     pendingRecordStartRef.current = null;
+    recordingFromPreRollRef.current = false;
     pendingStopAfterRef.current = null;
     if (isRecording) { setIsRecording(false); stopRecordingProcess(); } else { sounds.recStop(); }
     Object.values(audioElementsRef.current).forEach(a => { a.pause(); a.currentTime = 0; });

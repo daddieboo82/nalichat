@@ -26,6 +26,11 @@ describe("NaliStudio portable exports", () => {
     expect(start).toBeGreaterThan(0);
     expect(handler).toContain("studioAudioExtension({");
     expect(handler).toContain("studioAudioMimeForExtension(extension)");
+    expect(studio).toContain("const studioSaveInFlightRef = useRef(false)");
+    expect(handler).toContain("if (studioSaveInFlightRef.current)");
+    expect(handler).toContain("studioSaveInFlightRef.current = true;");
+    expect(handler).toContain("studioSaveInFlightRef.current = false;");
+    expect(handler).toContain("} finally {");
     expect(handler).toContain("const uploadedAudioUrls = new Map()");
     const cloudConfirmed = handler.indexOf('throw new Error("Project save was not confirmed.")');
     const localSnapshot = handler.indexOf('localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks))');

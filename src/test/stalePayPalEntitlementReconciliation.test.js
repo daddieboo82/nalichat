@@ -172,6 +172,20 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('does not create another PayPal agreement while an older pending agreement is unresolved', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    expect(code).toContain("const existing = allSubs.filter((sub: any)");
+    expect(code).toContain("sub.provider === 'paypal' && sub.status === 'pending'");
+    expect(code).toContain('Could not verify the previous PayPal checkout');
+    expect(code).toContain('Existing PayPal checkout requires verification before another subscription');
+    expect(code).toContain('Existing PayPal approval URL is invalid');
+    expect(code).not.toContain("status: 'pending', sku }, '-created_date', 20");
+    const lookupFailure = code.indexOf('Could not verify the previous PayPal checkout');
+    const createRequest = code.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions'");
+    expect(lookupFailure).toBeGreaterThan(0);
+    expect(createRequest).toBeGreaterThan(lookupFailure);
+  });
+
   it('verifies stale ACTIVE PayPal records before using activation-capable status helper', async () => {
     const code = await source();
     const remoteRead = code.indexOf('const remote = await response.json();');

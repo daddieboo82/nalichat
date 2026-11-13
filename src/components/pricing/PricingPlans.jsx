@@ -122,7 +122,7 @@ export default function PricingPlans({
     trackPaywallEvent("paywall_view", {
       variant,
       source: upgradeSource || "pricing",
-      feature: upgradeFeature || undefined,
+      upgrade_feature: upgradeFeature || undefined,
       campaign_source: attribution?.utm_source || undefined,
       campaign_medium: attribution?.utm_medium || undefined,
       campaign_name: attribution?.utm_campaign || undefined,
@@ -151,6 +151,7 @@ export default function PricingPlans({
   const campaignContext = () => {
     const attribution = getMarketingAttribution();
     return {
+      upgrade_feature: upgradeFeature || undefined,
       campaign_source: attribution?.utm_source || undefined,
       campaign_medium: attribution?.utm_medium || undefined,
       campaign_name: attribution?.utm_campaign || undefined,
@@ -194,7 +195,7 @@ export default function PricingPlans({
 
     if (!isAuthenticated) {
       trackProductEvent("signup_click", { source: "pricing_plan", cta: "select_paid_plan", plan: planId, billing_period: period });
-      navigate(`/register?returnTo=${encodeURIComponent("/pricing")}`);
+      navigate(`/register?returnTo=${encodeURIComponent(location.pathname + location.search)}`);
       return;
     }
 
@@ -222,6 +223,7 @@ export default function PricingPlans({
         billing_period: period,
         sku,
         source: upgradeSource || "pricing",
+        upgrade_feature: upgradeFeature || undefined,
         campaign_source: attribution?.utm_source || undefined,
         campaign_medium: attribution?.utm_medium || undefined,
         campaign_name: attribution?.utm_campaign || undefined,
@@ -294,7 +296,7 @@ export default function PricingPlans({
           )}
           <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
             <span className="font-bold">{upgradeFeature ? "You came here to unlock a premium creator feature:" : "Why creators upgrade:"}</span>{" "}
-            {upgradeFeature ? `${upgradeFeature.replaceAll(".", " ")}. Choose the plan that fits your workflow below.` : "fewer app switches, more room for creative files, and premium tools available right where the work happens."}
+            {upgradeFeature === "studio.ai_mastering" ? "AI Auto-Mastering applies EQ, compression, and limiting to your Studio bounce. It’s included in Premium and Premium Plus." : upgradeFeature ? `${upgradeFeature.replaceAll(".", " ")}. Choose the plan that fits your workflow below.` : "fewer app switches, more room for creative files, and premium tools available right where the work happens."}
           </div>
           <div className="mx-auto mt-6 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-5">{[[MessageSquare,"Messages"],[Music2,"Studio"],[Files,"File sharing"],[Sparkles,"NALI.ai"],[ShieldCheck,"Privacy"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-card/60 px-3 py-2 text-xs font-semibold"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" />{label}</div>)}</div>
         </div>

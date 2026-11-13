@@ -116,6 +116,15 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('verifies PayPal plan and owner before updating a resumed active subscription', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    const check = code.indexOf("remote?.plan_id !== planId || remote?.custom_id !== user.id + ':' + sku");
+    const write = code.indexOf("await base44.asServiceRole.entities.Subscription.update(pending.id");
+    expect(check).toBeGreaterThan(0);
+    expect(write).toBeGreaterThan(check);
+    expect(code).toContain('PayPal subscription ownership or plan could not be verified');
+  });
+
   it('does not promote an existing checkout to active without a provider billing period', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(code).toContain("typeof periodEnd !== 'string' || Date.parse(periodEnd) <= Date.now()");

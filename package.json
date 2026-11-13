@@ -23,7 +23,7 @@
     "ci:base44": "bash scripts/base44-ci.sh"
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.60",
+    "@base44/sdk": "^0.8.61",
     "@base44/vite-plugin": "^1.0.52",
     "@capacitor/cli": "^6.2.2",
     "@capacitor/core": "^6.2.2",

@@ -71,7 +71,7 @@ describe('PayPal subscription integration contracts', () => {
     expect(webhookSetupSource).toContain('missingEvents: EVENTS.filter((event) => !eventTypes.includes(event))');
     expect(webhookSetupSource).toContain('Unable to verify existing PayPal webhook registration');
     expect(webhookSetupSource).not.toContain('if (existing && !existing.startsWith(\'REPLACE_\')) return Response.json({ success: true, reused: true, webhookId: existing });');
-    expect(appParams).toContain("VITE_BASE44_APP_ID || 'cbef744a8545c389ef439ea6'");
+    expect(appParams).toContain("VITE_BASE44_APP_ID || '6a1f5ee134147461560c2b37'");
   });
 
   it('captures subscription_id for analytics deduplication on ThankYou return page', async () => {

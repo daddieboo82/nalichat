@@ -45,7 +45,7 @@ const ALLOWED_FIELDS = new Set([
 
 let reportedUnavailable = false;
 
-export function trackPaywallEvent(name, properties = {}) {
+export function trackPaywallEvent(name, properties = {}, userId) {
   if (!EVENT_NAMES.has(name)) {
     throw new Error(`Unknown paywall analytics event: ${name}`);
   }
@@ -55,7 +55,7 @@ export function trackPaywallEvent(name, properties = {}) {
       .filter(([key, value]) => ALLOWED_FIELDS.has(key) && ["string", "boolean", "number"].includes(typeof value)),
   );
 
-  trackProductEvent(name, safeProperties);
+  trackProductEvent(name, userId ? { ...safeProperties, user_id: userId } : safeProperties);
 
   const analytics = typeof window !== "undefined" ? Reflect.get(window, "gtag") : null;
   if (typeof analytics === "function") {

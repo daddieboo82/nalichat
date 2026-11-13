@@ -215,6 +215,18 @@ Deno.serve(async (req) => {
     const lastEventTimeMs = typeof record.paypal_event_time === 'string'
       ? Date.parse(record.paypal_event_time)
       : Number.NaN;
+    // A stored event ID without a valid stored event time is a legacy
+    // ordering gap. Do not let a new signed event blindly overwrite it.
+    if (record.paypal_event_id &&
+        record.paypal_event_id !== event.id &&
+        !Number.isFinite(lastEventTimeMs)) {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'Recorded PayPal event timestamp requires reconciliation',
+      });
+      return Response.json({ error: 'PayPal event history requires reconciliation' }, { status: 503 });
+    }
     if (record.paypal_event_id !== event.id &&
         Number.isFinite(lastEventTimeMs) &&
         lastEventTimeMs === eventCreatedAt) {

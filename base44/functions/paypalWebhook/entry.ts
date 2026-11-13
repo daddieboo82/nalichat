@@ -209,6 +209,22 @@ Deno.serve(async (req) => {
 
     // ── Stale-event protection ──
     const incomingEventTime = event.create_time;
+    // Different provider lifecycle events with identical create_time cannot
+    // be ordered. Do not acknowledge one as permanently ignored: surface a
+    // retryable reconciliation failure without changing subscription state.
+    const lastEventTimeMs = typeof record.paypal_event_time === 'string'
+      ? Date.parse(record.paypal_event_time)
+      : Number.NaN;
+    if (record.paypal_event_id !== event.id &&
+        Number.isFinite(lastEventTimeMs) &&
+        lastEventTimeMs === eventCreatedAt) {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'Same-timestamp PayPal events require provider reconciliation',
+      });
+      return Response.json({ error: 'PayPal event order requires reconciliation' }, { status: 503 });
+    }
     if (
       !shouldApplyPayPalEvent(
         record.paypal_event_id,

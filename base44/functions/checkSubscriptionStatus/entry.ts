@@ -100,7 +100,9 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
     if (subscription.status !== 'active' || typeof subscription.current_period_end !== 'string') return false;
     const periodEndMs = Date.parse(subscription.current_period_end);
     return Number.isFinite(periodEndMs) && periodEndMs <= nowMs;
-  }).slice(0, 10);
+  })
+    .sort((left, right) => Number(right.status === 'active') - Number(left.status === 'active'))
+    .slice(0, 10);
   if (!candidates.length) return;
   try {
     const token = await paypalAccessToken();

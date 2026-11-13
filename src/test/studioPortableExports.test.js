@@ -43,6 +43,21 @@ describe("NaliStudio portable exports", () => {
       .toBeLessThan(helper.indexOf("newHistory.push(newTracks)"));
   });
 
+  it("does not reload a cloud session for responsive or unrelated URL changes", async () => {
+    const studio = await source();
+    const start = studio.indexOf("useEffect(() => {\n    if (!roomId || !user?.id)");
+    const end = studio.indexOf("const handleStartBlank =", start);
+    const loader = studio.slice(start, end);
+    expect(studio).toContain("const waveformPointsRef = useRef(WAVEFORM_POINTS)");
+    expect(loader).toContain("generateWaveform(waveformPointsRef.current)");
+    expect(loader).toContain("setSearchParams(prev => {");
+    expect(loader).toContain(
+      "}, [roomId, inviteToken, user?.id, projectLoadRetryKey, setSearchParams]);"
+    );
+    expect(loader).not.toContain("generateWaveform(WAVEFORM_POINTS)");
+    expect(loader).not.toContain("new URLSearchParams(searchParams)");
+  });
+
   it("resets undo history on both cloud-project loading paths", async () => {
     const studio = await source();
     const start = studio.indexOf("if (!roomId || !user?.id)");

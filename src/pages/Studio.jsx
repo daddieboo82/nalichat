@@ -814,7 +814,11 @@ export default function Studio() {
     pendingHistoryRef.current.forEach(entry => clearTimeout(entry.timer));
     pendingHistoryRef.current = [];
   };
-  useEffect(() => () => discardPendingHistory(), []);
+  useEffect(() => () => {
+    // Unmount invalidates in-flight recorder decoding as well as edit history.
+    historyEpochRef.current += 1;
+    discardPendingHistory();
+  }, []);
   const flushPendingHistory = () => {
     const pending = pendingHistoryRef.current.splice(0);
     pending.forEach(entry => {

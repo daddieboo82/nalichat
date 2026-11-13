@@ -50,21 +50,25 @@ describe('signed PayPal webhook event ordering', () => {
     expect(conflict).toContain('status: 503');
   });
 
-  it('keeps late refunds/reversals reviewable even after a newer lifecycle event', async () => {
+  it('keeps signed refunds/reversals out of lifecycle timestamp and watermark checks', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
-    const adjustment = code.indexOf('const lateFinancialAdjustment = (');
-    const genericStale = code.indexOf('!shouldApplyPayPalEvent(');
+    const adjustment = code.indexOf('const isPaymentAdjustment = event.event_type');
+    const legacy = code.indexOf('if (!isPaymentAdjustment && record.paypal_event_id &&');
+    const equalTime = code.indexOf('if (!isPaymentAdjustment && record.paypal_event_id !== event.id &&');
+    const stale = code.indexOf('!isPaymentAdjustment && !shouldApplyPayPalEvent(');
+    const review = code.indexOf('if (isPaymentAdjustment) {', stale);
+    const update = code.indexOf('await entities.Subscription.update(record.id, update)');
     expect(adjustment).toBeGreaterThan(0);
-    expect(genericStale).toBeGreaterThan(adjustment);
-    const path = code.slice(adjustment, genericStale);
-    expect(path).toContain("'PAYMENT.SALE.REFUNDED'");
-    expect(path).toContain("'PAYMENT.SALE.REVERSED'");
-    expect(path).toContain('eventCreatedAt < lastEventTimeMs');
-    expect(path).toContain("processing_state: 'failed'");
-    expect(path).toContain('reviewRequired: true');
-    expect(path).toContain('status: 503');
-    expect(path).not.toContain('Subscription.update(');
-    expect(path).not.toContain("processing_state: 'ignored'");
+    expect(legacy).toBeGreaterThan(adjustment);
+    expect(equalTime).toBeGreaterThan(legacy);
+    expect(stale).toBeGreaterThan(equalTime);
+    expect(review).toBeGreaterThan(stale);
+    expect(update).toBeGreaterThan(review);
+    const adjustmentBranch = code.slice(review, code.indexOf('const newStatus = state(', review));
+    expect(adjustmentBranch).toContain('reviewRequired: true');
+    expect(adjustmentBranch).toContain("processing_state: 'failed'");
+    expect(adjustmentBranch).not.toContain('Subscription.update(');
+    expect(adjustmentBranch).not.toContain('paypal_event_time: incomingEventTime');
   });
 
   it('keeps different equal-timestamp lifecycle events retryable instead of ignored', async () => {

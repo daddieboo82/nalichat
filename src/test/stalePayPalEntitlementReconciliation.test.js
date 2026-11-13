@@ -25,6 +25,7 @@ describe('signed PayPal webhook event ordering', () => {
   it('rejects stale or duplicate events while allowing newer valid events', () => {
     expect(shouldApplyPayPalEvent('last', newer, 'last', newer)).toBe(false);
     expect(shouldApplyPayPalEvent('last', newer, 'older', older)).toBe(false);
+    expect(shouldApplyPayPalEvent('last', newer, 'different-same-time', newer)).toBe(false);
     expect(shouldApplyPayPalEvent('last', older, 'next', newer)).toBe(true);
   });
 

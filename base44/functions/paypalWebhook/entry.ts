@@ -121,8 +121,18 @@ Deno.serve(async (req) => {
       console.error('PayPal webhook ledger collision', event.id, existing.length);
       return Response.json({ error: 'Ledger reconciliation required' }, { status: 409 });
     }
+    // Prior releases acknowledged some still-active refunds as processed
+    // even though their ledger note explicitly required financial review.
+    // Reopen only that exact legacy case after validating the signed event;
+    // never silently treat it as an already-settled accounting adjustment.
+    const legacyUnreviewedAdjustment = (
+      event.event_type === 'PAYMENT.SALE.REFUNDED' ||
+      event.event_type === 'PAYMENT.SALE.REVERSED'
+    ) && existing[0]?.processing_state === 'processed' &&
+      existing[0]?.last_error ===
+        'Refund/reversal recorded; active recurring agreement requires financial review';
     const ledgerAction = paypalWebhookLedgerAction(
-      existing[0]?.processing_state,
+      legacyUnreviewedAdjustment ? 'failed' : existing[0]?.processing_state,
       existing[0]?.updated_date || existing[0]?.created_date,
     );
     if (ledgerAction === 'duplicate') {

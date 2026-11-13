@@ -31,6 +31,12 @@ The scheduled PayPal workflow definition and both backend entrypoints contain an
 - [ ] Validate older records with missing `sku`, `paypal_plan_id`, or `custom_id` without silently granting access or creating another subscription.
 - [ ] Validate live user journey on desktop, Android-sized mobile, iPhone-sized mobile, including login, pricing, checkout return, subscription display, and Premium gating.
 
+## Refund/reversal financial review procedure — not yet automated
+- [ ] Find failed `PayPalWebhookEvent` rows with `last_error` containing `Refund/reversal of an active recurring agreement requires financial review`. Repeated HTTP 503 delivery is **not** a durable operator queue by itself, and retry limits may eventually expire.
+- [ ] For each signed event, independently review the PayPal transaction and recurring agreement via authorized provider tools. Match sale/refund ID, agreement ID, plan, customer reference, currency, amount and event creation time against the ledger and local Subscription row; do not infer cancellation merely from a reversed sale.
+- [ ] Record an audit trail of the operator's accounting decision, including whether any adjustment changes access or requires refund/chargeback handling. Do not turn `processing_state` into `processed`, delete events, or modify customer access merely to silence retries.
+- [ ] Provide a tested, authorized resolution workflow and alerting for failed financial-review rows before release. Distinguish transient provider failures from cases pending human review, and test duplicate/redelivered events after resolution.
+
 ## Launch decision
 **NO-GO until all mandatory gates pass.** In particular: restoring Base44 credits does not itself repair the exposed key; passing static source assertions does not prove PayPal provider behavior; a GitHub failed job with missing steps is not proof the test command ran.
 

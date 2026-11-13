@@ -2349,7 +2349,7 @@ export default function Studio() {
       // JSZip also lists directory entries such as "audio/" in archive.files.
       // Count actual files only so a full 999-track backup remains restorable.
       const archiveEntries = Object.values(archive.files).filter((entry) => !entry.dir);
-      if (archiveEntries.length > MAX_TRACKS + 1) {
+      if (archiveEntries.length > 10001) {
         throw new Error("Session archive contains too many files.");
       }
       // Protect against ZIP bombs: compressed upload size alone is insufficient.
@@ -2370,10 +2370,41 @@ export default function Studio() {
           payload.project.tracks.length > MAX_TRACKS) {
         throw new Error("Unsupported or invalid Studio session archive.");
       }
+      const savedTakeCount = payload.project.tracks.reduce(
+        (count, track) => count + (Array.isArray(track?.playlists) ? track.playlists.length : 0), 0
+      );
+      if (archiveEntries.length > payload.project.tracks.length + savedTakeCount + 1) {
+        throw new Error("Session archive contains unexpected files.");
+      }
       const restoredTracks = [];
       const temporaryUrls = [];
       const restoredIds = new Set();
       const restoredAudioPaths = new Set();
+      const restoreAudioUrl = async (audioPath) => {
+        if (!audioPath) return "";
+        if (!/^audio[/]track_[0-9]+(?:_take_[0-9]+)?[.](wav|mp3|webm|ogg|m4a|aac|flac|aiff)$/.test(audioPath)) {
+          throw new Error("Session contains an invalid audio reference.");
+        }
+        if (restoredAudioPaths.has(audioPath)) throw new Error("Session contains duplicate audio references.");
+        restoredAudioPaths.add(audioPath);
+        const entry = archive.file(audioPath);
+        if (!entry) throw new Error(`Session audio file missing: ${audioPath}`);
+        if (entry._data?.uncompressedSize > 512 * 1024 * 1024) {
+          throw new Error(`Session audio exceeds the per-track size limit: ${audioPath}`);
+        }
+        const bytes = await entry.async("uint8array");
+        if (bytes.byteLength > 512 * 1024 * 1024) {
+          throw new Error(`Session audio exceeds the per-track size limit: ${audioPath}`);
+        }
+        const ext = audioPath.split(".").pop();
+        const mime = studioAudioMimeForExtension(ext);
+        if (!mime) throw new Error(`Unsupported audio format in session: ${audioPath}`);
+        const audio = new Blob([bytes], { type: mime });
+        if (!audio.size) throw new Error(`Session audio file is empty: ${audioPath}`);
+        const objectUrl = URL.createObjectURL(audio);
+        temporaryUrls.push(objectUrl);
+        return objectUrl;
+      };
       try {
       for (const track of payload.project.tracks) {
         if (!track || typeof track !== "object" || Array.isArray(track)) {
@@ -2386,33 +2417,18 @@ export default function Studio() {
         if (restoredIds.has(trackId)) throw new Error("Session contains duplicate track IDs.");
         restoredIds.add(trackId);
         const audioPath = track.audioUrl || track.file_url || "";
-        if (audioPath && restoredAudioPaths.has(audioPath)) {
-          throw new Error("Session contains duplicate audio references.");
+        const audioUrl = await restoreAudioUrl(audioPath);
+        const savedPlaylists = Array.isArray(track.playlists) ? track.playlists : [];
+        const restoredPlaylists = [];
+        for (const take of savedPlaylists) {
+          if (!take || typeof take !== "object" || Array.isArray(take)) {
+            throw new Error("Session has invalid take playlist metadata.");
+          }
+          const takeAudioPath = take.audioUrl || take.file_url || "";
+          const takeUrl = await restoreAudioUrl(takeAudioPath);
+          restoredPlaylists.push({ ...take, audioUrl: takeUrl, file_url: takeUrl });
         }
-        if (audioPath) restoredAudioPaths.add(audioPath);
-        let audioUrl = "";
-        if (audioPath) {
-          if (!/^audio[/]track_[0-9]+[.](wav|mp3|webm|ogg|m4a|aac|flac|aiff)$/.test(audioPath)) {
-            throw new Error("Session contains an invalid audio reference.");
-          }
-          const entry = archive.file(audioPath);
-          if (!entry) throw new Error(`Session audio file missing: ${audioPath}`);
-          if (entry._data?.uncompressedSize > 512 * 1024 * 1024) {
-            throw new Error(`Session audio exceeds the per-track size limit: ${audioPath}`);
-          }
-          const bytes = await entry.async("uint8array");
-          if (bytes.byteLength > 512 * 1024 * 1024) {
-            throw new Error(`Session audio exceeds the per-track size limit: ${audioPath}`);
-          }
-          const ext = audioPath.split(".").pop();
-          const mime = studioAudioMimeForExtension(ext);
-          if (!mime) throw new Error(`Unsupported audio format in session: ${audioPath}`);
-          const audio = new Blob([bytes], { type: mime });
-          if (!audio.size) throw new Error(`Session audio file is empty: ${audioPath}`);
-          audioUrl = URL.createObjectURL(audio);
-          temporaryUrls.push(audioUrl);
-        }
-        restoredTracks.push({ ...track, audioUrl, file_url: audioUrl });
+        restoredTracks.push({ ...track, audioUrl, file_url: audioUrl, playlists: restoredPlaylists });
       }
       } catch (restoreError) {
         temporaryUrls.forEach((url) => URL.revokeObjectURL(url));

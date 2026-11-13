@@ -1,3 +1,5 @@
+import { getTrackClipRegions } from './studioClipRegions';
+
 // Real client-side audio processing helpers (Web Audio API).
 // These operate on actual audio data — no simulation.
 
@@ -458,22 +460,141 @@ export async function separateStems(url) {
 
 // Mix multiple studio tracks down to a single AudioBuffer (offline render).
 // Respects startTime, volume/clip gain, mute/solo, pan, inserts, Send 1 and master FX.
+/** Return source/timeline ranges that the realtime and offline renderers should audition. */
+export function getTrackRenderRegions(track, sourceDuration = Number.POSITIVE_INFINITY) {
+  const limit = Number.isFinite(Number(sourceDuration))
+    ? Math.max(0, Number(sourceDuration))
+    : Number.POSITIVE_INFINITY;
+  return getTrackClipRegions(track)
+    .map(region => {
+      const sourceStart = Math.max(0, Math.min(limit, region.sourceStart));
+      const sourceEnd = Math.max(sourceStart, Math.min(limit, region.sourceEnd));
+      return {
+        ...region,
+        sourceStart,
+        sourceEnd,
+        timelineStart: Math.max(0, region.timelineStart),
+      };
+    })
+    .filter(region => region.sourceEnd - region.sourceStart > 0.001);
+}
+
+/** Convert track-wide fade fractions into absolute timeline envelope bounds. */
+export function getTrackTimelineFade(track, regions) {
+  if (!Array.isArray(regions) || regions.length === 0) {
+    return { start: 0, end: 0, fadeIn: 0, fadeOut: 0 };
+  }
+  const start = Math.min(...regions.map(region => region.timelineStart));
+  const end = Math.max(...regions.map(region =>
+    region.timelineStart + region.sourceEnd - region.sourceStart
+  ));
+  const duration = Math.max(0, end - start);
+  const fadeIn = Math.min(duration, Math.max(0, Number(track?.fadeIn) || 0) * duration);
+  const fadeOut = Math.min(duration - fadeIn, Math.max(0, Number(track?.fadeOut) || 0) * duration);
+  return { start, end, fadeIn, fadeOut };
+}
+
+/** Evaluate clip-level and track-wide fade/gain envelopes at a timeline position. */
+export function getClipRegionGainAtTime(track, region, timelineTime) {
+  if (!region || !Number.isFinite(Number(timelineTime))) return 0;
+  const duration = Math.max(0, Number(region.sourceEnd) - Number(region.sourceStart));
+  if (duration <= 0) return 0;
+  const time = Number(timelineTime);
+  const elapsed = Math.max(0, Math.min(duration, time - Number(region.timelineStart)));
+  const fadeIn = Math.min(duration, Math.max(0, Number(region.fadeIn) || 0));
+  const fadeOut = Math.min(duration - fadeIn, Math.max(0, Number(region.fadeOut) || 0));
+  const regionFadeIn = fadeIn > 0 ? Math.min(1, elapsed / fadeIn) : 1;
+  const regionFadeOut = fadeOut > 0 ? Math.min(1, (duration - elapsed) / fadeOut) : 1;
+
+  const trackDuration = Math.max(0, Number(track?.duration) || 0);
+  const trackStart = Number(track?.startTime) || 0;
+  const trackElapsed = time - trackStart;
+  const trackFadeInDuration = Math.min(trackDuration, Math.max(0, Number(track?.fadeIn) || 0) * trackDuration);
+  const trackFadeOutDuration = Math.min(
+    trackDuration - trackFadeInDuration,
+    Math.max(0, Number(track?.fadeOut) || 0) * trackDuration,
+  );
+  const trackFadeIn = trackFadeInDuration > 0
+    ? Math.min(1, Math.max(0, trackElapsed / trackFadeInDuration))
+    : 1;
+  const trackRemaining = trackDuration - trackElapsed;
+  const trackFadeOut = trackFadeOutDuration > 0
+    ? Math.min(1, Math.max(0, trackRemaining / trackFadeOutDuration))
+    : 1;
+  const gainDb = Number.isFinite(Number(region.gainDb)) ? Number(region.gainDb) : 0;
+  return Math.pow(10, Math.max(-120, Math.min(24, gainDb)) / 20)
+    * Math.min(regionFadeIn, regionFadeOut)
+    * Math.min(trackFadeIn, trackFadeOut);
+}
+
+/** Equal-power gain for overlapping sibling clips on legacy split-track lanes. */
+export function getSiblingCrossfadeGainAtTime(track, region, timelineTime, allTracks = []) {
+  if (!track || !region || !Number.isFinite(Number(timelineTime))) return 1;
+  const laneKey = track.splitFrom || track.id;
+  const start = Number(region.timelineStart) || 0;
+  const end = start + Math.max(0, Number(region.sourceEnd) - Number(region.sourceStart));
+  const tracks = allTracks || [];
+  const hasSolo = tracks.some(item => item?.solo);
+  if (track.muted || (hasSolo && !track.solo)) return 1;
+  let gain = 1;
+
+  tracks.forEach(sibling => {
+    if (
+      !sibling
+      || sibling.id === track.id
+      || (sibling.splitFrom || sibling.id) !== laneKey
+      || sibling.muted
+      || (hasSolo && !sibling.solo)
+    ) return;
+    getTrackClipRegions(sibling).forEach(other => {
+      const otherStart = Number(other.timelineStart) || 0;
+      const otherEnd = otherStart + Math.max(0, Number(other.sourceEnd) - Number(other.sourceStart));
+      const overlapStart = Math.max(start, otherStart);
+      const overlapEnd = Math.min(end, otherEnd);
+      const overlapDuration = overlapEnd - overlapStart;
+      if (overlapDuration <= 0.001 || timelineTime < overlapStart || timelineTime > overlapEnd) return;
+      const progress = Math.max(0, Math.min(1, (timelineTime - overlapStart) / overlapDuration));
+      // Earlier clip fades out while the later clip fades in: equal-power pair.
+      gain *= start < otherStart
+        ? Math.cos(progress * Math.PI / 2)
+        : Math.sin(progress * Math.PI / 2);
+    });
+  });
+  return gain;
+}
+
+/** Normalize region clip-gain and fade timing for both bounce and export. */
+export function getClipRegionEnvelope(region) {
+  const duration = Math.max(0, Number(region?.sourceEnd) - Number(region?.sourceStart));
+  const gainDb = Number.isFinite(Number(region?.gainDb)) ? Number(region.gainDb) : 0;
+  const gain = Math.pow(10, Math.max(-120, Math.min(24, gainDb)) / 20);
+  const fadeIn = Math.min(duration, Math.max(0, Number(region?.fadeIn) || 0));
+  const fadeOut = Math.min(Math.max(0, duration - fadeIn), Math.max(0, Number(region?.fadeOut) || 0));
+  return { gain, fadeIn, fadeOut };
+}
+
 export async function renderMixToBuffer(tracks, options = {}) {
   const { masterVolume = 100, masterFx = null, sampleRate = 44100 } = options;
-  const audioTracks = (tracks || []).filter(t => t.audioUrl);
+  const audioTracks = (tracks || []).filter(track =>
+    track.audioUrl && getTrackClipRegions(track).length > 0
+  );
   if (audioTracks.length === 0) return null;
 
-  const hasSolo = audioTracks.some(t => t.solo);
-  const active = audioTracks.filter(t => (hasSolo ? t.solo : !t.muted));
+  const hasSolo = audioTracks.some(track => track.solo);
+  const active = audioTracks.filter(track => (hasSolo ? track.solo : !track.muted));
   if (active.length === 0) return null;
 
-  const decoded = await Promise.all(active.map(async (t) => ({
-    track: t,
-    buffer: await fetchAudioBuffer(t.audioUrl),
-  })));
+  const decoded = await Promise.all(active.map(async track => {
+    const buffer = await fetchAudioBuffer(track.audioUrl);
+    const regions = getTrackRenderRegions(track, buffer.duration);
+    return { track, buffer, regions };
+  }));
 
   const totalSeconds = Math.max(
-    ...decoded.map(d => (d.track.startTime || 0) + d.buffer.duration)
+    0,
+    ...decoded.flatMap(({ regions }) => regions.map(region =>
+      region.timelineStart + region.sourceEnd - region.sourceStart
+    ))
   );
   if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return null;
 
@@ -481,16 +602,67 @@ export async function renderMixToBuffer(tracks, options = {}) {
   const offline = new OfflineAudioContext(2, length, sampleRate);
   const master = connectMasterChain(offline, { masterFx, masterVolume, destination: offline.destination });
 
-  decoded.forEach(({ track, buffer }) => {
-    const src = offline.createBufferSource();
-    src.buffer = buffer;
-    connectTrackChain(offline, src, track, {
+  decoded.forEach(({ track, buffer, regions }) => {
+    // One channel strip per DAW track: split regions feed the same insert,
+    // pan, fader and send chain so edits do not reset effect state at seams.
+    const trackInput = offline.createGain();
+    const trackFade = getTrackTimelineFade(track, regions);
+    trackInput.gain.setValueAtTime(0, trackFade.start);
+    if (trackFade.fadeIn > 0) {
+      trackInput.gain.linearRampToValueAtTime(1, trackFade.start + trackFade.fadeIn);
+    } else {
+      trackInput.gain.setValueAtTime(1, trackFade.start);
+    }
+    if (trackFade.fadeOut > 0) {
+      trackInput.gain.setValueAtTime(1, trackFade.end - trackFade.fadeOut);
+      trackInput.gain.linearRampToValueAtTime(0, trackFade.end);
+    } else {
+      trackInput.gain.setValueAtTime(1, trackFade.end);
+    }
+    connectTrackChain(offline, trackInput, track, {
       destination: master.input,
       reverbBus: master.reverbBus,
       delayBus: master.delayBus,
       cueBus: master.cueBus,
     });
-    src.start(Math.max(0, track.startTime || 0));
+    regions.forEach(region => {
+      const duration = region.sourceEnd - region.sourceStart;
+      const envelope = getClipRegionEnvelope(region);
+      const regionGain = offline.createGain();
+      regionGain.gain.setValueAtTime(0, region.timelineStart);
+      if (envelope.fadeIn > 0) {
+        regionGain.gain.linearRampToValueAtTime(
+          envelope.gain,
+          region.timelineStart + envelope.fadeIn,
+        );
+      } else {
+        regionGain.gain.setValueAtTime(envelope.gain, region.timelineStart);
+      }
+      const regionEnd = region.timelineStart + duration;
+      if (envelope.fadeOut > 0) {
+        regionGain.gain.setValueAtTime(
+          envelope.gain,
+          regionEnd - envelope.fadeOut,
+        );
+        regionGain.gain.linearRampToValueAtTime(0, regionEnd);
+      } else {
+        regionGain.gain.setValueAtTime(envelope.gain, regionEnd);
+      }
+      const crossfadeGain = offline.createGain();
+      const crossfadeSamples = 128;
+      const crossfadeCurve = new Float32Array(crossfadeSamples);
+      for (let sample = 0; sample < crossfadeSamples; sample++) {
+        const time = region.timelineStart + (sample / (crossfadeSamples - 1)) * duration;
+        crossfadeCurve[sample] = getSiblingCrossfadeGainAtTime(track, region, time, active);
+      }
+      crossfadeGain.gain.setValueCurveAtTime(crossfadeCurve, region.timelineStart, duration);
+      regionGain.connect(crossfadeGain);
+      crossfadeGain.connect(trackInput);
+      const source = offline.createBufferSource();
+      source.buffer = buffer;
+      source.connect(regionGain);
+      source.start(region.timelineStart, region.sourceStart, duration);
+    });
   });
 
   return offline.startRendering();
@@ -599,4 +771,11 @@ export async function generateMelody({ seconds = 8, bpm = 120 } = {}) {
     waveform: bufferToWaveform(rendered),
     duration: rendered.duration,
   };
+}
+
+/** Clamp a linear fallback level to the HTMLMediaElement volume range. */
+export function clampAudioElementVolume(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(1, numeric));
 }

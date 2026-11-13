@@ -345,7 +345,7 @@ Deno.serve(async (req) => {
       // a freshly verified future billing boundary. For an already ACTIVE
       // local row, the existing boundary remains in place if PayPal hasn't
       // supplied a newer one.
-      const requiresRestorationBillingVerification = needsCurrentProviderStatus &&
+      const requiresRestorationBillingVerification = newStatus === 'active' &&
         record.status !== 'active' &&
         (typeof periodEnd !== 'string' || Date.parse(periodEnd) <= Date.now());
       if (providerMismatch || requiresRestorationBillingVerification ||

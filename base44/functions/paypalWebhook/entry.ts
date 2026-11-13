@@ -308,7 +308,6 @@ Deno.serve(async (req) => {
       // Sale events do not contain the current subscription lifecycle. A
       // verified sale for an earlier billing period cannot activate a locally
       // pending subscription that PayPal now marks canceled or suspended.
-      const isPaymentEvent = event.event_type.startsWith('PAYMENT.');
       // A signed sale or activation event may arrive after a subscription has
       // been suspended, canceled, or refunded. Any transition to ACTIVE must
       // be confirmed against PayPal's current subscription state, not merely

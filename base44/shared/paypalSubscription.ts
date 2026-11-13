@@ -11,9 +11,8 @@ export async function resolvePayPalSubscriptionStatus(
   let remoteStatus = String(remote?.status || '').toUpperCase();
   if (remoteStatus !== 'APPROVED') return remoteStatus;
 
-  let activated = false;
   try {
-    const actRes = await fetch(
+    await fetch(
       apiBase + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId) + '/activate',
       {
         method: 'POST',
@@ -24,14 +23,14 @@ export async function resolvePayPalSubscriptionStatus(
         body: JSON.stringify({ reason: 'Activating subscription after customer approval' }),
       },
     );
-    activated = actRes.ok || actRes.status === 204;
   } catch {
-    activated = false;
+    // Activation may have succeeded remotely even if this request failed.
+    // The subsequent GET is the only evidence that can establish ACTIVE.
   }
-  if (activated) remoteStatus = 'ACTIVE';
 
-  // Activation can lose a race with PayPal auto-activation, and the APPROVED
-  // payload often has no usable billing window. Re-read before deciding access.
+  // A successful activation POST is not evidence of current paid status.
+  // PayPal may still report APPROVED, SUSPENDED, or another state; a missing
+  // follow-up response must not be promoted to ACTIVE.
   try {
     const again = await fetch(
       apiBase + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId),
@@ -39,14 +38,14 @@ export async function resolvePayPalSubscriptionStatus(
     );
     if (again.ok) {
       const fresh = await again.json();
-      if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
       const freshStatus = String(fresh?.status || '').toUpperCase();
-      if (freshStatus && (!activated || freshStatus === 'ACTIVE')) {
+      if (freshStatus) {
         remoteStatus = freshStatus;
+        if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
       }
     }
   } catch {
-    // Keep the status already resolved from the approval response.
+    // Leave approval pending for a later provider-confirmed reconciliation.
   }
 
   return remoteStatus;

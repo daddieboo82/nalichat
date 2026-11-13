@@ -12,6 +12,16 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain("Number(right.status === 'active') - Number(left.status === 'active')");
   });
 
+  it('revalidates active PayPal subscriptions with absent or malformed billing ends', async () => {
+    const code = await source();
+    expect(code).toContain("subscription.status !== 'active'");
+    expect(code).toContain("typeof subscription.current_period_end === 'string'");
+    expect(code).toContain('Number.NaN');
+    expect(code).toContain('!Number.isFinite(periodEndMs) || periodEndMs <= nowMs');
+    expect(code.indexOf('!Number.isFinite(periodEndMs) || periodEndMs <= nowMs'))
+      .toBeLessThan(code.indexOf('.slice(0, 10)'));
+  });
+
   it('requires a successful provider lookup and never grants an unbounded period', async () => {
     const code = await source();
     expect(code).toContain('if (!response.ok) continue;');

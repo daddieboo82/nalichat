@@ -58,6 +58,19 @@ describe("NaliStudio portable exports", () => {
     expect(loader).not.toContain("new URLSearchParams(searchParams)");
   });
 
+  it("clears the local recovery indicator after a confirmed empty cloud save", async () => {
+    const studio = await source();
+    const start = studio.indexOf("const handleSave = async () => {");
+    const end = studio.indexOf("const handleImportClick =", start);
+    const save = studio.slice(start, end);
+    expect(save).toContain("if (portableTracks.length === 0)");
+    expect(save).toContain("localStorage.removeItem(autosaveStorageKey)");
+    expect(save).toContain("setHasAutosave(false)");
+    expect(save).toContain("localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks))");
+    expect(save.indexOf("Project save was not confirmed."))
+      .toBeLessThan(save.indexOf("localStorage.removeItem(autosaveStorageKey)"));
+  });
+
   it("honors a deliberately empty saved project instead of legacy rows", async () => {
     const studio = await source();
     const start = studio.indexOf("const savedState = project.studio_state;");

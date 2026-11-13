@@ -2227,6 +2227,9 @@ export default function Studio() {
         if (!track || (typeof track.id !== "string" && typeof track.id !== "number") || !String(track.id).trim()) {
           throw new Error("Cannot save: a Studio track has no valid ID.");
         }
+        if (track.playlists != null && !Array.isArray(track.playlists)) {
+          throw new Error("Cannot save: invalid take playlist metadata.");
+        }
         const trackId = String(track.id);
         if (trackIds.has(trackId)) throw new Error("Cannot save: duplicate Studio track IDs.");
         trackIds.add(trackId);

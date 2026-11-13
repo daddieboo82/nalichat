@@ -38,6 +38,22 @@ describe('stale active PayPal subscription reconciliation', () => {
     }
   });
 
+  it('does not activate pending records in on-demand status checks without a future billing date', async () => {
+    const code = await source();
+    expect(code).toContain("subscription.status === 'pending' && status === 'active'");
+    expect(code).toContain("typeof periodEnd !== 'string' || Date.parse(periodEnd) <= nowMs");
+  });
+
+  it('does not promote an existing checkout to active without a provider billing period', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    expect(code).toContain("typeof periodEnd !== 'string' || Date.parse(periodEnd) <= Date.now()");
+    expect(code).toContain('PayPal subscription is active but its billing period requires verification');
+    expect(code).toContain('current_period_end: periodEnd');
+    expect(code.indexOf("typeof periodEnd !== 'string' || Date.parse(periodEnd) <= Date.now()")).toBeLessThan(
+      code.indexOf("current_period_end: periodEnd")
+    );
+  });
+
   it('keeps failed provider verification from granting paid access', async () => {
     const code = await source();
     expect(code).toContain('if (!token) return;');

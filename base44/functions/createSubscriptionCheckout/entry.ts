@@ -152,6 +152,18 @@ Deno.serve(async (req) => {
         { status: 409 },
       );
     }
+    // A previously created Stripe checkout must not bypass the unresolved
+    // PayPal renewal guard. Check before reusing any existing session.
+    const guardNow = new Date().toISOString();
+    const unresolvedPayPal = subscriptions.some((sub: any) => requiresExistingPayPalCheckoutReview(
+      sub.provider, sub.plan, sub.status, sub.current_period_end, guardNow,
+    ));
+    if (unresolvedPayPal) {
+      return Response.json({
+        error: 'Existing PayPal subscription needs verification before another checkout',
+      }, { status: 409 });
+    }
+
     if (
       pendingSubscription?.checkout_url
       && pendingSubscription.checkout_id
@@ -195,19 +207,6 @@ Deno.serve(async (req) => {
         ? 'This account already has grandfathered Premium Plus billing'
         : 'This account already has a paid subscription; use the billing portal';
       return Response.json({ error: message }, { status: 409 });
-    }
-
-    // An active PayPal subscription with an expired or missing local billing
-    // period may still be billing at PayPal. Block a new cross-provider
-    // recurring checkout until its status is reconciled, preventing double
-    // subscriptions across PayPal, Stripe and Wix.
-    const unresolvedPayPal = subscriptions.some((sub: any) => requiresExistingPayPalCheckoutReview(
-      sub.provider, sub.plan, sub.status, sub.current_period_end, now,
-    ));
-    if (unresolvedPayPal) {
-      return Response.json({
-        error: 'Existing PayPal subscription needs verification before another checkout',
-      }, { status: 409 });
     }
 
     // Reuse any still-valid pending checkout for this SKU before taking a new

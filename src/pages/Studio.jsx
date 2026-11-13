@@ -188,6 +188,7 @@ export default function Studio() {
   const midiRecordingRef = useRef(false);
   const midiSustainRef = useRef(new Map()), midiAccessRef = useRef(null);
   const studioSaveInFlightRef = useRef(false);
+  const studioRestoreInFlightRef = useRef(false);
   const audioElementsRef = useRef({});
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
@@ -2016,6 +2017,10 @@ export default function Studio() {
   };
 
   const handleSave = async () => {
+    if (studioRestoreInFlightRef.current) {
+      toast.error("Finish restoring the Studio backup before saving.");
+      return false;
+    }
     if (studioSaveInFlightRef.current) {
       toast.error("Studio is already saving. Finish the current save before trying again.");
       return false;
@@ -2394,6 +2399,10 @@ export default function Studio() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current) {
+      toast.error("Finish the current Studio save or restore before importing another backup.");
+      return;
+    }
     if (file.name.toLowerCase().endsWith(".nalistudio.json")) {
       toast.error("This older session file contains links rather than bundled audio. Importing it could lose recorded tracks. Open the original project in Studio and create a new ZIP backup instead.");
       return;
@@ -2413,6 +2422,7 @@ export default function Studio() {
       toast.error("Session backup is too large to restore in the browser.");
       return;
     }
+    studioRestoreInFlightRef.current = true;
     const toastId = toast.loading("Restoring Studio session...");
     try {
       const archive = await JSZip.loadAsync(file);
@@ -2547,6 +2557,8 @@ export default function Studio() {
     } catch (error) {
       console.error("Device session import failed", error);
       toast.error(error.message || "Could not restore Studio session.", { id: toastId });
+    } finally {
+      studioRestoreInFlightRef.current = false;
     }
   };
 

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   paypalPeriodEndForStatus,
+  requiresPayPalBillingVerification,
   resolvePayPalSubscriptionStatus,
 } from '../../../base44/shared/paypalSubscription.ts';
 
@@ -15,6 +16,16 @@ describe('PayPal subscription access', () => {
     expect(paypalPeriodEndForStatus('active', '2026-10-30T11:00:00.000Z', NOW)).toBeNull();
     expect(paypalPeriodEndForStatus('active', 'not-a-date', NOW)).toBeUndefined();
     expect(paypalPeriodEndForStatus('active', '2026-11-30T12:00:00.000Z', NOW)).toBe('2026-11-30T12:00:00.000Z');
+  });
+
+  it('rejects pending-to-active transitions without a verified future billing boundary', () => {
+    expect(requiresPayPalBillingVerification('pending', 'active', null, NOW)).toBe(true);
+    expect(requiresPayPalBillingVerification('pending', 'active', undefined, NOW)).toBe(true);
+    expect(requiresPayPalBillingVerification('pending', 'active', 'bad-date', NOW)).toBe(true);
+    expect(requiresPayPalBillingVerification('pending', 'active', '2026-10-29T12:00:00.000Z', NOW)).toBe(true);
+    expect(requiresPayPalBillingVerification('pending', 'active', '2026-11-30T12:00:00.000Z', NOW)).toBe(false);
+    expect(requiresPayPalBillingVerification('pending', 'canceled', null, NOW)).toBe(false);
+    expect(requiresPayPalBillingVerification('active', 'active', undefined, NOW)).toBe(false);
   });
 
   it('keeps a canceled period boundary so access can end on time', () => {

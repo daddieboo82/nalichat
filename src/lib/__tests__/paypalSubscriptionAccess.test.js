@@ -48,15 +48,37 @@ describe('PayPal subscription access', () => {
     expect(fetchPayPal).not.toHaveBeenCalled();
   });
 
-  it('activates an approved subscription and keeps that status if the follow-up read lags', async () => {
+  it('keeps an approved subscription pending if PayPal has not confirmed activation', async () => {
     const remote = { status: 'APPROVED', billing_info: { next_billing_time: '2020-01-01T00:00:00.000Z' } };
-    vi.stubGlobal('fetch', vi.fn(async (url) => {
+    const fetchPayPal = vi.fn(async (url) => {
       if (String(url).endsWith('/activate')) return new Response(null, { status: 204 });
       return Response.json({ status: 'APPROVED' });
-    }));
+    });
+    vi.stubGlobal('fetch', fetchPayPal);
 
     const status = await resolvePayPalSubscriptionStatus('https://api-m.paypal.com', 'token', 'I-APPROVED', remote);
-    expect(status).toBe('ACTIVE');
+    expect(status).toBe('APPROVED');
+    expect(fetchPayPal).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not claim ACTIVE when PayPal re-read is unavailable after accepted activation', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (String(url).endsWith('/activate')) return new Response(null, { status: 204 });
+      throw new Error('provider lookup unavailable');
+    }));
+    expect(await resolvePayPalSubscriptionStatus(
+      'https://api-m.paypal.com', 'token', 'I-UNCONFIRMED', { status: 'APPROVED' },
+    )).toBe('APPROVED');
+  });
+
+  it('honors a fresh SUSPENDED status even after the activation request succeeded', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (String(url).endsWith('/activate')) return new Response(null, { status: 204 });
+      return Response.json({ status: 'SUSPENDED' });
+    }));
+    expect(await resolvePayPalSubscriptionStatus(
+      'https://api-m.paypal.com', 'token', 'I-SUSPENDED', { status: 'APPROVED' },
+    )).toBe('SUSPENDED');
   });
 
   it('grants access when activation loses a race but PayPal is already active', async () => {

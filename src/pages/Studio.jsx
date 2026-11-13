@@ -2329,7 +2329,13 @@ export default function Studio() {
 
       try {
         if (autosaveStorageKey) {
-          localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks));
+          if (portableTracks.length === 0) {
+            localStorage.removeItem(autosaveStorageKey);
+            setHasAutosave(false);
+          } else {
+            localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks));
+            setHasAutosave(true);
+          }
         }
         if (masterFxStorageKey) {
           localStorage.setItem(masterFxStorageKey, JSON.stringify(masterFx || {}));

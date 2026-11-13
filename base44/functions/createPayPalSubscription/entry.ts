@@ -70,6 +70,31 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'This account already has a paid subscription; use the billing portal' }, { status: 409 });
     }
 
+    // An active PayPal subscription with a missing or expired local billing
+    // period may have renewed remotely. Do not create a second subscription
+    // simply because local entitlements cannot currently verify its renewal.
+    // The authenticated status check can reconcile these records with PayPal.
+    const unresolvedActivePayPal = allSubs.some((sub: any) => (
+      sub.provider === 'paypal' &&
+      normalizePlan(sub.plan) !== 'free' &&
+      normalizeStatus(sub.status) === 'active' &&
+      !hasPaidTierAccess('active', {
+        currentPeriodEnd: typeof sub.current_period_end === 'string' ? sub.current_period_end : null,
+        now,
+      })
+    ));
+    const undatedActivePayPal = allSubs.some((sub: any) => (
+      sub.provider === 'paypal' &&
+      normalizePlan(sub.plan) !== 'free' &&
+      normalizeStatus(sub.status) === 'active' &&
+      (typeof sub.current_period_end !== 'string' || !Number.isFinite(Date.parse(sub.current_period_end)))
+    ));
+    if (unresolvedActivePayPal || undatedActivePayPal) {
+      return Response.json({
+        error: 'An existing PayPal subscription requires status verification before another checkout',
+      }, { status: 409 });
+    }
+
     const token = await accessToken();
     const existing = await base44.asServiceRole.entities.Subscription.filter(
       { user_id: user.id, provider: 'paypal', status: 'pending', sku }, '-created_date', 20,

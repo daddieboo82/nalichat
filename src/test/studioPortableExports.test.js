@@ -433,6 +433,10 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("studioDeviceExportInFlightRef.current = false;");
     expect(handler).toContain("} finally {");
     expect(handler).toContain("const exportTracks = tracks.map(");
+    expect(handler).toContain("track?.playlists != null && !Array.isArray(track.playlists)");
+    expect(handler).toContain("Cannot back up: invalid take playlist metadata.");
+    expect(handler.indexOf("track?.playlists != null && !Array.isArray(track.playlists)"))
+      .toBeLessThan(handler.indexOf("const zip = new JSZip()"));
     expect(handler).toContain("for (const [index, track] of exportTracks.entries())");
     expect(handler.indexOf("try {")).toBeLessThan(handler.indexOf("const exportTracks = tracks.map("));
     expect(handler.indexOf("const exportTracks = tracks.map(")).toBeLessThan(handler.indexOf("} finally {"));

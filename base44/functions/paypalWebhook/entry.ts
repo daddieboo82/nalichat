@@ -121,6 +121,19 @@ Deno.serve(async (req) => {
       console.error('PayPal webhook ledger collision', event.id, existing.length);
       return Response.json({ error: 'Ledger reconciliation required' }, { status: 409 });
     }
+    // A PayPal event ID identifies one immutable signed event. A ledger row
+    // with the same ID but a different type or creation instant is not a
+    // legitimate duplicate; hold it for operator reconciliation rather than
+    // acknowledging or applying a potentially conflicting event.
+    if (existing[0] && (
+      existing[0].event_type !== event.event_type ||
+      typeof existing[0].event_time !== 'string' ||
+      !Number.isFinite(Date.parse(existing[0].event_time)) ||
+      Date.parse(existing[0].event_time) !== eventCreatedAt
+    )) {
+      console.error('PayPal webhook ledger event identity mismatch', event.id);
+      return Response.json({ error: 'Webhook event identity requires reconciliation' }, { status: 503 });
+    }
     // Prior releases acknowledged some still-active refunds as processed
     // even though their ledger note explicitly required financial review.
     // Reopen only that exact legacy case after validating the signed event;
@@ -162,6 +175,15 @@ Deno.serve(async (req) => {
           { paypal_event_id: event.id }, '-created_date', 2,
         );
         if (!raced[0]) throw createError;
+        // Collision recovery must enforce the same event identity rules as
+        // the regular read path before interpreting a row as a duplicate.
+        if (raced.length !== 1 ||
+            raced[0].event_type !== event.event_type ||
+            typeof raced[0].event_time !== 'string' ||
+            !Number.isFinite(Date.parse(raced[0].event_time)) ||
+            Date.parse(raced[0].event_time) !== eventCreatedAt) {
+          return Response.json({ error: 'Webhook event identity requires reconciliation' }, { status: 503 });
+        }
         const racedAction = paypalWebhookLedgerAction(
           raced[0].processing_state,
           raced[0].updated_date || raced[0].created_date,

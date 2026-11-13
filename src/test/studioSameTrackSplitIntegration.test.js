@@ -109,6 +109,19 @@ describe("Studio same-track split integration", () => {
     expect(finalize).not.toContain("new Blob(audioChunksRef.current");
   });
 
+  it("invalidates asynchronous recorder finalization when Studio unmounts", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const cleanup = studio.slice(
+      studio.indexOf("// Unmount invalidates in-flight recorder decoding"),
+      studio.indexOf("const flushPendingHistory =")
+    );
+    expect(cleanup).toContain("historyEpochRef.current += 1");
+    expect(cleanup).toContain("discardPendingHistory()");
+    const finalize = studio.slice(studio.indexOf("recorderBeingFinalized.onstop = async"), studio.indexOf("recorderBeingFinalized.stop()"));
+    expect(finalize).toContain("recordingEpoch !== historyEpochRef.current");
+    expect(finalize).toContain("URL.revokeObjectURL(audioUrl)");
+  });
+
   it("releases unassigned temporary audio if recorder finalization fails", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));

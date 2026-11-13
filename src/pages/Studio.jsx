@@ -564,6 +564,18 @@ export default function Studio() {
     }
   };
 
+  // Temporary object URLs only live in the current browser document. Give
+  // users a chance to save a portable ZIP or cloud project before closing it.
+  useEffect(() => {
+    if (showWelcome || !hasTransientStudioAudio(tracks)) return;
+    const warnOnUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnOnUnload);
+    return () => window.removeEventListener("beforeunload", warnOnUnload);
+  }, [tracks, showWelcome]);
+
   // Autosave tracks (Debounced to prevent lag during rapid edits)
   useEffect(() => {
     if (autosaveStorageKey && tracks && tracks.length > 0) {

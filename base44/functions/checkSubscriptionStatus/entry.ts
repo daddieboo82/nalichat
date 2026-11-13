@@ -147,16 +147,16 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
           (typeof periodEnd !== 'string' || Date.parse(periodEnd) <= nowMs)) {
         continue;
       }
-      if (periodEnd !== undefined) update.current_period_end = periodEnd;
-      // A remotely ACTIVE status alone does not establish a paid-through date.
-      // For an overdue local record, retain its expired period unless PayPal
-      // provides a valid future billing boundary. Never clear it to null:
-      // null current_period_end grants unbounded access in hasPaidTierAccess.
-      if (status === 'active' &&
-          typeof subscription.current_period_end === 'string' &&
-          Date.parse(subscription.current_period_end) <= nowMs &&
-          (periodEnd === null || periodEnd === undefined)) {
-        delete update.current_period_end;
+      // For every PayPal ACTIVE record, write a billing boundary only when
+      // PayPal provided a verified future date. Missing or expired provider
+      // billing data must never clear a stored boundary or replace it with
+      // null: other access helpers interpret active + null as unlimited.
+      if (status === 'active') {
+        if (typeof periodEnd === 'string' && Date.parse(periodEnd) > nowMs) {
+          update.current_period_end = periodEnd;
+        }
+      } else if (periodEnd !== undefined) {
+        update.current_period_end = periodEnd;
       }
       if (status === 'canceled') update.cancel_at_period_end = false;
       await subscriptionEntity.update(subscription.id as string, update);

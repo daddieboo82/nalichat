@@ -89,13 +89,28 @@ describe('stale active PayPal subscription reconciliation', () => {
 
   it('requires current provider ACTIVE status and matching plan for a pending webhook activation', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
-    expect(code).toContain("record.status === 'pending' && newStatus === 'active'");
+    expect(code).toContain("const needsCurrentProviderStatus = newStatus === 'active';");
     expect(code).toContain("remoteSubscription?.status !== 'ACTIVE'");
     expect(code).toContain("remoteSubscription.planId !== record.paypal_plan_id");
     expect(code).toContain('providerMismatch || requiresPayPalBillingVerification');
     expect(code.indexOf("remoteSubscription?.status !== 'ACTIVE'")).toBeLessThan(
       code.indexOf('await entities.Subscription.update(record.id, update)')
     );
+  });
+
+  it('requires current PayPal ACTIVE, owner and plan before any webhook reactivation', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const guard = code.indexOf("const needsCurrentProviderStatus = newStatus === 'active';");
+    const update = code.indexOf('await entities.Subscription.update(record.id, update)');
+    expect(guard).toBeGreaterThan(0);
+    expect(update).toBeGreaterThan(guard);
+    const beforeUpdate = code.slice(guard, update);
+    expect(beforeUpdate).toContain("remoteSubscription?.status !== 'ACTIVE'");
+    expect(beforeUpdate).toContain('remoteSubscription.planId !== record.paypal_plan_id');
+    expect(beforeUpdate).toContain("remoteSubscription.customId !== record.user_id + ':' + record.sku");
+    expect(beforeUpdate).toContain('requiresRestorationBillingVerification');
+    expect(beforeUpdate).toContain("record.status !== 'active'");
+    expect(beforeUpdate).toContain("status: 503");
   });
 
   it('uses fresh provider billing date instead of event date for pending activation', async () => {

@@ -24,6 +24,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
+import { getTrackClipRegions, splitTrackRegion } from '@/lib/studioClipRegions';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -3639,42 +3640,27 @@ export default function Studio() {
                         const smartAtRightEdge = relativeX >= rect.width - smartEdgeWidth;
 
                         if (activeTool === 'cut') {
-                           // Behave like Pro Tools Separate-at-cursor: preserve both sides of
-                           // the source instead of destructively deleting everything to the right.
-                           const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                           const clipStartTime = track.startTime || 0;
-                           const clipDuration = track.duration || 40;
-                           const splitTime = clipStartTime + (clipDuration * clickRatio);
-                           const leftDuration = splitTime - clipStartTime;
-                           const rightDuration = clipDuration - leftDuration;
-                           if (leftDuration <= 0.001 || rightDuration <= 0.001) return;
-                           if (tracksRef.current.length >= maxTracks) {
-                             toast.error(`Track limit reached (${maxTracks}).`);
+                           // Separate the selected audio into two regions on the same track.
+                           // Do not create a new mixer track or copy the removed area.
+                           const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / Math.max(1, rect.width)));
+                           const splitTime = (track.startTime || 0) + ((track.duration || 40) * clickRatio);
+                           const region = getTrackClipRegions(track).find(item =>
+                             splitTime > item.timelineStart + 0.001 &&
+                             splitTime < item.timelineStart + (item.sourceEnd - item.sourceStart) - 0.001
+                           );
+                           if (!region) {
+                             toast.error("Place the split point inside an audio region.");
                              return;
                            }
-                           const rightId = nextTrackId(tracksRef.current);
-                           const rightClip = {
-                             ...track,
-                             id: rightId,
-                             name: `${track.name} (Cut)`,
-                             startTime: splitTime,
-                             duration: rightDuration,
-                             fullDuration: track.fullDuration || clipDuration,
-                             clipStart: (track.clipStart || 0) + leftDuration,
-                             splitFrom: track.splitFrom || track.id,
-                           };
-                           setTracksWithHistory(prev => [
-                             ...prev.map(t => t.id === track.id ? {
-                               ...t,
-                               duration: leftDuration,
-                               fullDuration: t.fullDuration || clipDuration,
-                               splitFrom: t.splitFrom || t.id,
-                             } : t),
-                             rightClip,
-                           ]);
-                           setSelectedTrackIds([rightId]);
+                           const idPrefix = `region-${track.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+                           setTracksWithHistory(prev => prev.map(item => (
+                             item.id === track.id
+                               ? splitTrackRegion(item, splitTime, (side) => `${idPrefix}-${side}`)
+                               : item
+                           )));
+                           setSelectedTrackIds([track.id]);
                            updateCurrentTime(splitTime);
-                           toast.success("Clip separated at cursor");
+                           toast.success("Clip split into two regions on the same track");
                            return;
                         }
 

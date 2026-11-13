@@ -1591,27 +1591,31 @@ export default function Studio() {
 
   // Take playlists keep alternate performances on the same track.
   const createTakePlaylist = (track) => {
-    const playlists = Array.isArray(track.playlists) ? track.playlists : [];
-    // A timestamp alone can collide when takes are created in the same millisecond.
-    const usedTakeIds = new Set(playlists.map((item) => String(item?.id)));
-    const takeIdBase = `take-${Date.now()}`;
-    let takeId = takeIdBase;
-    let takeSuffix = 2;
-    while (usedTakeIds.has(takeId)) takeId = `${takeIdBase}-${takeSuffix++}`;
-    const take = {
-      id: takeId,
-      name: `${track.name}.${String(playlists.length + 1).padStart(2, '0')}`,
-      audioUrl: track.audioUrl || null,
-      file_url: track.file_url || track.audioUrl || null,
-      waveform: compactWaveform(track.waveform),
-      startTime: track.startTime || 0,
-      duration: track.duration || 0,
-      clipGain: track.clipGain || 0,
-      fadeIn: track.fadeIn || 0,
-      fadeOut: track.fadeOut || 0,
-    };
-    setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, playlists: [...playlists, take], activePlaylistId: take.id } : t));
-    toast.success(`Saved ${take.name} to Take Playlists`);
+    // Resolve the playlist inside the state updater so rapid consecutive
+    // clicks cannot replace a take created by the preceding update.
+    setTracksWithHistory(prev => prev.map(current => {
+      if (current.id !== track.id) return current;
+      const playlists = Array.isArray(current.playlists) ? current.playlists : [];
+      const usedTakeIds = new Set(playlists.map(item => String(item?.id)));
+      const takeIdBase = `take-${Date.now()}`;
+      let takeId = takeIdBase;
+      let takeSuffix = 2;
+      while (usedTakeIds.has(takeId)) takeId = `${takeIdBase}-${takeSuffix++}`;
+      const take = {
+        id: takeId,
+        name: `${current.name}.${String(playlists.length + 1).padStart(2, '0')}`,
+        audioUrl: current.audioUrl || null,
+        file_url: current.file_url || current.audioUrl || null,
+        waveform: compactWaveform(current.waveform),
+        startTime: current.startTime || 0,
+        duration: current.duration || 0,
+        clipGain: current.clipGain || 0,
+        fadeIn: current.fadeIn || 0,
+        fadeOut: current.fadeOut || 0,
+      };
+      return { ...current, playlists: [...playlists, take], activePlaylistId: take.id };
+    }));
+    toast.success("Saved take to Take Playlists");
   };
 
   const recallTakePlaylist = (track, playlistId) => {

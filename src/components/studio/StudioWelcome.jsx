@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Plus, Undo, Layers, ChevronLeft, FolderOpen } from 'lucide-react';
 
@@ -7,8 +7,10 @@ export default function StudioWelcome({
   handleStartBlank,
   handleLoadAutosave,
   handleLoadDemo,
+  handleSessionImport,
   navigate
 }) {
+  const backupInputRef = useRef(null);
   return (
     <div className="relative flex min-h-screen min-h-[100dvh] flex-1 flex-col items-center justify-center overflow-y-auto bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:p-8">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(var(--primary),0.15)_0%,transparent_70%)] pointer-events-none" />
@@ -30,6 +32,11 @@ export default function StudioWelcome({
           
           <Button onClick={() => navigate('/projects-summary')} className="ui-hover min-h-14 w-full justify-start rounded-xl text-base font-semibold border-primary/40 text-primary" variant="outline">
             <FolderOpen className="w-5 h-5 mr-3" /> Browse My Studio Sessions
+          </Button>
+
+          <input ref={backupInputRef} type="file" className="hidden" accept=".zip,.nalistudio.zip" onChange={handleSessionImport} aria-label="Choose Studio backup to restore" />
+          <Button onClick={() => backupInputRef.current?.click()} className="ui-hover min-h-14 w-full justify-start rounded-xl text-base font-medium" variant="outline">
+            <FolderOpen className="w-5 h-5 mr-3" /> Restore Backup from Device
           </Button>
 
           <Button onClick={handleLoadDemo} className="ui-hover min-h-14 w-full justify-start rounded-xl text-base font-medium" variant="secondary">

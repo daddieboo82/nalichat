@@ -1,7 +1,9 @@
 import { secureUploadFile } from "@/lib/secureUpload";
 import { validateUpload } from "@/lib/uploadValidation";
 import { markActivationComplete, trackProductEvent } from "@/lib/productAnalytics";
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense } from 'react';
+import JSZip from 'jszip';
+import { studioAudioExtension, studioAudioMimeForExtension } from '@/lib/studioArchiveAudio';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Play, Square, Circle, Mic, Settings2, Volume2, Save, Download, FastForward, Rewind, Maximize2, Pause, Layers, Keyboard, Upload, Activity, Crosshair, Link2, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Loader2, Check, Edit2, ChevronLeft, RefreshCw, ListTodo, AudioLines, Folder, FolderOpen } from 'lucide-react';
@@ -91,6 +93,15 @@ const portableTrackState = (track, audioUrl) => {
   };
 };
 
+// LocalStorage cannot rehydrate object URLs after the browser document closes.
+const hasTransientStudioAudio = (tracks) => Array.isArray(tracks) && tracks.some((track) => {
+  const sources = [track?.audioUrl, track?.file_url];
+  if (Array.isArray(track?.playlists)) {
+    track.playlists.forEach((take) => sources.push(take?.audioUrl, take?.file_url));
+  }
+  return sources.some((url) => typeof url === "string" && url.startsWith("blob:"));
+});
+
 async function listPersistedTracks(projectId) {
   const rows = [];
   const pageSize = 200;
@@ -125,6 +136,10 @@ export default function Studio() {
   const isMobile = useIsMobile();
   const { isLowEnd } = usePerformance();
   const WAVEFORM_POINTS = isMobile ? 2000 : 8000;
+  // Project hydration must not rerun just because the responsive waveform
+  // resolution changes; use the latest resolution during an intentional load.
+  const waveformPointsRef = useRef(WAVEFORM_POINTS);
+  waveformPointsRef.current = WAVEFORM_POINTS;
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const currentTimeRef = useRef(0);
@@ -176,6 +191,14 @@ export default function Studio() {
   const midiActiveNotesRef = useRef(new Map());
   const midiRecordingRef = useRef(false);
   const midiSustainRef = useRef(new Map()), midiAccessRef = useRef(null);
+  const studioSaveInFlightRef = useRef(false);
+  const studioRestoreInFlightRef = useRef(false);
+  const studioDeviceExportInFlightRef = useRef(false);
+  // Newly generated demo URLs awaiting an applied track-state commit.
+  const pendingDemoAudioCleanupRef = useRef([]);
+  // A newly created project already has this tab's working tracks. Skip only
+  // its first route-triggered hydration so edits made during upload survive.
+  const newlyCreatedProjectHandoffRef = useRef(null);
   const audioElementsRef = useRef({});
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
@@ -381,20 +404,27 @@ export default function Studio() {
 
   useEffect(() => {
     setHasAutosave(false);
-    if (!autosaveStorageKey) return;
+    if (!autosaveStorageKey || roomId) return;
     try {
       const saved = localStorage.getItem(autosaveStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.length > 0) setHasAutosave(true);
+        if (Array.isArray(parsed) && parsed.length > 0 && !hasTransientStudioAudio(parsed)) setHasAutosave(true);
       }
     } catch (e) {}
-  }, [autosaveStorageKey]);
+  }, [autosaveStorageKey, roomId]);
 
   useEffect(() => {
     if (!roomId || !user?.id) {
       setProjectLoading(false);
       setProjectLoadError(false);
+      return;
+    }
+    if (newlyCreatedProjectHandoffRef.current === roomId) {
+      newlyCreatedProjectHandoffRef.current = null;
+      setProjectLoading(false);
+      setProjectLoadError(false);
+      setJamRoomActive(true);
       return;
     }
 
@@ -420,9 +450,11 @@ export default function Studio() {
             typeof accepted?.data?.already_member !== "boolean"
           ) throw new Error("Project invite acceptance was not confirmed.");
           if (!cancelled) {
-            const nextParams = new URLSearchParams(searchParams);
-            nextParams.delete("invite");
-            setSearchParams(nextParams, { replace: true });
+            setSearchParams(prev => {
+              const nextParams = new URLSearchParams(prev);
+              nextParams.delete("invite");
+              return nextParams;
+            }, { replace: true });
           }
         }
         const project = await base44.entities.Project.get(roomId);
@@ -445,21 +477,32 @@ export default function Studio() {
         }
 
         const savedState = project.studio_state;
-        if (savedState?.tracks && Array.isArray(savedState.tracks) && savedState.tracks.length > 0) {
+        // An explicitly saved empty track list is authoritative. Fall back
+        // to legacy Track rows only when no modern track list was saved.
+        if (Array.isArray(savedState?.tracks)) {
           const hydrated = savedState.tracks.map((track) => ({
             ...track,
             audioUrl: track.audioUrl || track.file_url || "",
             waveform: Array.isArray(track.waveform) && track.waveform.length > 0
               ? track.waveform
-              : generateWaveform(WAVEFORM_POINTS),
+              : generateWaveform(waveformPointsRef.current),
           }));
+          if (cancelled) return;
+          historyEpochRef.current += 1;
+          historyRef.current = [hydrated];
+          historyIndexRef.current = 0;
+          setHistoryIndex(0);
+          setSelectedTrackIds([]);
+          setFxTarget(null);
           setTracks(hydrated);
           if (Number.isFinite(savedState.masterVolume)) setMasterVolume(savedState.masterVolume);
           if (savedState.timeSignature) setTimeSignature(savedState.timeSignature);
         } else {
           const persistedTracks = await listPersistedTracks(roomId);
-          if (!cancelled && persistedTracks.length > 0) {
-            setTracks(persistedTracks.map((track) => ({
+          if (cancelled) return;
+          {
+            // An empty cloud project must clear the previous session too.
+            const hydrated = persistedTracks.map((track) => ({
               id: track.id,
               _persistedTrackId: track.id,
               name: track.name,
@@ -472,7 +515,7 @@ export default function Studio() {
               armed: false,
               waveform: Array.isArray(track.waveform_data) && track.waveform_data.length > 0
                 ? track.waveform_data
-                : generateWaveform(WAVEFORM_POINTS),
+                : generateWaveform(waveformPointsRef.current),
               startTime: 0,
               duration: track.duration || 0,
               audioUrl: track.file_url || "",
@@ -483,17 +526,27 @@ export default function Studio() {
               elasticAudio: false,
               fadeIn: 0,
               fadeOut: 0,
-            })));
+            }));
+            historyEpochRef.current += 1;
+            historyRef.current = [hydrated];
+            historyIndexRef.current = 0;
+            setHistoryIndex(0);
+            setSelectedTrackIds([]);
+            setFxTarget(null);
+            setTracks(hydrated);
           }
         }
 
+        if (cancelled) return;
         setShowWelcome(false);
         setJamRoomActive(true);
         if (!cancelled) setProjectLoadError(false);
       } catch (err) {
-        console.error("Failed to load project:", err);
-        if (!cancelled) setProjectLoadError(true);
-        toast.error("Couldn't load this Studio project.");
+        if (!cancelled) {
+          console.error("Failed to load project:", err);
+          setProjectLoadError(true);
+          toast.error("Couldn't load this Studio project.");
+        }
       } finally {
         if (!cancelled) {
           masterFxLoadedRef.current = true;
@@ -503,11 +556,41 @@ export default function Studio() {
     })();
 
     return () => { cancelled = true; };
-  }, [roomId, inviteToken, WAVEFORM_POINTS, user?.id, projectLoadRetryKey, searchParams, setSearchParams]);
+  }, [roomId, inviteToken, user?.id, projectLoadRetryKey, setSearchParams]);
 
-  const handleStartBlank = () => { setTracks([]); setShowWelcome(false); };
+  const handleStartBlank = () => {
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
+      toast.error("Finish saving or restoring before starting a blank session.");
+      return;
+    }
+    if (isRecording || isPlaying) {
+      toast.error("Stop recording and playback before starting a blank session.");
+      return;
+    }
+    // Starting a new session must not inherit Undo/Redo from the last one.
+    historyEpochRef.current += 1;
+    historyRef.current = [[]];
+    historyIndexRef.current = 0;
+    setHistoryIndex(0);
+    setTracks([]);
+    setSelectedTrackIds([]);
+    setFxTarget(null);
+    setShowWelcome(false);
+  };
 
   const handleLoadAutosave = () => {
+    if (roomId) {
+      toast.error("Leave the cloud project before opening a standalone draft recovery.");
+      return;
+    }
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
+      toast.error("Finish saving or restoring before loading a local session.");
+      return;
+    }
+    if (isRecording || isPlaying) {
+      toast.error("Stop recording and playback before loading a local session.");
+      return;
+    }
     if (!autosaveStorageKey) {
       toast.error("No autosave found");
       return;
@@ -516,7 +599,23 @@ export default function Studio() {
       const saved = localStorage.getItem(autosaveStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.length > 0) { setTracks(parsed); setShowWelcome(false); return; }
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          if (hasTransientStudioAudio(parsed)) {
+            setHasAutosave(false);
+            toast.error("This autosave contains temporary audio that expired after reload. Restore your downloaded Studio ZIP backup or open the project in My Sessions.");
+            return;
+          }
+          // Loading a local session is also a full session replacement.
+          historyEpochRef.current += 1;
+          historyRef.current = [parsed];
+          historyIndexRef.current = 0;
+          setHistoryIndex(0);
+          setTracks(parsed);
+          setSelectedTrackIds([]);
+          setFxTarget(null);
+          setShowWelcome(false);
+          return;
+        }
       }
     } catch (e) {}
     toast.error("No autosave found");
@@ -524,23 +623,60 @@ export default function Studio() {
 
   // Demo audio is generated locally so it always plays (the old hosted sample 404'd)
   const handleLoadDemo = async () => {
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
+      toast.error("Finish saving or restoring before loading the demo.");
+      return;
+    }
+    if (isRecording || isPlaying) {
+      toast.error("Stop recording and playback before loading the demo.");
+      return;
+    }
     const toastId = toast.loading("Preparing demo session...");
     const base = { volume: 75, pan: 50, muted: false, solo: false, armed: false, startTime: 0, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 };
-    // Enter the editor immediately so slower mobile devices never appear stuck on Welcome.
-    setTracks([
+    const demoTracks = [
       { ...base, id: 1, name: "Demo Lead", color: "bg-purple-500", waveform: generateWaveform(400), duration: 20, audioUrl: null },
       { ...base, id: 2, name: "Demo Bassline", color: "bg-blue-500", waveform: generateWaveform(400), duration: 20, audioUrl: null },
-    ]);
+    ];
+    // A demo replaces the previous session, including its Undo/Redo timeline.
+    historyEpochRef.current += 1;
+    const demoEpoch = historyEpochRef.current;
+    historyRef.current = [demoTracks];
+    historyIndexRef.current = 0;
+    setHistoryIndex(0);
+    setSelectedTrackIds([]);
+    setFxTarget(null);
+    setTracks(demoTracks);
     setShowWelcome(false);
     try {
-      const [lead, beat] = await Promise.all([
+      // Wait for both generators to settle. If either fails, dispose of any
+      // successful temporary audio before returning the demo as placeholders.
+      const results = await Promise.allSettled([
         generateMelody({ seconds: 20, bpm: 90 }),
         generateMelody({ seconds: 20, bpm: 120 })
       ]);
-      setTracks([
-        { ...base, id: 1, name: "Demo Lead", color: "bg-purple-500", waveform: lead.waveform, duration: lead.duration, audioUrl: lead.url },
-        { ...base, id: 2, name: "Demo Bassline", color: "bg-blue-500", waveform: beat.waveform, duration: beat.duration, audioUrl: beat.url },
-      ]);
+      const releaseResult = (result) => {
+        const url = result.status === "fulfilled" ? result.value?.url : null;
+        if (typeof url === "string" && url.startsWith("blob:")) URL.revokeObjectURL(url);
+      };
+      // A stale generation must not report an error for a session the user
+      // already left, even if one of the generators failed.
+      if (historyEpochRef.current !== demoEpoch) {
+        results.forEach(releaseResult);
+        toast.dismiss(toastId);
+        return;
+      }
+      if (results.some(result => result.status === "rejected")) {
+        results.forEach(releaseResult);
+        throw new Error("One or more demo audio tracks could not be generated.");
+      }
+      const [lead, beat] = results.map(result => result.value);
+      pendingDemoAudioCleanupRef.current.push(lead.url, beat.url);
+      setTracks(prev => prev.map(track => {
+        const initial = demoTracks.find(item => item.id === track.id);
+        if (!initial || track.audioUrl || track.waveform !== initial.waveform) return track;
+        const rendered = track.id === 1 ? lead : beat;
+        return { ...track, waveform: rendered.waveform, duration: rendered.duration, audioUrl: rendered.url };
+      }));
       toast.success("Demo session ready", { id: toastId });
     } catch (e) {
       console.error("Demo session failed", e);
@@ -548,27 +684,74 @@ export default function Studio() {
     }
   };
 
-  // Autosave tracks (Debounced to prevent lag during rapid edits)
+  // After React commits demo media updates, discard generated blob URLs that
+  // were skipped because a placeholder was edited, replaced or removed.
   useEffect(() => {
-    if (autosaveStorageKey && tracks && tracks.length > 0) {
-      const timeoutId = setTimeout(() => {
-        try {
-          localStorage.setItem(autosaveStorageKey, JSON.stringify(tracks));
-        } catch (e) {
-          console.error("Failed to autosave project", e);
-        }
-      }, 1000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [tracks, autosaveStorageKey]);
+    if (!pendingDemoAudioCleanupRef.current.length) return;
+    const pending = pendingDemoAudioCleanupRef.current;
+    pendingDemoAudioCleanupRef.current = [];
+    const retained = new Set();
+    const retainTrackAudio = (snapshotTracks) => {
+      if (!Array.isArray(snapshotTracks)) return;
+      snapshotTracks.forEach(track => {
+        if (!track) return;
+        [track.audioUrl, track.file_url].forEach(url => { if (url) retained.add(url); });
+        (Array.isArray(track.playlists) ? track.playlists : []).forEach(take => {
+          [take?.audioUrl, take?.file_url].forEach(url => { if (url) retained.add(url); });
+        });
+      });
+    };
+    retainTrackAudio(tracks);
+    // Audio may no longer appear on the active tracks but still be reachable
+    // through Undo/Redo. Revoking it here would break restored history clips.
+    historyRef.current.forEach(retainTrackAudio);
+    pending.forEach(url => {
+      if (typeof url === "string" && url.startsWith("blob:") && !retained.has(url)) {
+        URL.revokeObjectURL(url);
+      }
+    });
+  }, [tracks]);
+
+  // Temporary object URLs only live in the current browser document. Give
+  // users a chance to save a portable ZIP or cloud project before closing it.
+  useEffect(() => {
+    if (showWelcome || !hasTransientStudioAudio(tracks)) return;
+    const warnOnUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnOnUnload);
+    return () => window.removeEventListener("beforeunload", warnOnUnload);
+  }, [tracks, showWelcome]);
+
+  // Only store durable URLs. A transient blob: reference cannot be reopened
+  // after reload and must not overwrite the last recoverable local autosave.
+  useEffect(() => {
+    // This owner-scoped recovery key is for standalone drafts only.
+    // Cloud room projects have their own durable state and must not overwrite
+    // a different draft's recovery in the shared localStorage slot.
+    if (!autosaveStorageKey || roomId || !tracks || tracks.length === 0 || hasTransientStudioAudio(tracks)) return;
+    const timeoutId = setTimeout(() => {
+      try {
+        localStorage.setItem(autosaveStorageKey, JSON.stringify(tracks));
+      } catch (e) {
+        console.error("Failed to autosave project", e);
+      }
+    }, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [tracks, autosaveStorageKey, roomId]);
 
   const [historyIndex, setHistoryIndex] = useState(-1);
   const historyRef = useRef([]);
   const historyIndexRef = useRef(-1);
+  // Invalidates queued history writes after a complete session replacement.
+  const historyEpochRef = useRef(0);
   const tracksRef = useRef(tracks);
   const automationLatchRef = useRef(new Map());
 
-  useEffect(() => {
+  // Keep save completion and audio callbacks aligned with committed edits.
+  // A passive effect can lag a successful render when an upload resolves.
+  useLayoutEffect(() => {
     tracksRef.current = tracks;
   }, [tracks]);
 
@@ -581,6 +764,9 @@ export default function Studio() {
   }, [showWelcome, tracks]);
 
   const pushToHistory = (newTracks) => {
+    // A queued no-op or duplicate callback should not make Undo appear to
+    // advance while leaving the timeline unchanged.
+    if (historyRef.current[historyIndexRef.current] === newTracks) return;
     let newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
     newHistory.push(newTracks);
     if (newHistory.length > 50) {
@@ -597,7 +783,10 @@ export default function Studio() {
   const setTracksWithHistory = (updater) => {
     setTracks(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      setTimeout(() => pushToHistory(next), 0);
+      const historyEpoch = historyEpochRef.current;
+      setTimeout(() => {
+        if (historyEpochRef.current === historyEpoch) pushToHistory(next);
+      }, 0);
       return next;
     });
   };
@@ -1557,31 +1746,54 @@ export default function Studio() {
 
   // Take playlists keep alternate performances on the same track.
   const createTakePlaylist = (track) => {
-    const playlists = Array.isArray(track.playlists) ? track.playlists : [];
-    const take = {
-      id: `take-${Date.now()}`,
-      name: `${track.name}.${String(playlists.length + 1).padStart(2, '0')}`,
-      audioUrl: track.audioUrl || null,
-      file_url: track.file_url || track.audioUrl || null,
-      waveform: compactWaveform(track.waveform),
-      startTime: track.startTime || 0,
-      duration: track.duration || 0,
-      clipGain: track.clipGain || 0,
-      fadeIn: track.fadeIn || 0,
-      fadeOut: track.fadeOut || 0,
-    };
-    setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, playlists: [...playlists, take], activePlaylistId: take.id } : t));
-    toast.success(`Saved ${take.name} to Take Playlists`);
+    // Resolve the playlist inside the state updater so rapid consecutive
+    // clicks cannot replace a take created by the preceding update.
+    setTracksWithHistory(prev => prev.map(current => {
+      if (current.id !== track.id) return current;
+      const playlists = Array.isArray(current.playlists) ? current.playlists : [];
+      const usedTakeIds = new Set(playlists.map(item => String(item?.id)));
+      const takeIdBase = `take-${Date.now()}`;
+      let takeId = takeIdBase;
+      let takeSuffix = 2;
+      while (usedTakeIds.has(takeId)) takeId = `${takeIdBase}-${takeSuffix++}`;
+      const take = {
+        id: takeId,
+        name: `${current.name}.${String(playlists.length + 1).padStart(2, '0')}`,
+        audioUrl: current.audioUrl || null,
+        file_url: current.file_url || current.audioUrl || null,
+        waveform: compactWaveform(current.waveform),
+        startTime: current.startTime || 0,
+        duration: current.duration || 0,
+        clipGain: current.clipGain || 0,
+        fadeIn: current.fadeIn || 0,
+        fadeOut: current.fadeOut || 0,
+      };
+      return { ...current, playlists: [...playlists, take], activePlaylistId: take.id };
+    }));
+    toast.success("Saved take to Take Playlists");
   };
 
   const recallTakePlaylist = (track, playlistId) => {
-    const take = (track.playlists || []).find(p => p.id === playlistId);
-    if (!take) return;
-    setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
-      ...t, activePlaylistId: take.id, audioUrl: take.audioUrl, file_url: take.file_url || take.audioUrl,
-      waveform: take.waveform || [], startTime: take.startTime || 0, duration: take.duration || 0,
-      clipGain: take.clipGain || 0, fadeIn: take.fadeIn || 0, fadeOut: take.fadeOut || 0,
-    } : t));
+    // Resolve the take from current state, not the potentially stale track
+    // object captured when the playlist menu was rendered.
+    const currentTrack = tracks.find(item => item.id === track.id);
+    const take = currentTrack?.playlists?.find(item => item.id === playlistId);
+    if (!take) {
+      toast.error("That take is no longer available.");
+      return;
+    }
+    setTracksWithHistory(prev => prev.map(current => {
+      if (current.id !== track.id) return current;
+      const currentTake = current.playlists?.find(item => item.id === playlistId);
+      if (!currentTake) return current;
+      return {
+        ...current, activePlaylistId: currentTake.id,
+        audioUrl: currentTake.audioUrl, file_url: currentTake.file_url || currentTake.audioUrl,
+        waveform: currentTake.waveform || [], startTime: currentTake.startTime || 0,
+        duration: currentTake.duration || 0, clipGain: currentTake.clipGain || 0,
+        fadeIn: currentTake.fadeIn || 0, fadeOut: currentTake.fadeOut || 0,
+      };
+    }));
     toast.success(`Recalled ${take.name}`);
   };
 
@@ -1983,34 +2195,92 @@ export default function Studio() {
   };
 
   const handleSave = async () => {
+    if (studioDeviceExportInFlightRef.current) {
+      toast.error("Finish the Studio device backup before saving.");
+      return false;
+    }
+    if (studioRestoreInFlightRef.current) {
+      toast.error("Finish restoring the Studio backup before saving.");
+      return false;
+    }
+    if (studioSaveInFlightRef.current) {
+      toast.error("Studio is already saving. Finish the current save before trying again.");
+      return false;
+    }
     if (roomId && !canEditProject) {
       toast.error("This Jam Room invite is view-only. Your changes cannot be saved to the shared project.");
       return false;
     }
 
+    studioSaveInFlightRef.current = true;
     const toastId = toast.loading("Saving Studio project...");
     try {
-      const portableTracks = [];
+      // The completed upload is reconciled by IDs, so reject ambiguous
+      // identities before uploading any media or creating a project.
+      const trackIds = new Set();
       for (const track of tracks) {
-        let audioUrl = track.audioUrl || track.file_url || "";
-
-        // blob: URLs are device-local and die after reload. Upload them before
-        // persisting so the project can reopen on another device.
-        if (audioUrl.startsWith("blob:")) {
-          const response = await fetch(audioUrl);
-          const blob = await response.blob();
-          const extension = blob.type.includes("mpeg") ? "mp3" : blob.type.includes("webm") ? "webm" : "wav";
-          const safeName = (track.name || "track").replace(/[^a-z0-9_-]+/gi, "_");
-          const file = new File([blob], `${safeName}.${extension}`, { type: blob.type || "audio/wav" });
-          const validation = validateUpload(file);
-          if (!validation.ok) {
-            throw new Error(`${track.name || "Track"}: ${validation.error}`);
-          }
-          const uploaded = await secureUploadFile({ file });
-          audioUrl = uploaded.file_url;
+        if (!track || (typeof track.id !== "string" && typeof track.id !== "number") || !String(track.id).trim()) {
+          throw new Error("Cannot save: a Studio track has no valid ID.");
         }
-
-        portableTracks.push(portableTrackState(track, audioUrl));
+        const trackId = String(track.id);
+        if (trackIds.has(trackId)) throw new Error("Cannot save: duplicate Studio track IDs.");
+        trackIds.add(trackId);
+        const takeIds = new Set();
+        for (const take of (Array.isArray(track.playlists) ? track.playlists : [])) {
+          if (!take || (typeof take.id !== "string" && typeof take.id !== "number") || !String(take.id).trim()) {
+            throw new Error("Cannot save: a take playlist has no valid ID.");
+          }
+          const takeId = String(take.id);
+          if (takeIds.has(takeId)) throw new Error("Cannot save: duplicate take playlist IDs.");
+          takeIds.add(takeId);
+        }
+      }
+      const portableTracks = [];
+      // Take playlists can reference old performances independently of the
+      // active waveform. Upload every transient source before persisting.
+      const uploadedAudioUrls = new Map();
+      const persistAudioUrl = async (source, label) => {
+        if (typeof source !== "string" || !source.startsWith("blob:")) return source || "";
+        if (uploadedAudioUrls.has(source)) return uploadedAudioUrls.get(source);
+        const response = await fetch(source);
+        if (!response.ok) throw new Error(`Could not read audio for ${label}.`);
+        const blob = await response.blob();
+        const extension = studioAudioExtension({
+          mimeType: blob.type,
+          filename: label,
+          sourceUrl: source,
+        });
+        if (!extension) throw new Error(`${label}: unsupported audio format. Export to WAV or MP3 before saving.`);
+        const safeName = label.replace(/[^a-z0-9_-]+/gi, "_");
+        const file = new File([blob], `${safeName}.${extension}`, {
+          type: studioAudioMimeForExtension(extension),
+        });
+        const validation = validateUpload(file, { accept: "audio" });
+        if (!validation.ok) throw new Error(`${label}: ${validation.error}`);
+        const uploaded = await secureUploadFile({ file });
+        const uploadedUrl = uploaded?.file_url;
+        if (typeof uploadedUrl !== "string" ||
+            !/^https:\/\//i.test(uploadedUrl)) {
+          throw new Error(`${label}: audio upload did not return a valid secure file URL.`);
+        }
+        uploadedAudioUrls.set(source, uploadedUrl);
+        return uploadedUrl;
+      };
+      for (const track of tracks) {
+        const audioUrl = await persistAudioUrl(track.audioUrl || track.file_url || "", track.name || "track");
+        const playlists = Array.isArray(track.playlists) ? track.playlists : [];
+        const savedPlaylists = [];
+        for (const take of playlists) {
+          if (!take || typeof take !== "object" || Array.isArray(take)) {
+            throw new Error("Invalid take playlist metadata.");
+          }
+          const takeUrl = await persistAudioUrl(take.audioUrl || take.file_url || "", take.name || track.name || "take");
+          savedPlaylists.push({ ...take, audioUrl: takeUrl, file_url: takeUrl });
+        }
+        portableTracks.push({
+          ...portableTrackState(track, audioUrl),
+          playlists: savedPlaylists,
+        });
       }
 
       const studioState = {
@@ -2021,22 +2291,9 @@ export default function Studio() {
         timeSignature,
       };
 
+      // Confirm the project write before replacing the local recovery snapshot.
+      // LocalStorage is best-effort: it must not prevent a valid cloud save.
       let localPersistenceFailed = false;
-      try {
-        if (autosaveStorageKey) {
-          localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks));
-        }
-        if (masterFxStorageKey) {
-          localStorage.setItem(masterFxStorageKey, JSON.stringify(masterFx || {}));
-        }
-      } catch (storageError) {
-        console.error("Studio local persistence failed", storageError);
-        localPersistenceFailed = true;
-        if (!roomId) {
-          throw new Error("This browser could not save the project locally.");
-        }
-      }
-
       let targetProjectId = roomId;
       let createdNewProject = false;
       if (!targetProjectId) {
@@ -2084,7 +2341,35 @@ export default function Studio() {
         ) throw new Error("Project save was not confirmed.");
       }
 
+      // This save persists the snapshot captured when the user clicked Save.
+      // If they kept editing during the upload, never overwrite a newer local
+      // recovery with that older snapshot (including deleting it for a
+      // zero-track save). Let the regular durable-only autosave handle edits.
+      const editsDuringSave = tracksRef.current !== tracks;
+      try {
+        // Existing cloud rooms must never update another draft's local slot.
+        if (autosaveStorageKey && !roomId && !editsDuringSave) {
+          // A successfully created cloud project is no longer an unsaved
+          // standalone draft. Leave the draft recovery alone if newer edits
+          // appeared during the save, so they are not discarded.
+          if (createdNewProject || portableTracks.length === 0) {
+            localStorage.removeItem(autosaveStorageKey);
+            setHasAutosave(false);
+          } else {
+            localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks));
+            setHasAutosave(true);
+          }
+        }
+        if (masterFxStorageKey) {
+          localStorage.setItem(masterFxStorageKey, JSON.stringify(masterFx || {}));
+        }
+      } catch (storageError) {
+        console.error("Studio local persistence failed", storageError);
+        localPersistenceFailed = true;
+      }
+
       if (createdNewProject && targetProjectId) {
+        newlyCreatedProjectHandoffRef.current = targetProjectId;
         const nextParams = new URLSearchParams(searchParams);
         nextParams.set("room", targetProjectId);
         nextParams.delete("invite");
@@ -2093,27 +2378,60 @@ export default function Studio() {
         setJamRoomActive(false);
       }
 
-      // Replace transient blob URLs in memory with their uploaded URLs so future
-      // saves do not re-upload the same audio.
-      setTracks((prev) => prev.map((track, index) => ({
-        ...track,
-        audioUrl: portableTracks[index]?.audioUrl || track.audioUrl,
-        file_url: portableTracks[index]?.file_url || track.file_url,
-      })));
+      // Uploads are asynchronous: tracks and takes may be edited or reordered
+      // while the request is in flight. Match by identity and only replace URLs
+      // if the original audio source is still present; preserve newer edits.
+      const savedTracksById = new Map(portableTracks.map((track) => [String(track.id), track]));
+      const originalTracksById = new Map(tracks.map((track) => [String(track.id), track]));
+      setTracks((prev) => prev.map((track) => {
+        const id = String(track.id);
+        const saved = savedTracksById.get(id);
+        const original = originalTracksById.get(id);
+        if (!saved || !original) return track;
+        const sourceUnchanged = (track.audioUrl || track.file_url || "") ===
+          (original.audioUrl || original.file_url || "");
+        const originalTakes = Array.isArray(original.playlists) ? original.playlists : [];
+        const savedTakes = Array.isArray(saved.playlists) ? saved.playlists : [];
+        const savedTakesById = new Map(savedTakes.map((take) => [String(take.id), take]));
+        const originalTakesById = new Map(originalTakes.map((take) => [String(take.id), take]));
+        const currentTakes = Array.isArray(track.playlists) ? track.playlists : [];
+        const playlists = currentTakes.map((take) => {
+          const takeId = String(take.id);
+          const originalTake = originalTakesById.get(takeId);
+          const savedTake = savedTakesById.get(takeId);
+          if (!originalTake || !savedTake ||
+              (take.audioUrl || take.file_url || "") !== (originalTake.audioUrl || originalTake.file_url || "")) {
+            return take;
+          }
+          return { ...take, audioUrl: savedTake.audioUrl, file_url: savedTake.file_url };
+        });
+        return {
+          ...track,
+          ...(sourceUnchanged ? { audioUrl: saved.audioUrl, file_url: saved.file_url } : {}),
+          playlists,
+        };
+      }));
 
       toast.success(
         localPersistenceFailed
-          ? "Shared project saved. Local autosave is unavailable on this device."
-          : createdNewProject
-            ? "Studio session saved to My Sessions!"
-            : "Project saved successfully!",
+          ? "Studio project saved to My Sessions. Local autosave is unavailable on this device."
+          : editsDuringSave
+            ? "Saved the earlier Studio snapshot. Newer edits are not yet saved to My Sessions; save again."
+            : createdNewProject
+              ? "Studio session saved to My Sessions!"
+              : "Project saved successfully!",
         { id: toastId },
       );
       return true;
     } catch (e) {
       console.error("Studio save failed", e);
-      toast.error("Failed to save project.", { id: toastId });
+      const reason = typeof e?.message === "string" && e.message.trim()
+        ? e.message.trim().slice(0, 240)
+        : "Please try again or export a device backup.";
+      toast.error(`Could not save Studio project: ${reason}`, { id: toastId, duration: 9000 });
       return false;
+    } finally {
+      studioSaveInFlightRef.current = false;
     }
   };
 
@@ -2205,38 +2523,342 @@ export default function Studio() {
     }
   };
 
-  const handleSaveSessionToDevice = () => {
+  // Export a portable archive: never save ephemeral blob: URLs in device backups.
+  const handleSaveSessionToDevice = async () => {
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
+      toast.error("Finish the current Studio save, backup, or restore first.");
+      return;
+    }
+    if (isPlaying || isRecording) {
+      toast.error("Stop recording and playback before backing up the session.");
+      return;
+    }
+    studioDeviceExportInFlightRef.current = true;
+    let toastId;
     try {
-      const portableTracks = tracks.map((track) => portableTrackState(track, track.audioUrl || track.file_url || ""));
+      // Capture track and project metadata before any asynchronous audio fetch.
+      // Keep this inside try/finally so even snapshot failures release the lock.
+      const exportTracks = tracks.map(track => {
+        if (track?.playlists != null && !Array.isArray(track.playlists)) {
+          throw new Error("Cannot back up: invalid take playlist metadata.");
+        }
+        return {
+          ...track,
+          playlists: Array.isArray(track?.playlists) ? track.playlists.map(take => ({ ...take })) : [],
+        };
+      });
+      const exportMetadata = {
+        title: projectName.trim() || "Untitled Project", bpm, key: songKey,
+        timeSignature, masterVolume, masterFx: { ...(masterFx || {}) },
+        audioSettings: { ...(audioSettings || {}) },
+      };
+      toastId = toast.loading("Packaging Studio session and audio...");
+      const zip = new JSZip();
+      const portableTracks = [];
+      if (exportTracks.length > MAX_TRACKS) {
+        throw new Error("Too many tracks for a restorable Studio backup.");
+      }
+      const totalMediaCount = exportTracks.reduce(
+        (count, track) => count + 1 + (Array.isArray(track.playlists) ? track.playlists.length : 0), 0
+      );
+      if (totalMediaCount > 10000) throw new Error("Too many tracks and takes for a portable backup.");
+      // Match the cloud-save ID requirements before producing a backup.
+      // Otherwise this ZIP could restore but be impossible to save to My Sessions.
+      const backupTrackIds = new Set();
+      for (const track of exportTracks) {
+        if (!track || (typeof track.id !== "string" && typeof track.id !== "number") || !String(track.id).trim()) {
+          throw new Error("Cannot back up: a Studio track has no valid ID.");
+        }
+        const trackId = String(track.id);
+        if (backupTrackIds.has(trackId)) throw new Error("Cannot back up: duplicate Studio track IDs.");
+        backupTrackIds.add(trackId);
+        const takeIds = new Set();
+        for (const take of (Array.isArray(track.playlists) ? track.playlists : [])) {
+          if (!take || (typeof take.id !== "string" && typeof take.id !== "number") || !String(take.id).trim()) {
+            throw new Error("Cannot back up: a take playlist has no valid ID.");
+          }
+          const takeId = String(take.id);
+          if (takeIds.has(takeId)) throw new Error("Cannot back up: duplicate take playlist IDs.");
+          takeIds.add(takeId);
+        }
+      }
+      let totalAudioBytes = 0;
+      const addAudioToArchive = async (source, pathPrefix, label) => {
+        if (!source) return "";
+        const response = await fetch(source);
+        if (!response.ok) throw new Error(`Could not read audio for ${label}.`);
+        const audio = await response.blob();
+        if (!audio.size) throw new Error(`Audio is empty for ${label}.`);
+        totalAudioBytes += audio.size;
+        if (audio.size > 512 * 1024 * 1024 || totalAudioBytes > 1024 * 1024 * 1024) {
+          throw new Error("Session audio exceeds the portable backup size limit.");
+        }
+        const extension = studioAudioExtension({
+          mimeType: audio.type,
+          filename: label,
+          sourceUrl: source,
+        });
+        if (!extension) throw new Error(`Unsupported audio format for ${label}. Export a WAV or MP3 first.`);
+        const mediaPath = `${pathPrefix}.${extension}`;
+        zip.file(mediaPath, audio);
+        return mediaPath;
+      };
+      for (const [index, track] of exportTracks.entries()) {
+        const source = track.audioUrl || track.file_url || "";
+        const savedAudioPath = await addAudioToArchive(source, `audio/track_${index + 1}`, track.name || `Track ${index + 1}`);
+        const playlists = Array.isArray(track.playlists) ? track.playlists : [];
+        const savedPlaylists = [];
+        for (const [takeIndex, take] of playlists.entries()) {
+          if (!take || typeof take !== "object") throw new Error("Invalid take playlist metadata.");
+          const takeSource = take.audioUrl || take.file_url || "";
+          const takePath = await addAudioToArchive(
+            takeSource,
+            `audio/track_${index + 1}_take_${takeIndex + 1}`,
+            take.name || `Track ${index + 1} take ${takeIndex + 1}`
+          );
+          savedPlaylists.push({ ...take, audioUrl: takePath, file_url: takePath });
+        }
+        portableTracks.push({
+          ...portableTrackState(track, savedAudioPath),
+          playlists: savedPlaylists,
+        });
+      }
       const payload = {
         format: "nalichat-studio-session",
-        version: 1,
+        version: 2,
         saved_at: new Date().toISOString(),
         project: {
-          title: projectName.trim() || "Untitled Project",
-          bpm,
-          key: songKey,
-          timeSignature,
-          masterVolume,
-          masterFx: masterFx || {},
-          audioSettings,
+          ...exportMetadata,
           tracks: portableTracks,
         },
       };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      const safeName = (projectName.trim() || "Untitled Project").replace(/[^a-z0-9_-]+/gi, "_");
-      link.href = url;
-      link.download = `${safeName}.nalistudio.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      toast.success("Studio session saved to this device.");
+      const manifestText = JSON.stringify(payload, null, 2);
+      const manifestBytes = new TextEncoder().encode(manifestText).byteLength;
+      if (manifestBytes > 2 * 1024 * 1024) {
+        throw new Error("Studio session metadata exceeds the 2 MB restore limit.");
+      }
+      if (totalAudioBytes + manifestBytes > 1024 * 1024 * 1024) {
+        throw new Error("Session backup exceeds the 1 GB expanded-size restore limit.");
+      }
+      zip.file("session.json", manifestText);
+      const archive = await zip.generateAsync({ type: "blob" });
+      if (!archive.size) throw new Error("Session archive is empty.");
+      if (archive.size > 1024 * 1024 * 1024) {
+        throw new Error("Studio session ZIP exceeds the 1 GB restore limit.");
+      }
+      const url = URL.createObjectURL(archive);
+      let link;
+      let downloadTriggered = false;
+      try {
+        link = document.createElement("a");
+        const safeName = exportMetadata.title.replace(/[^a-z0-9_-]+/gi, "_");
+        link.href = url;
+        link.download = `${safeName}.nalistudio.zip`;
+        document.body.appendChild(link);
+        link.click();
+        downloadTriggered = true;
+      } finally {
+        link?.remove();
+        // Give browsers time to begin a successful download, but immediately
+        // dispose of the object URL if triggering the download failed.
+        if (downloadTriggered) setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        else URL.revokeObjectURL(url);
+      }
+      toast.success("Portable Studio session and audio packaged.", { id: toastId });
     } catch (error) {
       console.error("Device session save failed", error);
-      toast.error("Could not save this Studio session to your device.");
+      toast.error(error.message || "Could not save this Studio session to your device.", { id: toastId });
+    } finally {
+      studioDeviceExportInFlightRef.current = false;
+    }
+  };
+
+  const sessionImportRef = useRef(null);
+  const handleSessionImport = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
+      toast.error("Finish the current Studio save or restore before importing another backup.");
+      return;
+    }
+    if (file.name.toLowerCase().endsWith(".nalistudio.json")) {
+      toast.error("This older session file contains links rather than bundled audio. Importing it could lose recorded tracks. Open the original project in Studio and create a new ZIP backup instead.");
+      return;
+    }
+    if (roomId) {
+      toast.error("Leave the shared Jam Room before restoring a device session.");
+      return;
+    }
+    if (isRecording || isPlaying) {
+      toast.error("Stop playback and recording before restoring a Studio backup.");
+      return;
+    }
+    if (tracks.length > 0 && !window.confirm("Restoring a backup will replace the tracks currently open in Studio. Save your current session first. Continue?")) {
+      return;
+    }
+    if (file.size > 1024 * 1024 * 1024) {
+      toast.error("Session backup is too large to restore in the browser.");
+      return;
+    }
+    studioRestoreInFlightRef.current = true;
+    let toastId;
+    try {
+      toastId = toast.loading("Restoring Studio session...");
+      const archive = await JSZip.loadAsync(file);
+      // JSZip also lists directory entries such as "audio/" in archive.files.
+      // Count actual files only so a full 999-track backup remains restorable.
+      const archiveEntries = Object.values(archive.files).filter((entry) => !entry.dir);
+      if (archiveEntries.length > 10001) {
+        throw new Error("Session archive contains too many files.");
+      }
+      // JSZip 3.10 exposes the declared expanded size on loaded compressed
+      // entries. Never interpret missing metadata as a harmless zero-byte file.
+      const expandedSize = (entry) => {
+        const size = entry?._data?.uncompressedSize;
+        if (!Number.isSafeInteger(size) || size < 0) {
+          throw new Error("Studio ZIP contains invalid or unknown expanded file sizes.");
+        }
+        return size;
+      };
+      // Protect against ZIP bombs before expanding the manifest or any media.
+      const totalUncompressedBytes = archiveEntries.reduce(
+        (sum, entry) => sum + expandedSize(entry), 0
+      );
+      if (!Number.isSafeInteger(totalUncompressedBytes) || totalUncompressedBytes > 1024 * 1024 * 1024) {
+        throw new Error("Uncompressed session contents exceed the 1 GB safety limit.");
+      }
+      const manifest = archive.file("session.json");
+      if (!manifest) throw new Error("This archive has no Studio session manifest.");
+      if (expandedSize(manifest) > 2 * 1024 * 1024) {
+        throw new Error("Studio session manifest is too large.");
+      }
+      const payload = JSON.parse(await manifest.async("string"));
+      if (payload?.format !== "nalichat-studio-session" || payload.version !== 2 ||
+          !payload.project || !Array.isArray(payload.project.tracks) ||
+          payload.project.tracks.length > MAX_TRACKS) {
+        throw new Error("Unsupported or invalid Studio session archive.");
+      }
+      // A malformed playlist must never be silently dropped during restore.
+      // Reject it before allocating temporary object URLs.
+      for (const track of payload.project.tracks) {
+        if (track?.playlists != null && !Array.isArray(track.playlists)) {
+          throw new Error("Session has invalid take playlist metadata.");
+        }
+      }
+      const savedTakeCount = payload.project.tracks.reduce(
+        (count, track) => count + (Array.isArray(track?.playlists) ? track.playlists.length : 0), 0
+      );
+      if (savedTakeCount > 10000 - payload.project.tracks.length) {
+        throw new Error("Session has too many take playlists to restore safely.");
+      }
+      if (archiveEntries.length > payload.project.tracks.length + savedTakeCount + 1) {
+        throw new Error("Session archive contains unexpected files.");
+      }
+      const restoredTracks = [];
+      const temporaryUrls = [];
+      const restoredIds = new Set();
+      const restoredAudioPaths = new Set();
+      const restoreAudioUrl = async (audioPath, expectedPrefix) => {
+        if (!audioPath) return "";
+        const safePath = /^audio[/]track_[0-9]+(?:_take_[0-9]+)?[.](wav|mp3|webm|ogg|m4a|aac|flac|aiff)$/.test(audioPath);
+        const expectedPath = audioPath.startsWith(`${expectedPrefix}.`) &&
+          studioAudioMimeForExtension(audioPath.slice(expectedPrefix.length + 1));
+        if (!safePath || !expectedPath) {
+          throw new Error("Session contains an invalid audio reference.");
+        }
+        if (restoredAudioPaths.has(audioPath)) throw new Error("Session contains duplicate audio references.");
+        restoredAudioPaths.add(audioPath);
+        const entry = archive.file(audioPath);
+        if (!entry) throw new Error(`Session audio file missing: ${audioPath}`);
+        if (expandedSize(entry) > 512 * 1024 * 1024) {
+          throw new Error(`Session audio exceeds the per-track size limit: ${audioPath}`);
+        }
+        const bytes = await entry.async("uint8array");
+        if (bytes.byteLength > 512 * 1024 * 1024) {
+          throw new Error(`Session audio exceeds the per-track size limit: ${audioPath}`);
+        }
+        const ext = audioPath.split(".").pop();
+        const mime = studioAudioMimeForExtension(ext);
+        if (!mime) throw new Error(`Unsupported audio format in session: ${audioPath}`);
+        const audio = new Blob([bytes], { type: mime });
+        if (!audio.size) throw new Error(`Session audio file is empty: ${audioPath}`);
+        const objectUrl = URL.createObjectURL(audio);
+        temporaryUrls.push(objectUrl);
+        return objectUrl;
+      };
+      try {
+      for (const [trackIndex, track] of payload.project.tracks.entries()) {
+        if (!track || typeof track !== "object" || Array.isArray(track)) {
+          throw new Error("Session has invalid track metadata.");
+        }
+        if ((typeof track.id !== "string" && typeof track.id !== "number") || !String(track.id).trim()) {
+          throw new Error("Session contains a track with an invalid ID.");
+        }
+        const trackId = String(track.id);
+        if (restoredIds.has(trackId)) throw new Error("Session contains duplicate track IDs.");
+        restoredIds.add(trackId);
+        if (track.audioUrl && track.file_url && track.audioUrl !== track.file_url) {
+          throw new Error("Session contains conflicting track audio references.");
+        }
+        const audioPath = track.audioUrl || track.file_url || "";
+        const audioUrl = await restoreAudioUrl(audioPath, `audio/track_${trackIndex + 1}`);
+        const savedPlaylists = Array.isArray(track.playlists) ? track.playlists : [];
+        const restoredPlaylists = [];
+        const restoredTakeIds = new Set();
+        for (const [takeIndex, take] of savedPlaylists.entries()) {
+          if (!take || typeof take !== "object" || Array.isArray(take)) {
+            throw new Error("Session has invalid take playlist metadata.");
+          }
+          if ((typeof take.id !== "string" && typeof take.id !== "number") || !String(take.id).trim()) {
+            throw new Error("Session contains a take with an invalid ID.");
+          }
+          const takeId = String(take.id);
+          if (restoredTakeIds.has(takeId)) throw new Error("Session contains duplicate take IDs.");
+          restoredTakeIds.add(takeId);
+          if (take.audioUrl && take.file_url && take.audioUrl !== take.file_url) {
+            throw new Error("Session contains conflicting take audio references.");
+          }
+          const takeAudioPath = take.audioUrl || take.file_url || "";
+          const takeUrl = await restoreAudioUrl(
+            takeAudioPath, `audio/track_${trackIndex + 1}_take_${takeIndex + 1}`
+          );
+          restoredPlaylists.push({ ...take, audioUrl: takeUrl, file_url: takeUrl });
+        }
+        restoredTracks.push({ ...track, audioUrl, file_url: audioUrl, playlists: restoredPlaylists });
+      }
+      // The manifest must account for every archived media file. Do not accept
+      // attachments that are unrelated to an active track or alternate take.
+      if (archiveEntries.some((entry) => entry.name !== "session.json" && !restoredAudioPaths.has(entry.name))) {
+        throw new Error("Session archive includes unreferenced media files.");
+      }
+      } catch (restoreError) {
+        temporaryUrls.forEach((url) => URL.revokeObjectURL(url));
+        throw restoreError;
+      }
+      // A restored backup replaces the current session. Do not let Undo
+      // resurrect tracks from the previous session or redo into its edits.
+      historyEpochRef.current += 1;
+      historyRef.current = [restoredTracks];
+      historyIndexRef.current = 0;
+      setHistoryIndex(0);
+      setSelectedTrackIds([]);
+      setFxTarget(null);
+      setTracks(restoredTracks);
+      setProjectName(payload.project.title || "Restored Project");
+      if (Number.isFinite(Number(payload.project.bpm))) setBpm(Number(payload.project.bpm));
+      if (typeof payload.project.key === "string") setSongKey(payload.project.key);
+      if (payload.project.timeSignature) setTimeSignature(payload.project.timeSignature);
+      if (Number.isFinite(Number(payload.project.masterVolume))) setMasterVolume(Number(payload.project.masterVolume));
+      if (payload.project.masterFx && typeof payload.project.masterFx === "object") setMasterFx(payload.project.masterFx);
+      if (payload.project.audioSettings && typeof payload.project.audioSettings === "object") setAudioSettings(payload.project.audioSettings);
+      setShowWelcome(false);
+      toast.success(`Restored ${restoredTracks.length} Studio tracks. Save to My Sessions or keep your ZIP backup before leaving.`, { id: toastId, duration: 9000 });
+    } catch (error) {
+      console.error("Device session import failed", error);
+      toast.error(error.message || "Could not restore Studio session.", { id: toastId });
+    } finally {
+      studioRestoreInFlightRef.current = false;
     }
   };
 
@@ -2278,9 +2900,10 @@ export default function Studio() {
 
   // handleExport removed in favor of BounceDialog
 
-  // Export each track as a separate stem file — Pro Tools "Export Stems" workflow
+  // Render each audible track and package the stems in one browser download.
+  // Multiple programmatic downloads can be blocked by mobile/desktop browsers.
   const handleExportStems = async () => {
-    const audioTracks = tracks.filter(t => t.audioUrl && !t.muted);
+    const audioTracks = tracks.filter(t => (t.audioUrl || t.file_url) && !t.muted);
     if (audioTracks.length === 0) {
       toast.error("No audio tracks to export as stems.");
       return;
@@ -2288,24 +2911,42 @@ export default function Studio() {
     setIsDownloading(true);
     toast.info(`Exporting ${audioTracks.length} stems...`);
     try {
-      for (const track of audioTracks) {
-        const blob = await renderMixToWav([track]);
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${track.name.replace(/[^a-z0-9]/gi, '_')}_stem.wav`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
+      const zip = new JSZip();
+      const usedNames = new Set();
+      for (const [index, track] of audioTracks.entries()) {
+        const blob = await renderMixToWav([{ ...track, audioUrl: track.audioUrl || track.file_url }]);
+        if (!(blob instanceof Blob) || blob.size === 0) {
+          throw new Error(`Could not render stem: ${track.name || index + 1}`);
         }
+        const stemName = (track.name || `track_${index + 1}`)
+          .replace(/[^a-z0-9_-]+/gi, "_").replace(/^_+|_+$/g, "") || `track_${index + 1}`;
+        let filename = `${stemName}_stem.wav`;
+        let suffix = 2;
+        while (usedNames.has(filename.toLowerCase())) {
+          filename = `${stemName}_stem_${suffix++}.wav`;
+        }
+        usedNames.add(filename.toLowerCase());
+        zip.file(filename, blob);
       }
+      if (Object.keys(zip.files).length !== audioTracks.length) {
+        throw new Error("Stem archive is missing one or more tracks.");
+      }
+      const archive = await zip.generateAsync({ type: "blob" });
+      if (!archive.size) throw new Error("Stem archive is empty.");
+      const url = URL.createObjectURL(archive);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "NaliStudio_stems.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // Keep the URL alive while the browser's download manager accepts it.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
       sounds.success();
-      toast.success(`${audioTracks.length} stems exported!`);
+      toast.success(`${audioTracks.length} stems packaged into one ZIP download.`);
     } catch (e) {
       console.error("Stem export failed", e);
-      toast.error("Failed to export stems.");
+      toast.error("Failed to export all stems. No complete archive was created.");
     } finally {
       setIsDownloading(false);
     }
@@ -2341,7 +2982,7 @@ export default function Studio() {
 
   if (showWelcome) return (
     <>
-      <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} navigate={navigate} />
+      <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} handleSessionImport={handleSessionImport} navigate={navigate} />
       <StudioVideoHelp />
     </>
   );
@@ -2511,6 +3152,7 @@ export default function Studio() {
 
           <div className="flex flex-wrap items-center justify-end gap-2 pl-2 min-w-0">
             <input type="file" ref={fileInputRef} className="hidden" multiple accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} />
+            <input type="file" ref={sessionImportRef} className="hidden" accept=".zip,.nalistudio.zip" onChange={handleSessionImport} aria-label="Restore Studio session backup" />
             <Button id="milestones-btn" onClick={() => setShowMilestones(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-border/50 hover:bg-secondary transition-colors">
               <ListTodo className="w-4 h-4" /> Milestones
             </Button>
@@ -2535,6 +3177,9 @@ export default function Studio() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSaveSessionToDevice} className="cursor-pointer py-2">
                   <Download className="w-4 h-4 mr-2" /> Save Session to Device
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => sessionImportRef.current?.click()} className="cursor-pointer py-2">
+                  <FolderOpen className="w-4 h-4 mr-2" /> Restore Device Session (.zip)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

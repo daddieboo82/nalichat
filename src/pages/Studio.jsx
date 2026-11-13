@@ -595,6 +595,10 @@ export default function Studio() {
       toast.error("Finish saving or restoring before loading the demo.");
       return;
     }
+    if (isRecording || isPlaying) {
+      toast.error("Stop recording and playback before loading the demo.");
+      return;
+    }
     const toastId = toast.loading("Preparing demo session...");
     const base = { volume: 75, pan: 50, muted: false, solo: false, armed: false, startTime: 0, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 };
     const demoTracks = [

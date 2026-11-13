@@ -580,18 +580,18 @@ export default function Studio() {
     return () => window.removeEventListener("beforeunload", warnOnUnload);
   }, [tracks, showWelcome]);
 
-  // Autosave tracks (Debounced to prevent lag during rapid edits)
+  // Only store durable URLs. A transient blob: reference cannot be reopened
+  // after reload and must not overwrite the last recoverable local autosave.
   useEffect(() => {
-    if (autosaveStorageKey && tracks && tracks.length > 0) {
-      const timeoutId = setTimeout(() => {
-        try {
-          localStorage.setItem(autosaveStorageKey, JSON.stringify(tracks));
-        } catch (e) {
-          console.error("Failed to autosave project", e);
-        }
-      }, 1000);
-      return () => clearTimeout(timeoutId);
-    }
+    if (!autosaveStorageKey || !tracks || tracks.length === 0 || hasTransientStudioAudio(tracks)) return;
+    const timeoutId = setTimeout(() => {
+      try {
+        localStorage.setItem(autosaveStorageKey, JSON.stringify(tracks));
+      } catch (e) {
+        console.error("Failed to autosave project", e);
+      }
+    }, 1000);
+    return () => clearTimeout(timeoutId);
   }, [tracks, autosaveStorageKey]);
 
   const [historyIndex, setHistoryIndex] = useState(-1);

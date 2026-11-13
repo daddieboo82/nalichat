@@ -276,12 +276,15 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'PayPal subscription verification required' }, { status: 503 });
       }
       if (current.status === 'ACTIVE') {
+        // The recurring agreement remains active, but the financial
+        // adjustment is unresolved. Keep the ledger reviewable and retryable;
+        // do not acknowledge accounting completion or revoke paid access.
         await entities.PayPalWebhookEvent.update(ledger.id, {
-          processing_state: 'processed',
+          processing_state: 'failed',
           processed_at: new Date().toISOString(),
-          last_error: 'Refund/reversal recorded; active recurring agreement requires financial review',
+          last_error: 'Refund/reversal of an active recurring agreement requires financial review',
         });
-        return Response.json({ received: true, processed: true, reviewRequired: true });
+        return Response.json({ error: 'PayPal financial adjustment requires reconciliation', reviewRequired: true }, { status: 503 });
       }
       if (current.status === 'CANCELLED' || current.status === 'EXPIRED') {
         adjustmentStatus = 'canceled';

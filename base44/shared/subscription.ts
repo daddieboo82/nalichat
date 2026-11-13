@@ -175,9 +175,10 @@ export function entitlementStatusForProvider(
 }
 
 /**
- * A previously active PayPal subscription with an unverified current period
- * must be reconciled before opening a *different provider's* recurring
- * checkout. This is only a checkout guard; it does not grant paid access.
+ * A pending PayPal billing agreement, or a previously active PayPal
+ * subscription with an unverified current period, must be reconciled before
+ * opening a different provider's recurring checkout. This checkout guard
+ * cannot prove cross-request atomicity and does not grant paid access.
  */
 export function requiresExistingPayPalCheckoutReview(
   provider: unknown,
@@ -186,9 +187,12 @@ export function requiresExistingPayPalCheckoutReview(
   currentPeriodEnd: unknown,
   now = new Date().toISOString(),
 ): boolean {
-  if (provider !== 'paypal' || normalizePlan(plan) === 'free' || normalizeStatus(status) !== 'active') {
-    return false;
-  }
+  if (provider !== 'paypal' || normalizePlan(plan) === 'free') return false;
+  const currentStatus = normalizeStatus(status);
+  // An unresolved approval can still become billable at PayPal. Until its
+  // lifecycle is verified, do not allow a parallel Stripe/Wix agreement.
+  if (currentStatus === 'pending' || currentStatus === 'incomplete') return true;
+  if (currentStatus !== 'active') return false;
   const boundary = typeof currentPeriodEnd === 'string' ? Date.parse(currentPeriodEnd) : Number.NaN;
   const nowMs = Date.parse(now);
   return !Number.isFinite(boundary) || !Number.isFinite(nowMs) || boundary <= nowMs;

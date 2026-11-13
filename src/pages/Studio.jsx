@@ -2073,22 +2073,9 @@ export default function Studio() {
         timeSignature,
       };
 
+      // Confirm the project write before replacing the local recovery snapshot.
+      // LocalStorage is best-effort: it must not prevent a valid cloud save.
       let localPersistenceFailed = false;
-      try {
-        if (autosaveStorageKey) {
-          localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks));
-        }
-        if (masterFxStorageKey) {
-          localStorage.setItem(masterFxStorageKey, JSON.stringify(masterFx || {}));
-        }
-      } catch (storageError) {
-        console.error("Studio local persistence failed", storageError);
-        localPersistenceFailed = true;
-        if (!roomId) {
-          throw new Error("This browser could not save the project locally.");
-        }
-      }
-
       let targetProjectId = roomId;
       let createdNewProject = false;
       if (!targetProjectId) {
@@ -2136,6 +2123,18 @@ export default function Studio() {
         ) throw new Error("Project save was not confirmed.");
       }
 
+      try {
+        if (autosaveStorageKey) {
+          localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks));
+        }
+        if (masterFxStorageKey) {
+          localStorage.setItem(masterFxStorageKey, JSON.stringify(masterFx || {}));
+        }
+      } catch (storageError) {
+        console.error("Studio local persistence failed", storageError);
+        localPersistenceFailed = true;
+      }
+
       if (createdNewProject && targetProjectId) {
         const nextParams = new URLSearchParams(searchParams);
         nextParams.set("room", targetProjectId);
@@ -2181,7 +2180,7 @@ export default function Studio() {
 
       toast.success(
         localPersistenceFailed
-          ? "Shared project saved. Local autosave is unavailable on this device."
+          ? "Studio project saved to My Sessions. Local autosave is unavailable on this device."
           : createdNewProject
             ? "Studio session saved to My Sessions!"
             : "Project saved successfully!",

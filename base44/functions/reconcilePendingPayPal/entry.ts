@@ -47,11 +47,28 @@ Deno.serve(async (req) => {
     }
 
     const token = await accessToken();
-    const pending = await base44.asServiceRole.entities.Subscription.filter(
-      { provider: 'paypal', status: 'pending' },
-      '-created_date',
-      500,
-    );
+    // Scan every pending page, then process a bounded rotating window.
+    // Always fetching only the newest 500 can permanently exclude old rows
+    // while the same unverifiable checkouts remain pending.
+    const allPending: any[] = [];
+    const pageSize = 200;
+    for (let skip = 0; ; skip += pageSize) {
+      const page = await base44.asServiceRole.entities.Subscription.filter(
+        { provider: 'paypal', status: 'pending' },
+        '-created_date',
+        pageSize,
+        skip,
+      );
+      allPending.push(...page);
+      if (page.length < pageSize) break;
+    }
+    const BATCH_SIZE = 100;
+    const start = allPending.length
+      ? (Math.floor(Date.now() / 60_000) * 53) % allPending.length
+      : 0;
+    const pending = allPending.length
+      ? allPending.slice(start).concat(allPending.slice(0, start)).slice(0, BATCH_SIZE)
+      : [];
 
     const results = [];
     for (const subscription of pending) {

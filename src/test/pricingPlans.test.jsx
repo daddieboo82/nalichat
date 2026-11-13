@@ -50,9 +50,9 @@ vi.mock("@/hooks/useAppleIAP", () => ({
 }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
-function renderPricing(props = {}) {
+function renderPricing(props = {}, entry = "/pricing") {
   return render(
-    <MemoryRouter initialEntries={["/pricing"]}>
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route path="/pricing" element={<PricingPlans {...props} />} />
         <Route path="/messages" element={<div>Free chat</div>} />
@@ -90,6 +90,23 @@ describe("pricing plans", () => {
   });
 
   afterEach(cleanup);
+
+  it("keeps Studio mastering attribution through checkout", async () => {
+    renderPricing({ variantOverride: "A" }, "/pricing?source=studio_bounce&feature=studio.ai_mastering");
+
+    expect(screen.getByText(/AI Auto-Mastering applies EQ, compression, and limiting/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
+
+    await waitFor(() => expect(mockStartCheckout).toHaveBeenCalledWith(expect.objectContaining({
+      sku: "premium_monthly",
+    })));
+    for (const event of ["paywall_view", "paywall_tier_select", "checkout_started"]) {
+      expect(mockTrack).toHaveBeenCalledWith(event, expect.objectContaining({
+        source: "studio_bounce",
+        upgrade_feature: "studio.ai_mastering",
+      }));
+    }
+  });
 
   it("renders variant A, defaults monthly, and toggles to yearly prices", () => {
     renderPricing({ variantOverride: "A" });

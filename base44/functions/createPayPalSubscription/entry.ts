@@ -242,7 +242,20 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unable to create PayPal checkout' }, { status: 502 });
     }
     const approval = Array.isArray(data.links) ? data.links.find((x: any) => x.rel === 'approve')?.href : '';
-    if (!approval || !data.id) return Response.json({ error: 'PayPal did not return an approval URL' }, { status: 502 });
+    if (typeof approval !== 'string' || typeof data.id !== 'string' || !data.id) {
+      return Response.json({ error: 'PayPal did not return an approval URL' }, { status: 502 });
+    }
+    // Apply the same HTTPS/PayPal-host restriction used by resumed checkouts
+    // before persisting the URL or redirecting a customer to it.
+    const expectedApprovalHost = (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase() === 'sandbox'
+      ? 'www.sandbox.paypal.com' : 'www.paypal.com';
+    let newApprovalUrl: URL;
+    try { newApprovalUrl = new URL(approval); } catch {
+      return Response.json({ error: 'PayPal returned an invalid approval URL' }, { status: 502 });
+    }
+    if (newApprovalUrl.protocol !== 'https:' || newApprovalUrl.hostname !== expectedApprovalHost) {
+      return Response.json({ error: 'PayPal returned an invalid approval URL' }, { status: 502 });
+    }
 
     await base44.asServiceRole.entities.Subscription.create({
       user_id: user.id,

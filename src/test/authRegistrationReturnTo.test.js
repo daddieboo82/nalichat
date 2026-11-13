@@ -10,7 +10,7 @@ describe('auth registration return-to handoff', () => {
     expect(login).toContain('encodeURIComponent(safeReturnTo())');
     expect(register).toContain('/login?returnTo=');
     expect(register).toContain('encodeURIComponent(safeReturnTo())');
-    expect(pricing).toContain('navigate(`/register?returnTo=${encodeURIComponent("/pricing")}`)');
+    expect(pricing).toContain('navigate(`/register?returnTo=${encodeURIComponent(location.pathname + location.search)}`)');
     expect(pricing).not.toContain('navigate("/register", { state: { from: "/pricing" } })');
   });
 });

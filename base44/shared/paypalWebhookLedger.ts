@@ -44,5 +44,8 @@ export function shouldApplyPayPalEvent(
   // A malformed legacy stored time cannot establish ordering. The caller
   // must still verify subscription state for activation-capable events.
   if (!Number.isFinite(lastMs)) return true;
-  return incomingMs >= lastMs;
+  // Distinct lifecycle events at the exact same provider timestamp cannot be
+  // reliably ordered. Do not let delivery order decide subscription access.
+  // A later provider reconciliation can resolve the actual current state.
+  return incomingMs > lastMs;
 }

@@ -76,6 +76,18 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain("typeof periodEnd !== 'string' || Date.parse(periodEnd) <= nowMs");
   });
 
+  it('blocks cross-provider checkout on unresolved active PayPal renewal', async () => {
+    for (const path of [
+      'base44/functions/createSubscriptionCheckout/entry.ts',
+      'base44/functions/create-checkout/entry.ts',
+    ]) {
+      const code = await readFile(path, 'utf8');
+      expect(code).toContain('requiresExistingPayPalCheckoutReview(');
+      expect(code).toContain('Existing PayPal subscription needs verification before another checkout');
+      expect(code).toContain('status: 409');
+    }
+  });
+
   it('blocks a second PayPal checkout for an unresolved existing active subscription', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(code).toContain("const unresolvedActivePayPal = allSubs.some");

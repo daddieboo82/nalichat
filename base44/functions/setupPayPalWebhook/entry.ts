@@ -60,15 +60,20 @@ Deno.serve(async (req) => {
       const eventTypes = Array.isArray(registration?.event_types)
         ? registration.event_types.map((event: any) => event?.name).filter((name: any) => typeof name === 'string')
         : [];
+      const destinationMatches = registration?.url === webhookUrl;
+      const missingEvents = EVENTS.filter((event) => !eventTypes.includes(event));
+      const registrationVerified = destinationMatches && missingEvents.length === 0;
       return Response.json({
-        success: true,
+        success: registrationVerified,
         reused: true,
+        registrationVerified,
         webhookId: existing,
         webhookUrl: registration?.url || null,
         expectedWebhookUrl: webhookUrl,
-        destinationMatches: registration?.url === webhookUrl,
-        missingEvents: EVENTS.filter((event) => !eventTypes.includes(event)),
-      });
+        destinationMatches,
+        missingEvents,
+        ...(!registrationVerified ? { error: 'PayPal webhook registration does not match NaliChat configuration' } : {}),
+      }, { status: registrationVerified ? 200 : 409 });
     }
     const r = await fetch(apiBase() + '/v1/notifications/webhooks', {
       method: 'POST',

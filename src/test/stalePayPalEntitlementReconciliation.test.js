@@ -76,6 +76,16 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain("typeof periodEnd !== 'string' || Date.parse(periodEnd) <= nowMs");
   });
 
+  it('blocks a second PayPal checkout for an unresolved existing active subscription', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    expect(code).toContain("const unresolvedActivePayPal = allSubs.some");
+    expect(code).toContain("const undatedActivePayPal = allSubs.some");
+    expect(code).toContain("An existing PayPal subscription requires status verification before another checkout");
+    expect(code.indexOf("An existing PayPal subscription requires status verification before another checkout")).toBeLessThan(
+      code.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions'")
+    );
+  });
+
   it('does not promote an existing checkout to active without a provider billing period', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(code).toContain("typeof periodEnd !== 'string' || Date.parse(periodEnd) <= Date.now()");

@@ -66,6 +66,20 @@ describe("Studio same-track split integration", () => {
     expect(stop).toContain("recordingFromPreRollRef.current = false");
   });
 
+  it("snapshots stop-time recording duration and avoids erasing clips on empty capture", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));
+    expect(finalize).toContain("const recordedStopTime = currentTimeRef.current;");
+    expect(finalize).toContain("const recordedStartTime = recordingStartTime !== null ? recordingStartTime : recordedStopTime;");
+    expect(finalize).toContain("const recordedStopBeat = recordedStopTime * (bpmRef.current / 60);");
+    expect(finalize).toContain("const heldMidiNotesAtStop = midiRecordingRef.current");
+    expect(finalize).toContain("mediaRecorderRef.current !== recorderBeingFinalized");
+    expect(finalize).toContain("startTime: recordedStartTime");
+    expect(finalize).toContain("duration: recordedDuration || Math.max(1, recordedStopTime - recordedStartTime)");
+    expect(finalize).toContain("matchesRecordingTarget(t) ? { ...t, armed: false } : t");
+    expect(finalize).not.toContain("t.armed ? { ...t, waveform: [], armed: false } : t");
+  });
+
   it("ignores recorder finalization after a session reset or track audio replacement", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));

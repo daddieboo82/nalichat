@@ -329,6 +329,19 @@ describe('stale active PayPal subscription reconciliation', () => {
     }
   });
 
+  it('validates newly created PayPal approval URLs before persisting checkout', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    const approvalValidation = code.indexOf('const expectedApprovalHost =');
+    const createRecord = code.indexOf('await base44.asServiceRole.entities.Subscription.create({');
+    expect(approvalValidation).toBeGreaterThan(0);
+    expect(createRecord).toBeGreaterThan(approvalValidation);
+    const guards = code.slice(approvalValidation, createRecord);
+    expect(guards).toContain("newApprovalUrl.protocol !== 'https:'");
+    expect(guards).toContain('newApprovalUrl.hostname !== expectedApprovalHost');
+    expect(guards).toContain('PayPal returned an invalid approval URL');
+    expect(guards).toContain('status: 502');
+  });
+
   it('blocks PayPal creation while Stripe or Wix recurring checkout is unresolved', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     const guard = code.indexOf('const unresolvedOtherProvider = allSubs.some');

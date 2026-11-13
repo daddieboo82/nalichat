@@ -51,8 +51,8 @@ describe('media storage resilience', () => {
 
   it('preserves Studio recorder MIME type and closes waveform decode contexts', async () => {
     const source = await readText('src/pages/Studio.jsx');
-    expect(source).toContain("mediaRecorderRef.current?.mimeType");
-    expect(source).toContain("audioChunksRef.current.find((chunk) => chunk?.type)?.type");
+    expect(source).toContain("recorderBeingFinalized.mimeType");
+    expect(source).toContain("recordedChunks.find((chunk) => chunk?.type)?.type");
     expect(source).toContain("if (blob.size === 0)");
     expect(source).toContain("void waveformAudioCtx.close().catch(() => {})");
   });
@@ -72,11 +72,24 @@ describe('media storage resilience', () => {
     expect(source).toContain('await ctx.close().catch(() => {})');
   });
 
-  it('consolidates the trimmed Studio buffer instead of re-exporting the original track', async () => {
+  it('wires Slip edit mode to source-only region movement', async () => {
     const source = await readText('src/pages/Studio.jsx');
-    expect(source).toContain('audioBufferToWav(trimmedBuffer)');
+    expect(source).toContain('slipClipRegion,');
+    expect(source).toContain("const slipRegion = editMode === 'slip'");
+    expect(source).toContain('slipClipRegion({ ...item, clipRegions: initialRegions }, slipRegion.id, sourceDelta)');
+    expect(source).toContain("if (editMode === 'slip' && slipRegion && hasDragged)");
+    const slipBranch = source.split("if (editMode === 'slip') {")[1]?.split('// 1:1 with the hand')[0] || '';
+    expect(slipBranch).not.toContain('target.dataset.newStartTime');
+    expect(slipBranch).not.toContain('startTime:');
+  });
+
+  it('consolidates the edited Studio regions instead of re-exporting the original track', async () => {
+    const source = await readText('src/pages/Studio.jsx');
+    expect(source).toContain('for (const region of regions)');
+    expect(source).toContain('audioBufferToWav(consolidatedBuffer)');
     expect(source).toContain('if (!response.ok) throw new Error(`Failed to load ${track.name || "clip"}: ${response.status}`)');
-    expect(source).toContain('destinationChannel.set(sourceChannel.subarray(startSample, endSample));');
+    expect(source).toContain('const destination = consolidatedBuffer.getChannelData(channel)');
+    expect(source).toContain('const timelineOffset = region.timelineStart - timelineStart');
     expect(source).toContain('await audioCtx.close().catch(() => {})');
   });
 

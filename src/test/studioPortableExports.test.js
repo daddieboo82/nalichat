@@ -225,8 +225,8 @@ describe("NaliStudio portable exports", () => {
   it("invalidates queued history callbacks when restoring another session", async () => {
     const studio = await source();
     expect(studio).toContain("const historyEpochRef = useRef(0)");
-    expect(studio).toContain("const historyEpoch = historyEpochRef.current");
-    expect(studio).toContain("if (historyEpochRef.current === historyEpoch) pushToHistory(next)");
+    expect(studio).toContain("const entry = { tracks: next, epoch: historyEpochRef.current");
+    expect(studio).toContain("if (historyEpochRef.current === entry.epoch) pushToHistory(entry.tracks)");
     expect(studio).toContain("historyEpochRef.current += 1");
   });
 
@@ -452,7 +452,7 @@ describe("NaliStudio portable exports", () => {
     expect(restore).toContain("studioDeviceExportInFlightRef.current");
     for (const name of ["handleStartBlank", "handleLoadAutosave", "handleLoadDemo"]) {
       const index = studio.indexOf(`const ${name} =`);
-      expect(studio.slice(index, index + 250)).toContain("studioDeviceExportInFlightRef.current");
+      expect(studio.slice(index, studio.indexOf("discardPendingHistory();", index))).toContain("studioDeviceExportInFlightRef.current");
     }
   });
 });

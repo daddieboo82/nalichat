@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { getTrackClipRegions } from '@/lib/studioClipRegions';
 
 // Maps track.color values (e.g. "bg-purple-500", "bg-primary") to real CSS colors.
 // This is necessary because Tailwind purges dynamically-constructed class names
@@ -35,15 +36,39 @@ function resolveColor(color) {
 }
 
 export default function TrackWaveformSVG({ track }) {
-  const wf = track.waveform || [];
-  const wLen = wf.length - 1 || 1;
+  const waveform = Array.isArray(track.waveform) ? track.waveform : [];
+  const sampleCount = Math.max(1, waveform.length - 1);
   const gradId = `studio-wf-grad-${track.id}`;
   const color = resolveColor(track?.color);
+  const regions = getTrackClipRegions(track);
+  const sourceDuration = Math.max(
+    0.001,
+    Number(track.fullDuration) || Number(track.clipStart || 0) + Number(track.duration || 40)
+  );
+  const timelineDuration = Math.max(0.001, Number(track.duration) || 40);
+  const trackStart = Number(track.startTime) || 0;
 
-  let peakPath = `M 0,50 `;
-  for (let i = 0; i <= wLen; i++) peakPath += `L ${(i / wLen) * 10000},${50 - Math.max(0.001, wf[i]) * 49} `;
-  for (let i = wLen; i >= 0; i--) peakPath += `L ${(i / wLen) * 10000},${50 + Math.max(0.001, wf[i]) * 49} `;
-  peakPath += 'Z';
+  const regionPaths = regions.map(region => {
+    const sourceStart = Math.max(0, Math.min(sourceDuration, region.sourceStart));
+    const sourceEnd = Math.max(sourceStart, Math.min(sourceDuration, region.sourceEnd));
+    const firstSample = Math.max(0, Math.min(sampleCount, Math.floor(sourceStart / sourceDuration * sampleCount)));
+    const lastSample = Math.max(firstSample + 1, Math.min(sampleCount, Math.ceil(sourceEnd / sourceDuration * sampleCount)));
+    const timelineX = Math.max(0, (region.timelineStart - trackStart) / timelineDuration * 10000);
+    const timelineWidth = Math.max(0, (sourceEnd - sourceStart) / timelineDuration * 10000);
+    const points = [];
+    for (let sample = firstSample; sample <= lastSample; sample++) {
+      const ratio = (sample - firstSample) / Math.max(1, lastSample - firstSample);
+      const x = timelineX + ratio * timelineWidth;
+      const amplitude = Math.max(0.001, Number(waveform[sample]) || 0.001);
+      points.push([x, amplitude]);
+    }
+    if (points.length === 0) return { id: region.id, path: '' };
+    let path = `M ${points[0][0]},50 `;
+    points.forEach(([x, amplitude]) => { path += `L ${x},${50 - amplitude * 49} `; });
+    [...points].reverse().forEach(([x, amplitude]) => { path += `L ${x},${50 + amplitude * 49} `; });
+    path += 'Z';
+    return { id: region.id, path };
+  });
 
   return (
     <svg
@@ -62,12 +87,28 @@ export default function TrackWaveformSVG({ track }) {
         </linearGradient>
       </defs>
       <g>
-        <path
-          d={peakPath}
-          fill={`url(#${gradId})`}
-          shapeRendering="geometricPrecision"
-        />
+        {regionPaths.map(region => region.path ? (
+          <path
+            key={region.id}
+            d={region.path}
+            fill={`url(#${gradId})`}
+            shapeRendering="geometricPrecision"
+          />
+        ) : null)}
       </g>
+      {/* Region boundaries remain visible after a non-destructive Split.
+          Deleted timeline gaps contain no waveform path. */}
+      {regions.slice(1).map(region => {
+        const x = Math.max(0, Math.min(10000, (region.timelineStart - trackStart) / timelineDuration * 10000));
+        return (
+          <line
+            key={`boundary-${region.id}`}
+            x1={x} y1="0" x2={x} y2="100"
+            stroke={color} strokeOpacity="0.85" strokeDasharray="3 2"
+            strokeWidth="1.5" vectorEffect="non-scaling-stroke"
+          />
+        );
+      })}
       <line x1="0" y1="50" x2="10000" y2="50" stroke="#000000" strokeOpacity="0.5" strokeWidth="2" vectorEffect="non-scaling-stroke" shapeRendering="geometricPrecision" />
     </svg>
   );

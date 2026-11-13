@@ -41,10 +41,12 @@ export async function resolvePayPalSubscriptionStatus(
       const freshStatus = String(fresh?.status || '').toUpperCase();
       // A post-activation GET must still refer to the original verified
       // agreement. A status alone cannot prove this is the user's plan.
-      if (freshStatus === 'ACTIVE' &&
+      if (freshStatus &&
           (!remote?.plan_id || !remote?.custom_id ||
             fresh?.plan_id !== remote.plan_id ||
             fresh?.custom_id !== remote.custom_id)) {
+        // A mismatched or incomplete follow-up must not promote *or revoke*
+        // a different customer's subscription.
         return 'UNVERIFIED';
       }
       if (freshStatus) {

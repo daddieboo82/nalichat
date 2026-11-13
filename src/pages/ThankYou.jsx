@@ -101,21 +101,8 @@ export default function ThankYou() {
 
   useEffect(() => {
     const processThankYou = async () => {
-      // Fire Google Ads PURCHASE conversion once (value stashed before checkout redirect).
-      try {
-        const purchaseValueKey = checkoutId ? `gads_purchase_value:${checkoutId}` : null;
-        const pendingPurchaseValue = purchaseValueKey
-          ? parseFloat(localStorage.getItem(purchaseValueKey) || '0')
-          : 0;
-        if (purchaseValueKey) localStorage.removeItem(purchaseValueKey);
-        if (pendingPurchaseValue > 0 && typeof window !== 'undefined' && window.gtag) {
-          window.gtag('event', 'conversion', {
-            send_to: 'AW-18416125487/4WavCNzZ5ekcEK-Mv81E',
-            value: pendingPurchaseValue,
-            currency: 'USD',
-          });
-        }
-      } catch (e) {}
+      // Only confirm purchase conversions after server-side payment verification.
+      // A checkout return URL alone is not evidence that funds were captured.
 
       if (isSubscriptionCheckout) {
         return;
@@ -141,6 +128,28 @@ export default function ThankYou() {
           setPurchaseVerification("failed");
           setProcessing(false);
           return;
+        }
+        // Deduplicate purchase conversion per checkout ID, not per page visit.
+        // Preserve pending value when analytics is unavailable so it can retry.
+        try {
+          const purchaseValueKey = `gads_purchase_value:${checkoutId}`;
+          const sentKey = `gads_purchase_sent:${checkoutId}`;
+          const pendingValue = Number(localStorage.getItem(purchaseValueKey) || 0);
+          if (
+            pendingValue > 0 &&
+            localStorage.getItem(sentKey) !== "1" &&
+            typeof window.gtag === "function"
+          ) {
+            window.gtag("event", "conversion", {
+              send_to: "AW-18416125487/4WavCNzZ5ekcEK-Mv81E",
+              value: pendingValue,
+              currency: "USD",
+            });
+            localStorage.setItem(sentKey, "1");
+            localStorage.removeItem(purchaseValueKey);
+          }
+        } catch {
+          // Analytics must never interrupt a verified donation.
         }
         setPurchaseVerification("confirmed");
       } catch (err) {

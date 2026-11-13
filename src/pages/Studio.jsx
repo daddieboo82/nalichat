@@ -2453,6 +2453,11 @@ export default function Studio() {
         }
         restoredTracks.push({ ...track, audioUrl, file_url: audioUrl, playlists: restoredPlaylists });
       }
+      // The manifest must account for every archived media file. Do not accept
+      // attachments that are unrelated to an active track or alternate take.
+      if (archiveEntries.some((entry) => entry.name !== "session.json" && !restoredAudioPaths.has(entry.name))) {
+        throw new Error("Session archive includes unreferenced media files.");
+      }
       } catch (restoreError) {
         temporaryUrls.forEach((url) => URL.revokeObjectURL(url));
         throw restoreError;

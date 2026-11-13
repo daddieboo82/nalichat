@@ -574,6 +574,10 @@ export default function Studio() {
   }, [roomId, inviteToken, user?.id, projectLoadRetryKey, setSearchParams]);
 
   const handleStartBlank = () => {
+    if (recordingFinalizePendingRef.current) {
+      toast.error("Finish processing the recorded take before starting a blank session.");
+      return;
+    }
     if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
       toast.error("Finish saving or restoring before starting a blank session.");
       return;
@@ -595,6 +599,10 @@ export default function Studio() {
   };
 
   const handleLoadAutosave = () => {
+    if (recordingFinalizePendingRef.current) {
+      toast.error("Finish processing the recorded take before loading autosave.");
+      return;
+    }
     if (roomId) {
       toast.error("Leave the cloud project before opening a standalone draft recovery.");
       return;
@@ -640,6 +648,10 @@ export default function Studio() {
 
   // Demo audio is generated locally so it always plays (the old hosted sample 404'd)
   const handleLoadDemo = async () => {
+    if (recordingFinalizePendingRef.current) {
+      toast.error("Finish processing the recorded take before loading a demo session.");
+      return;
+    }
     if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
       toast.error("Finish saving or restoring before loading the demo.");
       return;
@@ -1518,6 +1530,9 @@ export default function Studio() {
         }));
         setRecordingStartTime(null);
         toast.success("Recording saved!");
+        } catch (error) {
+          console.error("Studio recording finalization failed", error);
+          toast.error("Recording could not be finalized. Check your audio device and try again.");
         } finally {
           recordingFinalizePendingRef.current = false;
         }
@@ -1555,6 +1570,10 @@ export default function Studio() {
   };
 
   const toggleRecord = async () => {
+    if (!isRecording && recordingFinalizePendingRef.current) {
+      toast.error("Finish processing the previous recording before starting another take.");
+      return;
+    }
     if (!isRecording && !tracks.some(t => t.armed)) {
       toast.error("Please arm at least one track to record (click the circle icon on a track)");
       return;
@@ -2886,6 +2905,10 @@ export default function Studio() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
+    if (recordingFinalizePendingRef.current) {
+      toast.error("Finish processing the recorded take before restoring a backup.");
+      return;
+    }
     if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {
       toast.error("Finish the current Studio save or restore before importing another backup.");
       return;

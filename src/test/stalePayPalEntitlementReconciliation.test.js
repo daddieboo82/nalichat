@@ -116,6 +116,24 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('checks PayPal owner and plan before any APPROVED activation in all callers', async () => {
+    for (const path of [
+      'base44/functions/createPayPalSubscription/entry.ts',
+      'base44/functions/checkSubscriptionStatus/entry.ts',
+      'base44/functions/reconcilePendingPayPal/entry.ts',
+      'base44/functions/reconcilePendingPayPal/main.ts',
+    ]) {
+      const code = await readFile(path, 'utf8');
+      const lookup = code.indexOf('const remote = await ');
+      const ownerCheck = code.indexOf("remote?.custom_id !== ");
+      const activation = code.indexOf('const remoteStatus = await resolvePayPalSubscriptionStatus(');
+      expect(lookup, path).toBeGreaterThan(0);
+      expect(ownerCheck, path).toBeGreaterThan(lookup);
+      expect(activation, path).toBeGreaterThan(ownerCheck);
+      expect(code, path).toContain("remote?.plan_id !== ");
+    }
+  });
+
   it('verifies PayPal plan and owner before updating a resumed active subscription', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     const check = code.indexOf("remote?.plan_id !== planId || remote?.custom_id !== user.id + ':' + sku");

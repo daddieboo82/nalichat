@@ -54,6 +54,19 @@ describe("Studio same-track split integration", () => {
     expect(studio).toContain("if (!audio.paused) audio.pause()");
   });
 
+  it("renders edited waveforms in timeline coordinates with visible split boundaries", async () => {
+    const [studio, waveform] = await Promise.all([
+      readFile("src/pages/Studio.jsx", "utf8"),
+      readFile("src/components/studio/TrackWaveformSVG.jsx", "utf8"),
+    ]);
+    expect(studio).toContain('<div className="absolute inset-0">\n                          <TrackWaveformSVG track={track} />');
+    expect(studio).not.toContain('left: `${-(track.clipStart || 0) * 20 * zoom}px`');
+    expect(waveform).toContain("const regions = getTrackClipRegions(track)");
+    expect(waveform).toContain("region.timelineStart - trackStart");
+    expect(waveform).toContain("regions.slice(1).map(region =>");
+    expect(waveform).toContain('strokeDasharray="3 2"');
+  });
+
   it("separates toolbar Split from directional Cut while keeping backup handlers", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     for (const name of ["handleSaveSessionToDevice", "handleSessionImport",

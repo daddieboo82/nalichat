@@ -132,14 +132,25 @@ export default function PricingPlans({
       google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
     });
     try {
-      if (sessionStorage.getItem(CHECKOUT_RETURN_KEY) === "1") {
-        try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}
+      const canceled = new URLSearchParams(location.search).get("checkout") === "paypal_canceled";
+      if (canceled) {
         setCheckoutCanceled(true);
+        if (sessionStorage.getItem(CHECKOUT_RETURN_KEY) === "1") {
+          sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+          const raw = sessionStorage.getItem(CHECKOUT_ATTRIBUTION_KEY);
+          sessionStorage.removeItem(CHECKOUT_ATTRIBUTION_KEY);
+          const checkout = raw ? JSON.parse(raw) : null;
+          trackPaywallEvent("checkout_canceled", {
+            source: checkout?.source || "pricing",
+            upgrade_feature: checkout?.feature,
+            checkout_sku: checkout?.sku,
+          });
+        }
       }
     } catch {
       // Checkout remains usable even when session storage is blocked.
     }
-  }, [variant, upgradeFeature, upgradeSource]);
+  }, [variant, upgradeFeature, upgradeSource, location.search]);
 
   const continueFree = () => {
     trackPaywallEvent("paywall_secondary_cta", { variant, plan: "free", source: upgradeSource || "pricing", ...campaignContext() });
@@ -309,7 +320,7 @@ export default function PricingPlans({
 
         {checkoutCanceled && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-border bg-card p-4 text-center" role="status">
-            Checkout was canceled. No charge was made. Your current plan is unchanged.
+            You returned from PayPal without completing this checkout. You can choose a plan to try again.
           </div>
         )}
 

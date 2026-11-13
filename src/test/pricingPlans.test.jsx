@@ -33,6 +33,7 @@ vi.mock("@/lib/AuthContext", () => ({
   useAuth: () => mockAuth.current,
 }));
 vi.mock("@/lib/subscriptionBilling", () => ({
+  CHECKOUT_ATTRIBUTION_KEY: "checkout-attribution",
   CHECKOUT_RETURN_KEY: "nalichat_subscription_checkout_started",
   createCheckoutRequestKey: () => "checkout_request_1234",
   startSubscriptionCheckout: mockStartCheckout,
@@ -112,6 +113,25 @@ describe("pricing plans", () => {
       source: "studio_bounce",
       upgrade_feature: "studio.ai_mastering",
     });
+  });
+
+  it("records an explicit PayPal cancel return with the original Studio source", () => {
+    sessionStorage.setItem("nalichat_subscription_checkout_started", "1");
+    sessionStorage.setItem("checkout-attribution", JSON.stringify({
+      source: "studio_bounce",
+      feature: "studio.ai_mastering",
+      sku: "premium_monthly",
+    }));
+
+    renderPricing({}, "/pricing?checkout=paypal_canceled");
+
+    expect(screen.getByText(/returned from PayPal without completing/i)).toBeTruthy();
+    expect(mockTrack).toHaveBeenCalledWith("checkout_canceled", {
+      source: "studio_bounce",
+      upgrade_feature: "studio.ai_mastering",
+      checkout_sku: "premium_monthly",
+    });
+    expect(sessionStorage.getItem("nalichat_subscription_checkout_started")).toBeNull();
   });
 
   it("keeps Studio mastering attribution through checkout", async () => {

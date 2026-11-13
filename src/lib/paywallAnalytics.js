@@ -7,7 +7,7 @@ const EVENT_NAMES = new Set([
   "paywall_primary_cta",
   "paywall_secondary_cta",
   "paywall_dismissed",
-  "checkout_started",
+  "checkout_started", "checkout_canceled",
   "trial_started",
   "purchase_completed",
   "purchase_failed",

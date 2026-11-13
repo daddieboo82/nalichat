@@ -38,7 +38,7 @@ describe('PayPal subscription integration contracts', () => {
   it('returns PayPal buyers to the canonical domain instead of the request host', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("new URL('/ThankYou?subscription=1', APP_BASE_URL)");
-    expect(createSource).toContain("new URL('/pricing', APP_BASE_URL)");
+    expect(createSource).toContain("new URL('/pricing?checkout=paypal_canceled', APP_BASE_URL)");
     expect(createSource).not.toContain("req.headers.get('X-Base44-App-Url')");
   });
 

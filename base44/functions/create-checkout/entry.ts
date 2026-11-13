@@ -27,6 +27,21 @@ function resolveAppUrl(req: Request): string {
   return APP_BASE_URL;
 }
 
+// Read every subscription page before deciding whether another recurring
+// checkout is safe. Limiting this to the newest 100 can hide an older paid
+// subscription and cause a second charge.
+async function loadUserSubscriptions(entity: any, userId: string): Promise<any[]> {
+  const rows: any[] = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.filter(
+      { user_id: userId }, '-created_date', pageSize, skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
@@ -69,8 +84,8 @@ Deno.serve(async (req) => {
     }
 
     // Block duplicate checkout if the user already has active paid access
-    const allSubs = await base44.asServiceRole.entities.Subscription.filter(
-      { user_id: user.id }, '-created_date', 100,
+    const allSubs = await loadUserSubscriptions(
+      base44.asServiceRole.entities.Subscription, user.id,
     );
     const now = new Date().toISOString();
     const alreadyPaid = allSubs.some((sub: any) => {

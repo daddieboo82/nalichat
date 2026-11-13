@@ -1592,8 +1592,14 @@ export default function Studio() {
   // Take playlists keep alternate performances on the same track.
   const createTakePlaylist = (track) => {
     const playlists = Array.isArray(track.playlists) ? track.playlists : [];
+    // A timestamp alone can collide when takes are created in the same millisecond.
+    const usedTakeIds = new Set(playlists.map((item) => String(item?.id)));
+    const takeIdBase = `take-${Date.now()}`;
+    let takeId = takeIdBase;
+    let takeSuffix = 2;
+    while (usedTakeIds.has(takeId)) takeId = `${takeIdBase}-${takeSuffix++}`;
     const take = {
-      id: `take-${Date.now()}`,
+      id: takeId,
       name: `${track.name}.${String(playlists.length + 1).padStart(2, '0')}`,
       audioUrl: track.audioUrl || null,
       file_url: track.file_url || track.audioUrl || null,
@@ -2033,6 +2039,26 @@ export default function Studio() {
     studioSaveInFlightRef.current = true;
     const toastId = toast.loading("Saving Studio project...");
     try {
+      // The completed upload is reconciled by IDs, so reject ambiguous
+      // identities before uploading any media or creating a project.
+      const trackIds = new Set();
+      for (const track of tracks) {
+        if (!track || (typeof track.id !== "string" && typeof track.id !== "number") || !String(track.id).trim()) {
+          throw new Error("Cannot save: a Studio track has no valid ID.");
+        }
+        const trackId = String(track.id);
+        if (trackIds.has(trackId)) throw new Error("Cannot save: duplicate Studio track IDs.");
+        trackIds.add(trackId);
+        const takeIds = new Set();
+        for (const take of (Array.isArray(track.playlists) ? track.playlists : [])) {
+          if (!take || (typeof take.id !== "string" && typeof take.id !== "number") || !String(take.id).trim()) {
+            throw new Error("Cannot save: a take playlist has no valid ID.");
+          }
+          const takeId = String(take.id);
+          if (takeIds.has(takeId)) throw new Error("Cannot save: duplicate take playlist IDs.");
+          takeIds.add(takeId);
+        }
+      }
       const portableTracks = [];
       // Take playlists can reference old performances independently of the
       // active waveform. Upload every transient source before persisting.

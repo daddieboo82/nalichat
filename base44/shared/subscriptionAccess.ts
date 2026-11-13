@@ -1,4 +1,5 @@
 import {
+  entitlementStatusForProvider,
   hasPaidTierAccess,
   normalizePlan,
   normalizeStatus,
@@ -51,7 +52,10 @@ async function loadUserSubscriptions(
 function subscriptionPriority(subscription: SubscriptionRecord, now: string): number {
   const plan = normalizePlan(subscription.plan);
   const status = normalizeStatus(subscription.status);
-  const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(status, {
+  const accessStatus = entitlementStatusForProvider(
+    subscription.provider, status, subscription.current_period_end, now,
+  );
+  const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(accessStatus, {
     currentPeriodEnd: typeof subscription.current_period_end === 'string'
       ? subscription.current_period_end
       : null,
@@ -79,7 +83,8 @@ export async function resolveUserSubscription(
   const status = selected ? normalizeStatus(selected.status) : 'active';
   const currentPeriodEnd = selected?.current_period_end || null;
   const trialEndDate = selected?.trial_end_date || null;
-  const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(status, {
+  const accessStatus = entitlementStatusForProvider(selected?.provider, status, currentPeriodEnd, now);
+  const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(accessStatus, {
     currentPeriodEnd,
     trialEndDate,
     now,
@@ -93,12 +98,12 @@ export async function resolveUserSubscription(
     currentPeriodEnd,
     trialEndDate,
     hasPaidAccess,
-    entitlements: resolveEntitlements(plan, status, {
+    entitlements: resolveEntitlements(plan, accessStatus, {
       currentPeriodEnd,
       trialEndDate,
       now,
     }),
-    limits: resolveSubscriptionLimits(plan, status, {
+    limits: resolveSubscriptionLimits(plan, accessStatus, {
       currentPeriodEnd,
       trialEndDate,
       now,

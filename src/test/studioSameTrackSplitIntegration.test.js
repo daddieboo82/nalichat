@@ -66,6 +66,25 @@ describe("Studio same-track split integration", () => {
     expect(stop).toContain("recordingFromPreRollRef.current = false");
   });
 
+  it("blocks new takes and session replacement during recording finalization", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const entrypoints = [
+      "const toggleRecord = async () => {",
+      "const handleStartBlank = () => {",
+      "const handleLoadAutosave = () => {",
+      "const handleLoadDemo = async () => {",
+      "const handleSessionImport = async (event) => {",
+    ];
+    for (const marker of entrypoints) {
+      const start = studio.indexOf(marker);
+      expect(start).toBeGreaterThan(0);
+      expect(studio.slice(start, start + 420)).toContain("recordingFinalizePendingRef.current");
+    }
+    const finalize = studio.slice(studio.indexOf("recorderBeingFinalized.onstop = async"), studio.indexOf("recorderBeingFinalized.stop()"));
+    expect(finalize).toContain("catch (error)");
+    expect(finalize).toContain("recordingFinalizePendingRef.current = false");
+  });
+
   it("prevents cloud save or backup while an audio take is still finalizing", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     expect(studio).toContain("const recordingFinalizePendingRef = useRef(false)");

@@ -27,6 +27,8 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("studioAudioExtension({");
     expect(handler).toContain("studioAudioMimeForExtension(extension)");
     expect(studio).toContain("const studioSaveInFlightRef = useRef(false)");
+    expect(studio).toContain("const studioRestoreInFlightRef = useRef(false)");
+    expect(handler).toContain("if (studioRestoreInFlightRef.current)");
     expect(handler).toContain("if (studioSaveInFlightRef.current)");
     expect(handler).toContain("studioSaveInFlightRef.current = true;");
     expect(handler).toContain("studioSaveInFlightRef.current = false;");
@@ -99,6 +101,9 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain('file.name.toLowerCase().endsWith(".nalistudio.json")');
     expect(handler).toContain("Importing it could lose recorded tracks.");
     expect(handler).toContain('Leave the shared Jam Room');
+    expect(handler).toContain("if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current)");
+    expect(handler).toContain("studioRestoreInFlightRef.current = true;");
+    expect(handler).toContain("studioRestoreInFlightRef.current = false;");
     expect(handler).toContain("if (isRecording || isPlaying)");
     expect(handler).toContain("Stop playback and recording before restoring a Studio backup.");
     expect(handler).toContain("setSelectedTrackIds([])");

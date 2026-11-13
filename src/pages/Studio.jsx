@@ -622,16 +622,18 @@ export default function Studio() {
         const url = result.status === "fulfilled" ? result.value?.url : null;
         if (typeof url === "string" && url.startsWith("blob:")) URL.revokeObjectURL(url);
       };
-      if (results.some(result => result.status === "rejected")) {
-        results.forEach(releaseResult);
-        throw new Error("One or more demo audio tracks could not be generated.");
-      }
-      const [lead, beat] = results.map(result => result.value);
+      // A stale generation must not report an error for a session the user
+      // already left, even if one of the generators failed.
       if (historyEpochRef.current !== demoEpoch) {
         results.forEach(releaseResult);
         toast.dismiss(toastId);
         return;
       }
+      if (results.some(result => result.status === "rejected")) {
+        results.forEach(releaseResult);
+        throw new Error("One or more demo audio tracks could not be generated.");
+      }
+      const [lead, beat] = results.map(result => result.value);
       pendingDemoAudioCleanupRef.current.push(lead.url, beat.url);
       setTracks(prev => prev.map(track => {
         const initial = demoTracks.find(item => item.id === track.id);

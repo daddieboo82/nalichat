@@ -2642,14 +2642,23 @@ export default function Studio() {
         throw new Error("Studio session ZIP exceeds the 1 GB restore limit.");
       }
       const url = URL.createObjectURL(archive);
-      const link = document.createElement("a");
-      const safeName = exportMetadata.title.replace(/[^a-z0-9_-]+/gi, "_");
-      link.href = url;
-      link.download = `${safeName}.nalistudio.zip`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      let link;
+      let downloadTriggered = false;
+      try {
+        link = document.createElement("a");
+        const safeName = exportMetadata.title.replace(/[^a-z0-9_-]+/gi, "_");
+        link.href = url;
+        link.download = `${safeName}.nalistudio.zip`;
+        document.body.appendChild(link);
+        link.click();
+        downloadTriggered = true;
+      } finally {
+        link?.remove();
+        // Give browsers time to begin a successful download, but immediately
+        // dispose of the object URL if triggering the download failed.
+        if (downloadTriggered) setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        else URL.revokeObjectURL(url);
+      }
       toast.success("Portable Studio session and audio packaged.", { id: toastId });
     } catch (error) {
       console.error("Device session save failed", error);

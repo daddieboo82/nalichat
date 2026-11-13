@@ -70,6 +70,8 @@ describe("NaliStudio portable exports", () => {
     expect(studio).toContain("const pendingDemoAudioCleanupRef = useRef([])");
     expect(studio).toContain("if (!pendingDemoAudioCleanupRef.current.length) return;");
     expect(studio).toContain("pendingDemoAudioCleanupRef.current = []");
+    expect(studio).toContain("retainTrackAudio(tracks)");
+    expect(studio).toContain("historyRef.current.forEach(retainTrackAudio)");
     expect(studio).toContain("!retained.has(url)");
     expect(studio).toContain("URL.revokeObjectURL(url)");
     expect(studio).toContain("}, [tracks]);");

@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
-import { paypalPeriodEndForStatus } from '../../shared/paypalSubscription.ts';
+import { paypalPeriodEndForStatus, requiresPayPalBillingVerification } from '../../shared/paypalSubscription.ts';
 import { paypalWebhookLedgerAction, shouldApplyPayPalEvent } from '../../shared/paypalWebhookLedger.ts';
 
 const HANDLED = new Set([
@@ -213,18 +213,26 @@ Deno.serve(async (req) => {
       };
       if (newStatus === 'canceled') update.cancel_at_period_end = false;
 
-      // For PAYMENT.SALE.* events, billing_info is on the subscription resource,
-      // not the sale resource — fetch it to get next_billing_time.
-      if (event.event_type.startsWith('PAYMENT.')) {
-        const billingInfo = await fetchSubscriptionBillingInfo(token, subscriptionId);
-        const periodEnd = paypalPeriodEndForStatus(newStatus, billingInfo?.nextBillingTime);
-        if (periodEnd !== undefined) update.current_period_end = periodEnd;
-      } else {
-        const end = event.resource?.billing_info?.next_billing_time || event.resource?.billing_info?.final_payment_time;
-        const periodEnd = paypalPeriodEndForStatus(newStatus, end);
-        if (periodEnd !== undefined) update.current_period_end = periodEnd;
+      // Sale events don't carry subscription billing_info. For ACTIVE,
+      // final_payment_time is not a substitute for a future renewal boundary.
+      const billingTime = event.event_type.startsWith('PAYMENT.')
+        ? (await fetchSubscriptionBillingInfo(token, subscriptionId))?.nextBillingTime
+        : event.resource?.billing_info?.next_billing_time;
+      const periodEnd = paypalPeriodEndForStatus(newStatus, billingTime);
+      if (requiresPayPalBillingVerification(record.status, newStatus, periodEnd)) {
+        // Keep the ledger retryable so an incomplete event is not silently
+        // acknowledged while its pending checkout has no verified paid period.
+        await entities.PayPalWebhookEvent.update(ledger.id, {
+          processing_state: 'failed',
+          processed_at: new Date().toISOString(),
+          last_error: 'Active PayPal subscription has no verified future billing boundary',
+        });
+        return Response.json({ error: 'PayPal billing period verification required' }, { status: 503 });
       }
-
+      if (periodEnd !== undefined && !(newStatus === 'active' && periodEnd === null)) {
+        update.current_period_end = periodEnd;
+      }
+      // Preserve any prior billing boundary instead of converting it to null.
       await entities.Subscription.update(record.id, update);
     }
 

@@ -84,11 +84,15 @@ describe('PayPal subscription access', () => {
   it('does not reuse pre-activation billing metadata when the refreshed ACTIVE response omits it', async () => {
     const remote = {
       status: 'APPROVED',
+      plan_id: 'P-PLAN',
+      custom_id: 'user-1:premium_monthly',
       billing_info: { next_billing_time: '2026-11-30T12:00:00.000Z' },
     };
     vi.stubGlobal('fetch', vi.fn(async (url) => {
       if (String(url).endsWith('/activate')) return new Response(null, { status: 204 });
-      return Response.json({ status: 'ACTIVE' });
+      return Response.json({
+        status: 'ACTIVE', plan_id: 'P-PLAN', custom_id: 'user-1:premium_monthly',
+      });
     }));
     const status = await resolvePayPalSubscriptionStatus(
       'https://api-m.paypal.com', 'token', 'I-NO-NEW-BILLING', remote,
@@ -99,12 +103,31 @@ describe('PayPal subscription access', () => {
     expect(requiresPayPalBillingVerification('pending', 'active', undefined, NOW)).toBe(true);
   });
 
+  it('rejects refreshed ACTIVE when PayPal changes the verified plan or owner', async () => {
+    for (const changed of [
+      { plan_id: 'P-OTHER', custom_id: 'user-1:premium_monthly' },
+      { plan_id: 'P-PLAN', custom_id: 'user-2:premium_monthly' },
+      { status: 'ACTIVE' },
+    ]) {
+      const remote = { status: 'APPROVED', plan_id: 'P-PLAN', custom_id: 'user-1:premium_monthly' };
+      vi.stubGlobal('fetch', vi.fn(async (url) => {
+        if (String(url).endsWith('/activate')) return new Response(null, { status: 204 });
+        return Response.json({ status: 'ACTIVE', ...changed });
+      }));
+      expect(await resolvePayPalSubscriptionStatus(
+        'https://api-m.paypal.com', 'token', 'I-VERIFIED', remote,
+      )).toBe('UNVERIFIED');
+    }
+  });
+
   it('grants access when activation loses a race but PayPal is already active', async () => {
-    const remote = { status: 'APPROVED' };
+    const remote = {
+      status: 'APPROVED', plan_id: 'P-PLAN', custom_id: 'user-1:premium_monthly',
+    };
     vi.stubGlobal('fetch', vi.fn(async (url) => {
       if (String(url).endsWith('/activate')) return new Response('{}', { status: 422 });
       return Response.json({
-        status: 'ACTIVE',
+        status: 'ACTIVE', plan_id: 'P-PLAN', custom_id: 'user-1:premium_monthly',
         billing_info: { next_billing_time: '2026-11-30T12:00:00.000Z' },
       });
     }));

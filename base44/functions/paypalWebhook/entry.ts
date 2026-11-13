@@ -313,25 +313,32 @@ Deno.serve(async (req) => {
       // been suspended, canceled, or refunded. Any transition to ACTIVE must
       // be confirmed against PayPal's current subscription state, not merely
       // an older event's status.
-      const needsCurrentProviderStatus = newStatus === 'active';
-      const remoteSubscription = (isPaymentEvent || needsCurrentProviderStatus)
+      // A delayed CANCELLED/SUSPENDED/FAILED event is not evidence that the
+      // *current* recurring agreement is still canceled or unpaid. Verify
+      // revocations too, not just activation; failed lookups stay retryable.
+      const needsCurrentProviderStatus =
+        newStatus === 'active' || newStatus === 'canceled' || newStatus === 'unpaid';
+      const remoteSubscription = needsCurrentProviderStatus
         ? await fetchSubscriptionBillingInfo(token, subscriptionId)
         : null;
       // For pending activation the billing boundary must come from a fresh
       // provider read. A signed but delayed event may have an old future date.
-      const billingTime = needsCurrentProviderStatus
-        ? remoteSubscription?.nextBillingTime
-        : (remoteSubscription?.nextBillingTime ||
-          (!isPaymentEvent ? (event.resource?.billing_info?.next_billing_time ||
-            (newStatus !== 'active' ? event.resource?.billing_info?.final_payment_time : null)) : null));
+      // Do not derive the period from stale event payloads when the provider
+      // has a fresher lifecycle snapshot.
+      const billingTime = remoteSubscription?.nextBillingTime;
       const periodEnd = paypalPeriodEndForStatus(newStatus, billingTime);
       const providerMismatch = needsCurrentProviderStatus &&
-        (remoteSubscription?.status !== 'ACTIVE' ||
+        (!remoteSubscription ||
           !remoteSubscription.planId ||
           remoteSubscription.planId !== record.paypal_plan_id ||
           typeof record.user_id !== 'string' ||
           typeof record.sku !== 'string' ||
-          remoteSubscription.customId !== record.user_id + ':' + record.sku);
+          remoteSubscription.customId !== record.user_id + ':' + record.sku ||
+          (newStatus === 'active' && remoteSubscription.status !== 'ACTIVE') ||
+          (newStatus === 'canceled' &&
+            remoteSubscription.status !== 'CANCELLED' &&
+            remoteSubscription.status !== 'EXPIRED') ||
+          (newStatus === 'unpaid' && remoteSubscription.status !== 'SUSPENDED'));
       // A canceled/unpaid subscription must not be restored to active without
       // a freshly verified future billing boundary. For an already ACTIVE
       // local row, the existing boundary remains in place if PayPal hasn't

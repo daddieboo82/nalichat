@@ -2697,8 +2697,9 @@ export default function Studio() {
       return;
     }
     studioRestoreInFlightRef.current = true;
-    const toastId = toast.loading("Restoring Studio session...");
+    let toastId;
     try {
+      toastId = toast.loading("Restoring Studio session...");
       const archive = await JSZip.loadAsync(file);
       // JSZip also lists directory entries such as "audio/" in archive.files.
       // Count actual files only so a full 999-track backup remains restorable.

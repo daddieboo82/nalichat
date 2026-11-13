@@ -109,6 +109,17 @@ describe("Studio same-track split integration", () => {
     expect(finalize).not.toContain("new Blob(audioChunksRef.current");
   });
 
+  it("releases unassigned temporary audio if recorder finalization fails", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));
+    expect(finalize).toContain("let createdAudioUrl = null;");
+    expect(finalize).toContain("let transferredAudioUrl = false;");
+    expect(finalize).toContain("createdAudioUrl = audioUrl;");
+    expect(finalize).toContain("transferredAudioUrl = hasAudioTarget;");
+    expect(finalize).toContain("if (createdAudioUrl && !transferredAudioUrl) URL.revokeObjectURL(createdAudioUrl)");
+    expect(finalize).toContain("createdAudioUrl = null;");
+  });
+
   it("preserves existing waveforms on no-recorder Stop and releases audio without an audio target", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));

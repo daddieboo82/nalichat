@@ -528,7 +528,17 @@ export default function Studio() {
     return () => { cancelled = true; };
   }, [roomId, inviteToken, WAVEFORM_POINTS, user?.id, projectLoadRetryKey, searchParams, setSearchParams]);
 
-  const handleStartBlank = () => { setTracks([]); setShowWelcome(false); };
+  const handleStartBlank = () => {
+    // Starting a new session must not inherit Undo/Redo from the last one.
+    historyEpochRef.current += 1;
+    historyRef.current = [[]];
+    historyIndexRef.current = 0;
+    setHistoryIndex(0);
+    setTracks([]);
+    setSelectedTrackIds([]);
+    setFxTarget(null);
+    setShowWelcome(false);
+  };
 
   const handleLoadAutosave = () => {
     if (!autosaveStorageKey) {
@@ -545,7 +555,14 @@ export default function Studio() {
             toast.error("This autosave contains temporary audio that expired after reload. Restore your downloaded Studio ZIP backup or open the project in My Sessions.");
             return;
           }
+          // Loading a local session is also a full session replacement.
+          historyEpochRef.current += 1;
+          historyRef.current = [parsed];
+          historyIndexRef.current = 0;
+          setHistoryIndex(0);
           setTracks(parsed);
+          setSelectedTrackIds([]);
+          setFxTarget(null);
           setShowWelcome(false);
           return;
         }

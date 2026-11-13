@@ -93,22 +93,37 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
   // Recover pending approvals and revalidate active PayPal records whose
   // locally stored billing boundary is already past. A stale local period
   // must not permanently deny a subscriber who renewed at the provider.
-  const candidates = subscriptions.filter((subscription) => {
+  const unresolved = subscriptions.filter((subscription) => {
     if (subscription.provider !== 'paypal' ||
         typeof subscription.id !== 'string' ||
         typeof subscription.subscription_id !== 'string') return false;
     if (subscription.status === 'pending') return true;
     if (subscription.status !== 'active') return false;
-    // Missing/malformed billing dates are also unresolved: without selecting
-    // these records the access guard can deny Premium indefinitely while
-    // checkout is blocked awaiting verification.
+    // Missing/malformed billing dates are unresolved too.
     const periodEndMs = typeof subscription.current_period_end === 'string'
       ? Date.parse(subscription.current_period_end)
       : Number.NaN;
     return !Number.isFinite(periodEndMs) || periodEndMs <= nowMs;
-  })
-    .sort((left, right) => Number(right.status === 'active') - Number(left.status === 'active'))
-    .slice(0, 10);
+  });
+  const staleActive = unresolved.filter((subscription) => subscription.status === 'active');
+  const pending = unresolved.filter((subscription) => subscription.status === 'pending');
+  // Avoid a fixed first-ten priority: a permanently unverifiable stale
+  // active row must not starve pending purchases, and older rows in either
+  // group must eventually be retried. Rotate the starting index by minute.
+  const selectRotating = (rows: SubscriptionRecord[], limit: number) => {
+    if (!rows.length || limit <= 0) return [];
+    const start = Math.floor(nowMs / 60_000) % rows.length;
+    return rows.slice(start).concat(rows.slice(0, start)).slice(0, limit);
+  };
+  const candidates = [
+    ...selectRotating(staleActive, 5),
+    ...selectRotating(pending, 5),
+  ];
+  if (candidates.length < 10) {
+    const selectedIds = new Set(candidates.map((row) => row.id));
+    const remaining = unresolved.filter((row) => !selectedIds.has(row.id));
+    candidates.push(...selectRotating(remaining, 10 - candidates.length));
+  }
   if (!candidates.length) return;
   try {
     const token = await paypalAccessToken();

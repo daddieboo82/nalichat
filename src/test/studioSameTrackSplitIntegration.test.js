@@ -66,6 +66,18 @@ describe("Studio same-track split integration", () => {
     expect(stop).toContain("recordingFromPreRollRef.current = false");
   });
 
+  it("prevents cloud save or backup while an audio take is still finalizing", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    expect(studio).toContain("const recordingFinalizePendingRef = useRef(false)");
+    const save = studio.slice(studio.indexOf("const handleSave = async () => {"), studio.indexOf("const handleSaveSessionToDevice = async () => {"));
+    expect(save).toContain("isRecording || recordingFinalizePendingRef.current || mediaRecorderRef.current?.state === 'recording'");
+    const backup = studio.slice(studio.indexOf("const handleSaveSessionToDevice = async () => {"), studio.indexOf("const handleSessionImport =", studio.indexOf("const handleSaveSessionToDevice = async () => {")));
+    expect(backup).toContain("if (recordingFinalizePendingRef.current)");
+    const recording = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));
+    expect(recording).toContain("recordingFinalizePendingRef.current = true;");
+    expect(recording).toContain("} finally {\n          recordingFinalizePendingRef.current = false;");
+  });
+
   it("keeps recorded chunks isolated per recorder when another take starts", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));

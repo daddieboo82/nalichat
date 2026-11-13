@@ -476,13 +476,21 @@ export default function Studio() {
               ? track.waveform
               : generateWaveform(WAVEFORM_POINTS),
           }));
+          if (cancelled) return;
+          historyEpochRef.current += 1;
+          historyRef.current = [hydrated];
+          historyIndexRef.current = 0;
+          setHistoryIndex(0);
+          setSelectedTrackIds([]);
+          setFxTarget(null);
           setTracks(hydrated);
           if (Number.isFinite(savedState.masterVolume)) setMasterVolume(savedState.masterVolume);
           if (savedState.timeSignature) setTimeSignature(savedState.timeSignature);
         } else {
           const persistedTracks = await listPersistedTracks(roomId);
-          if (!cancelled && persistedTracks.length > 0) {
-            setTracks(persistedTracks.map((track) => ({
+          if (cancelled) return;
+          if (persistedTracks.length > 0) {
+            const hydrated = persistedTracks.map((track) => ({
               id: track.id,
               _persistedTrackId: track.id,
               name: track.name,
@@ -506,10 +514,18 @@ export default function Studio() {
               elasticAudio: false,
               fadeIn: 0,
               fadeOut: 0,
-            })));
+            }));
+            historyEpochRef.current += 1;
+            historyRef.current = [hydrated];
+            historyIndexRef.current = 0;
+            setHistoryIndex(0);
+            setSelectedTrackIds([]);
+            setFxTarget(null);
+            setTracks(hydrated);
           }
         }
 
+        if (cancelled) return;
         setShowWelcome(false);
         setJamRoomActive(true);
         if (!cancelled) setProjectLoadError(false);

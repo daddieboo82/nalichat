@@ -2734,6 +2734,13 @@ export default function Studio() {
           payload.project.tracks.length > MAX_TRACKS) {
         throw new Error("Unsupported or invalid Studio session archive.");
       }
+      // A malformed playlist must never be silently dropped during restore.
+      // Reject it before allocating temporary object URLs.
+      for (const track of payload.project.tracks) {
+        if (track?.playlists != null && !Array.isArray(track.playlists)) {
+          throw new Error("Session has invalid take playlist metadata.");
+        }
+      }
       const savedTakeCount = payload.project.tracks.reduce(
         (count, track) => count + (Array.isArray(track?.playlists) ? track.playlists.length : 0), 0
       );

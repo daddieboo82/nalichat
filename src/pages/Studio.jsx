@@ -2023,35 +2023,46 @@ export default function Studio() {
     const toastId = toast.loading("Saving Studio project...");
     try {
       const portableTracks = [];
+      // Take playlists can reference old performances independently of the
+      // active waveform. Upload every transient source before persisting.
+      const uploadedAudioUrls = new Map();
+      const persistAudioUrl = async (source, label) => {
+        if (typeof source !== "string" || !source.startsWith("blob:")) return source || "";
+        if (uploadedAudioUrls.has(source)) return uploadedAudioUrls.get(source);
+        const response = await fetch(source);
+        if (!response.ok) throw new Error(`Could not read audio for ${label}.`);
+        const blob = await response.blob();
+        const extension = studioAudioExtension({
+          mimeType: blob.type,
+          filename: label,
+          sourceUrl: source,
+        });
+        if (!extension) throw new Error(`${label}: unsupported audio format. Export to WAV or MP3 before saving.`);
+        const safeName = label.replace(/[^a-z0-9_-]+/gi, "_");
+        const file = new File([blob], `${safeName}.${extension}`, {
+          type: studioAudioMimeForExtension(extension),
+        });
+        const validation = validateUpload(file, { accept: "audio" });
+        if (!validation.ok) throw new Error(`${label}: ${validation.error}`);
+        const uploaded = await secureUploadFile({ file });
+        uploadedAudioUrls.set(source, uploaded.file_url);
+        return uploaded.file_url;
+      };
       for (const track of tracks) {
-        let audioUrl = track.audioUrl || track.file_url || "";
-
-        // blob: URLs are device-local and die after reload. Upload them before
-        // persisting so the project can reopen on another device.
-        if (audioUrl.startsWith("blob:")) {
-          const response = await fetch(audioUrl);
-          const blob = await response.blob();
-          const extension = studioAudioExtension({
-            mimeType: blob.type,
-            filename: track.name || "",
-            sourceUrl: audioUrl,
-          });
-          if (!extension) {
-            throw new Error(`${track.name || "Track"}: unsupported audio format. Export to WAV or MP3 before saving.`);
+        const audioUrl = await persistAudioUrl(track.audioUrl || track.file_url || "", track.name || "track");
+        const playlists = Array.isArray(track.playlists) ? track.playlists : [];
+        const savedPlaylists = [];
+        for (const take of playlists) {
+          if (!take || typeof take !== "object" || Array.isArray(take)) {
+            throw new Error("Invalid take playlist metadata.");
           }
-          const safeName = (track.name || "track").replace(/[^a-z0-9_-]+/gi, "_");
-          const file = new File([blob], `${safeName}.${extension}`, {
-            type: studioAudioMimeForExtension(extension),
-          });
-          const validation = validateUpload(file);
-          if (!validation.ok) {
-            throw new Error(`${track.name || "Track"}: ${validation.error}`);
-          }
-          const uploaded = await secureUploadFile({ file });
-          audioUrl = uploaded.file_url;
+          const takeUrl = await persistAudioUrl(take.audioUrl || take.file_url || "", take.name || track.name || "take");
+          savedPlaylists.push({ ...take, audioUrl: takeUrl, file_url: takeUrl });
         }
-
-        portableTracks.push(portableTrackState(track, audioUrl));
+        portableTracks.push({
+          ...portableTrackState(track, audioUrl),
+          playlists: savedPlaylists,
+        });
       }
 
       const studioState = {
@@ -2140,6 +2151,7 @@ export default function Studio() {
         ...track,
         audioUrl: portableTracks[index]?.audioUrl || track.audioUrl,
         file_url: portableTracks[index]?.file_url || track.file_url,
+        playlists: portableTracks[index]?.playlists || track.playlists,
       })));
 
       toast.success(

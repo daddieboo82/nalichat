@@ -47,6 +47,8 @@ describe('ThankYou purchase verification', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    localStorage.clear();
+    window.gtag = vi.fn();
     window.scrollTo = vi.fn();
   });
 
@@ -81,6 +83,48 @@ describe('ThankYou purchase verification', () => {
       'verifyCheckoutPayment',
       expect.anything(),
     );
+  });
+
+  it('does not report a Google Ads purchase for an unverified return', async () => {
+    localStorage.setItem('gads_purchase_value:cs_test_123', '25');
+    renderPage('/ThankYou?checkout_id=cs_test_123');
+    expect(await screen.findByText('Payment not verified')).toBeTruthy();
+    expect(window.gtag).not.toHaveBeenCalled();
+    expect(localStorage.getItem('gads_purchase_value:cs_test_123')).toBe('25');
+  });
+
+  it('reports a confirmed donation exactly once after backend verification', async () => {
+    localStorage.setItem('gads_purchase_value:cs_test_123', '25');
+    base44.functions.invoke.mockResolvedValue({ data: {
+      success: true,
+      checkoutId: 'cs_test_123',
+      status: 'paid',
+      items: [{ type: 'donation', name: 'Donation to NaliBase' }],
+    } });
+    const { unmount } = renderPage('/ThankYou?checkout_id=cs_test_123&purchase_token=test-token');
+    expect(await screen.findByText('Purchase Complete!')).toBeTruthy();
+    expect(window.gtag).toHaveBeenCalledWith('event', 'conversion', expect.objectContaining({
+      value: 25,
+      currency: 'USD',
+    }));
+    expect(localStorage.getItem('gads_purchase_sent:cs_test_123')).toBe('1');
+    unmount();
+    renderPage('/ThankYou?checkout_id=cs_test_123&purchase_token=test-token');
+    expect(await screen.findByText('Purchase Complete!')).toBeTruthy();
+    expect(window.gtag).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not report a purchase when the backend rejects payment', async () => {
+    localStorage.setItem('gads_purchase_value:cs_test_123', '25');
+    base44.functions.invoke.mockResolvedValue({ data: {
+      success: false,
+      checkoutId: 'cs_test_123',
+      status: 'unpaid',
+      items: [{ type: 'donation' }],
+    } });
+    renderPage('/ThankYou?checkout_id=cs_test_123&purchase_token=test-token');
+    expect(await screen.findByText('Payment not verified')).toBeTruthy();
+    expect(window.gtag).not.toHaveBeenCalled();
   });
 
   it('shows success only after the backend confirms paid status', async () => {

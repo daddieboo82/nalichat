@@ -14,7 +14,10 @@ import {
   connectMasterChain,
   connectTrackChain,
   trackGainValue,
+  trackPanValue,
   automatedTrackState,
+  getClipRegionGainAtTime,
+  getSiblingCrossfadeGainAtTime,
 } from '@/lib/audioProcessing';
 
 const isSameOriginUrl = (url) => {
@@ -54,17 +57,20 @@ export function createMixEngine() {
     });
   };
 
-  const teardownEntry = (entry) => {
+  const teardownEntry = (entry, { disconnectSource = true } = {}) => {
     entry.nodes?.forEach(node => { try { node.disconnect(); } catch { /* already gone */ } });
     entry.nodes = [];
-    try { entry.source?.disconnect(); } catch { /* already gone */ }
+    if (disconnectSource) {
+      try { entry.source?.disconnect(); } catch { /* already gone */ }
+    }
+    try { entry.regionGain?.disconnect(); } catch { /* already gone */ }
   };
 
   const rebuild = (trackId, track, gain) => {
     const entry = entries.get(trackId);
     if (!entry || !context || !master) return;
-    teardownEntry(entry);
-    const built = connectTrackChain(context, entry.source, track, {
+    teardownEntry(entry, { disconnectSource: false });
+    const built = connectTrackChain(context, entry.regionGain || entry.source, track, {
       destination: master.input,
       reverbBus: master.reverbBus,
       delayBus: master.delayBus,
@@ -72,6 +78,8 @@ export function createMixEngine() {
       gain,
     });
     entry.nodes = built.nodes;
+    const panner = entry.nodes.find(node => node && node.pan);
+    if (panner && Number.isFinite(entry.pan)) panner.pan.value = entry.pan;
     entry.trackGain = built.trackGain;
     entry.sendGains = built.sendGains;
     entry.track = track;
@@ -124,9 +132,22 @@ export function createMixEngine() {
         console.warn('Studio mixer: FX routing unavailable for track', trackId, e);
         return false;
       }
+      // The region gain stage applies non-destructive clip gain and fades
+      // before the shared per-track channel strip.
+      const regionGain = context.createGain();
+      regionGain.gain.value = 1;
+      source.connect(regionGain);
       // The graph owns level from here; leave the element wide open.
       element.volume = 1;
-      entries.set(trackId, { element, source, nodes: [], track: null, gain: 0 });
+      entries.set(trackId, {
+        element,
+        source,
+        regionGain,
+        nodes: [],
+        track: null,
+        gain: 0,
+        pan: trackPanValue(track || {}),
+      });
       rebuild(trackId, track || {}, trackGainValue(track || {}));
       return true;
     },
@@ -140,6 +161,8 @@ export function createMixEngine() {
       const entry = entries.get(trackId);
       if (!entry || !context) return false;
       const nextGain = typeof gain === 'number' ? gain : trackGainValue(track || {});
+      const nextPan = trackPanValue(track || {});
+      entry.pan = nextPan;
       const prev = entry.track;
       const structureChanged =
         !prev ||
@@ -157,14 +180,23 @@ export function createMixEngine() {
       }
       const panner = entry.nodes.find(n => n && n.pan);
       if (panner) {
-        const value = Math.max(-1, Math.min(1, ((track?.pan ?? 50) - 50) / 50));
-        panner.pan.setTargetAtTime(value, context.currentTime, 0.01);
+        panner.pan.setTargetAtTime(nextPan, context.currentTime, 0.01);
       }
       entry.sendGains?.forEach((sendGain, index) => {
         if (!sendGain) return;
         const value = Math.max(0, Math.min(100, track?.[`send${index + 1}`] ?? 0)) / 100;
         sendGain.gain.setTargetAtTime(value, context.currentTime, 0.01);
       });
+      return true;
+    },
+
+    /** Apply the active clip region's gain and fade envelope at transport time. */
+    syncClipRegion(trackId, track, region, timelineTime, allTracks = []) {
+      const entry = entries.get(trackId);
+      if (!entry?.regionGain || !context) return false;
+      const value = getClipRegionGainAtTime(track, region, timelineTime)
+        * getSiblingCrossfadeGainAtTime(track, region, timelineTime, allTracks);
+      entry.regionGain.gain.setTargetAtTime(value, context.currentTime, 0.008);
       return true;
     },
 

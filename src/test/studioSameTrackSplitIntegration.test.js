@@ -84,6 +84,20 @@ describe("Studio same-track split integration", () => {
     }
   });
 
+  it("flushes pending region edits before Undo and Redo", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const historyStart = studio.indexOf("const pendingHistoryRef = useRef([])");
+    const historyEnd = studio.indexOf("const toggleTrackProperty", historyStart);
+    expect(historyStart).toBeGreaterThan(0);
+    const history = studio.slice(historyStart, historyEnd);
+    expect(history).toContain("const flushPendingHistory = () => {");
+    expect(history).toContain("clearTimeout(entry.timer)");
+    expect(history).toContain("if (historyEpochRef.current === entry.epoch) pushToHistory(entry.tracks)");
+    expect(history).toMatch(/const undo = \(\) => \{\s*flushPendingHistory\(\)/);
+    expect(history).toMatch(/const redo = \(\) => \{\s*flushPendingHistory\(\)/);
+    expect(history).toContain("if (index < 0) return; // Already flushed by Undo/Redo.");
+  });
+
   it("validates take metadata before cloud save and carries region objects in saved tracks", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const saveStart = studio.indexOf("const handleSave = async () => {");

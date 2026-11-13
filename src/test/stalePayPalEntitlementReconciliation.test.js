@@ -253,6 +253,21 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(guards).toContain('status: 503');
   });
 
+  it('leaves refunds of still-active PayPal agreements reviewable, not processed', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const adjustment = code.indexOf("if (current.status === 'ACTIVE') {");
+    const canceled = code.indexOf("if (current.status === 'CANCELLED' || current.status === 'EXPIRED')");
+    expect(adjustment).toBeGreaterThan(0);
+    expect(canceled).toBeGreaterThan(adjustment);
+    const activeAdjustment = code.slice(adjustment, canceled);
+    expect(activeAdjustment).toContain("processing_state: 'failed'");
+    expect(activeAdjustment).not.toContain("processing_state: 'processed'");
+    expect(activeAdjustment).toContain('financial review');
+    expect(activeAdjustment).toContain('reviewRequired: true');
+    expect(activeAdjustment).toContain('status: 503');
+    expect(activeAdjustment).not.toContain('Subscription.update(');
+  });
+
   it('does not cancel a recurring agreement solely because a sale was refunded or reversed', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     expect(code).toContain("if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return null;");

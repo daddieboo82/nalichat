@@ -33,6 +33,16 @@ describe("NaliStudio portable exports", () => {
     expect(handler).not.toContain("const playlists = Array.isArray(track.playlists)");
   });
 
+  it("does not append an identical current Undo snapshot twice", async () => {
+    const studio = await source();
+    const start = studio.indexOf("const pushToHistory = (newTracks) => {");
+    const end = studio.indexOf("const undo =", start);
+    const helper = studio.slice(start, end);
+    expect(helper).toContain("if (historyRef.current[historyIndexRef.current] === newTracks) return;");
+    expect(helper.indexOf("=== newTracks) return;"))
+      .toBeLessThan(helper.indexOf("newHistory.push(newTracks)"));
+  });
+
   it("resets undo history on both cloud-project loading paths", async () => {
     const studio = await source();
     const start = studio.indexOf("if (!roomId || !user?.id)");

@@ -50,6 +50,23 @@ describe('signed PayPal webhook event ordering', () => {
     expect(conflict).toContain('status: 503');
   });
 
+  it('keeps late refunds/reversals reviewable even after a newer lifecycle event', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const adjustment = code.indexOf('const lateFinancialAdjustment = (');
+    const genericStale = code.indexOf('!shouldApplyPayPalEvent(');
+    expect(adjustment).toBeGreaterThan(0);
+    expect(genericStale).toBeGreaterThan(adjustment);
+    const path = code.slice(adjustment, genericStale);
+    expect(path).toContain("'PAYMENT.SALE.REFUNDED'");
+    expect(path).toContain("'PAYMENT.SALE.REVERSED'");
+    expect(path).toContain('eventCreatedAt < lastEventTimeMs');
+    expect(path).toContain("processing_state: 'failed'");
+    expect(path).toContain('reviewRequired: true');
+    expect(path).toContain('status: 503');
+    expect(path).not.toContain('Subscription.update(');
+    expect(path).not.toContain("processing_state: 'ignored'");
+  });
+
   it('keeps different equal-timestamp lifecycle events retryable instead of ignored', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     const guard = code.indexOf('lastEventTimeMs === eventCreatedAt');

@@ -174,6 +174,26 @@ export function entitlementStatusForProvider(
     : 'ended';
 }
 
+/**
+ * A previously active PayPal subscription with an unverified current period
+ * must be reconciled before opening a *different provider's* recurring
+ * checkout. This is only a checkout guard; it does not grant paid access.
+ */
+export function requiresExistingPayPalCheckoutReview(
+  provider: unknown,
+  plan: unknown,
+  status: unknown,
+  currentPeriodEnd: unknown,
+  now = new Date().toISOString(),
+): boolean {
+  if (provider !== 'paypal' || normalizePlan(plan) === 'free' || normalizeStatus(status) !== 'active') {
+    return false;
+  }
+  const boundary = typeof currentPeriodEnd === 'string' ? Date.parse(currentPeriodEnd) : Number.NaN;
+  const nowMs = Date.parse(now);
+  return !Number.isFinite(boundary) || !Number.isFinite(nowMs) || boundary <= nowMs;
+}
+
 export function resolveEntitlements(
   plan: SubscriptionPlan,
   status: SubscriptionStatus,

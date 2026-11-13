@@ -188,6 +188,19 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('never uses the sale ID as a recurring subscription lookup key', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const resolve = code.indexOf("const paymentEvent = event.event_type.startsWith('PAYMENT.');");
+    const query = code.indexOf("const records = await entities.Subscription.filter(");
+    expect(resolve).toBeGreaterThan(0);
+    expect(query).toBeGreaterThan(resolve);
+    expect(code).toContain("typeof event.resource?.billing_agreement_id === 'string'");
+    expect(code).toContain("const subscriptionId = paymentEvent");
+    expect(code).toContain("processing_state: 'failed'");
+    expect(code).toContain("error: 'Subscription reference verification required'");
+    expect(code).not.toContain("let subscriptionId = event.resource?.id || event.resource?.billing_agreement_id");
+  });
+
   it('does not cancel a recurring agreement solely because a sale was refunded or reversed', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     expect(code).toContain("if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return null;");

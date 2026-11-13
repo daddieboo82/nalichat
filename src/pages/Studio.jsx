@@ -1650,9 +1650,15 @@ export default function Studio() {
       const hasPostRoll = postRoll > 0;
       stopRecordingProcess(hasPostRoll);
       if (hasPostRoll) {
-        // Post-roll: keep playback running for postRoll seconds after recording stops
+        // Recording has stopped, but the timeline/RAF must continue advancing
+        // until post-roll reaches its scheduled end.
         pendingStopAfterRef.current = currentTimeRef.current + postRoll;
+        transportPlayingRef.current = true;
+        setIsPlaying(true);
         setActivity(`Post-roll ${postRoll}s → stopping ⏹️`);
+      } else {
+        invalidateTransportPlayback();
+        setIsPlaying(false);
       }
     }
   };

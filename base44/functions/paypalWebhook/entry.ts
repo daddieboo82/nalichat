@@ -279,7 +279,6 @@ Deno.serve(async (req) => {
     // surface the adjustment for financial review rather than revoking access.
     const isPaymentAdjustment = event.event_type === 'PAYMENT.SALE.REFUNDED' ||
       event.event_type === 'PAYMENT.SALE.REVERSED';
-    let adjustmentStatus: string | null = null;
     if (isPaymentAdjustment) {
       const current = await fetchSubscriptionBillingInfo(token, subscriptionId);
       if (!current || !current.planId ||
@@ -305,20 +304,22 @@ Deno.serve(async (req) => {
         });
         return Response.json({ error: 'PayPal financial adjustment requires reconciliation', reviewRequired: true }, { status: 503 });
       }
-      if (current.status === 'CANCELLED' || current.status === 'EXPIRED') {
-        adjustmentStatus = 'canceled';
-      } else if (current.status === 'SUSPENDED') {
-        adjustmentStatus = 'unpaid';
-      } else {
-        await entities.PayPalWebhookEvent.update(ledger.id, {
-          processing_state: 'failed',
-          processed_at: new Date().toISOString(),
-          last_error: 'Refund/reversal subscription lifecycle could not be resolved',
-        });
-        return Response.json({ error: 'PayPal subscription lifecycle verification required' }, { status: 503 });
-      }
+      // A sale refund/reversal is an accounting adjustment regardless of
+      // whether PayPal currently calls the recurring agreement ACTIVE,
+      // SUSPENDED, CANCELLED or EXPIRED. Do not mutate subscription lifecycle
+      // or advance its event watermark from a transaction-level event.
+      // Provider-backed lifecycle reconciliation is a separate operation.
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'Refund/reversal requires financial review; lifecycle status is unchanged',
+      });
+      return Response.json({
+        error: 'PayPal financial adjustment requires reconciliation',
+        reviewRequired: true,
+      }, { status: 503 });
     }
-    const newStatus = isPaymentAdjustment ? adjustmentStatus : state(event.event_type, event.resource);
+    const newStatus = state(event.event_type, event.resource);
     if (newStatus) {
       const update: Record<string, unknown> = {
         status: newStatus,

@@ -236,6 +236,17 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).not.toContain("let subscriptionId = event.resource?.id || event.resource?.billing_agreement_id");
   });
 
+  it('requires a future billing period only for active restoration, not cancellation or suspension', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const restoration = code.indexOf("const requiresRestorationBillingVerification = newStatus === 'active' &&");
+    const activePeriod = code.indexOf("record.status !== 'active' &&", restoration);
+    const finalGuard = code.indexOf('if (providerMismatch || requiresRestorationBillingVerification ||');
+    expect(restoration).toBeGreaterThan(0);
+    expect(activePeriod).toBeGreaterThan(restoration);
+    expect(finalGuard).toBeGreaterThan(activePeriod);
+    expect(code).not.toContain('const requiresRestorationBillingVerification = needsCurrentProviderStatus &&');
+  });
+
   it('verifies current PayPal status and owner before applying canceled or unpaid webhooks', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     const providerCheck = code.indexOf('const providerMismatch = needsCurrentProviderStatus');

@@ -45,6 +45,21 @@ describe("Studio same-track split integration", () => {
     expect(getClipSourceTimeAtTime(track, 8)).toBe(8);
   });
 
+  it("respects solo routing and region gain for FX-bypass playback", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    const frameStart = studio.indexOf("// Follow audible clip regions, not the track's outer bounds.");
+    const frameEnd = studio.indexOf("if (isRecording && recordingStartTime", frameStart);
+    expect(frameStart).toBeGreaterThan(0);
+    const frame = studio.slice(frameStart, frameEnd);
+    expect(frame).toContain("const anySolo = liveTracks.some(item => item.solo)");
+    expect(frame).toContain("track.muted || (anySolo && !track.solo)");
+    expect(frame).toContain("if (!audio.paused) audio.pause()");
+    expect(frame).toContain("audio.dataset?.fxBypass === '1'");
+    expect(frame).toContain("getClipRegionGainAtTime(track, region, newTime)");
+    expect(frame).toContain("getSiblingCrossfadeGainAtTime(track, region, newTime, liveTracks)");
+    expect(frame).toContain("audio.volume = Math.max(0, Math.min(1, baseGain * regionGain))");
+  });
+
   it("updates the mixer gain immediately when seeking into or out of a removed gap", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     const start = studio.indexOf("const updateCurrentTime = (newTime) => {");

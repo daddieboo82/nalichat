@@ -140,6 +140,6 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain('if (!token) return;');
     expect(code).toContain('if (!status) continue;');
     expect(code).toContain('console.error(\'PayPal status reconciliation failed\', error)');
-    expect(code).toContain('hasPaidTierAccess(status, {');
+    expect(code).toContain('hasPaidTierAccess(accessStatus, {');
   });
 });

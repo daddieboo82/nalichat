@@ -30,6 +30,54 @@ describe('shared subscription access resolver', () => {
     expect(access.limits.ai.requestsPerUtcDay).toBe(1000);
   });
 
+  it('does not grant Premium for an active PayPal record with no billing end', async () => {
+    const paypal = {
+      id: 'paypal-undated',
+      user_id: 'user-1',
+      plan: 'premium_plus',
+      status: 'active',
+      provider: 'paypal',
+      current_period_end: null,
+    };
+    const filter = vi.fn().mockResolvedValueOnce([paypal]);
+    const access = await resolveUserSubscription({ filter }, 'user-1', '2026-11-13T18:30:00Z');
+    expect(access.status).toBe('active'); // provider's stored lifecycle is not changed
+    expect(access.hasPaidAccess).toBe(false);
+    expect(access.entitlements['ai.best_model']).toBe(false);
+    expect(access.limits.ai.requestsPerUtcDay).toBe(20);
+  });
+
+  it('does not grant Premium for an expired PayPal billing boundary', async () => {
+    const paypal = {
+      id: 'paypal-expired',
+      user_id: 'user-1',
+      plan: 'premium',
+      status: 'active',
+      provider: 'paypal',
+      current_period_end: '2026-10-20T10:00:00Z',
+    };
+    const filter = vi.fn().mockResolvedValueOnce([paypal]);
+    const access = await resolveUserSubscription({ filter }, 'user-1', '2026-11-13T18:30:00Z');
+    expect(access.hasPaidAccess).toBe(false);
+    expect(access.entitlements['ai.standard']).toBe(false);
+  });
+
+  it('grants dated PayPal Premium only while the billing period is in the future', async () => {
+    const paypal = {
+      id: 'paypal-dated',
+      user_id: 'user-1',
+      plan: 'premium_plus',
+      status: 'active',
+      provider: 'paypal',
+      current_period_end: '2026-12-20T10:00:00Z',
+    };
+    const filter = vi.fn().mockResolvedValueOnce([paypal]);
+    const access = await resolveUserSubscription({ filter }, 'user-1', '2026-11-13T18:30:00Z');
+    expect(access.hasPaidAccess).toBe(true);
+    expect(access.entitlements['ai.best_model']).toBe(true);
+    expect(access.limits.ai.requestsPerUtcDay).toBe(1000);
+  });
+
   it('loads bounded pages and selects the strongest paid subscription', async () => {
     const firstPage = Array.from({ length: 500 }, (_, index) => ({
       id: `free-${index}`,

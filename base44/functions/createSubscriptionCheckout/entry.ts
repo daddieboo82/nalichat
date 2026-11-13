@@ -8,7 +8,7 @@ import {
   trialEligibility,
   validateCheckoutIdempotencyKey,
 } from '../../shared/stripeBilling.ts';
-import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
+import { hasPaidTierAccess, normalizePlan, normalizeStatus, requiresExistingPayPalCheckoutReview } from '../../shared/subscription.ts';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
@@ -195,6 +195,19 @@ Deno.serve(async (req) => {
         ? 'This account already has grandfathered Premium Plus billing'
         : 'This account already has a paid subscription; use the billing portal';
       return Response.json({ error: message }, { status: 409 });
+    }
+
+    // An active PayPal subscription with an expired or missing local billing
+    // period may still be billing at PayPal. Block a new cross-provider
+    // recurring checkout until its status is reconciled, preventing double
+    // subscriptions across PayPal, Stripe and Wix.
+    const unresolvedPayPal = subscriptions.some((sub: any) => requiresExistingPayPalCheckoutReview(
+      sub.provider, sub.plan, sub.status, sub.current_period_end, now,
+    ));
+    if (unresolvedPayPal) {
+      return Response.json({
+        error: 'Existing PayPal subscription needs verification before another checkout',
+      }, { status: 409 });
     }
 
     // Reuse any still-valid pending checkout for this SKU before taking a new

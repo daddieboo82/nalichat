@@ -68,3 +68,21 @@ export function paypalPeriodEndForStatus(
   if (status === 'active' && parsed <= nowMs) return null;
   return value;
 }
+
+
+/**
+ * A newly approved PayPal checkout cannot become paid access without a
+ * future provider billing boundary. Existing active records also must not
+ * lose their recorded boundary because a webhook omitted billing_info.
+ */
+export function requiresPayPalBillingVerification(
+  localStatus: unknown,
+  nextStatus: unknown,
+  periodEnd: unknown,
+  nowMs = Date.now(),
+): boolean {
+  if (nextStatus !== 'active' || localStatus !== 'pending') return false;
+  return typeof periodEnd !== 'string'
+    || !Number.isFinite(Date.parse(periodEnd))
+    || Date.parse(periodEnd) <= nowMs;
+}

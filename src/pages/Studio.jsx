@@ -2340,7 +2340,10 @@ export default function Studio() {
       try {
         // Existing cloud rooms must never update another draft's local slot.
         if (autosaveStorageKey && !roomId && !editsDuringSave) {
-          if (portableTracks.length === 0) {
+          // A successfully created cloud project is no longer an unsaved
+          // standalone draft. Leave the draft recovery alone if newer edits
+          // appeared during the save, so they are not discarded.
+          if (createdNewProject || portableTracks.length === 0) {
             localStorage.removeItem(autosaveStorageKey);
             setHasAutosave(false);
           } else {

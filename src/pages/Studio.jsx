@@ -189,6 +189,8 @@ export default function Studio() {
   const midiSustainRef = useRef(new Map()), midiAccessRef = useRef(null);
   const studioSaveInFlightRef = useRef(false);
   const studioRestoreInFlightRef = useRef(false);
+  // Newly generated demo URLs awaiting an applied track-state commit.
+  const pendingDemoAudioCleanupRef = useRef([]);
   // A newly created project already has this tab's working tracks. Skip only
   // its first route-triggered hydration so edits made during upload survive.
   const newlyCreatedProjectHandoffRef = useRef(null);
@@ -630,6 +632,7 @@ export default function Studio() {
         toast.dismiss(toastId);
         return;
       }
+      pendingDemoAudioCleanupRef.current.push(lead.url, beat.url);
       setTracks(prev => prev.map(track => {
         const initial = demoTracks.find(item => item.id === track.id);
         if (!initial || track.audioUrl || track.waveform !== initial.waveform) return track;
@@ -642,6 +645,26 @@ export default function Studio() {
       toast.error("Demo audio could not be generated; the demo editor is still available.", { id: toastId });
     }
   };
+
+  // After React commits demo media updates, discard generated blob URLs that
+  // were skipped because a placeholder was edited, replaced or removed.
+  useEffect(() => {
+    if (!pendingDemoAudioCleanupRef.current.length) return;
+    const pending = pendingDemoAudioCleanupRef.current;
+    pendingDemoAudioCleanupRef.current = [];
+    const retained = new Set();
+    tracks.forEach(track => {
+      [track.audioUrl, track.file_url].forEach(url => { if (url) retained.add(url); });
+      (Array.isArray(track.playlists) ? track.playlists : []).forEach(take => {
+        [take.audioUrl, take.file_url].forEach(url => { if (url) retained.add(url); });
+      });
+    });
+    pending.forEach(url => {
+      if (typeof url === "string" && url.startsWith("blob:") && !retained.has(url)) {
+        URL.revokeObjectURL(url);
+      }
+    });
+  }, [tracks]);
 
   // Temporary object URLs only live in the current browser document. Give
   // users a chance to save a portable ZIP or cloud project before closing it.

@@ -73,8 +73,15 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const update: Record<string, unknown> = { status };
       const periodEnd = paypalPeriodEndForStatus(status, remote?.billing_info?.next_billing_time);
+      // Do not promote a pending checkout to unbounded paid access when
+      // PayPal reports ACTIVE without a verified future billing boundary.
+      // hasPaidTierAccess treats active + null period as unrestricted access.
+      if (status === 'active' && (typeof periodEnd !== 'string' || Date.parse(periodEnd) <= Date.now())) {
+        results.push({ subscriptionId, result: 'needs_billing_period_verification', paypalStatus: remoteStatus });
+        continue;
+      }
+      const update: Record<string, unknown> = { status };
       if (periodEnd !== undefined) update.current_period_end = periodEnd;
       if (status === 'canceled') update.cancel_at_period_end = false;
       await base44.asServiceRole.entities.Subscription.update(subscription.id, update);

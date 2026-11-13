@@ -497,7 +497,8 @@ export default function Studio() {
         } else {
           const persistedTracks = await listPersistedTracks(roomId);
           if (cancelled) return;
-          if (persistedTracks.length > 0) {
+          {
+            // An empty cloud project must clear the previous session too.
             const hydrated = persistedTracks.map((track) => ({
               id: track.id,
               _persistedTrackId: track.id,
@@ -538,9 +539,11 @@ export default function Studio() {
         setJamRoomActive(true);
         if (!cancelled) setProjectLoadError(false);
       } catch (err) {
-        console.error("Failed to load project:", err);
-        if (!cancelled) setProjectLoadError(true);
-        toast.error("Couldn't load this Studio project.");
+        if (!cancelled) {
+          console.error("Failed to load project:", err);
+          setProjectLoadError(true);
+          toast.error("Couldn't load this Studio project.");
+        }
       } finally {
         if (!cancelled) {
           masterFxLoadedRef.current = true;

@@ -57,7 +57,8 @@ Deno.serve(async (req) => {
     for (const subscription of pending) {
       const subscriptionId = String(subscription.subscription_id || '');
       if (!subscriptionId) continue;
-      const response = await fetch(
+      try {
+        const response = await fetch(
         apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId),
         { headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } },
       );
@@ -96,6 +97,12 @@ Deno.serve(async (req) => {
       if (status === 'canceled') update.cancel_at_period_end = false;
       await base44.asServiceRole.entities.Subscription.update(subscription.id, update);
       results.push({ subscriptionId, result: 'updated', status, paypalStatus: remote?.status || null });
+      } catch (error) {
+        // One transient provider/entity failure must not starve every other
+        // pending subscription in this scheduled reconciliation batch.
+        console.error('PayPal per-subscription reconciliation failed', error);
+        results.push({ subscriptionId, result: 'record_failed' });
+      }
     }
 
     return Response.json({

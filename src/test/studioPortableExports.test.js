@@ -58,6 +58,17 @@ describe("NaliStudio portable exports", () => {
     expect(loader).not.toContain("new URLSearchParams(searchParams)");
   });
 
+  it("honors a deliberately empty saved project instead of legacy rows", async () => {
+    const studio = await source();
+    const start = studio.indexOf("const savedState = project.studio_state;");
+    const end = studio.indexOf("setShowWelcome(false)", start);
+    const loader = studio.slice(start, end);
+    expect(loader).toContain("if (Array.isArray(savedState?.tracks))");
+    expect(loader).not.toContain("savedState.tracks.length > 0");
+    expect(loader).toContain("const hydrated = savedState.tracks.map");
+    expect(loader).toContain("const persistedTracks = await listPersistedTracks(roomId)");
+  });
+
   it("clears a previous session when loading an empty cloud project", async () => {
     const studio = await source();
     const start = studio.indexOf("useEffect(() => {\n    if (!roomId || !user?.id)");

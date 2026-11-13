@@ -71,10 +71,14 @@ describe("Studio same-track split integration", () => {
     const finalize = studio.slice(studio.indexOf("const stopRecordingProcess ="), studio.indexOf("const toggleRecord = async"));
     expect(finalize).toContain("const recordingEpoch = historyEpochRef.current");
     expect(finalize).toContain("const recordingTargets = new Map(tracksRef.current.filter(t => t.armed)");
+    expect(finalize).toContain("const matchesRecordingTarget = (track) => {");
+    expect(finalize).toContain("clipRegions: getTrackClipRegions(track)");
+    expect(finalize).toContain("editSignature: JSON.stringify({");
+    expect(finalize).toContain("const hasEligibleTarget = tracksRef.current.some(matchesRecordingTarget)");
+    expect(finalize).toContain("if (!matchesRecordingTarget(t)) return t;");
     expect(finalize).toContain("if (recordingEpoch !== historyEpochRef.current) return;");
     expect(finalize).toContain("recordingEpoch !== historyEpochRef.current || !hasEligibleTarget");
     expect(finalize).toContain("URL.revokeObjectURL(audioUrl)");
-    expect(finalize).toContain("const original = recordingTargets.get(String(t.id))");
     expect(finalize).toContain("clipRegions: undefined, clipStart: 0");
   });
 

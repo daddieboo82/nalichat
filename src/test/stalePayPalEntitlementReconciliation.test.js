@@ -84,6 +84,24 @@ describe('signed PayPal webhook event ordering', () => {
     expect(handling).not.toContain("processing_state: 'ignored'");
   });
 
+  it('reopens legacy processed refund events only when accounting review was explicitly unresolved', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const signed = code.indexOf('if (!(await verify(req, event, token)))');
+    const recovery = code.indexOf('const legacyUnreviewedAdjustment = (');
+    const ledgerAction = code.indexOf('const ledgerAction = paypalWebhookLedgerAction(');
+    const duplicate = code.indexOf("if (ledgerAction === 'duplicate')");
+    expect(signed).toBeGreaterThan(0);
+    expect(recovery).toBeGreaterThan(signed);
+    expect(ledgerAction).toBeGreaterThan(recovery);
+    expect(duplicate).toBeGreaterThan(ledgerAction);
+    const guard = code.slice(recovery, ledgerAction);
+    expect(guard).toContain("'PAYMENT.SALE.REFUNDED'");
+    expect(guard).toContain("'PAYMENT.SALE.REVERSED'");
+    expect(guard).toContain("existing[0]?.processing_state === 'processed'");
+    expect(guard).toContain('Refund/reversal recorded; active recurring agreement requires financial review');
+    expect(code.slice(ledgerAction, duplicate)).toContain("legacyUnreviewedAdjustment ? 'failed' : existing[0]?.processing_state");
+  });
+
   it('requires a valid signed creation time before the webhook ledger is touched', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     const verification = code.indexOf('if (!(await verify(req, event, token)))');

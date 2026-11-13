@@ -1529,7 +1529,9 @@ export default function Studio() {
         if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
           const audio = getTrackAudio(track);
           if (!audio) return;
-          audio.currentTime = Math.max(0, recordStartPos - preRoll - (track.startTime || 0));
+          const sourceTime = getClipSourceTimeAtTime(track, Math.max(0, recordStartPos - preRoll));
+          if (sourceTime === null) return; // No audible region at the pre-roll start point.
+          audio.currentTime = sourceTime;
           preRollPlayPromises.push(
             audio.play().then(() => true).catch((error) => {
               console.error("Pre-roll playback error:", error);
@@ -1593,7 +1595,9 @@ export default function Studio() {
           if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
             const audio = getTrackAudio(track);
             if (!audio) return;
-            audio.currentTime = currentTimeRef.current;
+            const sourceTime = getClipSourceTimeAtTime(track, currentTimeRef.current);
+            if (sourceTime === null) return;
+            audio.currentTime = sourceTime;
             audio.play().catch(e => console.error("Overdub playback error:", e));
           }
         });

@@ -54,6 +54,26 @@ test.describe('onboarding and pricing workflows', () => {
     expect(filterNoise(errors)).toEqual([]);
   });
 
+  test('Studio mastering offer opens pricing and preserves the bounce draft', async ({ page }) => {
+    test.skip(process.env.E2E_STUDIO_MASTERING_OFFER !== '1', 'Enable for a preview containing the Studio mastering offer.');
+
+    await page.goto('/studio');
+    await page.getByRole('button', { name: 'Create New Project' }).click();
+    await page.getByRole('button', { name: 'Export', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Export & Publish' }).click();
+
+    const bounce = page.getByRole('dialog', { name: 'Export Studio Track' });
+    const title = bounce.getByPlaceholder('Song name');
+    await title.fill('Unsaved mastering preview');
+
+    const offer = bounce.getByRole('link', { name: /Premium \$7.99\/month/ });
+    const [pricing] = await Promise.all([page.waitForEvent('popup'), offer.click()]);
+    await expect(pricing).toHaveURL(/\/pricing\?source=studio_bounce&feature=studio\.ai_mastering$/);
+    await expect(pricing.getByText(/AI Auto-Mastering applies EQ, compression, and limiting/)).toBeVisible();
+    await expect(bounce).toBeVisible();
+    await expect(title).toHaveValue('Unsaved mastering preview');
+  });
+
   test('record page renders recording interface', async ({ page }) => {
     const errors = collectErrors(page);
 

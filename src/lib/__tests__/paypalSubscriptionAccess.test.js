@@ -22,6 +22,21 @@ describe('PayPal subscription access', () => {
     expect(paypalPeriodEndForStatus('canceled', '2026-10-01T12:00:00.000Z', NOW)).toBe('2026-10-01T12:00:00.000Z');
   });
 
+  it('leaves an unapproved subscription pending without calling PayPal activation', async () => {
+    const fetchPayPal = vi.fn();
+    vi.stubGlobal('fetch', fetchPayPal);
+
+    const status = await resolvePayPalSubscriptionStatus(
+      'https://api-m.paypal.com',
+      'fixture-token',
+      'I-PENDING',
+      { status: 'APPROVAL_PENDING' },
+    );
+
+    expect(status).toBe('APPROVAL_PENDING');
+    expect(fetchPayPal).not.toHaveBeenCalled();
+  });
+
   it('activates an approved subscription and keeps that status if the follow-up read lags', async () => {
     const remote = { status: 'APPROVED', billing_info: { next_billing_time: '2020-01-01T00:00:00.000Z' } };
     vi.stubGlobal('fetch', vi.fn(async (url) => {

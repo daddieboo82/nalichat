@@ -77,11 +77,11 @@ export default function ThankYou() {
           );
         }
         try { sessionStorage.removeItem(CHECKOUT_ATTRIBUTION_KEY); } catch {}
-      } else if (result.outcome === "failed") {
+      } else if (result.outcome === "failed" || result.outcome === "timeout") {
         const attribution = getMarketingAttribution();
         trackPaywallEvent("purchase_failed", {
           source: checkoutAttribution?.source || "subscription_thank_you",
-          outcome: "verification_error",
+          outcome: result.outcome === "timeout" ? "verification_timeout" : "verification_error",
           upgrade_feature: checkoutAttribution?.feature || undefined,
           checkout_sku: checkoutAttribution?.sku || undefined,
           campaign_source: attribution?.utm_source || undefined,
@@ -97,7 +97,7 @@ export default function ThankYou() {
     return () => {
       active = false;
     };
-  }, [checkoutId, isSubscriptionCheckout, refetchSubscription]);
+  }, [checkoutId, subscriptionId, isSubscriptionCheckout, refetchSubscription]);
 
   useEffect(() => {
     const processThankYou = async () => {

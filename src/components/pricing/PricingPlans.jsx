@@ -122,7 +122,7 @@ export default function PricingPlans({
     trackPaywallEvent("paywall_view", {
       variant,
       source: upgradeSource || "pricing",
-      feature: upgradeFeature || undefined,
+      upgrade_feature: upgradeFeature || undefined,
       campaign_source: attribution?.utm_source || undefined,
       campaign_medium: attribution?.utm_medium || undefined,
       campaign_name: attribution?.utm_campaign || undefined,
@@ -132,14 +132,25 @@ export default function PricingPlans({
       google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
     });
     try {
-      if (sessionStorage.getItem(CHECKOUT_RETURN_KEY) === "1") {
-        try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}
+      const canceled = new URLSearchParams(location.search).get("checkout") === "paypal_canceled";
+      if (canceled) {
         setCheckoutCanceled(true);
+        if (sessionStorage.getItem(CHECKOUT_RETURN_KEY) === "1") {
+          sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+          const raw = sessionStorage.getItem(CHECKOUT_ATTRIBUTION_KEY);
+          sessionStorage.removeItem(CHECKOUT_ATTRIBUTION_KEY);
+          const checkout = raw ? JSON.parse(raw) : null;
+          trackPaywallEvent("checkout_canceled", {
+            source: checkout?.source || "pricing",
+            upgrade_feature: checkout?.feature,
+            checkout_sku: checkout?.sku,
+          });
+        }
       }
     } catch {
       // Checkout remains usable even when session storage is blocked.
     }
-  }, [variant, upgradeFeature, upgradeSource]);
+  }, [variant, upgradeFeature, upgradeSource, location.search]);
 
   const continueFree = () => {
     trackPaywallEvent("paywall_secondary_cta", { variant, plan: "free", source: upgradeSource || "pricing", ...campaignContext() });
@@ -151,6 +162,7 @@ export default function PricingPlans({
   const campaignContext = () => {
     const attribution = getMarketingAttribution();
     return {
+      upgrade_feature: upgradeFeature || undefined,
       campaign_source: attribution?.utm_source || undefined,
       campaign_medium: attribution?.utm_medium || undefined,
       campaign_name: attribution?.utm_campaign || undefined,
@@ -194,7 +206,7 @@ export default function PricingPlans({
 
     if (!isAuthenticated) {
       trackProductEvent("signup_click", { source: "pricing_plan", cta: "select_paid_plan", plan: planId, billing_period: period });
-      navigate(`/register?returnTo=${encodeURIComponent("/pricing")}`);
+      navigate(`/register?returnTo=${encodeURIComponent(location.pathname + location.search)}`);
       return;
     }
 
@@ -222,6 +234,7 @@ export default function PricingPlans({
         billing_period: period,
         sku,
         source: upgradeSource || "pricing",
+        upgrade_feature: upgradeFeature || undefined,
         campaign_source: attribution?.utm_source || undefined,
         campaign_medium: attribution?.utm_medium || undefined,
         campaign_name: attribution?.utm_campaign || undefined,
@@ -294,7 +307,7 @@ export default function PricingPlans({
           )}
           <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
             <span className="font-bold">{upgradeFeature ? "You came here to unlock a premium creator feature:" : "Why creators upgrade:"}</span>{" "}
-            {upgradeFeature ? `${upgradeFeature.replaceAll(".", " ")}. Choose the plan that fits your workflow below.` : "fewer app switches, more room for creative files, and premium tools available right where the work happens."}
+            {upgradeFeature === "studio.ai_mastering" ? "AI Auto-Mastering applies EQ, compression, and limiting to your Studio bounce. It’s included in Premium and Premium Plus." : upgradeFeature ? `${upgradeFeature.replaceAll(".", " ")}. Choose the plan that fits your workflow below.` : "fewer app switches, more room for creative files, and premium tools available right where the work happens."}
           </div>
           <div className="mx-auto mt-6 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-5">{[[MessageSquare,"Messages"],[Music2,"Studio"],[Files,"File sharing"],[Sparkles,"NALI.ai"],[ShieldCheck,"Privacy"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-card/60 px-3 py-2 text-xs font-semibold"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" />{label}</div>)}</div>
         </div>
@@ -307,7 +320,7 @@ export default function PricingPlans({
 
         {checkoutCanceled && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-border bg-card p-4 text-center" role="status">
-            Checkout was canceled. No charge was made. Your current plan is unchanged.
+            You returned from PayPal without completing this checkout. You can choose a plan to try again.
           </div>
         )}
 

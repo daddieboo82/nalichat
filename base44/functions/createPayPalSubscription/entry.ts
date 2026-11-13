@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
     // be the old Base44 host, and a session on nalichat.org cannot confirm a
     // payment that lands on a different origin.
     const successUrl = new URL('/ThankYou?subscription=1', APP_BASE_URL).toString();
-    const cancelUrl = new URL('/pricing', APP_BASE_URL).toString();
+    const cancelUrl = new URL('/pricing?checkout=paypal_canceled', APP_BASE_URL).toString();
     const res = await fetch(apiBase() + '/v1/billing/subscriptions', {
       method: 'POST',
       headers: {

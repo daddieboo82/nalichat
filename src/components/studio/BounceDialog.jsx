@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sparkles, Loader2, AlertCircle, CheckCircle2, Wand2, ChevronDown, RotateCcw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { base44 } from "@/api/base44Client";
@@ -14,6 +14,12 @@ import { renderMasteredMix } from "@/lib/autoMaster";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/lib/AuthContext";
+import { PAYWALL_CONFIG } from "@/lib/paywallConfig";
+import { SUBSCRIPTION_CATALOG } from "@/lib/subscriptionCatalog";
+import { trackPaywallEvent } from "@/lib/paywallAnalytics";
+
+const masteringOffer = { source: "studio_bounce", upgrade_feature: "studio.ai_mastering" };
+const premiumMonthly = SUBSCRIPTION_CATALOG.premium.prices.monthly;
 
 // Neutral params = straight mix with no EQ/loudness coloring (used when mastering is off)
 const FLAT_PARAMS = {
@@ -35,7 +41,7 @@ const STEPS = [
 
 export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange, redirectAfter, mixOptions, canPublish = true }) {
   const navigate = useNavigate();
-  const { hasEntitlement } = useSubscription();
+  const { hasEntitlement, isLoading: subscriptionLoading } = useSubscription();
   const { user } = useAuth();
   const canUseAi = hasEntitlement("ai.standard");
   const [internalOpen, setInternalOpen] = useState(false);
@@ -269,11 +275,11 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
                 disabled={bouncing}
                 className="rounded-xl"
               />
-              <div className="flex items-start gap-3 p-3 rounded-xl bg-secondary/40 border border-border">
+              <div className="flex flex-wrap items-start gap-3 p-3 rounded-xl bg-secondary/40 border border-border">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
                   <Wand2 className="w-4 h-4 text-white" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-[9rem]">
                   <p className="text-sm font-semibold">AI Auto-Mastering</p>
                   <p className="text-xs text-muted-foreground">
                     {canUseAi
@@ -281,17 +287,21 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
                       : "Premium unlocks AI mastering for a more polished, release-ready bounce."}
                   </p>
                 </div>
-                <Switch
-                  checked={canUseAi && autoMaster}
-                  onCheckedChange={(checked) => {
-                    if (!canUseAi) {
-                      toast.error("AI mastering is available with Premium for a more polished, release-ready bounce.");
-                      return;
-                    }
-                    setAutoMaster(checked);
-                  }}
-                  disabled={!canUseAi}
-                />
+                {canUseAi ? (
+                  <Switch aria-label="AI Auto-Mastering" checked={autoMaster} onCheckedChange={setAutoMaster} />
+                ) : !subscriptionLoading && PAYWALL_CONFIG.enabled ? (
+                  <Button variant="outline" size="sm" className="shrink-0" asChild>
+                    <Link
+                      to="/pricing?source=studio_bounce&feature=studio.ai_mastering"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackPaywallEvent("upgrade_click", masteringOffer)}
+                    >
+                      Premium {premiumMonthly.label}{premiumMonthly.suffix}
+                      <span className="sr-only"> (opens in a new tab)</span>
+                    </Link>
+                  </Button>
+                ) : null}
               </div>
 
               {autoMaster && (

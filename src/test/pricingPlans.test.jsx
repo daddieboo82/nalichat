@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import PricingPlans from "@/components/pricing/PricingPlans";
+import BounceDialog from "@/components/studio/BounceDialog";
 
 const mockSubscription = vi.hoisted(() => ({
   current: {
@@ -26,12 +27,13 @@ const mockStartCheckout = vi.hoisted(() => vi.fn());
 const mockTrack = vi.hoisted(() => vi.fn());
 
 vi.mock("@/hooks/useSubscription", () => ({
-  useSubscription: () => mockSubscription.current,
+  useSubscription: () => ({ hasEntitlement: () => false, ...mockSubscription.current }),
 }));
 vi.mock("@/lib/AuthContext", () => ({
   useAuth: () => mockAuth.current,
 }));
 vi.mock("@/lib/subscriptionBilling", () => ({
+  CHECKOUT_ATTRIBUTION_KEY: "checkout-attribution",
   CHECKOUT_RETURN_KEY: "nalichat_subscription_checkout_started",
   createCheckoutRequestKey: () => "checkout_request_1234",
   startSubscriptionCheckout: mockStartCheckout,
@@ -49,10 +51,11 @@ vi.mock("@/hooks/useAppleIAP", () => ({
   }),
 }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
+vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 
-function renderPricing(props = {}) {
+function renderPricing(props = {}, entry = "/pricing") {
   return render(
-    <MemoryRouter initialEntries={["/pricing"]}>
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route path="/pricing" element={<PricingPlans {...props} />} />
         <Route path="/messages" element={<div>Free chat</div>} />
@@ -90,6 +93,63 @@ describe("pricing plans", () => {
   });
 
   afterEach(cleanup);
+
+  it("opens Studio mastering pricing separately without dismissing the bounce dialog", () => {
+    render(
+      <MemoryRouter>
+        <BounceDialog open onOpenChange={vi.fn()} projectTitle="Test mix" tracks={[]} />
+      </MemoryRouter>,
+    );
+
+    const offer = screen.getByRole("link", { name: /Premium \$7.99\/month/ });
+    expect(offer.getAttribute("target")).toBe("_blank");
+    expect(offer.getAttribute("href")).toBe("/pricing?source=studio_bounce&feature=studio.ai_mastering");
+    offer.addEventListener("click", (event) => event.preventDefault());
+    fireEvent.click(offer);
+
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Song name").value).toBe("Test mix");
+    expect(mockTrack).toHaveBeenCalledWith("upgrade_click", {
+      source: "studio_bounce",
+      upgrade_feature: "studio.ai_mastering",
+    });
+  });
+
+  it("records an explicit PayPal cancel return with the original Studio source", () => {
+    sessionStorage.setItem("nalichat_subscription_checkout_started", "1");
+    sessionStorage.setItem("checkout-attribution", JSON.stringify({
+      source: "studio_bounce",
+      feature: "studio.ai_mastering",
+      sku: "premium_monthly",
+    }));
+
+    renderPricing({}, "/pricing?checkout=paypal_canceled");
+
+    expect(screen.getByText(/returned from PayPal without completing/i)).toBeTruthy();
+    expect(mockTrack).toHaveBeenCalledWith("checkout_canceled", {
+      source: "studio_bounce",
+      upgrade_feature: "studio.ai_mastering",
+      checkout_sku: "premium_monthly",
+    });
+    expect(sessionStorage.getItem("nalichat_subscription_checkout_started")).toBeNull();
+  });
+
+  it("keeps Studio mastering attribution through checkout", async () => {
+    renderPricing({ variantOverride: "A" }, "/pricing?source=studio_bounce&feature=studio.ai_mastering");
+
+    expect(screen.getByText(/AI Auto-Mastering applies EQ, compression, and limiting/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
+
+    await waitFor(() => expect(mockStartCheckout).toHaveBeenCalledWith(expect.objectContaining({
+      sku: "premium_monthly",
+    })));
+    for (const event of ["paywall_view", "paywall_tier_select", "checkout_started"]) {
+      expect(mockTrack).toHaveBeenCalledWith(event, expect.objectContaining({
+        source: "studio_bounce",
+        upgrade_feature: "studio.ai_mastering",
+      }));
+    }
+  });
 
   it("renders variant A, defaults monthly, and toggles to yearly prices", () => {
     renderPricing({ variantOverride: "A" });

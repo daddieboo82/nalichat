@@ -76,6 +76,15 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain("typeof periodEnd !== 'string' || Date.parse(periodEnd) <= nowMs");
   });
 
+  it('checks existing paid access before returning an old Stripe checkout URL', async () => {
+    const code = await readFile('base44/functions/createSubscriptionCheckout/entry.ts', 'utf8');
+    const paidCheck = code.indexOf('const existingPaidSubscription = subscriptions.find');
+    const firstReuse = code.indexOf('pendingSubscription?.checkout_url');
+    expect(paidCheck).toBeGreaterThan(0);
+    expect(firstReuse).toBeGreaterThan(paidCheck);
+    expect(code.slice(paidCheck, firstReuse)).toContain('if (existingPaidSubscription)');
+  });
+
   it('checks unresolved PayPal before reusing an existing Stripe checkout', async () => {
     const code = await readFile('base44/functions/createSubscriptionCheckout/entry.ts', 'utf8');
     const guardPosition = code.indexOf('const unresolvedPayPal = subscriptions.some');

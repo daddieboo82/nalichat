@@ -2585,9 +2585,14 @@ export default function Studio() {
         temporaryUrls.forEach((url) => URL.revokeObjectURL(url));
         throw restoreError;
       }
+      // A restored backup replaces the current session. Do not let Undo
+      // resurrect tracks from the previous session or redo into its edits.
+      historyRef.current = [restoredTracks];
+      historyIndexRef.current = 0;
+      setHistoryIndex(0);
       setSelectedTrackIds([]);
       setFxTarget(null);
-      setTracksWithHistory(restoredTracks);
+      setTracks(restoredTracks);
       setProjectName(payload.project.title || "Restored Project");
       if (Number.isFinite(Number(payload.project.bpm))) setBpm(Number(payload.project.bpm));
       if (typeof payload.project.key === "string") setSongKey(payload.project.key);

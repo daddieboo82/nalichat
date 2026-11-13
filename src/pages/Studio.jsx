@@ -189,6 +189,9 @@ export default function Studio() {
   const midiSustainRef = useRef(new Map()), midiAccessRef = useRef(null);
   const studioSaveInFlightRef = useRef(false);
   const studioRestoreInFlightRef = useRef(false);
+  // A newly created project already has this tab's working tracks. Skip only
+  // its first route-triggered hydration so edits made during upload survive.
+  const newlyCreatedProjectHandoffRef = useRef(null);
   const audioElementsRef = useRef({});
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
@@ -408,6 +411,13 @@ export default function Studio() {
     if (!roomId || !user?.id) {
       setProjectLoading(false);
       setProjectLoadError(false);
+      return;
+    }
+    if (newlyCreatedProjectHandoffRef.current === roomId) {
+      newlyCreatedProjectHandoffRef.current = null;
+      setProjectLoading(false);
+      setProjectLoadError(false);
+      setJamRoomActive(true);
       return;
     }
 
@@ -2200,6 +2210,7 @@ export default function Studio() {
       }
 
       if (createdNewProject && targetProjectId) {
+        newlyCreatedProjectHandoffRef.current = targetProjectId;
         const nextParams = new URLSearchParams(searchParams);
         nextParams.set("room", targetProjectId);
         nextParams.delete("invite");

@@ -84,6 +84,27 @@ describe('signed PayPal webhook event ordering', () => {
     expect(handling).not.toContain("processing_state: 'ignored'");
   });
 
+  it('rejects conflicting ledger event identity before duplicate acknowledgment or retry', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const firstCheck = code.indexOf("if (existing[0] && (");
+    const duplicate = code.indexOf("if (ledgerAction === 'duplicate')");
+    const raced = code.indexOf('if (raced.length !== 1 ||');
+    const racedAction = code.indexOf('const racedAction = paypalWebhookLedgerAction(');
+    expect(firstCheck).toBeGreaterThan(0);
+    expect(duplicate).toBeGreaterThan(firstCheck);
+    expect(raced).toBeGreaterThan(duplicate);
+    expect(racedAction).toBeGreaterThan(raced);
+    const originalGuard = code.slice(firstCheck, duplicate);
+    expect(originalGuard).toContain('existing[0].event_type !== event.event_type');
+    expect(originalGuard).toContain('Date.parse(existing[0].event_time) !== eventCreatedAt');
+    expect(originalGuard).toContain('Webhook event identity requires reconciliation');
+    expect(originalGuard).toContain('status: 503');
+    const raceGuard = code.slice(raced, racedAction);
+    expect(raceGuard).toContain('raced[0].event_type !== event.event_type');
+    expect(raceGuard).toContain('Date.parse(raced[0].event_time) !== eventCreatedAt');
+    expect(raceGuard).toContain('status: 503');
+  });
+
   it('reopens legacy processed refund events only when accounting review was explicitly unresolved', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     const signed = code.indexOf('if (!(await verify(req, event, token)))');

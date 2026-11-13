@@ -107,16 +107,16 @@ Deno.serve(async (req) => {
       });
       if (!lookup.ok) continue;
       const remote = await lookup.json();
+      // Verification must precede resolvePayPalSubscriptionStatus: for an
+      // APPROVED PayPal subscription that helper calls /activate (a provider
+      // mutation). Never activate a subscription whose owner/plan differs.
+      if (remote?.plan_id !== planId || remote?.custom_id !== user.id + ':' + sku) {
+        return Response.json({
+          error: 'PayPal subscription ownership or plan could not be verified',
+        }, { status: 409 });
+      }
       const remoteStatus = await resolvePayPalSubscriptionStatus(apiBase(), token, pending.subscription_id, remote);
       if (remoteStatus === 'ACTIVE') {
-        // An ACTIVE provider record alone is not enough to attach paid
-        // access to this account. Verify the current plan and checkout owner
-        // before writing the local Subscription entity.
-        if (remote?.plan_id !== planId || remote?.custom_id !== user.id + ':' + sku) {
-          return Response.json({
-            error: 'PayPal subscription ownership or plan could not be verified',
-          }, { status: 409 });
-        }
         const periodEnd = paypalPeriodEndForStatus('active', remote?.billing_info?.next_billing_time);
         if (typeof periodEnd !== 'string' || Date.parse(periodEnd) <= Date.now()) {
           return Response.json({ error: 'PayPal subscription is active but its billing period requires verification' }, { status: 409 });

@@ -45,6 +45,17 @@ describe("Studio same-track split integration", () => {
     expect(getClipSourceTimeAtTime(track, 8)).toBe(8);
   });
 
+  it("ignores stale play requests after Stop or a rapid transport restart", async () => {
+    const studio = await readFile("src/pages/Studio.jsx", "utf8");
+    expect(studio).toContain("const transportPlayingRef = useRef(false)");
+    expect(studio).toContain("const transportPlayGenerationRef = useRef(0)");
+    expect(studio).toContain("const requestGeneration = ++transportPlayGenerationRef.current");
+    expect(studio).toContain("transportPlayingRef.current = !isPlaying");
+    expect(studio).toContain("transportPlayGenerationRef.current !== requestGeneration || !transportPlayingRef.current");
+    expect(studio).toContain("const shouldPlay = transportPlayingRef.current &&");
+    expect(studio).toContain("transportPlayGenerationRef.current += 1;");
+  });
+
   it("deduplicates pending playback starts and blocks stale cross-origin fallback", async () => {
     const studio = await readFile("src/pages/Studio.jsx", "utf8");
     expect(studio).toContain("const pendingAudioStartsRef = useRef(new WeakSet())");

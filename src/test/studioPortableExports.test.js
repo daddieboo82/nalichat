@@ -65,9 +65,14 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("for (const [takeIndex, take] of playlists.entries())");
     expect(handler).toContain("playlists: savedPlaylists");
     expect(handler).toContain("Too many tracks and takes for a portable backup.");
+    expect(handler).toContain("Too many tracks for a restorable Studio backup.");
+    expect(handler).toContain("new TextEncoder().encode(manifestText).byteLength");
+    expect(handler).toContain("Studio session metadata exceeds the 2 MB restore limit.");
+    expect(handler).toContain("Session backup exceeds the 1 GB expanded-size restore limit.");
+    expect(handler).toContain("Studio session ZIP exceeds the 1 GB restore limit.");
     expect(handler).toContain("studioAudioExtension({");
     expect(handler).toContain("if (!extension) throw new Error");
-    expect(handler).toContain('zip.file("session.json", JSON.stringify(payload, null, 2))');
+    expect(handler).toContain('zip.file("session.json", manifestText)');
     expect(handler).toContain('format: "nalichat-studio-session"');
     expect(handler).toContain("version: 2");
     expect(handler).toContain(".nalistudio.zip");

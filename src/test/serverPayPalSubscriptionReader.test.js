@@ -24,7 +24,7 @@ describe('server-only PayPal read adapter (all HTTP mocked)', () => {
   it('uses sandbox OAuth and authenticated GET; does not mutate provider state', async () => {
     const calls = [];
     const read = setup(calls);
-    const proof = await verifyPayPalTerminalCheckout(intent, read);
+    const proof = await verifyPayPalTerminalCheckout(intent, read, 'P-MOCKPLAN123');
     expect(proof.verified).toBe(true);
     expect(calls).toHaveLength(2);
     expect(calls[0].url).toBe('https://api-m.sandbox.paypal.com/v1/oauth2/token');
@@ -89,6 +89,6 @@ describe('server-only PayPal read adapter (all HTTP mocked)', () => {
         : response({ id: intent.providerId, status: 'CANCELLED',
           custom_id: intent.accountId + ':' + intent.sku, plan_id: 'P-MOCKPLAN123' }),
     });
-    await expect(verifyPayPalTerminalCheckout(intent, reader)).rejects.toThrow();
+    await expect(verifyPayPalTerminalCheckout(intent, reader, 'P-MOCKPLAN123')).rejects.toThrow();
   });
 });

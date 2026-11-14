@@ -36,6 +36,7 @@ function PlanCard({
   isCurrent,
   isPaidSubscriber,
   isStarting,
+  isCheckoutPaused,
   onSelect,
   onContinueFree,
 }) {
@@ -79,11 +80,11 @@ function PlanCard({
       {paid ? (
         <Button
           className="ui-hover min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10"
-          disabled={isStarting || isCurrent || isPaidSubscriber}
+          disabled={isStarting || isCurrent || isPaidSubscriber || isCheckoutPaused}
           onClick={() => onSelect(plan.id)}
         >
           {isStarting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-          {isCurrent ? "Current plan" : isPaidSubscriber ? "Manage in Settings" : cta}
+          {isCurrent ? "Current plan" : isPaidSubscriber ? "Manage in Settings" : isCheckoutPaused ? "Temporarily unavailable" : cta}
         </Button>
       ) : (
         <Button className="ui-hover min-h-12 w-full rounded-xl font-semibold" variant="outline" onClick={onContinueFree}>
@@ -186,6 +187,10 @@ export default function PricingPlans({
   const startCheckout = async (planId) => {
     const sku = subscriptionSku(planId, period);
     if (!sku || startingPlan) return;
+    if (!appleIAP.available) {
+      toast.error("New PayPal subscriptions are temporarily unavailable while billing safety is verified.");
+      return;
+    }
 
     trackPaywallEvent("paywall_tier_select", {
       variant,
@@ -312,6 +317,13 @@ export default function PricingPlans({
           <div className="mx-auto mt-6 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-5">{[[MessageSquare,"Messages"],[Music2,"Studio"],[Files,"File sharing"],[Sparkles,"NALI.ai"],[ShieldCheck,"Privacy"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-card/60 px-3 py-2 text-xs font-semibold"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" />{label}</div>)}</div>
         </div>
 
+        {!appleIAP.available && (
+          <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-border bg-card px-5 py-4 text-center" role="status">
+            <p className="font-semibold">New PayPal subscriptions are temporarily unavailable</p>
+            <p className="mt-2 text-sm text-muted-foreground">We are verifying billing safety before reopening checkout. You can continue using the free plan, and existing subscriptions remain managed in Settings.</p>
+          </div>
+        )}
+
         {subscription.hasPending && !subscription.hasPaidAccess && !checkoutCanceled && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-primary/40 bg-primary/5 p-4 text-center" role="status">
             Left PayPal before approving? Choose the same plan below to resume checkout. Your subscription starts only after you approve payment in PayPal.
@@ -370,6 +382,7 @@ export default function PricingPlans({
               cta={period === "monthly" ? (planId === "premium" ? "Upgrade to Premium" : "Go Premium Plus") : paidCta}
               isCurrent={paidSubscriber && subscription.plan === planId}
               isPaidSubscriber={paidSubscriber}
+              isCheckoutPaused={!appleIAP.available}
               isStarting={startingPlan === planId || isLoading || appleIAP.purchasingProductId === subscriptionSku(planId, period)}
               onSelect={startCheckout}
               onContinueFree={continueFree}

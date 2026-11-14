@@ -144,6 +144,17 @@ describe('PayPal subscription integration contracts', () => {
     expect(dashboard).toContain('Some provider statuses could not be verified');
   });
 
+  it('counts PayPal status as verified only after agreement and plan identity checks', async () => {
+    const audit = await read('base44/functions/getPendingPayPalAudit/entry.ts');
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(audit).toContain('remote.id !== record.subscription_id');
+    expect(audit).toContain('remote.plan_id !== record.paypal_plan_id');
+    expect(audit).toContain("status: 'identity_mismatch', providerStatusVerified: false");
+    expect(audit).toContain('providerStatusVerified: knownStatus');
+    expect(audit).toContain("['APPROVAL_PENDING', 'APPROVED', 'ACTIVE', 'SUSPENDED'");
+    expect(dashboard).toContain('PayPal agreement or plan identity mismatch detected');
+  });
+
   it('captures subscription_id for analytics deduplication on ThankYou return page', async () => {
     const thankYouSource = await read('src/pages/ThankYou.jsx');
     expect(thankYouSource).toContain('urlParams.get("subscription_id")');

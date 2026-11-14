@@ -31,6 +31,7 @@ describe('staging-only checkout SQL design (not executed in PostgreSQL)', () => 
     expect(occurrences('constraint checkout_account_intent_key_unique')).toBe(1);
     expect(normalized).toContain('unique (account_id, client_idempotency_key) );');
     expect(normalized).toContain('provider_id text check (');
+    expect(normalized).toContain('check (fencing_version between 1 and 9007199254740991)');
   });
 
   it('revokes public checkout table access', () => {

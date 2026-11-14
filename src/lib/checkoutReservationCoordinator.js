@@ -27,6 +27,10 @@ export function validateCheckoutIntentInput(input) {
   if (typeof input.requestKey !== 'string' || !/^[A-Za-z0-9._~-]{16,128}$/.test(input.requestKey)) {
     throw new Error('Invalid request key');
   }
+  if (typeof input.providerRequestId !== 'string'
+    || !/^[A-Za-z0-9._~-]{16,128}$/.test(input.providerRequestId)) {
+    throw new Error('Stable provider request identity required');
+  }
 }
 /**
  * adapter.claimAtomic must atomically enforce at most one outstanding
@@ -43,6 +47,9 @@ export async function claimCheckoutIntent(adapter, input) {
   }
   if (outcome.kind === 'created') {
     if (outcome.intent?.accountId !== input.accountId || outcome.intent?.state !== 'reserved'
+      || outcome.intent?.providerRequestId !== input.providerRequestId
+      || outcome.intent?.provider !== input.provider || outcome.intent?.sku !== input.sku
+      || outcome.intent?.requestKey !== input.requestKey
       || !Number.isSafeInteger(outcome.intent?.version) || outcome.intent.version < 1) {
       throw new Error('Reservation proof invalid');
     }

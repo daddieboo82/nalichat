@@ -75,9 +75,13 @@ Deno.serve(async (req) => {
           matchesCatalog, httpStatus: response.status });
       } catch { planChecks.push({ sku: item.sku, status: 'request_failed' }); }
     }
-    const pending = await base44.asServiceRole.entities.Subscription.filter(
-      { provider: 'paypal', status: 'pending' }, '-created_date', 100,
+    // Fetch one extra row to detect truncation without making an unbounded
+    // number of provider calls. Never report the first page as a full audit.
+    const pendingPage = await base44.asServiceRole.entities.Subscription.filter(
+      { provider: 'paypal', status: 'pending' }, '-created_date', 101,
     );
+    const hasMorePending = pendingPage.length > 100;
+    const pending = pendingPage.slice(0, 100);
     const results = [];
     for (const record of pending) {
       if (!record.subscription_id || record.paypal_environment !== environment) {
@@ -98,6 +102,7 @@ Deno.serve(async (req) => {
           subscriptionId: record.subscription_id,
           plan: record.sku || record.plan,
           status: String(remote.status || 'unknown').toUpperCase(),
+          providerStatusVerified: typeof remote.status === 'string' && remote.status.trim().length > 0,
           paymentRecorded: Boolean(remote.billing_info?.last_payment?.time),
         });
       } catch {
@@ -105,7 +110,9 @@ Deno.serve(async (req) => {
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
-      environment, referenceCheck, planChecks, checked: results.length, results });
+      environment, referenceCheck, planChecks, checked: results.length,
+      verifiedCount: results.filter((result) => result.providerStatusVerified === true).length,
+      hasMorePending, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

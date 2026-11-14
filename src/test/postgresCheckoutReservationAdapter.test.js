@@ -12,6 +12,16 @@ const row = (changes = {}) => ({
   provider_request_id: request.providerRequestId,
   provider_id: null, state: 'reserved', fencing_version: 1, ...changes,
 });
+const casIdentity = {
+  intentId: 'reserved-1',
+  accountId: request.accountId,
+  provider: request.provider,
+  sku: request.sku,
+  requestKey: request.requestKey,
+  providerRequestId: request.providerRequestId,
+  providerId: null,
+};
+
 describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
   it('rejects malformed direct atomic claims without executing SQL', async () => {
     const invalid = [
@@ -273,11 +283,13 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     const query = vi.fn();
     const adapter = createPostgresCheckoutReservationAdapter(query);
     await expect(adapter.compareAndSwap({
+      ...casIdentity,
       intentId: 'reserved-1', accountId: request.accountId,
       expectedState: 'local_recorded', expectedVersion: 5,
       nextState: 'verified_terminal',
     })).rejects.toThrow('Verified terminal release store unavailable');
     await expect(adapter.compareAndSwap({
+      ...casIdentity,
       intentId: 'reserved-1', accountId: request.accountId,
       expectedState: 'provider_request_started', expectedVersion: 2,
       nextState: 'provider_created',
@@ -299,11 +311,13 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       ['nonexistent', 'local_recorded'],
     ]) {
       await expect(adapter.compareAndSwap({
+      ...casIdentity,
         intentId: 'reserved-1', accountId: request.accountId,
         expectedState, expectedVersion: 2, nextState,
       })).rejects.toThrow('Invalid checkout state transition');
     }
     await expect(adapter.compareAndSwap({
+      ...casIdentity,
       intentId: 'reserved-1', accountId: request.accountId,
       expectedState: 'reserved', expectedVersion: Number.MAX_SAFE_INTEGER + 1,
       nextState: 'provider_request_started',
@@ -315,6 +329,7 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     const query = vi.fn();
     const adapter = createPostgresCheckoutReservationAdapter(query);
     await expect(adapter.compareAndSwap({
+      ...casIdentity,
       intentId: 'reserved-1', accountId: request.accountId,
       expectedState: 'reserved', expectedVersion: Number.MAX_SAFE_INTEGER,
       nextState: 'provider_request_started',
@@ -334,6 +349,10 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     for (const changes of [
       { intent_id: 'different-intent' },
       { account_id: 'different-account' },
+      { provider: 'wix' },
+      { sku: 'premium_plus_yearly' },
+      { client_idempotency_key: 'other-checkout-key-12345' },
+      { provider_request_id: 'other-provider-key-12345' },
       { state: 'provider_outcome_unknown' },
       { fencing_version: 3 },
     ]) {
@@ -342,6 +361,7 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       });
       const adapter = createPostgresCheckoutReservationAdapter(query);
       await expect(adapter.compareAndSwap({
+      ...casIdentity,
         intentId: 'reserved-1', accountId: request.accountId,
         expectedState: 'reserved', expectedVersion: 1,
         nextState: 'provider_request_started',
@@ -352,10 +372,30 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       async () => ({ rows: [] }),
     );
     expect(await stale.compareAndSwap({
+      ...casIdentity,
       intentId: 'reserved-1', accountId: request.accountId,
       expectedState: 'reserved', expectedVersion: 1,
       nextState: 'provider_request_started',
     })).toBeNull();
+  });
+
+  it('rejects incomplete or mismatched CAS identity before issuing SQL', async () => {
+    const query = vi.fn();
+    const adapter = createPostgresCheckoutReservationAdapter(query);
+    for (const bad of [
+      { provider: 'unknown' },
+      { sku: 'unknown_plan' },
+      { requestKey: 'short' },
+      { providerRequestId: 'bad key with spaces' },
+      { providerId: 'I-PREMATURE123456' },
+    ]) {
+      await expect(adapter.compareAndSwap({
+        ...casIdentity, ...bad,
+        expectedState: 'reserved', expectedVersion: 1,
+        nextState: 'provider_request_started',
+      })).rejects.toThrow('Invalid checkout state transition');
+    }
+    expect(query).not.toHaveBeenCalled();
   });
 
   it('requires a version-and-state matched atomic update', async () => {
@@ -370,8 +410,12 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     const updated = await advanceCheckoutIntent(adapter, reservation, 'provider_request_started');
     expect(updated.version).toBe(2);
     expect(query.mock.calls[0][0]).toContain('fencing_version = $4');
+    expect(query.mock.calls[0][0]).toContain('provider = $6 and sku = $7');
+    expect(query.mock.calls[0][0]).toContain('client_idempotency_key = $8 and provider_request_id = $9');
+    expect(query.mock.calls[0][0]).toContain('provider_id is null');
     expect(query.mock.calls[0][1]).toEqual([
       reservation.intentId, reservation.accountId, 'reserved', 1, 'provider_request_started',
+      reservation.provider, reservation.sku, reservation.requestKey, reservation.providerRequestId,
     ]);
     const stale = createPostgresCheckoutReservationAdapter(async () => ({ rows: [] }));
     await expect(advanceCheckoutIntent(stale, reservation, 'provider_request_started')).rejects.toThrow();

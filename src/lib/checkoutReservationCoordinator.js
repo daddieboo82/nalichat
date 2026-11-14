@@ -100,6 +100,8 @@ export async function recordVerifiedProviderCreation(adapter, intent) {
     || evidence.intentId !== intent.intentId
     || evidence.accountId !== intent.accountId
     || evidence.provider !== intent.provider
+    || evidence.sku !== intent.sku
+    || evidence.requestKey !== intent.requestKey
     || evidence.providerRequestId !== intent.providerRequestId
     || typeof evidence.providerId !== 'string'
     || !/^[A-Za-z0-9-]{8,128}$/.test(evidence.providerId)) {

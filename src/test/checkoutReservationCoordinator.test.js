@@ -160,6 +160,8 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
       { ...proof, providerId: 'not/valid/id' },
       { ...proof, state: 'reserved', version: 2 },
       { ...proof, state: 'reserved', version: 1, providerId: 'I-BOUNDAGREEMENT1234' },
+      { ...proof, state: 'provider_request_started', providerId: 'I-PREMATURE123456' },
+      { ...proof, state: 'provider_outcome_unknown', providerId: 'I-PREMATURE123456' },
       { ...proof, state: 'provider_created', providerId: null },
       { ...proof, state: 'local_record_failed', providerId: null },
       { ...proof, state: 'local_recorded', providerId: null },

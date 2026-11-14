@@ -289,6 +289,22 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('does not silently acknowledge unknown subscription UPDATED statuses', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const guard = code.indexOf("if (event.event_type === 'BILLING.SUBSCRIPTION.UPDATED' &&");
+    const update = code.indexOf('await entities.Subscription.update(record.id, update)');
+    const success = code.indexOf("processing_state: 'processed'", update);
+    expect(guard).toBeGreaterThan(0);
+    expect(update).toBeGreaterThan(guard);
+    expect(success).toBeGreaterThan(update);
+    const guarded = code.slice(guard, update);
+    expect(guarded).toContain('!newStatus');
+    expect(guarded).toContain("!== 'APPROVED'");
+    expect(guarded).toContain("processing_state: 'failed'");
+    expect(guarded).toContain("status: 503");
+    expect(guarded).toContain('Updated PayPal subscription has missing or unsupported lifecycle status');
+  });
+
   it('requires current provider ACTIVE status and matching plan for a pending webhook activation', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     expect(code).toContain("const needsCurrentProviderStatus =");

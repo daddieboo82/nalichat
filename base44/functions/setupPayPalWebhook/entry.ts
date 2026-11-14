@@ -43,9 +43,28 @@ Deno.serve(async (req) => {
     if (existing && !existing.startsWith('REPLACE_')) return Response.json({ success: true, reused: true, webhookId: existing });
 
     const accessToken = await token();
-    const appId = secrets.get('BASE44_APP_ID') || 'cbef744a8545c389ef439ea6';
-    const webhookUrl = secrets.get('PAYPAL_WEBHOOK_URL') ||
-      `https://base44-dispatcher-production.base44.workers.dev/api/apps/${appId}/functions/paypalWebhook`;
+    // Never register a webhook to a fallback app: a misdirected PayPal event
+    // may leave the real account's subscription state unreconciled.
+    const configuredWebhookUrl = String(secrets.get('PAYPAL_WEBHOOK_URL') || '').trim();
+    const configuredAppId = String(secrets.get('BASE44_APP_ID') || '').trim();
+    if (!configuredWebhookUrl && !/^[a-f0-9]{24}$/i.test(configuredAppId)) {
+      return Response.json({
+        error: 'Set BASE44_APP_ID or PAYPAL_WEBHOOK_URL before registering a webhook',
+      }, { status: 503 });
+    }
+    const webhookUrl = configuredWebhookUrl ||
+      `https://base44-dispatcher-production.base44.workers.dev/api/apps/${configuredAppId}/functions/paypalWebhook`;
+    let parsedWebhookUrl: URL;
+    try { parsedWebhookUrl = new URL(webhookUrl); } catch {
+      return Response.json({ error: 'Invalid webhook URL configuration' }, { status: 503 });
+    }
+    if (parsedWebhookUrl.protocol !== 'https:' || parsedWebhookUrl.username
+        || parsedWebhookUrl.password || parsedWebhookUrl.search || parsedWebhookUrl.hash
+        || parsedWebhookUrl.hostname !== 'base44-dispatcher-production.base44.workers.dev'
+        || parsedWebhookUrl.pathname !==
+          `/api/apps/${configuredAppId || parsedWebhookUrl.pathname.split('/')[3]}/functions/paypalWebhook`) {
+      return Response.json({ error: 'Webhook URL must target a verified Base44 app' }, { status: 503 });
+    }
     const r = await fetch(apiBase() + '/v1/notifications/webhooks', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },

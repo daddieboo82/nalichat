@@ -339,7 +339,7 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
       }
       return stored;
     },
-    async compareAndSwap({ intentId, accountId, expectedState, expectedVersion, nextState }) {
+    async compareAndSwap({ intentId, accountId, provider, sku, requestKey, providerRequestId, providerId, expectedState, expectedVersion, nextState }) {
       // Generic CAS may not create a provider agreement OR release the
       // account reservation. Terminal release needs a separate authenticated
       // provider reconciliation and audit operation (not yet implemented).
@@ -351,6 +351,11 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
       }
       if (typeof intentId !== 'string' || !intentId
         || typeof accountId !== 'string' || !accountId
+        || !['paypal', 'wix'].includes(provider)
+        || typeof sku !== 'string' || !/^(premium|premium_plus)_(monthly|yearly)$/.test(sku)
+        || typeof requestKey !== 'string' || !/^[A-Za-z0-9._~-]{16,128}$/.test(requestKey)
+        || typeof providerRequestId !== 'string' || !/^[A-Za-z0-9._~-]{16,128}$/.test(providerRequestId)
+        || providerId !== null
         || !Number.isSafeInteger(expectedVersion) || expectedVersion < 1
         || expectedVersion >= Number.MAX_SAFE_INTEGER
         || !Object.hasOwn(GENERIC_TRANSITIONS, expectedState)
@@ -363,9 +368,13 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
            updated_at = now()
          where intent_id = $1 and account_id = $2
            and state = $3 and fencing_version = $4
+           and provider = $6 and sku = $7
+           and client_idempotency_key = $8 and provider_request_id = $9
+           and provider_id is null
          returning intent_id, account_id, provider, sku, client_idempotency_key,
            provider_request_id, provider_id, state, fencing_version`,
-        [intentId, accountId, expectedState, expectedVersion, nextState],
+        [intentId, accountId, expectedState, expectedVersion, nextState,
+          provider, sku, requestKey, providerRequestId],
       );
       if (!Array.isArray(updated?.rows) || updated.rows.length > 1) {
         throw new Error('Checkout fencing response invalid');
@@ -373,7 +382,10 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
       if (updated.rows.length === 0) return null;
       const stored = asIntent(updated.rows[0]);
       if (!stored || stored.intentId !== intentId
-        || stored.accountId !== accountId || stored.state !== nextState
+        || stored.accountId !== accountId
+        || stored.provider !== provider || stored.sku !== sku
+        || stored.requestKey !== requestKey || stored.providerRequestId !== providerRequestId
+        || stored.providerId !== null || stored.state !== nextState
         || stored.version !== expectedVersion + 1) {
         throw new Error('Checkout fencing response proof invalid');
       }

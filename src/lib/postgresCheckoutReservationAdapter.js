@@ -47,6 +47,8 @@ function asIntent(row) {
     || (row.provider_id !== null
       && (typeof row.provider_id !== 'string'
         || !/^[A-Za-z0-9-]{8,128}$/.test(row.provider_id)))
+    || (['reserved', 'provider_request_started', 'provider_outcome_unknown'].includes(row.state)
+      && row.provider_id !== null)
     || (['provider_created', 'local_record_failed', 'local_recorded'].includes(row.state)
       && row.provider_id === null)) {
     throw new Error('Malformed PostgreSQL checkout reservation identity');

@@ -39,6 +39,7 @@ describe('draft provider terminal verification policy, isolated mocked provider'
       { ...good, custom_id: intent.accountId + ':premium_plus_monthly' },
       { ...good, custom_id: undefined },
       { ...good, plan_id: undefined },
+      { ...good, plan_id: 'P-DIFFERENT123' },
     ]) {
       await expect(verifyPayPalTerminalCheckout(intent, async () => remote, 'P-MOCKPLAN123')).rejects.toThrow();
     }
@@ -49,14 +50,23 @@ describe('draft provider terminal verification policy, isolated mocked provider'
       id: 'I-DIFFERENT12345', status: 'EXPIRED',
     }), 'P-MOCKPLAN123')).rejects.toThrow();
     await expect(verifyPayPalTerminalCheckout({ ...intent, providerId: '' },
-      async () => ({ id: '', status: 'EXPIRED' }))).rejects.toThrow();
+      async () => ({ id: '', status: 'EXPIRED' }), 'P-MOCKPLAN123')).rejects.toThrow();
     await expect(verifyPayPalTerminalCheckout({ ...intent, provider: 'wix' },
       async () => ({ id: intent.providerId, status: 'EXPIRED',
-      custom_id: intent.accountId + ':' + intent.sku, plan_id: 'P-MOCKPLAN123' }))).rejects.toThrow();
+      custom_id: intent.accountId + ':' + intent.sku, plan_id: 'P-MOCKPLAN123' }), 'P-MOCKPLAN123')).rejects.toThrow();
     await expect(verifyPayPalTerminalCheckout(intent, async () => {
       throw new Error('PayPal lookup unavailable');
-    })).rejects.toThrow();
+    }, 'P-MOCKPLAN123')).rejects.toThrow();
     await expect(verifyPayPalTerminalCheckout(intent, null, 'P-MOCKPLAN123')).rejects.toThrow();
+  });
+
+  it('rejects missing or untrusted expected plan ID even for expired subscription', async () => {
+    const remote = {
+      id: intent.providerId, status: 'EXPIRED',
+      custom_id: intent.accountId + ':' + intent.sku, plan_id: 'P-MOCKPLAN123',
+    };
+    await expect(verifyPayPalTerminalCheckout(intent, async () => remote)).rejects.toThrow();
+    await expect(verifyPayPalTerminalCheckout(intent, async () => remote, 'bad')).rejects.toThrow();
   });
 
   it('fails closed for Wix until independent provider verification is available', async () => {

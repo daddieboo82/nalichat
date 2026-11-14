@@ -113,6 +113,45 @@ def main():
         """)
         if not second:
             fail("FAIL: independent second account was blocked")
+        # A provider request whose outcome is unknown must continue to hold
+        # the account-wide reservation. An ambiguous provider response is
+        # NOT evidence that it is safe to start another paid subscription.
+        started_other = psql(f"""
+            update {schema}.checkout_intents
+               set state = 'provider_request_started',
+                   fencing_version = fencing_version + 1
+             where account_id = '{other}' and state = 'reserved'
+               and fencing_version = 1
+             returning intent_id;
+        """)
+        if not started_other:
+            fail("FAIL: other account could not enter provider request state")
+        unknown_other = psql(f"""
+            update {schema}.checkout_intents
+               set state = 'provider_outcome_unknown',
+                   fencing_version = fencing_version + 1
+             where account_id = '{other}' and state = 'provider_request_started'
+               and fencing_version = 2
+             returning intent_id;
+        """)
+        if not unknown_other:
+            fail("FAIL: other account could not retain unknown provider outcome")
+        blocked_unknown = psql(f"""
+            insert into {schema}.checkout_intents
+              (account_id, provider, sku, client_idempotency_key, provider_request_id)
+            values ('{other}', 'wix', 'premium_yearly',
+                    'unknown_retry_client_key_123456',
+                    'unknown_retry_provider_key_123456')
+            on conflict do nothing returning intent_id;
+        """)
+        if blocked_unknown:
+            fail("FAIL: ambiguous provider outcome allowed a second checkout")
+        if psql(f"""
+            select state || ':' || fencing_version || ':' ||
+                   coalesce(provider_id, 'null')
+              from {schema}.checkout_intents where account_id = '{other}';
+        """) != "provider_outcome_unknown:3:null":
+            fail("FAIL: unknown provider outcome reservation was not preserved")
         # A stale worker version cannot move the reserved state forward.
         stale = psql(f"""
             update {schema}.checkout_intents set state = 'provider_request_started',
@@ -323,7 +362,7 @@ def main():
         print("PASS: provider agreement IDs are unique and required for created states.")
         print("PASS: terminal index release and persistent request-key uniqueness.")
         print("PASS: 100 checkout attempts => exactly one outstanding claim;")
-        print("PASS: different account can claim; stale fencing token rejected.")
+        print("PASS: unknown provider outcomes retain the account-wide lock; stale fencing rejected.")
     finally:
         # Only the random schema created in this run is ever dropped.
         # Preserve first failure if cleanup is also unsuccessful.

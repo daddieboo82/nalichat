@@ -11,9 +11,8 @@ export async function resolvePayPalSubscriptionStatus(
   let remoteStatus = String(remote?.status || '').toUpperCase();
   if (remoteStatus !== 'APPROVED') return remoteStatus;
 
-  let activated = false;
   try {
-    const actRes = await fetch(
+    await fetch(
       apiBase + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId) + '/activate',
       {
         method: 'POST',
@@ -24,9 +23,8 @@ export async function resolvePayPalSubscriptionStatus(
         body: JSON.stringify({ reason: 'Activating subscription after customer approval' }),
       },
     );
-    activated = actRes.ok || actRes.status === 204;
   } catch {
-    activated = false;
+    // The next GET is the only source of verified activation state.
   }
   // A successful activation request is not independently verified paid access.
   // Stay APPROVED until a subsequent matching PayPal GET confirms ACTIVE.

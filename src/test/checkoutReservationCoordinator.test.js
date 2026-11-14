@@ -89,6 +89,36 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     expect((await claimCheckoutIntent(db.adapter, input(2))).kind).toBe('created');
   });
 
+  it('rejects mismatched existing reservations and redacts conflict details', async () => {
+    const request = input(1);
+    const proof = {
+      intentId: 'existing-reservation', accountId: request.accountId,
+      provider: request.provider, sku: request.sku,
+      requestKey: request.requestKey, providerRequestId: request.providerRequestId,
+      state: 'provider_outcome_unknown', version: 2,
+    };
+    const mock = (kind, intent) => ({ claimAtomic: async () => ({ kind, intent }) });
+    expect((await claimCheckoutIntent(mock('existing', proof), request)).kind).toBe('existing');
+    for (const broken of [
+      { ...proof, accountId: 'another-account' },
+      { ...proof, provider: 'wix' },
+      { ...proof, sku: 'premium_plus_monthly' },
+      { ...proof, requestKey: 'other-request-key-1234' },
+      { ...proof, providerRequestId: 'other-provider-id-1234' },
+      { ...proof, intentId: '' },
+      { ...proof, state: 'verified_terminal' },
+      { ...proof, state: 'unknown' },
+      { ...proof, version: Number.MAX_SAFE_INTEGER + 1 },
+    ]) {
+      await expect(claimCheckoutIntent(mock('existing', broken), request))
+        .rejects.toThrow('Reservation proof invalid');
+    }
+    const conflict = await claimCheckoutIntent(mock('conflict', {
+      ...proof, accountId: 'another-account', providerRequestId: 'do-not-leak',
+    }), request);
+    expect(conflict).toEqual({ kind: 'conflict', intent: null });
+  });
+
   it('fails closed if database adapter is absent or violates its contract', async () => {
     await expect(claimCheckoutIntent(null, input(0))).rejects.toThrow();
     await expect(claimCheckoutIntent({ claimAtomic: async () => ({ kind: 'conflict' }) }, {

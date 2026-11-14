@@ -21,7 +21,7 @@ function createFakeAtomicStore() {
         accountId: input.accountId, intentId: 'mock-' + (++counter),
         provider: input.provider, sku: input.sku, requestKey: input.requestKey,
         providerRequestId: input.providerRequestId,
-        state: 'reserved', version: 1,
+        state: 'reserved', version: 1, providerId: null,
       };
       outstanding.set(input.accountId, intent);
       all.set(intent.intentId, intent);

@@ -128,7 +128,8 @@ describe("pricing plans", () => {
 
     renderPricing({}, "/pricing?checkout=paypal_canceled");
 
-    expect(screen.getByText(/returned from PayPal without completing/i)).toBeTruthy();
+    expect(screen.getByText(/Your previous PayPal checkout was not completed/i)).toBeTruthy();
+    expect(screen.getByText(/Starting another PayPal checkout is temporarily unavailable/i)).toBeTruthy();
     expect(mockTrack).toHaveBeenCalledWith("checkout_canceled", {
       source: "studio_bounce",
       upgrade_feature: "studio.ai_mastering",
@@ -193,6 +194,16 @@ describe("pricing plans", () => {
     expect(upgrade.disabled).toBe(false);
     fireEvent.click(upgrade);
     expect(mockApple.purchase).toHaveBeenCalledWith("premium_monthly");
+    expect(mockStartCheckout).not.toHaveBeenCalled();
+  });
+
+  it("does not tell users to restart unresolved PayPal checkout while purchases are paused", () => {
+    mockSubscription.current.subscription.hasPending = true;
+    renderPricing({ variantOverride: "A" });
+
+    expect(screen.getByText(/A previous PayPal checkout is pending/i)).toBeTruthy();
+    expect(screen.getByText(/New PayPal checkout attempts are paused while billing safety is verified/i)).toBeTruthy();
+    expect(screen.queryByText(/Choose the same plan below to resume checkout/i)).toBeNull();
     expect(mockStartCheckout).not.toHaveBeenCalled();
   });
 

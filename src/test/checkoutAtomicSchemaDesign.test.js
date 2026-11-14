@@ -21,6 +21,35 @@ describe('staging-only atomic checkout SQL design (not deployed)', () => {
     );
   });
 
+  it('has one complete CREATE TABLE and no duplicated or truncated migration tail', () => {
+    expect((normalized.match(/create table if not exists billing_private\\.checkout_intents/g) || []))
+      .toHaveLength(1);
+    expect((normalized.match(/checkout_provider_agreement_unique/g) || []))
+      .toHaveLength(1);
+    expect((normalized.match(/checkout_created_has_provider_id/g) || []))
+      .toHaveLength(1);
+    expect(normalized).toContain("provider_id ~ '^[a-za-z0-9-]{8,128}
+    expect(normalized).toContain('create schema if not exists billing_private;');
+    expect(normalized).toContain('alter table billing_private.checkout_intents enable row level security;');
+    expect(normalized).toContain('revoke all on billing_private.checkout_intents from public, anon, authenticated;');
+    expect(normalized).not.toMatch(/grant\s+(?:all|insert|update|delete)\s+on\s+billing_private\.checkout_intents\s+to\s+(?:public|anon|authenticated)/);
+  });
+
+  it('requires a durable retry identity and fencing version', () => {
+    for (const field of ['account_id', 'intent_id', 'provider_request_id', 'client_idempotency_key', 'fencing_version']) {
+      expect(normalized).toContain(field);
+    }
+    expect(normalized).toContain('state <> \'verified_terminal\'');
+  });
+});
+");
+    expect(normalized).toMatch(
+      /constraint checkout_account_intent_key_unique\\s+unique \\(account_id, client_idempotency_key\\)\\s*\\);/,
+    );
+    expect((normalized.match(/fencing_version bigint not null default 1/g) || []))
+      .toHaveLength(1);
+  });
+
   it('keeps the reservation table out of the public data API', () => {
     expect(normalized).toContain('create schema if not exists billing_private;');
     expect(normalized).toContain('alter table billing_private.checkout_intents enable row level security;');

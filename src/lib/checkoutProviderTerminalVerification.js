@@ -17,6 +17,8 @@ export async function verifyPayPalTerminalCheckout(intent, readPayPalSubscriptio
     || typeof intent.accountId !== 'string' || !intent.accountId
     || intent.accountId.includes(':')
     || !/^(premium|premium_plus)_(monthly|yearly)$/.test(intent.sku)
+    || typeof intent.requestKey !== 'string'
+    || !/^[A-Za-z0-9._~-]{16,128}$/.test(intent.requestKey)
     || typeof intent.providerRequestId !== 'string' || !intent.providerRequestId
     || typeof intent.providerId !== 'string'
     || !/^[A-Za-z0-9-]{8,128}$/.test(intent.providerId)
@@ -46,7 +48,10 @@ export async function verifyPayPalTerminalCheckout(intent, readPayPalSubscriptio
     intentId: intent.intentId,
     accountId: intent.accountId,
     provider: 'paypal',
+    sku: intent.sku,
+    requestKey: intent.requestKey,
     providerRequestId: intent.providerRequestId,
+    providerId: intent.providerId,
   });
 }
 

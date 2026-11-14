@@ -89,17 +89,12 @@ Deno.serve(async (req) => {
         webhookId: existing, webhookUrl, eventTypes: EVENTS,
       });
     }
-    const r = await fetch(apiBase() + '/v1/notifications/webhooks', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: webhookUrl, event_types: EVENTS.map((name) => ({ name })) }),
-    });
-    const data = await r.json();
-    if (!r.ok || !data.id) {
-      console.error('PayPal webhook registration failed', data);
-      return Response.json({ error: 'Unable to register PayPal webhook', details: data }, { status: 502 });
-    }
-    return Response.json({ success: true, webhookId: data.id, webhookUrl, eventTypes: EVENTS });
+    // This runtime has no verified atomic way to persist PAYPAL_WEBHOOK_ID.
+    // Creating a remote webhook here would leave an untracked registration,
+    // and retrying this endpoint could create duplicates.
+    return Response.json({
+      error: 'PayPal webhook registration requires controlled provisioning and persisted webhook ID',
+    }, { status: 503 });
   } catch (error) {
     console.error('PayPal webhook setup failed', error);
     return Response.json({ error: error instanceof Error ? error.message : 'PayPal webhook setup failed' }, { status: 500 });

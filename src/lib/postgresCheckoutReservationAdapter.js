@@ -355,7 +355,10 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
         || typeof sku !== 'string' || !/^(premium|premium_plus)_(monthly|yearly)$/.test(sku)
         || typeof requestKey !== 'string' || !/^[A-Za-z0-9._~-]{16,128}$/.test(requestKey)
         || typeof providerRequestId !== 'string' || !/^[A-Za-z0-9._~-]{16,128}$/.test(providerRequestId)
-        || providerId !== null
+        || (['reserved', 'provider_request_started'].includes(expectedState)
+          ? providerId !== null
+          : expectedState === 'provider_created'
+            && (typeof providerId !== 'string' || !/^[A-Za-z0-9-]{8,128}$/.test(providerId)))
         || !Number.isSafeInteger(expectedVersion) || expectedVersion < 1
         || expectedVersion >= Number.MAX_SAFE_INTEGER
         || !Object.hasOwn(GENERIC_TRANSITIONS, expectedState)
@@ -370,11 +373,11 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
            and state = $3 and fencing_version = $4
            and provider = $6 and sku = $7
            and client_idempotency_key = $8 and provider_request_id = $9
-           and provider_id is null
+           and provider_id is not distinct from $10
          returning intent_id, account_id, provider, sku, client_idempotency_key,
            provider_request_id, provider_id, state, fencing_version`,
         [intentId, accountId, expectedState, expectedVersion, nextState,
-          provider, sku, requestKey, providerRequestId],
+          provider, sku, requestKey, providerRequestId, providerId],
       );
       if (!Array.isArray(updated?.rows) || updated.rows.length > 1) {
         throw new Error('Checkout fencing response invalid');
@@ -385,7 +388,7 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
         || stored.accountId !== accountId
         || stored.provider !== provider || stored.sku !== sku
         || stored.requestKey !== requestKey || stored.providerRequestId !== providerRequestId
-        || stored.providerId !== null || stored.state !== nextState
+        || stored.providerId !== providerId || stored.state !== nextState
         || stored.version !== expectedVersion + 1) {
         throw new Error('Checkout fencing response proof invalid');
       }

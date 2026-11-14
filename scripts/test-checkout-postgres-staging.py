@@ -180,7 +180,7 @@ def main():
         # The DO block must fail unless the expected SQLSTATE is observed.
         # A generic success or unrelated DB failure is not a pass.
         psql(f"""
-            do $
+            do $checkout_test$
             begin
               update {schema}.checkout_intents
                  set state = 'provider_created', provider_id = '{provider_id}'
@@ -188,10 +188,10 @@ def main():
               raise exception 'FAIL: duplicated provider subscription ID accepted';
             exception when unique_violation then
               null;
-            end $;
+            end $checkout_test$;
         """)
         psql(f"""
-            do $
+            do $checkout_test$
             begin
               update {schema}.checkout_intents
                  set state = 'provider_created'
@@ -199,7 +199,7 @@ def main():
               raise exception 'FAIL: provider_created without provider_id accepted';
             exception when check_violation then
               null;
-            end $;
+            end $checkout_test$;
         """)
         unchanged = psql(f"""
             select state || ':' || coalesce(provider_id, 'null')

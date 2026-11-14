@@ -533,6 +533,20 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(beforeCreate).toContain('status: 409');
   });
 
+  it('defaults PayPal recurring checkout to disabled until atomic serialization is proven', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    const gate = code.indexOf("secrets.get('PAYPAL_CHECKOUT_SERIALIZATION_VERIFIED') !== 'true'");
+    const lookup = code.indexOf('const allSubs = await loadUserSubscriptions(');
+    const create = code.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions', {");
+    expect(gate).toBeGreaterThan(0);
+    expect(lookup).toBeGreaterThan(gate);
+    expect(create).toBeGreaterThan(lookup);
+    const guarded = code.slice(gate, lookup);
+    expect(guarded).toContain('status: 503');
+    expect(guarded).toContain('checkout safety is verified');
+    expect(code).toContain('This operator-only flag is a gate, NOT the serialization mechanism.');
+  });
+
   it('blocks a second PayPal checkout for an unresolved existing active subscription', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(code).toContain("const unresolvedActivePayPal = allSubs.some");

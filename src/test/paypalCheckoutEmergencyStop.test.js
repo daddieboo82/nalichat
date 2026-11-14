@@ -42,7 +42,7 @@ describe('PayPal emergency checkout safety stop (#1048)', () => {
   it.each(['true', 'false', undefined])('returns 503 before DB or PayPal side effects when the legacy flag is %s', async (legacyFlag) => {
     // Compile the *actual handler* with TypeScript to catch runtime mistakes
     // that source-string assertions cannot detect. No Base44 or PayPal network.
-    const source = (await load()).replace(/^import .*;\\n/gm, '');
+    const source = (await load()).replace(/^import .*;\n/gm, '');
     const compiled = ts.transpileModule(source, {
       compilerOptions: {
         target: ts.ScriptTarget.ES2022,

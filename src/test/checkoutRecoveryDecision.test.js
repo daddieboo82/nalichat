@@ -41,6 +41,16 @@ describe('draft checkout crash recovery policy (no payment API calls)', () => {
     }).action).toBe('no_checkout_create');
   });
 
+  it('rejects a reserved checkout with an advanced fencing version', () => {
+    for (const version of [2, 3, 100]) {
+      expect(() => decideCheckoutRecovery({
+        ...base, state: 'reserved', version,
+      })).toThrow('Checkout recovery provider identity inconsistent with state');
+    }
+    expect(decideCheckoutRecovery({ ...base, state: 'reserved', version: 1 }))
+      .toEqual({ action: 'no_checkout_create', reason: 'needs_atomic_start' });
+  });
+
   it('refuses an unrecorded agreement identifier after creation', () => {
     for (const state of ['provider_created', 'local_record_failed', 'local_recorded']) {
       expect(() => decideCheckoutRecovery({ ...base, state })).toThrow();

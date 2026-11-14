@@ -90,6 +90,14 @@ describe('PayPal subscription integration contracts', () => {
     expect(source).toContain('success: true, reused: true, verified: true');
   });
 
+  it('does not create an untracked PayPal webhook without durable ID persistence', async () => {
+    const source = await read('base44/functions/setupPayPalWebhook/entry.ts');
+    expect(source).not.toContain("fetch(apiBase() + '/v1/notifications/webhooks', {");
+    expect(source).toContain('PayPal webhook registration requires controlled provisioning and persisted webhook ID');
+    expect(source).toContain('status: 503');
+    expect(source).toContain("'/v1/notifications/webhooks/' + encodeURIComponent(existing)");
+  });
+
   it('captures subscription_id for analytics deduplication on ThankYou return page', async () => {
     const thankYouSource = await read('src/pages/ThankYou.jsx');
     expect(thankYouSource).toContain('urlParams.get("subscription_id")');

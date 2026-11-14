@@ -187,8 +187,14 @@ export function requiresExistingPayPalCheckoutReview(
   currentPeriodEnd: unknown,
   now = new Date().toISOString(),
 ): boolean {
-  if (provider !== 'paypal' || normalizePlan(plan) === 'free') return false;
+  if (provider !== 'paypal') return false;
   const currentStatus = normalizeStatus(status);
+  // A PayPal agreement with missing or malformed local tier metadata still
+  // needs provider verification before another provider begins recurring
+  // billing. An asserted local "free" tier is not proof of no PayPal charge.
+  if (normalizePlan(plan) === 'free' &&
+      (currentStatus === 'active' || currentStatus === 'pending' ||
+       currentStatus === 'incomplete' || currentStatus === 'unpaid')) return true;
   // An unresolved approval can still become billable at PayPal. Until its
   // lifecycle is verified, do not allow a parallel Stripe/Wix agreement.
   if (currentStatus === 'pending' || currentStatus === 'incomplete' || currentStatus === 'unpaid') return true;

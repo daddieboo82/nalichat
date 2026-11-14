@@ -49,6 +49,13 @@ async function loadUserSubscriptions(entity: any, userId: string): Promise<any[]
   }
 }
 
+// This cannot be switched on by environment configuration. Replace only
+// when the checkout endpoint actually acquires and verifies a durable atomic
+// account-level reservation BEFORE any provider agreement is created.
+function hasAtomicPayPalCheckoutReservation(): boolean {
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
   try {
@@ -74,13 +81,14 @@ Deno.serve(async (req) => {
     const planId = secrets.get(item.secret);
     if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
 
-    // RELEASE GATE (#1047): the existing Subscription scan is not an atomic
-    // per-user reservation. Two simultaneous requests with distinct browser
-    // idempotency keys can both create recurring PayPal agreements. Fail
-    // closed until a durable serialization primitive and its concurrency /
-    // uncertain-response recovery tests have been independently verified.
-    // This operator-only flag is a gate, NOT the serialization mechanism.
-    if (secrets.get('PAYPAL_CHECKOUT_SERIALIZATION_VERIFIED') !== 'true') {
+    // RELEASE GATE (#1047): a feature flag is NOT an atomic reservation.
+    // Two concurrent checkout requests with different idempotency keys were
+    // observed creating two agreements in an isolated mock test when an
+    // operator enabled the old secret flag. Remove that manual bypass.
+    // This gate must stay closed until a durable, transaction-backed per-user
+    // reservation is implemented and called by this route, with provider-safe
+    // uncertain-response recovery and concurrency tests.
+    if (!hasAtomicPayPalCheckoutReservation()) {
       return Response.json({
         error: 'New PayPal subscriptions are temporarily unavailable until checkout safety is verified',
       }, { status: 503 });

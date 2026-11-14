@@ -164,6 +164,11 @@ export async function advanceCheckoutIntent(adapter, intent, nextState) {
     updated = await adapter.compareAndSwap({
       intentId: intent.intentId,
       accountId: intent.accountId,
+      provider: intent.provider,
+      sku: intent.sku,
+      requestKey: intent.requestKey,
+      providerRequestId: intent.providerRequestId,
+      providerId: intent.providerId,
       expectedState: intent.state,
       expectedVersion: intent.version,
       nextState,

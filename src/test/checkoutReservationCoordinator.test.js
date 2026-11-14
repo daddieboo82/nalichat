@@ -36,6 +36,25 @@ function createFakeAtomicStore() {
         providerRequestId: intent.providerRequestId,
       };
     },
+    async releaseVerifiedTerminal(intent) {
+      const evidence = await this.verifyTerminalOutcome(intent);
+      if (!evidence || evidence.verified !== true || evidence.terminal !== true
+        || evidence.intentId !== intent.intentId
+        || evidence.accountId !== intent.accountId
+        || evidence.provider !== intent.provider
+        || evidence.providerRequestId !== intent.providerRequestId
+        || !intent.providerId) {
+        throw new Error('Verified provider terminal outcome required');
+      }
+      const current = all.get(intent.intentId);
+      if (!current || current.state !== intent.state
+        || current.version !== intent.version
+        || current.providerId !== intent.providerId) return null;
+      const released = { ...current, state: 'verified_terminal', version: current.version + 1 };
+      all.set(intent.intentId, released);
+      outstanding.delete(intent.accountId);
+      return { ...released };
+    },
     async verifyCreatedSubscription(intent) {
       return {
         verified: true, intentId: intent.intentId, accountId: intent.accountId,
@@ -154,19 +173,19 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     const recorded = await advanceCheckoutIntent(db.adapter, created, 'local_record_failed');
     const before = db.calls.cas;
     await expect(advanceCheckoutIntent({
-      ...db.adapter,
-      verifyTerminalOutcome: undefined,
-    }, recorded, 'verified_terminal')).rejects.toThrow('Verified provider terminal outcome required');
+      ...db.adapter, releaseVerifiedTerminal: undefined,
+    }, recorded, 'verified_terminal')).rejects.toThrow('Verified terminal release store unavailable');
     await expect(advanceCheckoutIntent({
       ...db.adapter,
-      verifyTerminalOutcome: async () => ({ verified: true, terminal: true,
-        intentId: recorded.intentId, accountId: 'wrong-account',
-        provider: recorded.provider, providerRequestId: recorded.providerRequestId }),
-    }, recorded, 'verified_terminal')).rejects.toThrow();
+      releaseVerifiedTerminal: async () => { throw new Error('Provider status unknown'); },
+    }, recorded, 'verified_terminal')).rejects.toThrow('Provider status unknown');
     await expect(advanceCheckoutIntent({
       ...db.adapter,
-      verifyTerminalOutcome: async () => null,
-    }, recorded, 'verified_terminal')).rejects.toThrow();
+      releaseVerifiedTerminal: async () => ({
+        ...recorded, accountId: 'wrong-account',
+        state: 'verified_terminal', version: recorded.version + 1,
+      }),
+    }, recorded, 'verified_terminal')).rejects.toThrow('Checkout fencing/version mismatch');
     expect(db.calls.cas).toBe(before);
     expect(db.outstanding.has(recorded.accountId)).toBe(true);
     const final = await advanceCheckoutIntent(db.adapter, recorded, 'verified_terminal');

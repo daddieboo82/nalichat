@@ -14,7 +14,7 @@ describe('draft provider terminal verification policy, isolated mocked provider'
   it('accepts matching PayPal subscription only in EXPIRED state', async () => {
     const read = vi.fn().mockResolvedValue({ id: intent.providerId, status: 'EXPIRED',
       custom_id: intent.accountId + ':' + intent.sku, plan_id: 'P-MOCKPLAN123' });
-    const proof = await verifyPayPalTerminalCheckout(intent, read);
+    const proof = await verifyPayPalTerminalCheckout(intent, read, 'P-MOCKPLAN123');
     expect(read).toHaveBeenCalledExactlyOnceWith(intent.providerId);
     expect(proof).toEqual({
       verified: true, terminal: true, intentId: intent.intentId,
@@ -25,9 +25,8 @@ describe('draft provider terminal verification policy, isolated mocked provider'
 
   it.each(['APPROVAL_PENDING', 'APPROVED', 'ACTIVE', 'SUSPENDED', 'CANCELLED',
     'UNKNOWN', '', null, undefined])('rejects nonterminal PayPal status %s', async (status) => {
-    await expect(verifyPayPalTerminalCheckout(intent,
-      async () => ({ id: intent.providerId, status,
-        custom_id: intent.accountId + ':' + intent.sku, plan_id: 'P-MOCKPLAN123' }))).rejects.toThrow();
+    await expect(verifyPayPalTerminalCheckout(intent, async () => ({ id: intent.providerId, status,
+        custom_id: intent.accountId + ':' + intent.sku, plan_id: 'P-MOCKPLAN123' }), 'P-MOCKPLAN123')).rejects.toThrow();
   });
 
   it('rejects valid expired subscriptions with mismatched customer, SKU or missing binding', async () => {
@@ -41,14 +40,14 @@ describe('draft provider terminal verification policy, isolated mocked provider'
       { ...good, custom_id: undefined },
       { ...good, plan_id: undefined },
     ]) {
-      await expect(verifyPayPalTerminalCheckout(intent, async () => remote)).rejects.toThrow();
+      await expect(verifyPayPalTerminalCheckout(intent, async () => remote, 'P-MOCKPLAN123')).rejects.toThrow();
     }
   });
 
   it('rejects mismatched or missing provider identifiers and failed reads', async () => {
     await expect(verifyPayPalTerminalCheckout(intent, async () => ({
       id: 'I-DIFFERENT12345', status: 'EXPIRED',
-    }))).rejects.toThrow();
+    }), 'P-MOCKPLAN123')).rejects.toThrow();
     await expect(verifyPayPalTerminalCheckout({ ...intent, providerId: '' },
       async () => ({ id: '', status: 'EXPIRED' }))).rejects.toThrow();
     await expect(verifyPayPalTerminalCheckout({ ...intent, provider: 'wix' },
@@ -57,7 +56,7 @@ describe('draft provider terminal verification policy, isolated mocked provider'
     await expect(verifyPayPalTerminalCheckout(intent, async () => {
       throw new Error('PayPal lookup unavailable');
     })).rejects.toThrow();
-    await expect(verifyPayPalTerminalCheckout(intent, null)).rejects.toThrow();
+    await expect(verifyPayPalTerminalCheckout(intent, null, 'P-MOCKPLAN123')).rejects.toThrow();
   });
 
   it('fails closed for Wix until independent provider verification is available', async () => {

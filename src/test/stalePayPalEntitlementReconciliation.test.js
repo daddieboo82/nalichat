@@ -84,6 +84,19 @@ describe('signed PayPal webhook event ordering', () => {
     expect(handling).not.toContain("processing_state: 'ignored'");
   });
 
+  it('retains the prior ledger review reason while a retry is in progress', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const retry = code.indexOf('if (existing[0]) {');
+    const create = code.indexOf('ledger = await entities.PayPalWebhookEvent.create({');
+    expect(retry).toBeGreaterThan(0);
+    expect(create).toBeGreaterThan(retry);
+    const retryBlock = code.slice(retry, create);
+    expect(retryBlock).toContain("processing_state: 'processing'");
+    expect(retryBlock).toContain('attempt_count: (ledger.attempt_count || 1) + 1');
+    expect(retryBlock).not.toContain("last_error: ''");
+    expect(code).toContain("processing_state: 'processed'");
+  });
+
   it('rejects conflicting ledger event identity before duplicate acknowledgment or retry', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     const firstCheck = code.indexOf("if (existing[0] && (");

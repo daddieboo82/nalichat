@@ -29,6 +29,17 @@ describe('PayPal subscription integration contracts', () => {
     expect(statusSource).toContain('update.cancel_at_period_end = false');
   });
 
+  it('requires confirmed PayPal ACTIVE after an accepted activation request', async () => {
+    const helper = await read('base44/shared/paypalSubscription.ts');
+    expect(helper).toContain("if (freshStatus === 'ACTIVE')");
+    expect(helper).toContain("remoteStatus = 'ACTIVE'");
+    expect(helper).toContain('fresh?.id === subscriptionId && fresh?.plan_id === remote?.plan_id');
+    expect(helper).not.toContain("if (activated) remoteStatus = 'ACTIVE'");
+    expect(helper.indexOf("if (freshStatus === 'ACTIVE')")).toBeLessThan(
+      helper.indexOf("remoteStatus = 'ACTIVE'"),
+    );
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");

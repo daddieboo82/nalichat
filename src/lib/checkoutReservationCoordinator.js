@@ -156,6 +156,10 @@ export async function advanceCheckoutIntent(adapter, intent, nextState) {
     nextState,
   });
   if (!updated || updated.intentId !== intent.intentId || updated.accountId !== intent.accountId
+    || updated.provider !== intent.provider || updated.sku !== intent.sku
+    || updated.requestKey !== intent.requestKey
+    || updated.providerRequestId !== intent.providerRequestId
+    || (updated.providerId ?? null) !== (intent.providerId ?? null)
     || updated.state !== nextState || updated.version !== intent.version + 1) {
     throw new Error('Checkout fencing/version mismatch');
   }

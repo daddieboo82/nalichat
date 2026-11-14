@@ -20,7 +20,9 @@ create table if not exists billing_private.checkout_intents (
       )
     ),
     client_idempotency_key text not null
-      check (client_idempotency_key ~ '^[A-Za-z0-9._~-]{16,128}
+      check (char_length(client_idempotency_key) between 16 and 128),
+    provider_request_id text not null
+      check (char_length(provider_request_id) between 16 and 128),
     state text not null default 'reserved'
       check (state in (
         'reserved', 'provider_request_started', 'provider_outcome_unknown',

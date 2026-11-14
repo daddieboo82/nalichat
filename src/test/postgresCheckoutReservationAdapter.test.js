@@ -94,6 +94,28 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     expect(query).toHaveBeenCalledTimes(4);
   });
 
+  it('does not disclose another checkout identity from a direct adapter conflict', async () => {
+    const foreign = row({
+      account_id: request.accountId,
+      provider: 'wix',
+      sku: 'premium_plus_yearly',
+      client_idempotency_key: 'different-client-request-12345',
+      provider_request_id: 'different-provider-request-12345',
+      state: 'provider_created',
+      provider_id: 'I-SENSITIVEAGREEMENT123',
+      fencing_version: 3,
+    });
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [foreign] });
+    const adapter = createPostgresCheckoutReservationAdapter(query);
+    const outcome = await adapter.claimAtomic(request);
+    expect(outcome).toEqual({ kind: 'conflict', intent: null });
+    expect(JSON.stringify(outcome)).not.toContain(foreign.provider_id);
+    expect(JSON.stringify(outcome)).not.toContain(foreign.provider_request_id);
+    expect(query).toHaveBeenCalledTimes(2);
+  });
+
   it('fails closed on missing DB, ambiguous or invalid reservation proof', async () => {
     expect(() => createPostgresCheckoutReservationAdapter(null)).toThrow();
     const missing = createPostgresCheckoutReservationAdapter(async () => {

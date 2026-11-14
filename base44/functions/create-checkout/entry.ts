@@ -211,7 +211,11 @@ Deno.serve(async (req) => {
         checkout_request_key: idempotencyKey,
       });
     } catch (error) {
+      // The provider session may already exist. Fail closed; do not claim a
+      // successful local subscription write or attempt another provider create.
+      // Recovery must reconcile the original checkout session ID.
       console.error('Failed to create Subscription record for Wix checkout:', error);
+      throw new Error('Checkout created but local subscription persistence failed; reconciliation required');
     }
 
     return Response.json({

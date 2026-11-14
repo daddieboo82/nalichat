@@ -13,6 +13,27 @@ const row = (changes = {}) => ({
   provider_id: null, state: 'reserved', fencing_version: 1, ...changes,
 });
 describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
+  it('rejects malformed direct atomic claims without executing SQL', async () => {
+    const invalid = [
+      null,
+      { ...request, accountId: '' },
+      { ...request, accountId: null },
+      { ...request, provider: 'stripe' },
+      { ...request, sku: 'unknown_plan' },
+      { ...request, requestKey: 'short' },
+      { ...request, requestKey: 'invalid key with spaces' },
+      { ...request, providerRequestId: '' },
+      { ...request, providerRequestId: '../bad-provider-key-123' },
+    ];
+    const query = vi.fn();
+    const adapter = createPostgresCheckoutReservationAdapter(query);
+    for (const input of invalid) {
+      await expect(adapter.claimAtomic(input))
+        .rejects.toThrow('Invalid atomic checkout claim identity');
+    }
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it('uses one parameterized insert before reading conflicting rows', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [row()] });
     const adapter = createPostgresCheckoutReservationAdapter(query);

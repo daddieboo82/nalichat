@@ -122,14 +122,38 @@ def main():
         """)
         if stale:
             fail("FAIL: stale fencing token updated a reservation")
-        # Verify the database index's behavior after a terminal state is
-        # explicitly marked in this disposable schema. This does NOT test
-        # real-world provider verification or authorize a production release.
+        # This isolated schema uses a synthetic provider agreement solely to
+        # exercise the partial unique index. Never imply that this is payment
+        # verification: no real provider subscription is created or consulted.
+        # A direct reserved -> verified_terminal write without an agreement ID
+        # must be rejected by the current database constraint.
+        psql(f"""
+            do $checkout_terminal$
+            begin
+              update {schema}.checkout_intents
+                 set state = 'verified_terminal'
+               where account_id = '{account}' and state = 'reserved';
+              raise exception 'FAIL: terminal state without provider ID accepted';
+            exception when check_violation then
+              null;
+            end $checkout_terminal$;
+        """)
+        synthetic_id = "I-STAGING" + uuid.uuid4().hex[:20].upper()
+        recorded = psql(f"""
+            update {schema}.checkout_intents
+               set state = 'provider_created', provider_id = '{synthetic_id}',
+                   fencing_version = fencing_version + 1
+             where account_id = '{account}' and state = 'reserved'
+               and fencing_version = 1
+            returning intent_id;
+        """)
+        if not recorded:
+            fail("FAIL: synthetic provider identity could not be recorded")
         completed = psql(f"""
             update {schema}.checkout_intents
                set state = 'verified_terminal', fencing_version = fencing_version + 1
-             where account_id = '{account}' and state = 'reserved'
-               and fencing_version = 1
+             where account_id = '{account}' and state = 'provider_created'
+               and provider_id = '{synthetic_id}' and fencing_version = 2
             returning intent_id;
         """)
         if not completed:

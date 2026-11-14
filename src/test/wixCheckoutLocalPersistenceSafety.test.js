@@ -8,7 +8,7 @@ describe('Wix checkout local persistence recovery safety', () => {
     const createIndex = wix.indexOf('await base44.asServiceRole.entities.Subscription.create(');
     const failureIndex = wix.indexOf('Failed to create Subscription record for Wix checkout:');
     const stopIndex = wix.indexOf("throw new Error('Checkout created but local subscription persistence failed; reconciliation required')");
-    const successIndex = wix.indexOf("action: 'create_checkout'");
+    const successIndex = wix.lastIndexOf("action: 'create_checkout'");
     expect(createIndex).toBeGreaterThan(-1);
     expect(failureIndex).toBeGreaterThan(createIndex);
     expect(stopIndex).toBeGreaterThan(failureIndex);

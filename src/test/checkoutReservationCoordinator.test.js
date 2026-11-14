@@ -47,6 +47,7 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     provider: i % 2 ? 'paypal' : 'wix',
     sku: i % 3 ? 'premium_monthly' : 'premium_plus_yearly',
     requestKey: 'request-key-' + String(i).padStart(16, '0'),
+    providerRequestId: 'provider-id-' + String(i).padStart(16, '0'),
   });
 
   it('allows exactly one account-wide claim out of 100 competing requests', async () => {
@@ -90,6 +91,9 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
 
   it('fails closed if database adapter is absent or violates its contract', async () => {
     await expect(claimCheckoutIntent(null, input(0))).rejects.toThrow();
+    await expect(claimCheckoutIntent({ claimAtomic: async () => ({ kind: 'conflict' }) }, {
+      ...input(0), providerRequestId: undefined,
+    })).rejects.toThrow('Stable provider request identity required');
     await expect(claimCheckoutIntent({ claimAtomic: async () => ({ kind: 'created' }) }, input(0))).rejects.toThrow();
     await expect(claimCheckoutIntent({ claimAtomic: async () => ({ kind: 'unlocked' }) }, input(0))).rejects.toThrow();
   });

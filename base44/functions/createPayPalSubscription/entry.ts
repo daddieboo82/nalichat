@@ -130,6 +130,21 @@ Deno.serve(async (req) => {
       }, { status: 409 });
     }
 
+    // An incomplete PayPal agreement may still be awaiting remote checkout or
+    // payment confirmation. The pending-only provider reconciliation below
+    // cannot establish it is terminal. Require explicit reconciliation instead
+    // of issuing a second recurring agreement.
+    const incompletePayPal = allSubs.some((sub: any) =>
+      sub.provider === 'paypal' &&
+      normalizePlan(sub.plan) !== 'free' &&
+      normalizeStatus(sub.status) === 'incomplete'
+    );
+    if (incompletePayPal) {
+      return Response.json({
+        error: 'An incomplete PayPal checkout requires verification before another subscription',
+      }, { status: 409 });
+    }
+
     // An active PayPal subscription with a missing or expired local billing
     // period may have renewed remotely. Do not create a second subscription
     // simply because local entitlements cannot currently verify its renewal.

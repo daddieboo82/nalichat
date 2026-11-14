@@ -1,0 +1,95 @@
+/**
+ * DRAFT ONLY — server-side PostgreSQL reservation adapter.
+ * Not wired to NaliChat checkout, never creates a provider agreement.
+ *
+ * `query(sql, parameters)` must be a trusted server-side parameterized
+ * PostgreSQL client, restricted to an approved staging database.
+ * Guarantees depend on the separate PostgreSQL UNIQUE index and real DB
+ * tests; this JavaScript wrapper is NOT itself a lock.
+ */
+const TABLE = 'billing_private.checkout_intents';
+function asIntent(row) {
+  if (!row) return null;
+  return {
+    intentId: row.intent_id,
+    accountId: row.account_id,
+    provider: row.provider,
+    sku: row.sku,
+    requestKey: row.client_idempotency_key,
+    providerRequestId: row.provider_request_id,
+    state: row.state,
+    version: Number(row.fencing_version),
+  };
+}
+function requireQuery(query) {
+  if (typeof query !== 'function') throw new Error('Trusted PostgreSQL connection unavailable');
+}
+export function createPostgresCheckoutReservationAdapter(query) {
+  requireQuery(query);
+  return Object.freeze({
+    async claimAtomic(input) {
+      // Database uniqueness, not an application read-before-create, picks
+      // the winner. No external provider operation belongs in this adapter.
+      const inserted = await query(
+        `insert into ${TABLE}
+           (account_id, provider, sku, client_idempotency_key, provider_request_id)
+         values ($1, $2, $3, $4, $5)
+         on conflict do nothing
+         returning intent_id, account_id, provider, sku, client_idempotency_key,
+           provider_request_id, state, fencing_version`,
+        [input.accountId, input.provider, input.sku,
+          input.requestKey, input.providerRequestId],
+      );
+      if (!Array.isArray(inserted?.rows)) throw new Error('Reservation query response invalid');
+      if (inserted.rows.length === 1) {
+        return { kind: 'created', intent: asIntent(inserted.rows[0]) };
+      }
+      if (inserted.rows.length !== 0) throw new Error('Unexpected number of claimed reservations');
+
+      // A rejected write could be either a different outstanding checkout or
+      // a previously used request identity after terminal completion.
+      // Never interpret a null/ambiguous read as permission to create.
+      const existing = await query(
+        `select intent_id, account_id, provider, sku, client_idempotency_key,
+           provider_request_id, state, fencing_version
+         from ${TABLE}
+         where account_id = $1 and
+           (state <> 'verified_terminal' or client_idempotency_key = $2)
+         order by case when state <> 'verified_terminal' then 0 else 1 end,
+           created_at desc
+         limit 1`,
+        [input.accountId, input.requestKey],
+      );
+      if (!Array.isArray(existing?.rows) || existing.rows.length > 1) {
+        throw new Error('Checkout conflict lookup unavailable');
+      }
+      const found = asIntent(existing.rows[0]);
+      if (!found) return { kind: 'conflict', intent: null };
+      const exact = found.state !== 'verified_terminal'
+        && found.accountId === input.accountId
+        && found.requestKey === input.requestKey
+        && found.providerRequestId === input.providerRequestId
+        && found.provider === input.provider && found.sku === input.sku;
+      return { kind: exact ? 'existing' : 'conflict', intent: found };
+    },
+    async compareAndSwap({ intentId, accountId, expectedState, expectedVersion, nextState }) {
+      // Coordinator checks allowed state transitions. A trusted coordinator
+      // must independently verify a provider-terminal event before passing
+      // `verified_terminal`; an arbitrary client must never call this.
+      const updated = await query(
+        `update ${TABLE}
+         set state = $5, fencing_version = fencing_version + 1,
+           updated_at = now()
+         where intent_id = $1 and account_id = $2
+           and state = $3 and fencing_version = $4
+         returning intent_id, account_id, provider, sku, client_idempotency_key,
+           provider_request_id, state, fencing_version`,
+        [intentId, accountId, expectedState, expectedVersion, nextState],
+      );
+      if (!Array.isArray(updated?.rows) || updated.rows.length > 1) {
+        throw new Error('Checkout fencing response invalid');
+      }
+      return asIntent(updated.rows[0]);
+    },
+  });
+}

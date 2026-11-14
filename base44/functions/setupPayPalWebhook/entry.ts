@@ -40,7 +40,6 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user || user.role !== 'admin') return Response.json({ error: 'Admin required' }, { status: 403 });
     const existing = secrets.get('PAYPAL_WEBHOOK_ID');
-    if (existing && !existing.startsWith('REPLACE_')) return Response.json({ success: true, reused: true, webhookId: existing });
 
     // Do not use a different app's ID as a fallback or trust a webhook
     // destination supplied without independently configured app identity.
@@ -65,6 +64,31 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Webhook URL does not match the configured Base44 app' }, { status: 503 });
     }
     const accessToken = await token();
+    if (existing && !existing.startsWith('REPLACE_')) {
+      // An ID in the secret store is not proof that PayPal registered it
+      // for this app or subscribed it to the necessary lifecycle events.
+      const lookup = await fetch(
+        apiBase() + '/v1/notifications/webhooks/' + encodeURIComponent(existing),
+        { headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json' } },
+      );
+      if (!lookup.ok) {
+        return Response.json({ error: 'Unable to verify existing PayPal webhook' }, { status: 503 });
+      }
+      const remote = await lookup.json();
+      const remoteEvents = Array.isArray(remote?.event_types)
+        ? new Set(remote.event_types.map((event: any) => event?.name))
+        : new Set();
+      if (remote?.id !== existing || remote?.url !== webhookUrl
+        || !EVENTS.every((eventName) => remoteEvents.has(eventName))) {
+        return Response.json({
+          error: 'Existing PayPal webhook destination or event types do not match this app',
+        }, { status: 409 });
+      }
+      return Response.json({
+        success: true, reused: true, verified: true,
+        webhookId: existing, webhookUrl, eventTypes: EVENTS,
+      });
+    }
     const r = await fetch(apiBase() + '/v1/notifications/webhooks', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },

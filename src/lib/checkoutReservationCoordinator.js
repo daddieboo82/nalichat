@@ -45,16 +45,26 @@ export async function claimCheckoutIntent(adapter, input) {
   if (!outcome || !['created', 'existing', 'conflict'].includes(outcome.kind)) {
     throw new Error('Reservation store response unverified');
   }
-  if (outcome.kind === 'created') {
-    if (outcome.intent?.accountId !== input.accountId || outcome.intent?.state !== 'reserved'
-      || outcome.intent?.providerRequestId !== input.providerRequestId
-      || outcome.intent?.provider !== input.provider || outcome.intent?.sku !== input.sku
-      || outcome.intent?.requestKey !== input.requestKey
-      || !Number.isSafeInteger(outcome.intent?.version) || outcome.intent.version < 1) {
+  if (outcome.kind === 'created' || outcome.kind === 'existing') {
+    const intent = outcome.intent;
+    if (!intent || typeof intent.intentId !== 'string' || !intent.intentId
+      || intent.accountId !== input.accountId
+      || intent.providerRequestId !== input.providerRequestId
+      || intent.provider !== input.provider || intent.sku !== input.sku
+      || intent.requestKey !== input.requestKey
+      || !Number.isSafeInteger(intent.version) || intent.version < 1
+      || (outcome.kind === 'created' && intent.state !== 'reserved')
+      || (outcome.kind === 'existing' && !CHECKOUT_STATES.includes(intent.state))
+      || intent.state === 'verified_terminal') {
       throw new Error('Reservation proof invalid');
     }
   }
-  return Object.freeze({ kind: outcome.kind, intent: outcome.intent ?? null });
+  // A distinct outstanding checkout is an opaque conflict. Never return its
+  // reservation identifier or payment-provider details to this caller.
+  return Object.freeze({
+    kind: outcome.kind,
+    intent: outcome.kind === 'conflict' ? null : outcome.intent,
+  });
 }
 /**
  * Transition requires a compare-and-swap performed by the adapter. A lost

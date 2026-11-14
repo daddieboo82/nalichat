@@ -20,11 +20,21 @@ function createFakeAtomicStore() {
       const intent = {
         accountId: input.accountId, intentId: 'mock-' + (++counter),
         provider: input.provider, sku: input.sku, requestKey: input.requestKey,
+        providerRequestId: input.providerRequestId,
         state: 'reserved', version: 1,
       };
       outstanding.set(input.accountId, intent);
       all.set(intent.intentId, intent);
       return { kind: 'created', intent: { ...intent } };
+    },
+    // Test-only trusted verification fixture. The production adapter must
+    // obtain and verify provider-side terminal evidence independently.
+    async verifyTerminalOutcome(intent) {
+      return {
+        verified: true, terminal: true, intentId: intent.intentId,
+        accountId: intent.accountId, provider: intent.provider,
+        providerRequestId: intent.providerRequestId,
+      };
     },
     async compareAndSwap({ intentId, accountId, expectedState, expectedVersion, nextState }) {
       calls.cas++;
@@ -117,6 +127,34 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
       ...proof, accountId: 'another-account', providerRequestId: 'do-not-leak',
     }), request);
     expect(conflict).toEqual({ kind: 'conflict', intent: null });
+  });
+
+  it('never releases an outstanding reservation without provider-verified terminal evidence', async () => {
+    const db = createFakeAtomicStore();
+    const claimed = await claimCheckoutIntent(db.adapter, input(1));
+    const started = await advanceCheckoutIntent(db.adapter, claimed.intent, 'provider_request_started');
+    const created = await advanceCheckoutIntent(db.adapter, started, 'provider_created');
+    const recorded = await advanceCheckoutIntent(db.adapter, created, 'local_recorded');
+    const before = db.calls.cas;
+    await expect(advanceCheckoutIntent({
+      ...db.adapter,
+      verifyTerminalOutcome: undefined,
+    }, recorded, 'verified_terminal')).rejects.toThrow('Verified provider terminal outcome required');
+    await expect(advanceCheckoutIntent({
+      ...db.adapter,
+      verifyTerminalOutcome: async () => ({ verified: true, terminal: true,
+        intentId: recorded.intentId, accountId: 'wrong-account',
+        provider: recorded.provider, providerRequestId: recorded.providerRequestId }),
+    }, recorded, 'verified_terminal')).rejects.toThrow();
+    await expect(advanceCheckoutIntent({
+      ...db.adapter,
+      verifyTerminalOutcome: async () => null,
+    }, recorded, 'verified_terminal')).rejects.toThrow();
+    expect(db.calls.cas).toBe(before);
+    expect(db.outstanding.has(recorded.accountId)).toBe(true);
+    const final = await advanceCheckoutIntent(db.adapter, recorded, 'verified_terminal');
+    expect(final.state).toBe('verified_terminal');
+    expect(db.outstanding.has(recorded.accountId)).toBe(false);
   });
 
   it('fails closed if database adapter is absent or violates its contract', async () => {

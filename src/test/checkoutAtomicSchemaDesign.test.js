@@ -34,6 +34,31 @@ describe('staging-only checkout SQL design (not executed in PostgreSQL)', () => 
     expect(normalized).toContain('check (fencing_version between 1 and 9007199254740991)');
   });
 
+  it('enforces the same four plans and request formats as the server', () => {
+    for (const sku of [
+      'premium_monthly', 'premium_yearly',
+      'premium_plus_monthly', 'premium_plus_yearly',
+    ]) {
+      expect(normalized).toContain("'" + sku + "'");
+    }
+    expect(normalized).toContain("client_idempotency_key ~ '^[a-za-z0-9._~-]{16,128}
+    expect(normalized).toContain('create schema if not exists billing_private;');
+    expect(normalized).toContain('alter table billing_private.checkout_intents enable row level security;');
+    expect(normalized).toContain('revoke all on billing_private.checkout_intents from public, anon, authenticated;');
+    expect(normalized).not.toContain('grant all on billing_private.checkout_intents to public');
+  });
+});
+");
+    expect(normalized).toContain("provider_request_id ~ '^[a-za-z0-9._~-]{16,128}
+    expect(normalized).toContain('create schema if not exists billing_private;');
+    expect(normalized).toContain('alter table billing_private.checkout_intents enable row level security;');
+    expect(normalized).toContain('revoke all on billing_private.checkout_intents from public, anon, authenticated;');
+    expect(normalized).not.toContain('grant all on billing_private.checkout_intents to public');
+  });
+});
+");
+  });
+
   it('revokes public checkout table access', () => {
     expect(normalized).toContain('create schema if not exists billing_private;');
     expect(normalized).toContain('alter table billing_private.checkout_intents enable row level security;');

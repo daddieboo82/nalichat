@@ -165,3 +165,29 @@ export async function advanceCheckoutIntent(adapter, intent, nextState) {
   }
   return Object.freeze(updated);
 }
+
+/**
+ * DRAFT ONLY. This confirms a local Subscription entity already exists and
+ * matches the provider agreement. The adapter owns the independent trusted
+ * read and conditional DB update. No request-provided receipt is accepted.
+ */
+export async function confirmVerifiedLocalSubscription(adapter, intent) {
+  if (!intent || !['provider_created', 'local_record_failed'].includes(intent.state)
+    || !Number.isSafeInteger(intent.version) || intent.version < 1
+    || intent.version >= Number.MAX_SAFE_INTEGER
+    || typeof adapter?.confirmLocalSubscriptionRecorded !== 'function') {
+    throw new Error('Verified local subscription persistence unavailable');
+  }
+  const updated = await adapter.confirmLocalSubscriptionRecorded(intent);
+  if (!updated || updated.intentId !== intent.intentId
+    || updated.accountId !== intent.accountId
+    || updated.provider !== intent.provider || updated.sku !== intent.sku
+    || updated.requestKey !== intent.requestKey
+    || updated.providerRequestId !== intent.providerRequestId
+    || updated.providerId !== intent.providerId
+    || updated.state !== 'local_recorded'
+    || updated.version !== intent.version + 1) {
+    throw new Error('Verified local subscription persistence proof invalid');
+  }
+  return Object.freeze(updated);
+}

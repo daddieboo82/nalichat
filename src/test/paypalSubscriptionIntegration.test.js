@@ -76,6 +76,20 @@ describe('PayPal subscription integration contracts', () => {
     );
   });
 
+  it('checks an existing PayPal webhook against authenticated provider configuration before reuse', async () => {
+    const source = await read('base44/functions/setupPayPalWebhook/entry.ts');
+    expect(source).not.toContain("return Response.json({ success: true, reused: true, webhookId: existing })");
+    expect(source).toContain("'/v1/notifications/webhooks/' + encodeURIComponent(existing)");
+    expect(source).toContain("remote?.id !== existing || remote?.url !== webhookUrl");
+    expect(source).toContain("EVENTS.every((eventName) => remoteEvents.has(eventName))");
+    expect(source).toContain('Unable to verify existing PayPal webhook');
+    expect(source).toContain('Existing PayPal webhook destination or event types do not match this app');
+    expect(source.indexOf('if (existing && !existing.startsWith')).toBeGreaterThan(
+      source.indexOf('const accessToken = await token()'),
+    );
+    expect(source).toContain('success: true, reused: true, verified: true');
+  });
+
   it('captures subscription_id for analytics deduplication on ThankYou return page', async () => {
     const thankYouSource = await read('src/pages/ThankYou.jsx');
     expect(thankYouSource).toContain('urlParams.get("subscription_id")');

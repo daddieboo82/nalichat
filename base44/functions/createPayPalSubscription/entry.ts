@@ -145,6 +145,20 @@ Deno.serve(async (req) => {
       }, { status: 409 });
     }
 
+    // A locally unpaid PayPal agreement can be SUSPENDED remotely and may
+    // later resume billing. Do not create a second agreement merely because
+    // unpaid access is currently denied; reconcile the provider state first.
+    const unpaidPayPal = allSubs.some((sub: any) =>
+      sub.provider === 'paypal' &&
+      normalizePlan(sub.plan) !== 'free' &&
+      normalizeStatus(sub.status) === 'unpaid'
+    );
+    if (unpaidPayPal) {
+      return Response.json({
+        error: 'An unpaid PayPal agreement requires verification before another subscription',
+      }, { status: 409 });
+    }
+
     // An active PayPal subscription with a missing or expired local billing
     // period may have renewed remotely. Do not create a second subscription
     // simply because local entitlements cannot currently verify its renewal.

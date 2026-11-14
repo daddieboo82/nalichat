@@ -40,6 +40,84 @@ The scheduled PayPal workflow definition and both backend entrypoints contain an
 - [ ] Validate older records with missing `sku`, `paypal_plan_id`, or `custom_id` without silently granting access or creating another subscription.
 - [ ] Validate live user journey on desktop, Android-sized mobile, iPhone-sized mobile, including login, pricing, checkout return, subscription display, and Premium gating.
 
+## Proposed atomic checkout reservation contract — design only, NOT implemented (#1047)
+
+**2026-11-13 finding:** An isolated executable checkout-handler harness forced two
+same-account requests with distinct idempotency keys to observe an empty
+Subscription snapshot concurrently. With the rollout flag on, both reached
+the provider create endpoint and wrote different local agreements. With the
+flag absent, the same handler returned 503 before any provider call. This
+reproduces the failure mode with mocks, **not** a live PayPal test.
+
+**Backend capability verified:** Base44's documented beta entity upsert
+`POST /api/apps/{app_id}/entities/{entity_name}/upsert` explicitly warns that
+concurrent calls can both create the same new record. Base44 entity create
+ignores caller-provided `id`. Neither API is a verified unique checkout lock.
+A filter/read followed by update is likewise not proven compare-and-swap.
+
+**Implementation candidate (requires approved durable transactional store):**
+
+1. Define a server-only `billing_checkout_intents` table with a UNIQUE key
+   for each account's *outstanding recurring checkout* (not just each SKU),
+   plus unique provider-request identity. Reserve it using one atomic
+   transaction/unique constraint. All checkout providers must honor the same
+   account-level exclusion so a Stripe/Wix flow cannot race a PayPal flow.
+2. Persist the authenticated user ID, requested SKU, provider, the
+   single canonical server-generated PayPal request ID, a non-secret
+   intent ID, and an explicit state BEFORE any provider POST. For a duplicate
+   client retry, return the same intent; for a distinct key while an intent
+   is unresolved, reject with a retryable/conflict response. Never permit a
+   browser-supplied key to become a fresh provider request while another
+   recurring agreement can still be billable.
+3. Have a single authorized worker consume one reserved intent, with durable
+   ownership/fencing or serial execution and bounded retries. Each provider
+   create retry must reuse the original PayPal request ID within the
+   provider's supported idempotency policy. An expired lease does *not*
+   authorize a new provider create with a new key.
+4. If PayPal responds ambiguously (timeout, 5xx, lost HTTP response),
+   transition to `provider_outcome_unknown`. Freeze new recurring checkouts
+   for that account until an authenticated provider lookup or documented
+   safe same-ID recovery confirms the original outcome. Never interpret a
+   missing local Subscription row as proof no agreement exists.
+5. If PayPal succeeds but local Subscription persistence fails, durably
+   retain the provider agreement identity in the reservation store and
+   reconcile the local record before allowing another checkout. Provider
+   ownership/plan, checkout URL, and billing period require independent
+   verification; customer access must not be inferred from approval alone.
+6. Release/exclude the account only after the original agreement is
+   verified terminal (CANCELLED/EXPIRED or a documented equivalent) and
+   accounting/webhook reconciliation is complete. Keep audit history;
+   do not discard unresolved intents by age alone.
+7. Expose only opaque client-safe statuses from the checkout endpoint.
+   Keep operator credentials and provider identifiers server-side. Add
+   authenticated administrative reconciliation, alerts and rate limits.
+
+**Required executable tests before enabling checkout:**
+
+- [ ] Same account/SKU, two different keys in parallel: at most ONE
+      provider create and ONE outstanding agreement
+- [ ] Same account, different SKUs or providers in parallel: at most ONE
+      outstanding recurring agreement
+- [ ] Same idempotency key retried after a network timeout: same intent and
+      PayPal request ID; no second agreement
+- [ ] Provider accepted creation but response lost: recover original outcome
+      without issuing another distinct provider create
+- [ ] Provider succeeded but local entity write failed: reservation prevents
+      duplicate; recovery persists verified original subscription
+- [ ] Worker crash/restart, expired lease and duplicate queue delivery:
+      fencing/serialization prevents parallel provider creates
+- [ ] Legitimate resubscription after confirmed remote terminal state succeeds
+- [ ] Provider verification unavailable/identity mismatch: deny new agreement
+      and preserve an actionable reconciliation record
+- [ ] Unauthorized callers and requests across users cannot inspect or
+      overwrite an account's reservation
+- [ ] With flag unset, no provider create is possible even if an intent exists
+
+**Not yet selected:** durable transaction service/provider, service credentials,
+deployment lifecycle and operational recovery owner. Do not provision a new
+paid service, migrate customer billing, or enable
+`PAYPAL_CHECKOUT_SERIALIZATION_VERIFIED` merely because this design exists.
+
 ## Refund/reversal financial review procedure — not yet automated
 - [ ] Find failed `PayPalWebhookEvent` rows with `last_error` containing `Refund/reversal of an active recurring agreement requires financial review`. Repeated HTTP 503 delivery is **not** a durable operator queue by itself, and retry limits may eventually expire.
 - [ ] For each signed event, independently review the PayPal transaction and recurring agreement via authorized provider tools. Match sale/refund ID, agreement ID, plan, customer reference, currency, amount and event creation time against the ledger and local Subscription row; do not infer cancellation merely from a reversed sale.

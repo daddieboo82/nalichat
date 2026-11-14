@@ -27,6 +27,11 @@ function resolveAppUrl(req: Request): string {
   return APP_BASE_URL;
 }
 
+// No configuration toggle may bypass this safety stop.
+function hasVerifiedAtomicWixReservation(): boolean {
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
@@ -53,6 +58,17 @@ Deno.serve(async (req) => {
     }
     if (!user?.id) {
       return Response.json({ error: 'Authentication required for subscriptions' }, { status: 401 });
+    }
+
+    // Emergency billing safety stop: the Wix subscription checkout path also
+    // reads existing records before creating a provider session. Without an
+    // atomic account-level reservation, concurrent requests can create
+    // multiple sessions even with different request keys. This must remain
+    // hard-closed until a durable reservation and recovery path is verified.
+    if (!hasVerifiedAtomicWixReservation()) {
+      return Response.json({
+        error: 'New subscription checkout is temporarily unavailable while billing safety is verified',
+      }, { status: 503 });
     }
 
     const checkoutRate = await consumeHourlyLimit(

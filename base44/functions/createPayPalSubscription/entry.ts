@@ -34,6 +34,12 @@ async function accessToken() {
   return data.access_token as string;
 }
 
+// There is no atomic checkout reservation in this release. This function is
+// intentionally NOT controlled by any environment variable or operator flag.
+function atomicCheckoutReservationIsImplemented(): boolean {
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
   try {
@@ -49,6 +55,14 @@ Deno.serve(async (req) => {
     }
     const item = CATALOG[sku];
     if (!item) return Response.json({ error: 'Unknown subscription plan' }, { status: 400 });
+    // Emergency billing safety stop (#1047). Do not replace with an
+    // operator flag: checkout needs a VERIFIED atomic per-user reservation.
+    if (!atomicCheckoutReservationIsImplemented()) {
+      return Response.json({
+        error: 'New PayPal subscriptions are temporarily unavailable while billing safety is verified',
+      }, { status: 503 });
+    }
+
     const planId = secrets.get(item.secret);
     if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
 

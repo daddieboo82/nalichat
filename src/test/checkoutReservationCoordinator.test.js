@@ -336,6 +336,11 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
       }),
     }, started)).rejects.toThrow('Provider creation identity unverified');
     expect(db.outstanding.get(started.accountId).state).toBe('provider_request_started');
+    for (const badProviderId of [undefined, 'I-ALREADYCREATED1234']) {
+      await expect(recordVerifiedProviderCreation(db.adapter, {
+        ...started, providerId: badProviderId,
+      })).rejects.toThrow('Checkout provider creation state invalid');
+    }
     const created = await recordVerifiedProviderCreation(db.adapter, started);
     expect(created.providerId).toBe('I-MOCKSUBSCRIPTION1234');
     expect(created.state).toBe('provider_created');

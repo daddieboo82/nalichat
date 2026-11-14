@@ -39,10 +39,14 @@ export async function resolvePayPalSubscriptionStatus(
     );
     if (again.ok) {
       const fresh = await again.json();
-      if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
-      const freshStatus = String(fresh?.status || '').toUpperCase();
-      if (freshStatus && (!activated || freshStatus === 'ACTIVE')) {
-        remoteStatus = freshStatus;
+      // An unexpected provider response cannot replace billing data or
+      // lifecycle status from the agreement already identity-checked above.
+      if (fresh?.id === subscriptionId && fresh?.plan_id === remote?.plan_id) {
+        if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
+        const freshStatus = String(fresh?.status || '').toUpperCase();
+        if (freshStatus && (!activated || freshStatus === 'ACTIVE')) {
+          remoteStatus = freshStatus;
+        }
       }
     }
   } catch {

@@ -606,6 +606,24 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('does not bypass active PayPal checkout review when legacy plan metadata is missing', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    const activeGuard = code.indexOf('const unresolvedActivePayPal = allSubs.some');
+    const undatedGuard = code.indexOf('const undatedActivePayPal = allSubs.some');
+    const missingPlanGuard = code.indexOf('const unverifiedActivePayPalPlan = allSubs.some');
+    const create = code.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions', {");
+    expect(activeGuard).toBeGreaterThan(0);
+    expect(undatedGuard).toBeGreaterThan(activeGuard);
+    expect(missingPlanGuard).toBeGreaterThan(undatedGuard);
+    expect(create).toBeGreaterThan(missingPlanGuard);
+    const activeCheck = code.slice(activeGuard, undatedGuard);
+    const undatedCheck = code.slice(undatedGuard, missingPlanGuard);
+    expect(activeCheck).not.toContain("normalizePlan(sub.plan) !== 'free'");
+    expect(undatedCheck).not.toContain("normalizePlan(sub.plan) !== 'free'");
+    expect(code.slice(missingPlanGuard, create)).toContain("normalizePlan(sub.plan) === 'free'");
+    expect(code.slice(missingPlanGuard, create)).toContain('Active PayPal agreement has unverified plan metadata');
+  });
+
   it('bounds PayPal request IDs and prevents persisted request-key plan reuse', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(code).toContain("const providerRequestId = 'nalichat-' + user.id + '-' + idempotencyKey;");

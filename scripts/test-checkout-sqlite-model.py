@@ -61,8 +61,8 @@ def main():
         assert sum(result) == 1, f'Expected exactly one claim, got {sum(result)}'
         assert claim(100, 'other_account'), 'Unrelated account blocked'
         with closing(db()) as connection:
-            intent_id, old_key = connection.execute(
-                'select intent_id,client_idempotency_key from checkout_intents where account_id=?',
+            intent_id, old_key, winning_provider = connection.execute(
+                'select intent_id,client_idempotency_key,provider from checkout_intents where account_id=?',
                 (account,),
             ).fetchone()
             stale = connection.execute("""
@@ -99,8 +99,17 @@ def main():
         assert claim(101), 'No new claim after simulated terminal transition'
         # A provider agreement remains unique across accounts, including
         # after the original checkout becomes terminal.
-        assert claim(102, 'agreement_owner_b'), 'Second account could not reserve'
         with closing(db()) as connection:
+            inserted = connection.execute("""
+                insert into checkout_intents
+                  (intent_id,account_id,provider,sku,client_idempotency_key,provider_request_id)
+                values (?,?,?,?,?,?) returning intent_id
+            """, (
+                str(uuid.uuid4()), 'agreement_owner_b', winning_provider,
+                'premium_monthly', 'agreement_owner_b_key_123456',
+                'agreement_owner_b_provider_123456',
+            )).fetchone()
+            assert inserted, 'Second same-provider account could not reserve'
             try:
                 connection.execute("""
                     update checkout_intents set state='provider_created', provider_id=?

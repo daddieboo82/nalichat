@@ -46,6 +46,19 @@ describe('PayPal subscription integration contracts', () => {
     expect(createSource).toContain('This account already has a paid subscription; use the billing portal');
   });
 
+  it('verifies the provider agreement, plan, and account binding before checkout resume activation', async () => {
+    const source = await read('base44/functions/createPayPalSubscription/entry.ts');
+    const identityGuard = source.indexOf('remote?.id !== pending.subscription_id');
+    const planGuard = source.indexOf('remote?.plan_id !== planId', identityGuard);
+    const ownershipGuard = source.indexOf("remote?.custom_id !== user.id + ':' + sku", identityGuard);
+    const resolver = source.indexOf('const remoteStatus = await resolvePayPalSubscriptionStatus', identityGuard);
+    expect(identityGuard).toBeGreaterThan(-1);
+    expect(planGuard).toBeGreaterThan(identityGuard);
+    expect(ownershipGuard).toBeGreaterThan(planGuard);
+    expect(resolver).toBeGreaterThan(ownershipGuard);
+    expect(source).toContain('PayPal checkout resume identity mismatch; existing agreement not applied');
+  });
+
   it('returns PayPal buyers to the canonical domain instead of the request host', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("new URL('/ThankYou?subscription=1', APP_BASE_URL)");

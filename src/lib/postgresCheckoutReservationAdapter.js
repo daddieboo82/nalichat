@@ -133,13 +133,15 @@ export function createPostgresCheckoutReservationAdapter(query) {
       return stored;
     },
     async compareAndSwap({ intentId, accountId, expectedState, expectedVersion, nextState }) {
-      // Never bypass the separate atomic provider-ID recording operation.
+      // Generic CAS may not create a provider agreement OR release the
+      // account reservation. Terminal release needs a separate authenticated
+      // provider reconciliation and audit operation (not yet implemented).
       if (nextState === 'provider_created') {
         throw new Error('Provider identity must be durably recorded');
       }
-      // Coordinator checks allowed state transitions. A trusted coordinator
-      // must independently verify a provider-terminal event before passing
-      // `verified_terminal`; an arbitrary client must never call this.
+      if (nextState === 'verified_terminal') {
+        throw new Error('Verified terminal release store unavailable');
+      }
       const updated = await query(
         `update ${TABLE}
          set state = $5, fencing_version = fencing_version + 1,

@@ -156,10 +156,12 @@ Deno.serve(async (req) => {
     }
     if (existing[0]) {
       ledger = existing[0];
+      // Preserve the prior failure/review reason while retrying. If this
+      // invocation crashes before recording an outcome, clearing last_error
+      // would erase the only operator-visible explanation for the backlog.
       await entities.PayPalWebhookEvent.update(ledger.id, {
         processing_state: 'processing',
         attempt_count: (ledger.attempt_count || 1) + 1,
-        last_error: '',
       });
     } else {
       try {

@@ -173,6 +173,8 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       ['local_recorded', 'reserved'],
       ['verified_terminal', 'provider_request_started'],
       ['provider_created', 'provider_outcome_unknown'],
+      ['provider_created', 'local_recorded'],
+      ['local_record_failed', 'local_recorded'],
       ['nonexistent', 'local_recorded'],
     ]) {
       await expect(adapter.compareAndSwap({

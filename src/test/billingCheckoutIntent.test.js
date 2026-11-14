@@ -8,7 +8,7 @@ import {
 describe('future atomic checkout-intent worker policy (not a lock)', () => {
   it('keeps every unresolved state exclusively reserved', () => {
     for (const state of [
-      'reserved', 'provider_outcome_unknown', 'provider_created',
+      'reserved', 'provider_request_started', 'provider_outcome_unknown', 'provider_created',
       'local_record_failed', 'local_recorded',
     ]) {
       expect(isOutstandingCheckoutIntent(state)).toBe(true);
@@ -17,13 +17,14 @@ describe('future atomic checkout-intent worker policy (not a lock)', () => {
   });
 
   it('requires reconciliation after a lost provider response', () => {
-    expect(nextCheckoutIntentState('reserved', 'provider_response_lost')).toBe('provider_outcome_unknown');
+    expect(nextCheckoutIntentState('reserved', 'provider_request_started')).toBe('provider_request_started');
+    expect(nextCheckoutIntentState('provider_request_started', 'provider_response_lost')).toBe('provider_outcome_unknown');
     expect(() => nextCheckoutIntentState('provider_outcome_unknown', 'local_write_succeeded')).toThrow();
     expect(nextCheckoutIntentState('provider_outcome_unknown', 'provider_creation_confirmed')).toBe('provider_created');
   });
 
   it('keeps a failed local write reserved until recovery', () => {
-    expect(nextCheckoutIntentState('reserved', 'provider_creation_confirmed')).toBe('provider_created');
+    expect(nextCheckoutIntentState('provider_request_started', 'provider_creation_confirmed')).toBe('provider_created');
     expect(nextCheckoutIntentState('provider_created', 'local_write_failed')).toBe('local_record_failed');
     expect(nextCheckoutIntentState('local_record_failed', 'local_write_succeeded')).toBe('local_recorded');
   });
@@ -36,7 +37,12 @@ describe('future atomic checkout-intent worker policy (not a lock)', () => {
   });
 
   it('does not allow a distinct intent or PayPal request ID to masquerade as a retry', () => {
-    expect(canRetryOutstandingIntent('provider_outcome_unknown', 'intent-1', 'intent-1', 'paypal-key-1', 'paypal-key-1')).toBe(true);
+    expect(canRetryOutstandingIntent('reserved', 'intent-1', 'intent-1', 'paypal-key-1', 'paypal-key-1')).toBe(true);
+    expect(canRetryOutstandingIntent('provider_request_started', 'intent-1', 'intent-1', 'paypal-key-1', 'paypal-key-1')).toBe(false);
+    expect(canRetryOutstandingIntent('provider_outcome_unknown', 'intent-1', 'intent-1', 'paypal-key-1', 'paypal-key-1')).toBe(false);
+    expect(canRetryOutstandingIntent('provider_created', 'intent-1', 'intent-1', 'paypal-key-1', 'paypal-key-1')).toBe(false);
+    expect(canRetryOutstandingIntent('local_record_failed', 'intent-1', 'intent-1', 'paypal-key-1', 'paypal-key-1')).toBe(false);
+    expect(canRetryOutstandingIntent('local_recorded', 'intent-1', 'intent-1', 'paypal-key-1', 'paypal-key-1')).toBe(false);
     expect(canRetryOutstandingIntent('provider_outcome_unknown', 'intent-1', 'intent-2', 'paypal-key-1', 'paypal-key-1')).toBe(false);
     expect(canRetryOutstandingIntent('provider_outcome_unknown', 'intent-1', 'intent-1', 'paypal-key-1', 'paypal-key-2')).toBe(false);
     expect(canRetryOutstandingIntent('verified_terminal', 'intent-1', 'intent-1', 'paypal-key-1', 'paypal-key-1')).toBe(false);
@@ -45,6 +51,8 @@ describe('future atomic checkout-intent worker policy (not a lock)', () => {
 
   it('never unlocks based on age, lease expiration, or duplicate worker delivery', () => {
     expect(isOutstandingCheckoutIntent('provider_outcome_unknown')).toBe(true);
+    expect(() => nextCheckoutIntentState('reserved', 'provider_creation_confirmed')).toThrow();
+    expect(() => nextCheckoutIntentState('reserved', 'provider_response_lost')).toThrow();
     expect(() => nextCheckoutIntentState('local_record_failed', 'provider_response_lost')).toThrow();
     expect(() => nextCheckoutIntentState('local_recorded', 'provider_creation_confirmed')).toThrow();
   });

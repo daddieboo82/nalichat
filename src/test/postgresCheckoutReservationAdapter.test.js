@@ -123,6 +123,7 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       { state: 'provider_outcome_unknown', provider_id: 'I-PREMATURE123456' },
       { state: 'provider_created', provider_id: null },
       { state: 'local_recorded', provider_id: null },
+      { state: 'verified_terminal', provider_id: null },
       { provider: 'unexpected-provider' },
       { sku: 'unknown_plan' },
       { provider_request_id: '' },

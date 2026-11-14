@@ -72,6 +72,29 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     await expect(claimCheckoutIntent(invalidIdentity, request)).rejects.toThrow();
   });
 
+  it('rejects malformed persisted provider and checkout identities instead of coercing to null', async () => {
+    for (const changes of [
+      { provider_id: '' },
+      { provider_id: '../malformed' },
+      { provider_id: undefined },
+      { provider_id: 1234 },
+      { state: 'provider_created', provider_id: null },
+      { state: 'local_recorded', provider_id: null },
+      { provider: 'unexpected-provider' },
+      { sku: 'unknown_plan' },
+      { provider_request_id: '' },
+      { client_idempotency_key: '' },
+      { state: 'bogus' },
+    ]) {
+      const adapter = createPostgresCheckoutReservationAdapter(
+        async () => ({ rows: [row(changes)] }),
+      );
+      await expect(claimCheckoutIntent(adapter, request)).rejects.toThrow(
+        'Malformed PostgreSQL checkout reservation identity',
+      );
+    }
+  });
+
   it('maps provider subscription identity only from persisted database rows', async () => {
     const providerId = 'I-MOCKSUBSCRIPTION123';
     const adapter = createPostgresCheckoutReservationAdapter(

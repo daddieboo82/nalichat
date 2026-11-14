@@ -6,6 +6,7 @@ the proposed partial unique index before running the Postgres staging test.
 No production, customer, remote database, or payment access is needed.
 """
 import concurrent.futures
+from contextlib import closing
 import os
 import sqlite3
 import tempfile
@@ -31,11 +32,11 @@ def main():
             connection = sqlite3.connect(path, timeout=30, isolation_level=None)
             connection.execute('pragma busy_timeout=30000')
             return connection
-        with db() as connection:
+        with closing(db()) as connection:
             connection.executescript(DDL)
         account = 'test_' + uuid.uuid4().hex
         def claim(index, user=account):
-            with db() as connection:
+            with closing(db()) as connection:
                 result = connection.execute("""
                   insert into checkout_intents
                     (intent_id,account_id,provider,sku,client_idempotency_key,provider_request_id)
@@ -52,7 +53,7 @@ def main():
             result = list(pool.map(claim, range(100)))
         assert sum(result) == 1, f'Expected exactly one claim, got {sum(result)}'
         assert claim(100, 'other_account'), 'Unrelated account blocked'
-        with db() as connection:
+        with closing(db()) as connection:
             intent_id, old_key = connection.execute(
                 'select intent_id,client_idempotency_key from checkout_intents where account_id=?',
                 (account,),
@@ -71,7 +72,7 @@ def main():
             """, (intent_id,)).fetchone()
             assert terminal, 'Test-only terminal transition failed'
         assert claim(101), 'No new claim after simulated terminal transition'
-        with db() as connection:
+        with closing(db()) as connection:
             replay = connection.execute("""
                 insert into checkout_intents
                   (intent_id,account_id,provider,sku,client_idempotency_key,provider_request_id)

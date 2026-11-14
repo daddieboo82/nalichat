@@ -185,6 +185,52 @@ Deno.serve(async (req) => {
     }
 
     const token = await accessToken();
+
+    // A locally canceled/ended agreement may have been reactivated remotely
+    // after the last local update. Do not treat local terminal status as proof
+    // that PayPal cannot bill again. Verify the original agreement, its owner,
+    // and its original plan before opening another recurring subscription.
+    // This is a sequential snapshot check, NOT the atomic checkout lock.
+    const locallyTerminalPayPal = allSubs.filter((sub: any) =>
+      sub.provider === 'paypal' &&
+      (sub.status === 'canceled' || sub.status === 'ended') &&
+      normalizePlan(sub.plan) !== 'free'
+    );
+    for (const previous of locallyTerminalPayPal) {
+      if (!previous.subscription_id || !previous.paypal_plan_id ||
+          typeof previous.sku !== 'string' || !previous.sku ||
+          previous.paypal_environment !== (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase()) {
+        return Response.json({
+          error: 'Previous PayPal agreement requires verification before another subscription',
+        }, { status: 409 });
+      }
+      let remotePrevious: any;
+      try {
+        const previousLookup = await fetch(
+          apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(previous.subscription_id),
+          { headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } },
+        );
+        if (!previousLookup.ok) {
+          return Response.json({ error: 'Could not verify previous PayPal agreement' }, { status: 503 });
+        }
+        remotePrevious = await previousLookup.json();
+      } catch {
+        return Response.json({ error: 'Could not verify previous PayPal agreement' }, { status: 503 });
+      }
+      if (remotePrevious?.plan_id !== previous.paypal_plan_id ||
+          remotePrevious?.custom_id !== user.id + ':' + previous.sku) {
+        return Response.json({
+          error: 'Previous PayPal agreement ownership or plan requires verification',
+        }, { status: 409 });
+      }
+      const previousStatus = String(remotePrevious?.status || '').toUpperCase();
+      if (previousStatus !== 'CANCELLED' && previousStatus !== 'EXPIRED') {
+        return Response.json({
+          error: 'Previous PayPal agreement is not confirmed terminal',
+        }, { status: 409 });
+      }
+    }
+
     // Scan all previously loaded records, not just the newest 20 pending
     // checkouts. An older unresolved PayPal agreement may still be billable.
     const existing = allSubs.filter((sub: any) => (

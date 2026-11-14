@@ -129,6 +129,21 @@ describe('PayPal subscription integration contracts', () => {
     expect(dashboard).toContain('billingTestStatus?.webhookConfigured');
   });
 
+  it('does not present a truncated or unverified PayPal provider audit as complete', async () => {
+    const backend = await read('base44/functions/getPendingPayPalAudit/entry.ts');
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(backend).toContain("'-created_date', 101");
+    expect(backend).toContain('const hasMorePending = pendingPage.length > 100');
+    expect(backend).toContain('const pending = pendingPage.slice(0, 100)');
+    expect(backend).toContain('providerStatusVerified: typeof remote.status');
+    expect(backend).toContain('verifiedCount: results.filter((result) => result.providerStatusVerified === true).length');
+    expect(backend).toContain('hasMorePending, results');
+    expect(dashboard).toContain('paypalAudit.hasMorePending');
+    expect(dashboard).toContain('paypalAudit.verifiedCount');
+    expect(dashboard).toContain('This report does not cover every pending agreement');
+    expect(dashboard).toContain('Some provider statuses could not be verified');
+  });
+
   it('captures subscription_id for analytics deduplication on ThankYou return page', async () => {
     const thankYouSource = await read('src/pages/ThankYou.jsx');
     expect(thankYouSource).toContain('urlParams.get("subscription_id")');

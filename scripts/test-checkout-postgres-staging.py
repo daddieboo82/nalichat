@@ -207,6 +207,27 @@ def main():
         """)
         if unchanged != "reserved:null":
             fail("FAIL: rejected provider agreement writes altered the second reservation")
+        # PostgreSQL bigint is wider than JavaScript's exact-integer range.
+        # A DB write must fail rather than persist an unrepresentable fencing
+        # token, even if a caller bypasses the JavaScript pre-write guard.
+        psql(f"""
+            do $checkout_version$
+            begin
+              update {schema}.checkout_intents
+                 set fencing_version = 9007199254740992
+               where account_id = '{agreement_b}' and state = 'reserved';
+              raise exception 'FAIL: unsafe fencing version accepted';
+            exception when check_violation then
+              null;
+            end $checkout_version$;
+        """)
+        version_after = psql(f"""
+            select fencing_version from {schema}.checkout_intents
+             where account_id = '{agreement_b}';
+        """)
+        if version_after != "1":
+            fail("FAIL: unsafe fencing-version write changed reservation")
+        print("PASS: fencing-version overflow denied by database constraint.")
         print("PASS: provider agreement IDs are unique and required for created states.")
         print("PASS: terminal index release and persistent request-key uniqueness.")
         print("PASS: 100 checkout attempts => exactly one outstanding claim;")

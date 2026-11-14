@@ -619,6 +619,26 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('does not ignore unresolved PayPal billing solely because a legacy plan is missing', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    const start = code.indexOf('const incompletePayPal = allSubs.some');
+    const terminal = code.indexOf('const locallyTerminalPayPal = allSubs.filter');
+    const create = code.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions', {");
+    expect(start).toBeGreaterThan(0);
+    expect(terminal).toBeGreaterThan(start);
+    expect(create).toBeGreaterThan(terminal);
+    const incompleteGuard = code.slice(start, code.indexOf('if (incompletePayPal)', start));
+    expect(incompleteGuard).toContain("normalizeStatus(sub.status) === 'incomplete'");
+    expect(incompleteGuard).not.toContain("normalizePlan(sub.plan) !== 'free'");
+    const unpaidStart = code.indexOf('const unpaidPayPal = allSubs.some');
+    const unpaidGuard = code.slice(unpaidStart, code.indexOf('if (unpaidPayPal)', unpaidStart));
+    expect(unpaidGuard).toContain("normalizeStatus(sub.status) === 'unpaid'");
+    expect(unpaidGuard).not.toContain("normalizePlan(sub.plan) !== 'free'");
+    const terminalGuard = code.slice(terminal, code.indexOf('for (const previous of locallyTerminalPayPal)', terminal));
+    expect(terminalGuard).toContain("sub.status === 'canceled' || sub.status === 'ended'");
+    expect(terminalGuard).not.toContain("normalizePlan(sub.plan) !== 'free'");
+  });
+
   it('verifies locally canceled or ended PayPal agreements before creating another recurring agreement', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     const guard = code.indexOf('const locallyTerminalPayPal = allSubs.filter');

@@ -1,3 +1,24 @@
+// Every PayPal event ID represents one signed event. An existing ledger
+// record must agree on event type and instant before a redelivery can be
+// treated as a duplicate or a safe retry. ISO date formatting may differ
+// while still representing the same instant.
+export function paypalWebhookEventIdentityMatches(
+  existing: { event_type?: unknown; event_time?: unknown } | null | undefined,
+  incomingType: unknown,
+  incomingTime: unknown,
+): boolean {
+  if (!existing ||
+      typeof incomingType !== 'string' ||
+      typeof incomingTime !== 'string' ||
+      existing.event_type !== incomingType ||
+      typeof existing.event_time !== 'string') return false;
+  const storedMs = Date.parse(existing.event_time);
+  const incomingMs = Date.parse(incomingTime);
+  return Number.isFinite(storedMs) &&
+    Number.isFinite(incomingMs) &&
+    storedMs === incomingMs;
+}
+
 // Shared PayPal webhook ledger logic — mirrors the Stripe webhook ledger pattern
 // to provide idempotent event processing and stale-event protection.
 

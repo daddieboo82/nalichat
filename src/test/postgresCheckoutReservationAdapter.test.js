@@ -195,7 +195,9 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     const adapter = createPostgresCheckoutReservationAdapter(query);
     const reservation = {
       intentId: 'reserved-1', accountId: request.accountId,
-      state: 'reserved', version: 1,
+      provider: request.provider, sku: request.sku,
+      requestKey: request.requestKey, providerRequestId: request.providerRequestId,
+      providerId: null, state: 'reserved', version: 1,
     };
     const updated = await advanceCheckoutIntent(adapter, reservation, 'provider_request_started');
     expect(updated.version).toBe(2);

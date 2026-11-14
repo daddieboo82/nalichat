@@ -212,6 +212,29 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     expect(db.calls.cas).toBe(0);
   });
 
+  it('rejects provider creation write proofs with mismatched plan or client key', async () => {
+    const db = createFakeAtomicStore();
+    const first = await claimCheckoutIntent(db.adapter, input(1));
+    const started = await advanceCheckoutIntent(db.adapter, first.intent, 'provider_request_started');
+    for (const difference of [
+      { sku: 'premium_plus_yearly' },
+      { requestKey: 'another-client-key-123456789' },
+    ]) {
+      const forged = {
+        ...db.adapter,
+        recordProviderSubscription: async () => ({
+          ...started, ...difference,
+          state: 'provider_created',
+          version: started.version + 1,
+          providerId: 'I-MOCKSUBSCRIPTION1234',
+        }),
+      };
+      await expect(recordVerifiedProviderCreation(forged, started))
+        .rejects.toThrow('Verified provider creation was not durably recorded');
+    }
+    expect(db.outstanding.get(started.accountId).state).toBe('provider_request_started');
+  });
+
   it('blocks generic provider-created transition without storing provider ID', async () => {
     const db = createFakeAtomicStore();
     const first = await claimCheckoutIntent(db.adapter, input(1));

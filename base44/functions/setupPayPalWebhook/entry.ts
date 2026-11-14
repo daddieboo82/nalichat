@@ -63,6 +63,13 @@ Deno.serve(async (req) => {
         `/api/apps/${configuredAppId}/functions/paypalWebhook`) {
       return Response.json({ error: 'Webhook URL does not match the configured Base44 app' }, { status: 503 });
     }
+    // No stored webhook ID means there is nothing to verify. Fail before
+    // requesting a provider OAuth token; creation is disabled below.
+    if (!existing || existing.startsWith('REPLACE_')) {
+      return Response.json({
+        error: 'PayPal webhook registration requires controlled provisioning and persisted webhook ID',
+      }, { status: 503 });
+    }
     const accessToken = await token();
     if (existing && !existing.startsWith('REPLACE_')) {
       // An ID in the secret store is not proof that PayPal registered it

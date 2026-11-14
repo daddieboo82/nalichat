@@ -169,6 +169,9 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     await expect(claimCheckoutIntent(mock('created', {
       ...proof, state: 'reserved', version: 1, providerId: undefined,
     }), request)).rejects.toThrow('Reservation proof invalid');
+    await expect(claimCheckoutIntent(mock('created', {
+      ...proof, state: 'reserved', version: 2, providerId: null,
+    }), request)).rejects.toThrow('Reservation proof invalid');
     const conflict = await claimCheckoutIntent(mock('conflict', {
       ...proof, accountId: 'another-account', providerRequestId: 'do-not-leak',
     }), request);

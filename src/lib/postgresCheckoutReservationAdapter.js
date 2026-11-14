@@ -33,7 +33,22 @@ function asIntent(row) {
     throw new Error('Unsafe PostgreSQL checkout fencing version');
   }
   if (typeof row.intent_id !== 'string' || !row.intent_id
-    || typeof row.account_id !== 'string' || !row.account_id) {
+    || typeof row.account_id !== 'string' || !row.account_id
+    || !['paypal', 'wix'].includes(row.provider)
+    || typeof row.sku !== 'string'
+    || !/^(premium|premium_plus)_(monthly|yearly)$/.test(row.sku)
+    || typeof row.client_idempotency_key !== 'string'
+    || !/^[A-Za-z0-9._~-]{16,128}$/.test(row.client_idempotency_key)
+    || typeof row.provider_request_id !== 'string'
+    || !/^[A-Za-z0-9._~-]{16,128}$/.test(row.provider_request_id)
+    || !['reserved', 'provider_request_started', 'provider_outcome_unknown',
+      'provider_created', 'local_record_failed', 'local_recorded',
+      'verified_terminal'].includes(row.state)
+    || (row.provider_id !== null
+      && (typeof row.provider_id !== 'string'
+        || !/^[A-Za-z0-9-]{8,128}$/.test(row.provider_id)))
+    || (['provider_created', 'local_record_failed', 'local_recorded'].includes(row.state)
+      && row.provider_id === null)) {
     throw new Error('Malformed PostgreSQL checkout reservation identity');
   }
   return {
@@ -45,8 +60,7 @@ function asIntent(row) {
     providerRequestId: row.provider_request_id,
     // Provider subscription ID is recorded only after verified creation.
     // Never derive it from a client-provided checkout request key.
-    providerId: typeof row.provider_id === 'string' && row.provider_id
-      ? row.provider_id : null,
+    providerId: row.provider_id,
     state: row.state,
     version,
   };

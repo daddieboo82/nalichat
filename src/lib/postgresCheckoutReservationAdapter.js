@@ -152,13 +152,15 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
      * This operation cannot overwrite any previously persisted provider ID.
      */
     async recordProviderSubscription({
-      intentId, accountId, provider, sku, providerRequestId,
+      intentId, accountId, provider, sku, requestKey, providerRequestId,
       expectedState, expectedVersion, providerId,
     }) {
       if (typeof intentId !== 'string' || !intentId
         || typeof accountId !== 'string' || !accountId
         || !['paypal', 'wix'].includes(provider)
         || typeof sku !== 'string' || !/^(premium|premium_plus)_(monthly|yearly)$/.test(sku)
+        || typeof requestKey !== 'string'
+        || !/^[A-Za-z0-9._~-]{16,128}$/.test(requestKey)
         || typeof providerRequestId !== 'string'
         || !/^[A-Za-z0-9._~-]{16,128}$/.test(providerRequestId)
         || !['provider_request_started', 'provider_outcome_unknown'].includes(expectedState)
@@ -175,10 +177,11 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
          where intent_id = $1 and account_id = $2 and provider = $3
            and state = $4 and fencing_version = $5 and provider_id is null
            and sku = $7 and provider_request_id = $8
+           and client_idempotency_key = $9
          returning intent_id, account_id, provider, sku, client_idempotency_key,
            provider_request_id, provider_id, state, fencing_version`,
         [intentId, accountId, provider, expectedState, expectedVersion,
-          providerId, sku, providerRequestId],
+          providerId, sku, providerRequestId, requestKey],
       );
       if (!Array.isArray(updated?.rows) || updated.rows.length > 1) {
         throw new Error('Provider identity recording response invalid');
@@ -187,7 +190,8 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
       const stored = asIntent(updated.rows[0]);
       if (!stored || stored.intentId !== intentId || stored.accountId !== accountId
         || stored.provider !== provider || stored.providerId !== providerId
-        || stored.sku !== sku || stored.providerRequestId !== providerRequestId
+        || stored.sku !== sku || stored.requestKey !== requestKey
+        || stored.providerRequestId !== providerRequestId
         || stored.state !== 'provider_created' || stored.version !== expectedVersion + 1) {
         throw new Error('Provider identity recording proof invalid');
       }

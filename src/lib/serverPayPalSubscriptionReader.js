@@ -58,9 +58,16 @@ export function createServerPayPalSubscriptionReader({
     assertResponse(response, 'subscription read');
     const remote = await response.json();
     if (!remote || remote.id !== subscriptionId || typeof remote.status !== 'string'
-      || !remote.status.trim()) {
-      throw new Error('PayPal subscription identity or status mismatch');
+      || !remote.status.trim()
+      || typeof remote.custom_id !== 'string' || !remote.custom_id
+      || typeof remote.plan_id !== 'string' || !remote.plan_id) {
+      throw new Error('PayPal subscription identity, plan or status mismatch');
     }
-    return Object.freeze({ id: remote.id, status: remote.status });
+    // Expose only provider-authenticated identifiers required for identity
+    // binding. Never invent missing custom_id / plan_id fields.
+    return Object.freeze({
+      id: remote.id, status: remote.status,
+      custom_id: remote.custom_id, plan_id: remote.plan_id,
+    });
   };
 }

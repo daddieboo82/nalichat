@@ -138,6 +138,22 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     }
   });
 
+  it('does not let generic CAS release an account without a dedicated verified release', async () => {
+    const query = vi.fn();
+    const adapter = createPostgresCheckoutReservationAdapter(query);
+    await expect(adapter.compareAndSwap({
+      intentId: 'reserved-1', accountId: request.accountId,
+      expectedState: 'local_recorded', expectedVersion: 5,
+      nextState: 'verified_terminal',
+    })).rejects.toThrow('Verified terminal release store unavailable');
+    await expect(adapter.compareAndSwap({
+      intentId: 'reserved-1', accountId: request.accountId,
+      expectedState: 'provider_request_started', expectedVersion: 2,
+      nextState: 'provider_created',
+    })).rejects.toThrow('Provider identity must be durably recorded');
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it('requires a version-and-state matched atomic update', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [row({ state: 'provider_request_started', fencing_version: '2' })] });
     const adapter = createPostgresCheckoutReservationAdapter(query);

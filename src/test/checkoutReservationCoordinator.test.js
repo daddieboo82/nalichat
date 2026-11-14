@@ -58,7 +58,8 @@ function createFakeAtomicStore() {
     async verifyCreatedSubscription(intent) {
       return {
         verified: true, intentId: intent.intentId, accountId: intent.accountId,
-        provider: intent.provider, providerRequestId: intent.providerRequestId,
+        provider: intent.provider, sku: intent.sku, requestKey: intent.requestKey,
+        providerRequestId: intent.providerRequestId,
         providerId: 'I-MOCKSUBSCRIPTION1234',
       };
     },
@@ -243,6 +244,34 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     }
     expect(db.outstanding.get(first.intent.accountId).state).toBe('reserved');
     expect(db.calls.cas).toBe(0);
+  });
+
+  it('rejects provider creation evidence with incorrect plan or client key before writing', async () => {
+    const db = createFakeAtomicStore();
+    const claimed = await claimCheckoutIntent(db.adapter, input(1));
+    const started = await advanceCheckoutIntent(db.adapter, claimed.intent, 'provider_request_started');
+    for (const mismatch of [
+      { sku: 'premium_plus_yearly' },
+      { requestKey: 'different-client-request-123456' },
+      { sku: undefined },
+      { requestKey: undefined },
+    ]) {
+      let writes = 0;
+      const forged = {
+        ...db.adapter,
+        verifyCreatedSubscription: async (intent) => ({
+          verified: true, intentId: intent.intentId, accountId: intent.accountId,
+          provider: intent.provider, sku: intent.sku, requestKey: intent.requestKey,
+          providerRequestId: intent.providerRequestId,
+          providerId: 'I-MOCKSUBSCRIPTION1234', ...mismatch,
+        }),
+        recordProviderSubscription: async () => { writes++; throw new Error('unexpected write'); },
+      };
+      await expect(recordVerifiedProviderCreation(forged, started))
+        .rejects.toThrow('Provider creation identity unverified');
+      expect(writes).toBe(0);
+    }
+    expect(db.outstanding.get(started.accountId).state).toBe('provider_request_started');
   });
 
   it('rejects provider creation write proofs with mismatched plan or client key', async () => {

@@ -145,7 +145,11 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
         && found.requestKey === input.requestKey
         && found.providerRequestId === input.providerRequestId
         && found.provider === input.provider && found.sku === input.sku;
-      return { kind: exact ? 'existing' : 'conflict', intent: found };
+      // A rejected claim must not disclose another reservation's account,
+      // provider agreement or request identifiers to any direct adapter caller.
+      return exact
+        ? { kind: 'existing', intent: found }
+        : { kind: 'conflict', intent: null };
     },
     /**
      * Persist the provider-created subscription identity atomically with the

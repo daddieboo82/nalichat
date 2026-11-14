@@ -211,6 +211,7 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
       if (!receipt || receipt.verified !== true
         || receipt.intentId !== intent.intentId
         || receipt.accountId !== intent.accountId
+        || receipt.requestKey !== intent.requestKey
         || receipt.provider !== intent.provider
         || receipt.sku !== intent.sku
         || receipt.providerRequestId !== intent.providerRequestId

@@ -8,6 +8,15 @@
  * tests; this JavaScript wrapper is NOT itself a lock.
  */
 const TABLE = 'billing_private.checkout_intents';
+const GENERIC_TRANSITIONS = Object.freeze({
+  reserved: Object.freeze(['provider_request_started']),
+  provider_request_started: Object.freeze(['provider_outcome_unknown']),
+  provider_outcome_unknown: Object.freeze([]),
+  provider_created: Object.freeze(['local_record_failed', 'local_recorded']),
+  local_record_failed: Object.freeze(['local_recorded']),
+  local_recorded: Object.freeze([]),
+  verified_terminal: Object.freeze([]),
+});
 function asIntent(row) {
   if (!row) return null;
   // PostgreSQL bigint often arrives as a string. Coercing an out-of-range
@@ -141,6 +150,13 @@ export function createPostgresCheckoutReservationAdapter(query) {
       }
       if (nextState === 'verified_terminal') {
         throw new Error('Verified terminal release store unavailable');
+      }
+      if (typeof intentId !== 'string' || !intentId
+        || typeof accountId !== 'string' || !accountId
+        || !Number.isSafeInteger(expectedVersion) || expectedVersion < 1
+        || !Object.hasOwn(GENERIC_TRANSITIONS, expectedState)
+        || !GENERIC_TRANSITIONS[expectedState].includes(nextState)) {
+        throw new Error('Invalid checkout state transition');
       }
       const updated = await query(
         `update ${TABLE}

@@ -8,7 +8,6 @@ after the test. Does not create billing records or contact payment providers.
 import concurrent.futures
 import os
 import pathlib
-import re
 import shutil
 import subprocess
 import sys
@@ -31,6 +30,17 @@ def psql(sql):
 def main():
     if os.getenv("NALICHAT_STAGING_DB_CONFIRMED") != "YES":
         fail("Refusing to run: staging database not explicitly confirmed")
+    # Refuse ordinary development, general-purpose and production databases:
+    # only a deliberately named, nondefault checkout staging database is safe.
+    database = os.getenv("PGDATABASE", "")
+    if not database.startswith("nalichat_checkout_staging_"):
+        fail("PGDATABASE must start with nalichat_checkout_staging_; no database contacted")
+    if os.getenv("PGSERVICE") or os.getenv("PGSERVICEFILE"):
+        fail("PGSERVICE overrides are forbidden for this test")
+    if os.getenv("PGHOSTADDR"):
+        fail("PGHOSTADDR override is forbidden: host identity cannot be checked")
+    if os.getenv("DATABASE_URL") or os.getenv("PGURI"):
+        fail("Database URL overrides are forbidden for this staging test")
     if not shutil.which("psql"):
         fail("psql CLI not installed; nothing executed")
     for key in ["PGHOST", "PGUSER", "PGDATABASE"]:
@@ -93,6 +103,37 @@ def main():
         """)
         if stale:
             fail("FAIL: stale fencing token updated a reservation")
+        # Verify the database index's behavior after a terminal state is
+        # explicitly marked in this disposable schema. This does NOT test
+        # real-world provider verification or authorize a production release.
+        completed = psql(f"""
+            update {schema}.checkout_intents
+               set state = 'verified_terminal', fencing_version = fencing_version + 1
+             where account_id = '{account}' and state = 'reserved'
+               and fencing_version = 1
+            returning intent_id;
+        """)
+        if not completed:
+            fail("FAIL: simulated terminal state transition did not succeed")
+        successor = psql(f"""
+            insert into {schema}.checkout_intents
+              (account_id, provider, sku, client_idempotency_key, provider_request_id)
+            values ('{account}', 'wix', 'premium_monthly',
+                    'post_terminal_request_1234', 'post_terminal_provider_1234')
+            on conflict do nothing returning intent_id;
+        """)
+        if not successor:
+            fail("FAIL: terminal state did not permit a subsequent claim")
+        sameKeyReplay = psql(f"""
+            insert into {schema}.checkout_intents
+              (account_id, provider, sku, client_idempotency_key, provider_request_id)
+            values ('{account}', 'wix', 'premium_monthly',
+                    'post_terminal_request_1234', 'different_provider_key_123')
+            on conflict do nothing returning intent_id;
+        """)
+        if sameKeyReplay:
+            fail("FAIL: replay of an existing account request key was accepted")
+        print("PASS: terminal index release and persistent request-key uniqueness.")
         print("PASS: 100 checkout attempts => exactly one outstanding claim;")
         print("PASS: different account can claim; stale fencing token rejected.")
     finally:

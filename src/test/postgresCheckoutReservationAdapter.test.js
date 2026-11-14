@@ -120,6 +120,22 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       expectedState: 'provider_request_started', expectedVersion: 1, providerId: '../bad-id',
     })).rejects.toThrow();
     expect(query).toHaveBeenCalledTimes(1);
+    for (const mismatch of [
+      { provider_id: 'I-INCORRECT1234567' },
+      { account_id: 'other-account' },
+      { state: 'reserved' },
+      { fencing_version: '4' },
+    ]) {
+      const mismatched = createPostgresCheckoutReservationAdapter(
+        async () => ({ rows: [row({
+          state: 'provider_created', provider_id: providerId, fencing_version: '3', ...mismatch,
+        })] }),
+      );
+      await expect(mismatched.recordProviderSubscription({
+        intentId: 'reserved-1', accountId: request.accountId, provider: 'paypal',
+        expectedState: 'provider_outcome_unknown', expectedVersion: 2, providerId,
+      })).rejects.toThrow('Provider identity recording proof invalid');
+    }
   });
 
   it('requires a version-and-state matched atomic update', async () => {

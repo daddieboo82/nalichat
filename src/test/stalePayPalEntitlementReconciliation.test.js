@@ -570,6 +570,20 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(code).toContain('This operator-only flag is a gate, NOT the serialization mechanism.');
   });
 
+  it('blocks new PayPal agreements while an incomplete PayPal checkout remains unresolved', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    const guard = code.indexOf('const incompletePayPal = allSubs.some');
+    const newAgreement = code.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions', {");
+    expect(guard).toBeGreaterThan(0);
+    expect(newAgreement).toBeGreaterThan(guard);
+    const beforeCreate = code.slice(guard, newAgreement);
+    expect(beforeCreate).toContain("sub.provider === 'paypal'");
+    expect(beforeCreate).toContain("normalizeStatus(sub.status) === 'incomplete'");
+    expect(beforeCreate).toContain('if (incompletePayPal)');
+    expect(beforeCreate).toContain('An incomplete PayPal checkout requires verification before another subscription');
+    expect(beforeCreate).toContain('status: 409');
+  });
+
   it('blocks a second PayPal checkout for an unresolved existing active subscription', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(code).toContain("const unresolvedActivePayPal = allSubs.some");

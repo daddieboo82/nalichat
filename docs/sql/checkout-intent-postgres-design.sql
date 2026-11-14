@@ -19,10 +19,16 @@ create table if not exists billing_private.checkout_intents (
         'premium_plus_monthly', 'premium_plus_yearly'
       )
     ),
-    client_idempotency_key text not null
-      check (char_length(client_idempotency_key) between 16 and 128),
-    provider_request_id text not null
-      check (char_length(provider_request_id) between 16 and 128),
+    client_idempotency_key text not null check (
+      char_length(client_idempotency_key) between 16 and 128
+      and translate(client_idempotency_key,
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._~-', '') = ''
+    ),
+    provider_request_id text not null check (
+      char_length(provider_request_id) between 16 and 128
+      and translate(provider_request_id,
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._~-', '') = ''
+    ),
     state text not null default 'reserved'
       check (state in (
         'reserved', 'provider_request_started', 'provider_outcome_unknown',

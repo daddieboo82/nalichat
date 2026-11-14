@@ -74,6 +74,18 @@ Deno.serve(async (req) => {
     const planId = secrets.get(item.secret);
     if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
 
+    // RELEASE GATE (#1047): the existing Subscription scan is not an atomic
+    // per-user reservation. Two simultaneous requests with distinct browser
+    // idempotency keys can both create recurring PayPal agreements. Fail
+    // closed until a durable serialization primitive and its concurrency /
+    // uncertain-response recovery tests have been independently verified.
+    // This operator-only flag is a gate, NOT the serialization mechanism.
+    if (secrets.get('PAYPAL_CHECKOUT_SERIALIZATION_VERIFIED') !== 'true') {
+      return Response.json({
+        error: 'New PayPal subscriptions are temporarily unavailable until checkout safety is verified',
+      }, { status: 503 });
+    }
+
     // Block duplicate checkout if the user already has active paid access.
     const allSubs = await loadUserSubscriptions(
       base44.asServiceRole.entities.Subscription, user.id,

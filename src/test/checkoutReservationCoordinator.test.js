@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { advanceCheckoutIntent, claimCheckoutIntent } from '@/lib/checkoutReservationCoordinator';
+import { advanceCheckoutIntent, claimCheckoutIntent, recordVerifiedProviderCreation } from '@/lib/checkoutReservationCoordinator';
 
 // Deliberately atomic fake within a single JS process. This tests the
 // COORDINATOR CONTRACT only, NOT database transaction isolation.
@@ -35,6 +35,23 @@ function createFakeAtomicStore() {
         accountId: intent.accountId, provider: intent.provider,
         providerRequestId: intent.providerRequestId,
       };
+    },
+    async verifyCreatedSubscription(intent) {
+      return {
+        verified: true, intentId: intent.intentId, accountId: intent.accountId,
+        provider: intent.provider, providerRequestId: intent.providerRequestId,
+        providerId: 'I-MOCKSUBSCRIPTION1234',
+      };
+    },
+    async recordProviderSubscription({ intentId, accountId, provider, expectedState, expectedVersion, providerId }) {
+      const current = all.get(intentId);
+      if (!current || current.accountId !== accountId || current.provider !== provider
+        || current.state !== expectedState || current.version !== expectedVersion
+        || current.providerId) return null;
+      const updated = { ...current, providerId, state: 'provider_created', version: current.version + 1 };
+      all.set(intentId, updated);
+      outstanding.set(accountId, updated);
+      return { ...updated };
     },
     async compareAndSwap({ intentId, accountId, expectedState, expectedVersion, nextState }) {
       calls.cas++;
@@ -91,7 +108,7 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     const started = await advanceCheckoutIntent(db.adapter, first.intent, 'provider_request_started');
     await expect(advanceCheckoutIntent(db.adapter, first.intent, 'provider_request_started')).rejects.toThrow();
     expect(db.outstanding.size).toBe(1);
-    const created = await advanceCheckoutIntent(db.adapter, started, 'provider_created');
+    const created = await recordVerifiedProviderCreation(db.adapter, started);
     const recorded = await advanceCheckoutIntent(db.adapter, created, 'local_recorded');
     const terminal = await advanceCheckoutIntent(db.adapter, recorded, 'verified_terminal');
     expect(terminal.state).toBe('verified_terminal');
@@ -133,7 +150,7 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     const db = createFakeAtomicStore();
     const claimed = await claimCheckoutIntent(db.adapter, input(1));
     const started = await advanceCheckoutIntent(db.adapter, claimed.intent, 'provider_request_started');
-    const created = await advanceCheckoutIntent(db.adapter, started, 'provider_created');
+    const created = await recordVerifiedProviderCreation(db.adapter, started);
     const recorded = await advanceCheckoutIntent(db.adapter, created, 'local_recorded');
     const before = db.calls.cas;
     await expect(advanceCheckoutIntent({
@@ -155,6 +172,31 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     const final = await advanceCheckoutIntent(db.adapter, recorded, 'verified_terminal');
     expect(final.state).toBe('verified_terminal');
     expect(db.outstanding.has(recorded.accountId)).toBe(false);
+  });
+
+  it('blocks generic provider-created transition without storing provider ID', async () => {
+    const db = createFakeAtomicStore();
+    const first = await claimCheckoutIntent(db.adapter, input(1));
+    const started = await advanceCheckoutIntent(db.adapter, first.intent, 'provider_request_started');
+    const calls = db.calls.cas;
+    await expect(advanceCheckoutIntent(db.adapter, started, 'provider_created')).rejects.toThrow();
+    expect(db.calls.cas).toBe(calls);
+    expect(db.outstanding.get(started.accountId).state).toBe('provider_request_started');
+    await expect(recordVerifiedProviderCreation({
+      ...db.adapter, verifyCreatedSubscription: undefined,
+    }, started)).rejects.toThrow('Trusted provider creation verification unavailable');
+    await expect(recordVerifiedProviderCreation({
+      ...db.adapter, verifyCreatedSubscription: async () => ({
+        verified: true, intentId: started.intentId, accountId: 'wrong-account',
+        provider: started.provider, providerRequestId: started.providerRequestId,
+        providerId: 'I-MOCKSUBSCRIPTION1234',
+      }),
+    }, started)).rejects.toThrow('Provider creation identity unverified');
+    expect(db.outstanding.get(started.accountId).state).toBe('provider_request_started');
+    const created = await recordVerifiedProviderCreation(db.adapter, started);
+    expect(created.providerId).toBe('I-MOCKSUBSCRIPTION1234');
+    expect(created.state).toBe('provider_created');
+    await expect(recordVerifiedProviderCreation(db.adapter, started)).rejects.toThrow();
   });
 
   it('fails closed if database adapter is absent or violates its contract', async () => {

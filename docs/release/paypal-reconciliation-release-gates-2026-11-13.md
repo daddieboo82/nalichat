@@ -10,13 +10,27 @@
 - GitHub Quality Gates and CI Recovery jobs were marked failed without inspectable steps or logs (404 BlobNotFound on earlier job logs). Do **not** treat this as evidence that unit tests ran. See #972.
 
 ## Fail-closed recurring checkout rollout gate (#1047)
-The draft `createPayPalSubscription` endpoint now requires the server-managed `PAYPAL_CHECKOUT_SERIALIZATION_VERIFIED` secret to equal the exact string `true`. If absent or different, the endpoint responds 503 **before it reads existing subscriptions or calls PayPal create**, preventing new recurring agreements from this draft path. This is a **release safety stop**, **not** a lock, concurrency fix, or permission to enable new subscriptions.
+The draft `createPayPalSubscription` handler now has a **hard-coded closed
+release gate** via `hasAtomicPayPalCheckoutReservation()`, whose current
+implementation returns `false`. It responds 503 before scanning subscriptions
+or making any PayPal API request. The previous
+`PAYPAL_CHECKOUT_SERIALIZATION_VERIFIED` environment-secret bypass was removed
+after an isolated executable handler test demonstrated **two distinct remote
+agreements** from two parallel requests when the old flag was set to `true`.
+This is a **deliberate safety stop**, not the missing atomic reservation.
 
-- [ ] Do not enable this flag in production until an independently verified, durable and atomic per-user checkout intent / serialization mechanism is implemented and concurrency, timeout, and local-write-failure tests pass.
-- [ ] Verify secret management is server-only, audit who can change the flag, and validate fail-closed behavior when missing, malformed, or unavailable.
-- [ ] Check product UX for a temporarily unavailable checkout; never represent PayPal billing as enabled while the gate is off.
-- [ ] Test an explicitly enabled staging configuration with confirmed concurrency enforcement and PayPal sandbox before a controlled rollout.
-- [ ] Confirm existing subscribers' webhook, status, and entitlement paths remain unaffected. Do not interpret the flag as a complete payment subsystem kill switch.
+- [ ] Implement a durable atomic *account-level* reservation and call it
+      before the provider create operation, for every billing provider.
+- [ ] Replace the hard-closed helper ONLY with real atomic reservation
+      acquisition and recovery in the request/worker path. A Boolean
+      environment flag or static `true` return is never an acceptable fix.
+- [ ] Run concurrent different-key, different-SKU, and cross-provider checkout
+      tests, uncertain PayPal response, expired worker lease and local record
+      write failure recovery before any launch.
+- [ ] Provide a customer-visible temporarily-unavailable checkout experience.
+- [ ] Confirm existing subscriber reconciliation, webhooks, status and
+      entitlements remain unaffected: this gate applies to new PayPal checkout
+      creation, not the whole subscription system.
 
 ## Mandatory security gate (#1043)
 The scheduled PayPal workflow definition and both backend entrypoints contain an identical repository-visible authorization key; read-only deployed workflow inspection found the same key live.

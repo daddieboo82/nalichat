@@ -11,9 +11,8 @@ export async function resolvePayPalSubscriptionStatus(
   let remoteStatus = String(remote?.status || '').toUpperCase();
   if (remoteStatus !== 'APPROVED') return remoteStatus;
 
-  let activated = false;
   try {
-    const actRes = await fetch(
+    await fetch(
       apiBase + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId) + '/activate',
       {
         method: 'POST',
@@ -24,14 +23,14 @@ export async function resolvePayPalSubscriptionStatus(
         body: JSON.stringify({ reason: 'Activating subscription after customer approval' }),
       },
     );
-    activated = actRes.ok || actRes.status === 204;
   } catch {
-    activated = false;
+    // Activation may have succeeded remotely even if this request failed.
+    // The subsequent GET is the only evidence that can establish ACTIVE.
   }
-  if (activated) remoteStatus = 'ACTIVE';
 
-  // Activation can lose a race with PayPal auto-activation, and the APPROVED
-  // payload often has no usable billing window. Re-read before deciding access.
+  // A successful activation POST is not evidence of current paid status.
+  // PayPal may still report APPROVED, SUSPENDED, or another state; a missing
+  // follow-up response must not be promoted to ACTIVE.
   try {
     const again = await fetch(
       apiBase + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId),
@@ -39,14 +38,27 @@ export async function resolvePayPalSubscriptionStatus(
     );
     if (again.ok) {
       const fresh = await again.json();
-      if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
       const freshStatus = String(fresh?.status || '').toUpperCase();
-      if (freshStatus && (!activated || freshStatus === 'ACTIVE')) {
+      // A post-activation GET must still refer to the original verified
+      // agreement. A status alone cannot prove this is the user's plan.
+      if (freshStatus &&
+          (!remote?.plan_id || !remote?.custom_id ||
+            fresh?.plan_id !== remote.plan_id ||
+            fresh?.custom_id !== remote.custom_id)) {
+        // A mismatched or incomplete follow-up must not promote *or revoke*
+        // a different customer's subscription.
+        return 'UNVERIFIED';
+      }
+      if (freshStatus) {
         remoteStatus = freshStatus;
+        // The follow-up read is the authoritative billing snapshot. Do not
+        // combine its ACTIVE status with a next_billing_time from the older
+        // APPROVED response when the fresh payload omitted billing_info.
+        remote.billing_info = fresh?.billing_info ?? undefined;
       }
     }
   } catch {
-    // Keep the status already resolved from the approval response.
+    // Leave approval pending for a later provider-confirmed reconciliation.
   }
 
   return remoteStatus;
@@ -67,4 +79,22 @@ export function paypalPeriodEndForStatus(
   if (!Number.isFinite(parsed)) return undefined;
   if (status === 'active' && parsed <= nowMs) return null;
   return value;
+}
+
+
+/**
+ * A newly approved PayPal checkout cannot become paid access without a
+ * future provider billing boundary. Existing active records also must not
+ * lose their recorded boundary because a webhook omitted billing_info.
+ */
+export function requiresPayPalBillingVerification(
+  localStatus: unknown,
+  nextStatus: unknown,
+  periodEnd: unknown,
+  nowMs = Date.now(),
+): boolean {
+  if (nextStatus !== 'active' || localStatus !== 'pending') return false;
+  return typeof periodEnd !== 'string'
+    || !Number.isFinite(Date.parse(periodEnd))
+    || Date.parse(periodEnd) <= nowMs;
 }

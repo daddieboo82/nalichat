@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   hasPaidTierAccess,
+  requiresExistingPayPalCheckoutReview,
   resolveEntitlements,
 } from '../../base44/shared/subscription.ts';
 
@@ -25,6 +26,25 @@ describe('server subscription entitlement expiry', () => {
 
   it('keeps active legacy/manual subscriptions without a period end working', () => {
     expect(hasPaidTierAccess('active', { now })).toBe(true);
+  });
+
+  it('reviews unresolved pending and active PayPal billing before cross-provider checkout', () => {
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'active', null, now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'active', 'invalid', now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'active', '2026-09-10T06:00:00Z', now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'active', '2026-10-10T06:00:00Z', now)).toBe(false);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'pending', null, now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium_plus', 'incomplete', null, now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'unpaid', null, now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'canceled', null, now)).toBe(false);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'free', 'active', null, now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', undefined, 'active', '2026-10-10T06:00:00Z', now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'free', 'pending', null, now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'free', 'incomplete', null, now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'free', 'unpaid', null, now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'free', 'canceled', null, now)).toBe(false);
+    expect(requiresExistingPayPalCheckoutReview('manual', 'premium_plus', 'active', null, now)).toBe(false);
+    expect(requiresExistingPayPalCheckoutReview('stripe', 'premium', 'active', null, now)).toBe(false);
   });
 
   it('denies expired trials and canceled periods', () => {

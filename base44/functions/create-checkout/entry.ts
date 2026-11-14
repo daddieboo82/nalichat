@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
-import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
+import { hasPaidTierAccess, normalizePlan, normalizeStatus, requiresExistingPayPalCheckoutReview } from '../../shared/subscription.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -25,6 +25,21 @@ function resolveAppUrl(req: Request): string {
     }
   }
   return APP_BASE_URL;
+}
+
+// Read every subscription page before deciding whether another recurring
+// checkout is safe. Limiting this to the newest 100 can hide an older paid
+// subscription and cause a second charge.
+async function loadUserSubscriptions(entity: any, userId: string): Promise<any[]> {
+  const rows: any[] = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.filter(
+      { user_id: userId }, '-created_date', pageSize, skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -69,8 +84,8 @@ Deno.serve(async (req) => {
     }
 
     // Block duplicate checkout if the user already has active paid access
-    const allSubs = await base44.asServiceRole.entities.Subscription.filter(
-      { user_id: user.id }, '-created_date', 100,
+    const allSubs = await loadUserSubscriptions(
+      base44.asServiceRole.entities.Subscription, user.id,
     );
     const now = new Date().toISOString();
     const alreadyPaid = allSubs.some((sub: any) => {
@@ -84,6 +99,19 @@ Deno.serve(async (req) => {
     });
     if (alreadyPaid) {
       return Response.json({ error: 'This account already has a paid subscription; use the billing portal' }, { status: 409 });
+    }
+
+    // An active PayPal subscription with an expired or missing local billing
+    // period may still be billing at PayPal. Block a new cross-provider
+    // recurring checkout until its status is reconciled, preventing double
+    // subscriptions across PayPal, Stripe and Wix.
+    const unresolvedPayPal = allSubs.some((sub: any) => requiresExistingPayPalCheckoutReview(
+      sub.provider, sub.plan, sub.status, sub.current_period_end, now,
+    ));
+    if (unresolvedPayPal) {
+      return Response.json({
+        error: 'Existing PayPal subscription needs verification before another checkout',
+      }, { status: 409 });
     }
 
     // Reuse any still-pending Wix checkout for this SKU

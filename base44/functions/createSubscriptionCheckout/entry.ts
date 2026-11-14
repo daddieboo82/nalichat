@@ -8,7 +8,7 @@ import {
   trialEligibility,
   validateCheckoutIdempotencyKey,
 } from '../../shared/stripeBilling.ts';
-import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
+import { hasPaidTierAccess, normalizePlan, normalizeStatus, requiresExistingPayPalCheckoutReview } from '../../shared/subscription.ts';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
@@ -152,27 +152,16 @@ Deno.serve(async (req) => {
         { status: 409 },
       );
     }
-    if (
-      pendingSubscription?.checkout_url
-      && pendingSubscription.checkout_id
-      && typeof pendingSubscription.checkout_expires_at === 'string'
-      && Date.parse(pendingSubscription.checkout_expires_at) > Date.now()
-    ) {
+    // A previously created Stripe checkout must not bypass the unresolved
+    // PayPal renewal guard. Check before reusing any existing session.
+    const guardNow = new Date().toISOString();
+    const unresolvedPayPal = subscriptions.some((sub: any) => requiresExistingPayPalCheckoutReview(
+      sub.provider, sub.plan, sub.status, sub.current_period_end, guardNow,
+    ));
+    if (unresolvedPayPal) {
       return Response.json({
-        success: true,
-        action: 'create_subscription_checkout',
-        userId: user.id,
-        sku: sku.sku,
-        idempotencyKey: requestKey,
-        successDestination: body.callbackDestinations.success,
-        cancelDestination: body.callbackDestinations.cancel,
-        checkoutUrl: pendingSubscription.checkout_url,
-        checkoutId: pendingSubscription.checkout_id,
-        trialApplied: Boolean(
-          !user.trial_used_at && user.trial_claim_id === requestKey
-        ),
-        reused: true,
-      });
+        error: 'Existing PayPal subscription needs verification before another checkout',
+      }, { status: 409 });
     }
 
     const now = new Date().toISOString();
@@ -195,6 +184,29 @@ Deno.serve(async (req) => {
         ? 'This account already has grandfathered Premium Plus billing'
         : 'This account already has a paid subscription; use the billing portal';
       return Response.json({ error: message }, { status: 409 });
+    }
+
+    if (
+      pendingSubscription?.checkout_url
+      && pendingSubscription.checkout_id
+      && typeof pendingSubscription.checkout_expires_at === 'string'
+      && Date.parse(pendingSubscription.checkout_expires_at) > Date.now()
+    ) {
+      return Response.json({
+        success: true,
+        action: 'create_subscription_checkout',
+        userId: user.id,
+        sku: sku.sku,
+        idempotencyKey: requestKey,
+        successDestination: body.callbackDestinations.success,
+        cancelDestination: body.callbackDestinations.cancel,
+        checkoutUrl: pendingSubscription.checkout_url,
+        checkoutId: pendingSubscription.checkout_id,
+        trialApplied: Boolean(
+          !user.trial_used_at && user.trial_claim_id === requestKey
+        ),
+        reused: true,
+      });
     }
 
     // Reuse any still-valid pending checkout for this SKU before taking a new

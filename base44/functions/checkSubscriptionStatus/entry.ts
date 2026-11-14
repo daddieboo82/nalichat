@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { secrets } from 'base44:runtime';
 import {
+  entitlementStatusForProvider,
   hasPaidTierAccess,
   normalizePlan,
   normalizeStatus,
@@ -88,20 +89,63 @@ function paypalStatus(status: unknown) {
 }
 
 async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, subscriptions: SubscriptionRecord[]) {
-  const pending = subscriptions.filter((subscription) =>
-    subscription.provider === 'paypal' && subscription.status === 'pending' &&
-    typeof subscription.id === 'string' && typeof subscription.subscription_id === 'string'
-  ).slice(0, 10);
-  if (!pending.length) return;
+  const nowMs = Date.now();
+  // Recover pending approvals and revalidate active PayPal records whose
+  // locally stored billing boundary is already past. A stale local period
+  // must not permanently deny a subscriber who renewed at the provider.
+  const unresolved = subscriptions.filter((subscription) => {
+    if (subscription.provider !== 'paypal' ||
+        typeof subscription.id !== 'string' ||
+        typeof subscription.subscription_id !== 'string') return false;
+    if (subscription.status === 'pending') return true;
+    if (subscription.status !== 'active') return false;
+    // Missing/malformed billing dates are unresolved too.
+    const periodEndMs = typeof subscription.current_period_end === 'string'
+      ? Date.parse(subscription.current_period_end)
+      : Number.NaN;
+    return !Number.isFinite(periodEndMs) || periodEndMs <= nowMs;
+  });
+  const staleActive = unresolved.filter((subscription) => subscription.status === 'active');
+  const pending = unresolved.filter((subscription) => subscription.status === 'pending');
+  // Avoid a fixed first-ten priority: a permanently unverifiable stale
+  // active row must not starve pending purchases, and older rows in either
+  // group must eventually be retried. Rotate the starting index by minute.
+  const selectRotating = (rows: SubscriptionRecord[], limit: number) => {
+    if (!rows.length || limit <= 0) return [];
+    const start = Math.floor(nowMs / 60_000) % rows.length;
+    return rows.slice(start).concat(rows.slice(0, start)).slice(0, limit);
+  };
+  const candidates = [
+    ...selectRotating(staleActive, 5),
+    ...selectRotating(pending, 5),
+  ];
+  if (candidates.length < 10) {
+    const selectedIds = new Set(candidates.map((row) => row.id));
+    const remaining = unresolved.filter((row) => !selectedIds.has(row.id));
+    candidates.push(...selectRotating(remaining, 10 - candidates.length));
+  }
+  if (!candidates.length) return;
   try {
     const token = await paypalAccessToken();
     if (!token) return;
-    for (const subscription of pending) {
-      const response = await fetch(paypalApiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscription.subscription_id as string), {
+    for (const subscription of candidates) {
+      try {
+        const response = await fetch(paypalApiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscription.subscription_id as string), {
         headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
       });
       if (!response.ok) continue;
       const remote = await response.json();
+      // The resolver can POST /activate whenever PayPal reports APPROVED.
+      // Every candidate (including a locally active row with stale billing)
+      // must match the provider plan and account before any such mutation.
+      // An unverifiable legacy row stays unchanged for manual review.
+      if (typeof subscription.paypal_plan_id !== 'string' ||
+          typeof subscription.user_id !== 'string' ||
+          typeof subscription.sku !== 'string' ||
+          remote?.plan_id !== subscription.paypal_plan_id ||
+          remote?.custom_id !== subscription.user_id + ':' + subscription.sku) {
+        continue;
+      }
       const remoteStatus = await resolvePayPalSubscriptionStatus(
         paypalApiBase(),
         token,
@@ -112,10 +156,31 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       if (!status) continue;
       const update: Record<string, unknown> = { status };
       const periodEnd = paypalPeriodEndForStatus(status, remote?.billing_info?.next_billing_time);
-      if (periodEnd !== undefined) update.current_period_end = periodEnd;
+      // A newly approved checkout must not turn into indefinite access if
+      // PayPal omits a usable future billing boundary.
+      if (subscription.status === 'pending' && status === 'active' &&
+          (typeof periodEnd !== 'string' || Date.parse(periodEnd) <= nowMs)) {
+        continue;
+      }
+      // For every PayPal ACTIVE record, write a billing boundary only when
+      // PayPal provided a verified future date. Missing or expired provider
+      // billing data must never clear a stored boundary or replace it with
+      // null: other access helpers interpret active + null as unlimited.
+      if (status === 'active') {
+        if (typeof periodEnd === 'string' && Date.parse(periodEnd) > nowMs) {
+          update.current_period_end = periodEnd;
+        }
+      } else if (periodEnd !== undefined) {
+        update.current_period_end = periodEnd;
+      }
       if (status === 'canceled') update.cancel_at_period_end = false;
       await subscriptionEntity.update(subscription.id as string, update);
       Object.assign(subscription, update);
+      } catch (error) {
+        // Continue verifying other subscriptions even if one provider
+        // lookup or entity update fails; never promote unverified access.
+        console.error('PayPal subscription lookup or update failed', error);
+      }
     }
   } catch (error) {
     console.error('PayPal status reconciliation failed', error);
@@ -125,7 +190,10 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
 function subscriptionPriority(subscription: SubscriptionRecord, now: string): number {
   const plan = normalizePlan(subscription.plan);
   const status = normalizeStatus(subscription.status);
-  const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(status, {
+  const accessStatus = entitlementStatusForProvider(
+    subscription.provider, status, subscription.current_period_end, now,
+  );
+  const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(accessStatus, {
     currentPeriodEnd: typeof subscription.current_period_end === 'string'
       ? subscription.current_period_end
       : null,
@@ -175,12 +243,13 @@ Deno.serve(async (req) => {
     const plan = selected ? normalizePlan(selected.plan) : 'free';
     const status = selected ? normalizeStatus(selected.status) : 'active';
     const currentPeriodEnd = selected?.current_period_end || null;
-    const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(status, {
+    const accessStatus = entitlementStatusForProvider(selected?.provider, status, currentPeriodEnd, now);
+    const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(accessStatus, {
       currentPeriodEnd,
       trialEndDate: selected?.trial_end_date || null,
       now,
     });
-    const entitlements = resolveEntitlements(plan, status, {
+    const entitlements = resolveEntitlements(plan, accessStatus, {
       currentPeriodEnd,
       trialEndDate: selected?.trial_end_date || null,
       now,

@@ -1,3 +1,24 @@
+// Every PayPal event ID represents one signed event. An existing ledger
+// record must agree on event type and instant before a redelivery can be
+// treated as a duplicate or a safe retry. ISO date formatting may differ
+// while still representing the same instant.
+export function paypalWebhookEventIdentityMatches(
+  existing: { event_type?: unknown; event_time?: unknown } | null | undefined,
+  incomingType: unknown,
+  incomingTime: unknown,
+): boolean {
+  if (!existing ||
+      typeof incomingType !== 'string' ||
+      typeof incomingTime !== 'string' ||
+      existing.event_type !== incomingType ||
+      typeof existing.event_time !== 'string') return false;
+  const storedMs = Date.parse(existing.event_time);
+  const incomingMs = Date.parse(incomingTime);
+  return Number.isFinite(storedMs) &&
+    Number.isFinite(incomingMs) &&
+    storedMs === incomingMs;
+}
+
 // Shared PayPal webhook ledger logic — mirrors the Stripe webhook ledger pattern
 // to provide idempotent event processing and stale-event protection.
 
@@ -25,17 +46,28 @@ export function shouldApplyPayPalEvent(
   lastEventTime: unknown,
   incomingEventId: string,
   incomingEventTime: string,
+  nowMs = Date.now(),
 ): boolean {
-  if (lastEventId === incomingEventId) {
-    return false;
-  }
+  if (lastEventId === incomingEventId) return false;
+  // An invalid incoming event time cannot be ordered against previous
+  // lifecycle events. Never substitute receipt time and apply it as newest.
+  const incomingMs = typeof incomingEventTime === 'string'
+    ? Date.parse(incomingEventTime)
+    : Number.NaN;
+  // A far-future timestamp can permanently outrank legitimate subsequent
+  // events. Allow modest provider/merchant clock skew, but never apply an
+  // event more than five minutes ahead of the server's clock.
+  if (!Number.isFinite(incomingMs) || incomingMs > nowMs + 5 * 60_000) return false;
+  // A legacy record may have an event ID but no usable time. That does
+  // not establish whether the incoming event precedes an already-applied
+  // lifecycle change. Require reconciliation rather than guessing.
   if (typeof lastEventTime !== 'string' || lastEventTime.length === 0) {
-    return true;
+    return typeof lastEventId !== 'string' || lastEventId.length === 0;
   }
   const lastMs = Date.parse(lastEventTime);
-  const incomingMs = Date.parse(incomingEventTime);
-  if (!Number.isFinite(lastMs) || !Number.isFinite(incomingMs)) {
-    return true;
-  }
-  return incomingMs >= lastMs;
+  if (!Number.isFinite(lastMs)) return false;
+  // Distinct lifecycle events at the exact same provider timestamp cannot be
+  // reliably ordered. Do not let delivery order decide subscription access.
+  // A later provider reconciliation can resolve the actual current state.
+  return incomingMs > lastMs;
 }

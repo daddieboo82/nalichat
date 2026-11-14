@@ -155,6 +155,55 @@ export function hasPaidTierAccess(
   return Number.isFinite(periodEnd) && Number.isFinite(now) && periodEnd > now;
 }
 
+/**
+ * Preserve intentionally non-expiring manual grants, but a PayPal ACTIVE
+ * record with no future billing boundary is not verified paid access.
+ * This is the access-control status only, not a mutation of provider state.
+ */
+export function entitlementStatusForProvider(
+  provider: unknown,
+  status: SubscriptionStatus,
+  currentPeriodEnd: unknown,
+  now = new Date().toISOString(),
+): SubscriptionStatus {
+  if (provider !== 'paypal' || status !== 'active') return status;
+  const endMs = typeof currentPeriodEnd === 'string' ? Date.parse(currentPeriodEnd) : Number.NaN;
+  const nowMs = Date.parse(now);
+  return Number.isFinite(endMs) && Number.isFinite(nowMs) && endMs > nowMs
+    ? status
+    : 'ended';
+}
+
+/**
+ * A pending PayPal billing agreement, or a previously active PayPal
+ * subscription with an unverified current period, must be reconciled before
+ * opening a different provider's recurring checkout. This checkout guard
+ * cannot prove cross-request atomicity and does not grant paid access.
+ */
+export function requiresExistingPayPalCheckoutReview(
+  provider: unknown,
+  plan: unknown,
+  status: unknown,
+  currentPeriodEnd: unknown,
+  now = new Date().toISOString(),
+): boolean {
+  if (provider !== 'paypal') return false;
+  const currentStatus = normalizeStatus(status);
+  // A PayPal agreement with missing or malformed local tier metadata still
+  // needs provider verification before another provider begins recurring
+  // billing. An asserted local "free" tier is not proof of no PayPal charge.
+  if (normalizePlan(plan) === 'free' &&
+      (currentStatus === 'active' || currentStatus === 'pending' ||
+       currentStatus === 'incomplete' || currentStatus === 'unpaid')) return true;
+  // An unresolved approval can still become billable at PayPal. Until its
+  // lifecycle is verified, do not allow a parallel Stripe/Wix agreement.
+  if (currentStatus === 'pending' || currentStatus === 'incomplete' || currentStatus === 'unpaid') return true;
+  if (currentStatus !== 'active') return false;
+  const boundary = typeof currentPeriodEnd === 'string' ? Date.parse(currentPeriodEnd) : Number.NaN;
+  const nowMs = Date.parse(now);
+  return !Number.isFinite(boundary) || !Number.isFinite(nowMs) || boundary <= nowMs;
+}
+
 export function resolveEntitlements(
   plan: SubscriptionPlan,
   status: SubscriptionStatus,

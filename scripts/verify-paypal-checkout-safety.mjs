@@ -47,6 +47,13 @@ check(wixStop >= 0 && wix503 > wixStop && wix503 < wixRateLimit
   && wixRateLimit < wixProviderCreate,
   'Wix checkout stop must precede account reads and provider session creation.');
 
+// Checkout return destinations must never use untrusted app-origin headers.
+check(wixCheckout.includes("new URL('/ThankYou?subscription=1', APP_BASE_URL)")
+  && wixCheckout.includes("new URL('/pricing', APP_BASE_URL)")
+  && !wixCheckout.includes('X-Base44-App-Url')
+  && !wixCheckout.includes('resolveAppUrl('),
+  'Wix payment return URLs must use only the canonical configured origin.');
+
 check(pricing.includes('isCheckoutPaused={!appleIAP.available}')
   && pricing.includes('disabled={isStarting || isCurrent || isPaidSubscriber || isCheckoutPaused}'),
   'Web PayPal upgrade buttons must remain disabled.');

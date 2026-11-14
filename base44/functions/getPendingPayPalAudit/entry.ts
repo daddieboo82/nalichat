@@ -98,12 +98,27 @@ Deno.serve(async (req) => {
           continue;
         }
         const remote = await response.json();
+        // A successful HTTP response alone does not prove that the payload
+        // identifies the exact agreement and plan held in the local record.
+        // Never count a mismatched or malformed provider result as verified.
+        if (!remote || remote.id !== record.subscription_id
+          || !record.paypal_plan_id || remote.plan_id !== record.paypal_plan_id) {
+          results.push({
+            subscriptionId: record.subscription_id, plan: record.sku || record.plan,
+            status: 'identity_mismatch', providerStatusVerified: false,
+          });
+          continue;
+        }
+        const remoteStatus = typeof remote.status === 'string'
+          ? remote.status.trim().toUpperCase() : '';
+        const knownStatus = ['APPROVAL_PENDING', 'APPROVED', 'ACTIVE', 'SUSPENDED',
+          'CANCELLED', 'EXPIRED'].includes(remoteStatus);
         results.push({
           subscriptionId: record.subscription_id,
           plan: record.sku || record.plan,
-          status: String(remote.status || 'unknown').toUpperCase(),
-          providerStatusVerified: typeof remote.status === 'string' && remote.status.trim().length > 0,
-          paymentRecorded: Boolean(remote.billing_info?.last_payment?.time),
+          status: knownStatus ? remoteStatus : 'unknown',
+          providerStatusVerified: knownStatus,
+          paymentRecorded: knownStatus && Boolean(remote.billing_info?.last_payment?.time),
         });
       } catch {
         results.push({ subscriptionId: record.subscription_id, plan: record.sku || record.plan, status: 'lookup_failed' });

@@ -326,13 +326,13 @@ export default function PricingPlans({
 
         {subscription.hasPending && !subscription.hasPaidAccess && !checkoutCanceled && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-primary/40 bg-primary/5 p-4 text-center" role="status">
-            Left PayPal before approving? Choose the same plan below to resume checkout. Your subscription starts only after you approve payment in PayPal.
+            {appleIAP.available ? "An earlier PayPal approval is still pending. You can check its status in Settings." : "A previous PayPal checkout is pending. New PayPal checkout attempts are paused while billing safety is verified. Check your subscription status in Settings."}
           </div>
         )}
 
         {checkoutCanceled && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-border bg-card p-4 text-center" role="status">
-            You returned from PayPal without completing this checkout. You can choose a plan to try again.
+            {appleIAP.available ? "You returned from PayPal without completing the checkout. Use Settings to review the subscription status." : "Your previous PayPal checkout was not completed. Starting another PayPal checkout is temporarily unavailable; review your subscription status in Settings."}
           </div>
         )}
 

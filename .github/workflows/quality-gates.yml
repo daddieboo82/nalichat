@@ -36,7 +36,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
 
   production-authenticated-e2e:
@@ -70,5 +70,5 @@ jobs:
           fi
           echo "Protected production E2E credentials are available; authenticated tests will execute."
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e -- e2e/authenticated-smoke.spec.js --project=mobile-chromium --project=iphone-16-simulation

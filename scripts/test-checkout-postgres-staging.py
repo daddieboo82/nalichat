@@ -41,6 +41,8 @@ def main():
         fail("PGHOSTADDR override is forbidden: host identity cannot be checked")
     if os.getenv("DATABASE_URL") or os.getenv("PGURI"):
         fail("Database URL overrides are forbidden for this staging test")
+    if os.getenv("PGOPTIONS"):
+        fail("PGOPTIONS overrides are forbidden for this staging test")
     if not shutil.which("psql"):
         fail("psql CLI not installed; nothing executed")
     for key in ["PGHOST", "PGUSER", "PGDATABASE"]:
@@ -50,6 +52,14 @@ def main():
         fail("Production-linked NaliChat Supabase host is forbidden")
     if os.getenv("PGHOST", "").lower().startswith("db.xznlhezufooynxekoezl."):
         fail("Production-linked NaliChat Supabase project is forbidden")
+    # Verify the destination after connecting: a configured PGDATABASE
+    # string alone is not proof that libpq reached the intended database.
+    connected_database = psql("select current_database();")
+    if connected_database != database:
+        fail("Connected database does not equal the verified staging database")
+    if not connected_database.startswith("nalichat_checkout_staging_"):
+        fail("Connected database is not a checkout staging database")
+
     # The draft DDL uses the Supabase-specific roles "anon" and
     # "authenticated". Don't silently edit away those security grants to
     # make a vanilla PostgreSQL test pass.

@@ -3,7 +3,8 @@ import { decideCheckoutRecovery } from '@/lib/checkoutRecoveryDecision';
 
 const base = {
   intentId: 'intent-123', accountId: 'account-123', provider: 'paypal',
-  providerRequestId: 'original-request-123', providerId: null,
+  sku: 'premium_monthly', requestKey: 'client-request-key-123',
+  providerRequestId: 'original-request-123', providerId: null, version: 1,
 };
 
 describe('draft checkout crash recovery policy (no payment API calls)', () => {
@@ -52,6 +53,27 @@ describe('draft checkout crash recovery policy (no payment API calls)', () => {
     expect(decideCheckoutRecovery({
       ...base, state: 'verified_terminal', providerId: 'I-KNOWN12345678',
     }).action).toBe('no_checkout_create');
+  });
+
+  it('rejects malformed plan, request identity and fencing token before recovery', () => {
+    const valid = { ...base, state: 'provider_outcome_unknown' };
+    for (const changes of [
+      { sku: 'unknown_plan' },
+      { sku: undefined },
+      { requestKey: '' },
+      { requestKey: 'bad key with spaces' },
+      { providerRequestId: '../invalid-provider-request' },
+      { version: 0 },
+      { version: Number.MAX_SAFE_INTEGER },
+      { version: Number.MAX_SAFE_INTEGER + 1 },
+      { version: undefined },
+    ]) {
+      expect(() => decideCheckoutRecovery({ ...valid, ...changes }))
+        .toThrow('Checkout recovery context invalid');
+    }
+    expect(decideCheckoutRecovery(valid)).toEqual({
+      action: 'no_checkout_create', reason: 'manual_provider_reconciliation_required',
+    });
   });
 
   it('fails closed for unknown state or missing identity', () => {

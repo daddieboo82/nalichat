@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
-import { shouldApplyPayPalEvent } from '../../base44/shared/paypalWebhookLedger.ts';
+import { paypalWebhookEventIdentityMatches, shouldApplyPayPalEvent } from '../../base44/shared/paypalWebhookLedger.ts';
 
 const source = () => readFile('base44/functions/checkSubscriptionStatus/entry.ts', 'utf8');
 
@@ -97,25 +97,30 @@ describe('signed PayPal webhook event ordering', () => {
     expect(code).toContain("processing_state: 'processed'");
   });
 
-  it('rejects conflicting ledger event identity before duplicate acknowledgment or retry', async () => {
+  it('compares webhook event identity by type and parsed creation instant', () => {
+    const stored = { event_type: 'PAYMENT.SALE.COMPLETED', event_time: '2026-11-13T17:00:00.000Z' };
+    expect(paypalWebhookEventIdentityMatches(stored, stored.event_type, stored.event_time)).toBe(true);
+    expect(paypalWebhookEventIdentityMatches(stored, stored.event_type, '2026-11-13T12:00:00-05:00')).toBe(true);
+    expect(paypalWebhookEventIdentityMatches(stored, 'PAYMENT.SALE.REVERSED', stored.event_time)).toBe(false);
+    expect(paypalWebhookEventIdentityMatches(stored, stored.event_type, '2026-11-13T17:00:01.000Z')).toBe(false);
+    expect(paypalWebhookEventIdentityMatches({ ...stored, event_time: 'invalid' }, stored.event_type, stored.event_time)).toBe(false);
+    expect(paypalWebhookEventIdentityMatches({ ...stored, event_time: '' }, stored.event_type, stored.event_time)).toBe(false);
+    expect(paypalWebhookEventIdentityMatches(null, stored.event_type, stored.event_time)).toBe(false);
+    expect(paypalWebhookEventIdentityMatches(stored, stored.event_type, undefined)).toBe(false);
+  });
+
+  it('uses identical ledger identity verification before normal and collided duplicate handling', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
-    const firstCheck = code.indexOf("if (existing[0] && (");
+    const first = code.indexOf('if (existing[0] && !paypalWebhookEventIdentityMatches(');
     const duplicate = code.indexOf("if (ledgerAction === 'duplicate')");
-    const raced = code.indexOf('if (raced.length !== 1 ||');
+    const raced = code.indexOf('if (raced.length !== 1 || !paypalWebhookEventIdentityMatches(');
     const racedAction = code.indexOf('const racedAction = paypalWebhookLedgerAction(');
-    expect(firstCheck).toBeGreaterThan(0);
-    expect(duplicate).toBeGreaterThan(firstCheck);
+    expect(first).toBeGreaterThan(0);
+    expect(duplicate).toBeGreaterThan(first);
     expect(raced).toBeGreaterThan(duplicate);
     expect(racedAction).toBeGreaterThan(raced);
-    const originalGuard = code.slice(firstCheck, duplicate);
-    expect(originalGuard).toContain('existing[0].event_type !== event.event_type');
-    expect(originalGuard).toContain('Date.parse(existing[0].event_time) !== eventCreatedAt');
-    expect(originalGuard).toContain('Webhook event identity requires reconciliation');
-    expect(originalGuard).toContain('status: 503');
-    const raceGuard = code.slice(raced, racedAction);
-    expect(raceGuard).toContain('raced[0].event_type !== event.event_type');
-    expect(raceGuard).toContain('Date.parse(raced[0].event_time) !== eventCreatedAt');
-    expect(raceGuard).toContain('status: 503');
+    expect(code.slice(first, duplicate)).toContain('Webhook event identity requires reconciliation');
+    expect(code.slice(raced, racedAction)).toContain('Webhook event identity requires reconciliation');
   });
 
   it('reopens legacy processed refund events only when accounting review was explicitly unresolved', async () => {

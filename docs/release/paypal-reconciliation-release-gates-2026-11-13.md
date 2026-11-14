@@ -84,10 +84,15 @@ A filter/read followed by update is likewise not proven compare-and-swap.
    browser-supplied key to become a fresh provider request while another
    recurring agreement can still be billable.
 3. Have a single authorized worker consume one reserved intent, with durable
-   ownership/fencing or serial execution and bounded retries. Each provider
-   create retry must reuse the original PayPal request ID within the
-   provider's supported idempotency policy. An expired lease does *not*
-   authorize a new provider create with a new key.
+   ownership/fencing or serial execution. **Persist the transition from
+   `reserved` to `provider_request_started` BEFORE the provider POST.**
+   A restarted worker observing `provider_request_started` must assume the
+   external call may have succeeded, even if no local provider ID was saved.
+   It must reconcile the original provider outcome rather than issuing
+   another create. A matching intent/request ID alone is insufficient.
+   Any exceptional same-ID provider retry requires provider-documented
+   idempotency guarantees, an authorized recovery procedure and tests.
+   An expired lease does *not* authorize a new provider create with a new key.
 4. If PayPal responds ambiguously (timeout, 5xx, lost HTTP response),
    transition to `provider_outcome_unknown`. Freeze new recurring checkouts
    for that account until an authenticated provider lookup or documented

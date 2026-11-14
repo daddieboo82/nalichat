@@ -377,10 +377,10 @@ describe('stale active PayPal subscription reconciliation', () => {
   it('leaves refunds of still-active PayPal agreements reviewable, not processed', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     const adjustment = code.indexOf("if (current.status === 'ACTIVE') {");
-    const canceled = code.indexOf("if (current.status === 'CANCELLED' || current.status === 'EXPIRED')");
+    const nextReview = code.indexOf('// A sale refund/reversal is an accounting adjustment regardless of', adjustment);
     expect(adjustment).toBeGreaterThan(0);
-    expect(canceled).toBeGreaterThan(adjustment);
-    const activeAdjustment = code.slice(adjustment, canceled);
+    expect(nextReview).toBeGreaterThan(adjustment);
+    const activeAdjustment = code.slice(adjustment, nextReview);
     expect(activeAdjustment).toContain("processing_state: 'failed'");
     expect(activeAdjustment).not.toContain("processing_state: 'processed'");
     expect(activeAdjustment).toContain('financial review');

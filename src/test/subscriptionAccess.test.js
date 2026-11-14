@@ -35,6 +35,7 @@ describe('server subscription entitlement expiry', () => {
     expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'active', '2026-10-10T06:00:00Z', now)).toBe(false);
     expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'pending', null, now)).toBe(true);
     expect(requiresExistingPayPalCheckoutReview('paypal', 'premium_plus', 'incomplete', null, now)).toBe(true);
+    expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'unpaid', null, now)).toBe(true);
     expect(requiresExistingPayPalCheckoutReview('paypal', 'premium', 'canceled', null, now)).toBe(false);
     expect(requiresExistingPayPalCheckoutReview('paypal', 'free', 'active', null, now)).toBe(false);
     expect(requiresExistingPayPalCheckoutReview('manual', 'premium_plus', 'active', null, now)).toBe(false);

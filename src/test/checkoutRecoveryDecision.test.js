@@ -17,16 +17,27 @@ describe('draft checkout crash recovery policy (no payment API calls)', () => {
   });
 
   it('requires verification of a known provider agreement instead of re-creation', () => {
-    for (const state of [
-      'provider_request_started', 'provider_outcome_unknown', 'provider_created',
-      'local_record_failed', 'local_recorded',
-    ]) {
+    for (const state of ['provider_created', 'local_record_failed', 'local_recorded']) {
       expect(decideCheckoutRecovery({
         ...base, state, providerId: 'I-KNOWN12345678',
       })).toEqual({
         action: 'no_checkout_create', reason: 'verify_existing_provider_agreement',
       });
     }
+  });
+
+  it('rejects premature agreement IDs and missing terminal identities', () => {
+    for (const state of ['reserved', 'provider_request_started', 'provider_outcome_unknown']) {
+      for (const providerId of ['I-KNOWN12345678', undefined]) {
+        expect(() => decideCheckoutRecovery({ ...base, state, providerId }))
+          .toThrow('Checkout recovery provider identity inconsistent with state');
+      }
+    }
+    expect(() => decideCheckoutRecovery({ ...base, state: 'verified_terminal' }))
+      .toThrow('Checkout recovery provider identity inconsistent with state');
+    expect(decideCheckoutRecovery({
+      ...base, state: 'verified_terminal', providerId: 'I-KNOWN12345678',
+    }).action).toBe('no_checkout_create');
   });
 
   it('refuses an unrecorded agreement identifier after creation', () => {
@@ -38,8 +49,9 @@ describe('draft checkout crash recovery policy (no payment API calls)', () => {
   it('cannot retry creation even from reserved or terminal state', () => {
     expect(decideCheckoutRecovery({ ...base, state: 'reserved' }).action)
       .toBe('no_checkout_create');
-    expect(decideCheckoutRecovery({ ...base, state: 'verified_terminal' }).action)
-      .toBe('no_checkout_create');
+    expect(decideCheckoutRecovery({
+      ...base, state: 'verified_terminal', providerId: 'I-KNOWN12345678',
+    }).action).toBe('no_checkout_create');
   });
 
   it('fails closed for unknown state or missing identity', () => {

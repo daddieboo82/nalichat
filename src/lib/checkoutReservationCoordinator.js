@@ -134,31 +134,27 @@ export async function advanceCheckoutIntent(adapter, intent, nextState) {
     || !ALLOWED[intent.state]?.has(nextState)) {
     throw new Error('Transition requires verified reconciliation');
   }
+  let updated;
   if (nextState === 'verified_terminal') {
-    // Only a trusted server-side adapter may independently verify that the
-    // provider reported a terminal subscription/session outcome. A caller
-    // choosing the string "verified_terminal" must never release the lock.
-    if (typeof adapter?.verifyTerminalOutcome !== 'function') {
-      throw new Error('Verified provider terminal outcome required');
+    // Only a trusted backend adapter with an independently authenticated
+    // provider reader may release an account. Never pass verification results
+    // from client data or use generic CAS for this transition.
+    if (typeof adapter?.releaseVerifiedTerminal !== 'function') {
+      throw new Error('Verified terminal release store unavailable');
     }
-    const evidence = await adapter.verifyTerminalOutcome(intent);
-    if (!evidence || evidence.verified !== true
-      || evidence.intentId !== intent.intentId
-      || evidence.accountId !== intent.accountId
-      || evidence.provider !== intent.provider
-      || evidence.providerRequestId !== intent.providerRequestId
-      || evidence.terminal !== true) {
-      throw new Error('Verified provider terminal outcome required');
+    updated = await adapter.releaseVerifiedTerminal(intent);
+  } else {
+    if (typeof adapter?.compareAndSwap !== 'function') {
+      throw new Error('Atomic update store unavailable');
     }
+    updated = await adapter.compareAndSwap({
+      intentId: intent.intentId,
+      accountId: intent.accountId,
+      expectedState: intent.state,
+      expectedVersion: intent.version,
+      nextState,
+    });
   }
-  if (typeof adapter?.compareAndSwap !== 'function') throw new Error('Atomic update store unavailable');
-  const updated = await adapter.compareAndSwap({
-    intentId: intent.intentId,
-    accountId: intent.accountId,
-    expectedState: intent.state,
-    expectedVersion: intent.version,
-    nextState,
-  });
   if (!updated || updated.intentId !== intent.intentId || updated.accountId !== intent.accountId
     || updated.provider !== intent.provider || updated.sku !== intent.sku
     || updated.requestKey !== intent.requestKey

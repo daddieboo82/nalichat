@@ -9,6 +9,15 @@
 - The Base44 sandbox/workflow execution bridge returned an explicit integration-credit stop; scheduled reconciliation runs were canceled with `insufficient_credits`. Owner action is required for supported test execution.
 - GitHub Quality Gates and CI Recovery jobs were marked failed without inspectable steps or logs (404 BlobNotFound on earlier job logs). Do **not** treat this as evidence that unit tests ran. See #972.
 
+## Fail-closed recurring checkout rollout gate (#1047)
+The draft `createPayPalSubscription` endpoint now requires the server-managed `PAYPAL_CHECKOUT_SERIALIZATION_VERIFIED` secret to equal the exact string `true`. If absent or different, the endpoint responds 503 **before it reads existing subscriptions or calls PayPal create**, preventing new recurring agreements from this draft path. This is a **release safety stop**, **not** a lock, concurrency fix, or permission to enable new subscriptions.
+
+- [ ] Do not enable this flag in production until an independently verified, durable and atomic per-user checkout intent / serialization mechanism is implemented and concurrency, timeout, and local-write-failure tests pass.
+- [ ] Verify secret management is server-only, audit who can change the flag, and validate fail-closed behavior when missing, malformed, or unavailable.
+- [ ] Check product UX for a temporarily unavailable checkout; never represent PayPal billing as enabled while the gate is off.
+- [ ] Test an explicitly enabled staging configuration with confirmed concurrency enforcement and PayPal sandbox before a controlled rollout.
+- [ ] Confirm existing subscribers' webhook, status, and entitlement paths remain unaffected. Do not interpret the flag as a complete payment subsystem kill switch.
+
 ## Mandatory security gate (#1043)
 The scheduled PayPal workflow definition and both backend entrypoints contain an identical repository-visible authorization key; read-only deployed workflow inspection found the same key live.
 

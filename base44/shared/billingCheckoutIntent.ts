@@ -5,6 +5,7 @@
  */
 export type CheckoutIntentState =
   | 'reserved'
+  | 'provider_request_started'
   | 'provider_outcome_unknown'
   | 'provider_created'
   | 'local_record_failed'
@@ -12,6 +13,7 @@ export type CheckoutIntentState =
   | 'verified_terminal';
 
 export type CheckoutIntentEvent =
+  | 'provider_request_started'
   | 'provider_response_lost'
   | 'provider_creation_confirmed'
   | 'local_write_failed'
@@ -19,7 +21,8 @@ export type CheckoutIntentEvent =
   | 'provider_terminal_confirmed';
 
 const ALLOWED: Readonly<Record<CheckoutIntentState, readonly CheckoutIntentEvent[]>> = {
-  reserved: ['provider_response_lost', 'provider_creation_confirmed'],
+  reserved: ['provider_request_started'],
+  provider_request_started: ['provider_response_lost', 'provider_creation_confirmed'],
   provider_outcome_unknown: ['provider_creation_confirmed', 'provider_terminal_confirmed'],
   provider_created: ['local_write_failed', 'local_write_succeeded', 'provider_terminal_confirmed'],
   local_record_failed: ['local_write_succeeded', 'provider_terminal_confirmed'],
@@ -39,6 +42,8 @@ export function nextCheckoutIntentState(
     throw new Error('Checkout intent transition requires provider reconciliation');
   }
   switch (event) {
+    case 'provider_request_started':
+      return 'provider_request_started';
     case 'provider_response_lost':
       return 'provider_outcome_unknown';
     case 'provider_creation_confirmed':
@@ -53,9 +58,13 @@ export function nextCheckoutIntentState(
 }
 
 /**
- * Only same-intent requests with the identical provider idempotency identity
- * can be considered a retry. Distinct keys must not be interpreted as a safe
- * second checkout while any account-level reservation remains outstanding.
+ * A request can be retried ONLY in the pre-provider 'reserved' state and
+ * ONLY for the same intent and provider request identity. The worker must
+ * durably advance to provider_request_started *before* contacting PayPal;
+ * on restart, that state requires remote reconciliation rather than another
+ * provider create call. This helper alone is NOT authorization to send any
+ * provider request: the worker also needs an atomic ownership/fencing claim.
+ * Distinct keys must never bypass an unresolved account-level reservation.
  */
 export function canRetryOutstandingIntent(
   state: CheckoutIntentState,
@@ -64,7 +73,7 @@ export function canRetryOutstandingIntent(
   originalProviderRequestId: string,
   requestedProviderRequestId: string,
 ): boolean {
-  return isOutstandingCheckoutIntent(state)
+  return state === 'reserved'
     && existingIntentId.length > 0
     && originalProviderRequestId.length > 0
     && existingIntentId === requestedIntentId

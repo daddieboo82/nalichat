@@ -168,6 +168,8 @@ describe('PayPal subscription integration contracts', () => {
         source.indexOf('const remoteStatus = await resolvePayPalSubscriptionStatus'),
       );
     }
+    const helper = await read('base44/shared/paypalSubscription.ts');
+    expect(helper).toContain('fresh?.id === subscriptionId && fresh?.plan_id === remote?.plan_id');
     const scheduled = await read('base44/functions/reconcilePendingPayPal/main.ts');
     expect(scheduled).toContain("result: 'provider_identity_mismatch'");
     const requestStatus = await read('base44/functions/checkSubscriptionStatus/entry.ts');

@@ -12,8 +12,10 @@ const GENERIC_TRANSITIONS = Object.freeze({
   reserved: Object.freeze(['provider_request_started']),
   provider_request_started: Object.freeze(['provider_outcome_unknown']),
   provider_outcome_unknown: Object.freeze([]),
-  provider_created: Object.freeze(['local_record_failed', 'local_recorded']),
-  local_record_failed: Object.freeze(['local_recorded']),
+  // No generic transition can assert a successful local record: that must be
+  // proven by a separate, durable and idempotent subscription-record write.
+  provider_created: Object.freeze(['local_record_failed']),
+  local_record_failed: Object.freeze([]),
   local_recorded: Object.freeze([]),
   verified_terminal: Object.freeze([]),
 });

@@ -28,6 +28,8 @@ create table checkout_intents (
 );
 create unique index checkout_one_outstanding_per_account
  on checkout_intents(account_id) where state <> 'verified_terminal';
+create unique index checkout_provider_agreement_unique
+ on checkout_intents(provider,provider_id) where provider_id is not null;
 """
 
 def main():
@@ -95,6 +97,22 @@ def main():
             """, (intent_id, synthetic_provider_id)).fetchone()
             assert terminal, 'Test-only terminal transition failed'
         assert claim(101), 'No new claim after simulated terminal transition'
+        # A provider agreement remains unique across accounts, including
+        # after the original checkout becomes terminal.
+        assert claim(102, 'agreement_owner_b'), 'Second account could not reserve'
+        with closing(db()) as connection:
+            try:
+                connection.execute("""
+                    update checkout_intents set state='provider_created', provider_id=?
+                    where account_id='agreement_owner_b' and state='reserved'
+                """, (synthetic_provider_id,))
+                raise AssertionError('Duplicate provider agreement accepted')
+            except sqlite3.IntegrityError:
+                pass
+            assert connection.execute("""
+                select state, provider_id from checkout_intents
+                where account_id='agreement_owner_b'
+            """).fetchone() == ('reserved', None), 'Rejected duplicate changed reservation'
         with closing(db()) as connection:
             replay = connection.execute("""
                 insert into checkout_intents
@@ -104,7 +122,7 @@ def main():
                   old_key, 'replay_'+uuid.uuid4().hex)).fetchone()
             assert replay is None, 'Previously used request key accepted'
         print('PASS: 100 concurrent claims => 1 accepted, 99 rejected')
-        print('PASS: provider ID required before terminal; other account; stale fencing; terminal successor; request replay')
+        print('PASS: provider ID required before terminal; unique provider agreements; other account; stale fencing; terminal successor; request replay')
         print('NOTE: SQLite only. PostgreSQL isolation/reconciliation NOT tested.')
 
 if __name__ == '__main__':

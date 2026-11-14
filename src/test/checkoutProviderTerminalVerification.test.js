@@ -6,6 +6,7 @@ import {
 
 const intent = {
   intentId: 'intent-abc', accountId: 'account-123', provider: 'paypal',
+  requestKey: 'client-request-key-1234567',
   providerRequestId: 'request-provider-123', providerId: 'I-EXAMPLE1234567',
   sku: 'premium_monthly',
 };
@@ -19,7 +20,8 @@ describe('draft provider terminal verification policy, isolated mocked provider'
     expect(proof).toEqual({
       verified: true, terminal: true, intentId: intent.intentId,
       accountId: intent.accountId, provider: 'paypal',
-      providerRequestId: intent.providerRequestId,
+      sku: intent.sku, requestKey: intent.requestKey,
+      providerRequestId: intent.providerRequestId, providerId: intent.providerId,
     });
   });
 
@@ -27,6 +29,18 @@ describe('draft provider terminal verification policy, isolated mocked provider'
     'UNKNOWN', '', null, undefined])('rejects nonterminal PayPal status %s', async (status) => {
     await expect(verifyPayPalTerminalCheckout(intent, async () => ({ id: intent.providerId, status,
         custom_id: intent.accountId + ':' + intent.sku, plan_id: 'P-MOCKPLAN123' }), 'P-MOCKPLAN123')).rejects.toThrow();
+  });
+
+  it('rejects expired provider reads when original checkout request key is missing or unsafe', async () => {
+    const read = vi.fn().mockResolvedValue({
+      id: intent.providerId, status: 'EXPIRED',
+      custom_id: intent.accountId + ':' + intent.sku, plan_id: 'P-MOCKPLAN123',
+    });
+    for (const requestKey of [undefined, '', 'short', 'key with spaces 12345']) {
+      await expect(verifyPayPalTerminalCheckout({ ...intent, requestKey },
+        read, 'P-MOCKPLAN123')).rejects.toThrow();
+    }
+    expect(read).not.toHaveBeenCalled();
   });
 
   it('rejects valid expired subscriptions with mismatched customer, SKU or missing binding', async () => {

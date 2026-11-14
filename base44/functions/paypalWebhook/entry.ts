@@ -335,6 +335,20 @@ Deno.serve(async (req) => {
       }, { status: 503 });
     }
     const newStatus = state(event.event_type, event.resource);
+    // UPDATED can legitimately report APPROVED while awaiting merchant
+    // activation; that is not paid access and needs no lifecycle mutation.
+    // Other unknown/missing status values must not be acknowledged as
+    // successfully processed before their meaning is reconciled.
+    if (event.event_type === 'BILLING.SUBSCRIPTION.UPDATED' &&
+        !newStatus &&
+        String(event.resource?.status || '').toUpperCase() !== 'APPROVED') {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'Updated PayPal subscription has missing or unsupported lifecycle status',
+      });
+      return Response.json({ error: 'PayPal lifecycle status requires reconciliation' }, { status: 503 });
+    }
     if (newStatus) {
       const update: Record<string, unknown> = {
         status: newStatus,

@@ -98,6 +98,27 @@ describe('PayPal subscription integration contracts', () => {
     expect(source).toContain("'/v1/notifications/webhooks/' + encodeURIComponent(existing)");
   });
 
+  it('does not treat a stored webhook ID as verified PayPal billing readiness', async () => {
+    for (const path of [
+      'base44/functions/getBillingTestStatus/entry.ts',
+      'base44/functions/getBillingTestStatus/main.ts',
+    ]) {
+      const source = await read(path);
+      expect(source).toContain('const webhookIdPresent = Boolean(');
+      expect(source).toContain('const webhookConfigured = false;');
+      expect(source).toContain('webhookIdPresent,');
+      expect(source).toContain("webhookVerificationStatus: 'unverified'");
+    }
+  });
+
+  it('does not request a PayPal token for webhook setup without a stored provider ID', async () => {
+    const source = await read('base44/functions/setupPayPalWebhook/entry.ts');
+    expect(source).toContain("if (!existing || existing.startsWith('REPLACE_'))");
+    expect(source.indexOf("if (!existing || existing.startsWith('REPLACE_'))")).toBeLessThan(
+      source.indexOf('const accessToken = await token()'),
+    );
+  });
+
   it('captures subscription_id for analytics deduplication on ThankYou return page', async () => {
     const thankYouSource = await read('src/pages/ThankYou.jsx');
     expect(thankYouSource).toContain('urlParams.get("subscription_id")');

@@ -1,8 +1,31 @@
 import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
-import { paypalWebhookEventIdentityMatches, shouldApplyPayPalEvent } from '../../base44/shared/paypalWebhookLedger.ts';
+import { paypalWebhookEventIdentityMatches, paypalWebhookLedgerAction, shouldApplyPayPalEvent } from '../../base44/shared/paypalWebhookLedger.ts';
 
 const source = () => readFile('base44/functions/checkSubscriptionStatus/entry.ts', 'utf8');
+
+describe('PayPal webhook ledger retry timing', () => {
+  const now = Date.parse('2026-11-13T20:00:00.000Z');
+  const nineMinutesAgo = new Date(now - 9 * 60_000).toISOString();
+  const tenMinutesAgo = new Date(now - 10 * 60_000).toISOString();
+
+  it('deduplicates completed events and retries failed events', () => {
+    expect(paypalWebhookLedgerAction('processed', tenMinutesAgo, now)).toBe('duplicate');
+    expect(paypalWebhookLedgerAction('ignored', tenMinutesAgo, now)).toBe('duplicate');
+    expect(paypalWebhookLedgerAction('failed', tenMinutesAgo, now)).toBe('retry');
+    expect(paypalWebhookLedgerAction(undefined, undefined, now)).toBe('start');
+  });
+
+  it('does not retry active processing before the ten-minute boundary', () => {
+    expect(paypalWebhookLedgerAction('processing', nineMinutesAgo, now)).toBe('busy');
+    expect(paypalWebhookLedgerAction('processing', tenMinutesAgo, now)).toBe('retry');
+  });
+
+  it('fails closed on malformed or absent processing timestamps', () => {
+    expect(paypalWebhookLedgerAction('processing', null, now)).toBe('busy');
+    expect(paypalWebhookLedgerAction('processing', 'not-a-date', now)).toBe('busy');
+  });
+});
 
 describe('signed PayPal webhook event ordering', () => {
   const newer = '2026-11-13T17:00:00.000Z';

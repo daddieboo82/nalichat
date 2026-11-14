@@ -227,6 +227,55 @@ def main():
         """)
         if version_after != "1":
             fail("FAIL: unsafe fencing-version write changed reservation")
+        # The database must reject identities the server would reject,
+        # even when SQL is reached without the JavaScript validation layer.
+        psql(f"""
+            do $checkout_sku$
+            begin
+              insert into {schema}.checkout_intents
+                (account_id, provider, sku, client_idempotency_key, provider_request_id)
+              values ('invalid_sku_{agreement_a}', 'paypal', 'unknown_plan',
+                      'invalid_sku_key_12345', 'invalid_sku_provider_12345');
+              raise exception 'FAIL: unsupported subscription SKU accepted';
+            exception when check_violation then
+              null;
+            end $checkout_sku$;
+        """)
+        psql(f"""
+            do $checkout_key$
+            begin
+              insert into {schema}.checkout_intents
+                (account_id, provider, sku, client_idempotency_key, provider_request_id)
+              values ('invalid_key_{agreement_a}', 'paypal', 'premium_monthly',
+                      'bad key containing spaces', 'invalid_key_provider_12345');
+              raise exception 'FAIL: malformed checkout request key accepted';
+            exception when check_violation then
+              null;
+            end $checkout_key$;
+        """)
+        psql(f"""
+            do $checkout_provider_key$
+            begin
+              insert into {schema}.checkout_intents
+                (account_id, provider, sku, client_idempotency_key, provider_request_id)
+              values ('invalid_provider_key_{agreement_a}', 'paypal', 'premium_monthly',
+                      'invalid_provider_key_12345', 'short');
+              raise exception 'FAIL: malformed provider request ID accepted';
+            exception when check_violation then
+              null;
+            end $checkout_provider_key$;
+        """)
+        invalid_rows = psql(f"""
+            select count(*) from {schema}.checkout_intents
+             where account_id in (
+               'invalid_sku_{agreement_a}',
+               'invalid_key_{agreement_a}',
+               'invalid_provider_key_{agreement_a}'
+             );
+        """)
+        if invalid_rows != "0":
+            fail("FAIL: rejected checkout identifiers left rows behind")
+        print("PASS: invalid plan and checkout identities rejected by database.")
         print("PASS: fencing-version overflow denied by database constraint.")
         print("PASS: provider agreement IDs are unique and required for created states.")
         print("PASS: terminal index release and persistent request-key uniqueness.")

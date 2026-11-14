@@ -10,7 +10,7 @@ const row = (changes = {}) => ({
   intent_id: 'reserved-1', account_id: request.accountId, provider: request.provider,
   sku: request.sku, client_idempotency_key: request.requestKey,
   provider_request_id: request.providerRequestId,
-  state: 'reserved', fencing_version: 1, ...changes,
+  provider_id: null, state: 'reserved', fencing_version: 1, ...changes,
 });
 describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
   it('uses one parameterized insert before reading conflicting rows', async () => {
@@ -70,6 +70,19 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       async () => ({ rows: [row({ intent_id: null })] }),
     );
     await expect(claimCheckoutIntent(invalidIdentity, request)).rejects.toThrow();
+  });
+
+  it('maps provider subscription identity only from persisted database rows', async () => {
+    const providerId = 'I-MOCKSUBSCRIPTION123';
+    const adapter = createPostgresCheckoutReservationAdapter(
+      async () => ({ rows: [row({ provider_id: providerId })] }),
+    );
+    const result = await claimCheckoutIntent(adapter, request);
+    expect(result.intent.providerId).toBe(providerId);
+    const absent = createPostgresCheckoutReservationAdapter(
+      async () => ({ rows: [row()] }),
+    );
+    expect((await claimCheckoutIntent(absent, request)).intent.providerId).toBeNull();
   });
 
   it('requires a version-and-state matched atomic update', async () => {

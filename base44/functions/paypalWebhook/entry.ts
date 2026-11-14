@@ -94,7 +94,14 @@ Deno.serve(async (req) => {
   let event: any;
   try {
     event = await req.json();
-    if (!event?.id || !event?.event_type) return Response.json({ error: 'Invalid PayPal event' }, { status: 400 });
+    // Reject malformed event envelopes before treating arbitrary JSON values
+    // as signed event identifiers or using them in entity ledger filters.
+    if (typeof event?.id !== 'string' || !event.id.trim() ||
+        event.id.length > 255 ||
+        typeof event?.event_type !== 'string' || !event.event_type.trim() ||
+        event.event_type.length > 255) {
+      return Response.json({ error: 'Invalid PayPal event' }, { status: 400 });
+    }
     if (!HANDLED.has(event.event_type)) return Response.json({ received: true, ignored: true });
     const token = await accessToken();
     if (!(await verify(req, event, token))) return Response.json({ error: 'Unauthorized' }, { status: 401 });

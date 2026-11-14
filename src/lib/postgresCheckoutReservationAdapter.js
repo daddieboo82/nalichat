@@ -32,6 +32,10 @@ function asIntent(row) {
     sku: row.sku,
     requestKey: row.client_idempotency_key,
     providerRequestId: row.provider_request_id,
+    // Provider subscription ID is recorded only after verified creation.
+    // Never derive it from a client-provided checkout request key.
+    providerId: typeof row.provider_id === 'string' && row.provider_id
+      ? row.provider_id : null,
     state: row.state,
     version,
   };
@@ -51,7 +55,7 @@ export function createPostgresCheckoutReservationAdapter(query) {
          values ($1, $2, $3, $4, $5)
          on conflict do nothing
          returning intent_id, account_id, provider, sku, client_idempotency_key,
-           provider_request_id, state, fencing_version`,
+           provider_request_id, provider_id, state, fencing_version`,
         [input.accountId, input.provider, input.sku,
           input.requestKey, input.providerRequestId],
       );
@@ -66,7 +70,7 @@ export function createPostgresCheckoutReservationAdapter(query) {
       // Never interpret a null/ambiguous read as permission to create.
       const existing = await query(
         `select intent_id, account_id, provider, sku, client_idempotency_key,
-           provider_request_id, state, fencing_version
+           provider_request_id, provider_id, state, fencing_version
          from ${TABLE}
          where account_id = $1 and
            (state <> 'verified_terminal' or client_idempotency_key = $2)
@@ -98,7 +102,7 @@ export function createPostgresCheckoutReservationAdapter(query) {
          where intent_id = $1 and account_id = $2
            and state = $3 and fencing_version = $4
          returning intent_id, account_id, provider, sku, client_idempotency_key,
-           provider_request_id, state, fencing_version`,
+           provider_request_id, provider_id, state, fencing_version`,
         [intentId, accountId, expectedState, expectedVersion, nextState],
       );
       if (!Array.isArray(updated?.rows) || updated.rows.length > 1) {

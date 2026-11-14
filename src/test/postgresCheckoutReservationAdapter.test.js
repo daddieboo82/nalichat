@@ -55,6 +55,23 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     await expect(claimCheckoutIntent(duplicate, request)).rejects.toThrow();
   });
 
+  it('rejects precision-losing Postgres bigint and malformed database identities', async () => {
+    const values = [
+      '9007199254740993', '0', '-1', '1.5', 'not-a-version', null,
+      Number.MAX_SAFE_INTEGER + 1,
+    ];
+    for (const fencing_version of values) {
+      const adapter = createPostgresCheckoutReservationAdapter(
+        async () => ({ rows: [row({ fencing_version })] }),
+      );
+      await expect(claimCheckoutIntent(adapter, request)).rejects.toThrow();
+    }
+    const invalidIdentity = createPostgresCheckoutReservationAdapter(
+      async () => ({ rows: [row({ intent_id: null })] }),
+    );
+    await expect(claimCheckoutIntent(invalidIdentity, request)).rejects.toThrow();
+  });
+
   it('requires a version-and-state matched atomic update', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [row({ state: 'provider_request_started', fencing_version: '2' })] });
     const adapter = createPostgresCheckoutReservationAdapter(query);

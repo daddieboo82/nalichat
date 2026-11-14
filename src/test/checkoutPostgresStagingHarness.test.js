@@ -12,6 +12,20 @@ describe('opt-in PostgreSQL staging harness structural checks', () => {
     expect(count('end $;')).toBe(0);
     expect(script).toContain('exception when unique_violation then');
     expect(script).toContain('exception when check_violation then');
+    expect(script).toContain('do $checkout_version
+  });
+
+  it('requires explicit staging selection and never runs against known unrelated project', () => {
+    expect(script).toContain('NALICHAT_STAGING_DB_CONFIRMED');
+    expect(script).toContain('nalichat_checkout_staging_');
+    expect(script).toContain('LIVE_SUPABASE_HOST');
+    expect(script).toContain('current_database()');
+    expect(script).toContain('drop schema if exists');
+  });
+});
+);
+    expect(script).toContain('end $checkout_version$;');
+    expect(script).toContain('set fencing_version = 9007199254740992');
   });
 
   it('requires explicit staging selection and never runs against known unrelated project', () => {

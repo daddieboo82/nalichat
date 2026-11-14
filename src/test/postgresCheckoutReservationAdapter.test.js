@@ -330,6 +330,34 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  it('rejects mismatched CAS results at the adapter boundary', async () => {
+    for (const changes of [
+      { intent_id: 'different-intent' },
+      { account_id: 'different-account' },
+      { state: 'provider_outcome_unknown' },
+      { fencing_version: 3 },
+    ]) {
+      const query = vi.fn().mockResolvedValue({
+        rows: [row({ state: 'provider_request_started', fencing_version: 2, ...changes })],
+      });
+      const adapter = createPostgresCheckoutReservationAdapter(query);
+      await expect(adapter.compareAndSwap({
+        intentId: 'reserved-1', accountId: request.accountId,
+        expectedState: 'reserved', expectedVersion: 1,
+        nextState: 'provider_request_started',
+      })).rejects.toThrow('Checkout fencing response proof invalid');
+      expect(query).toHaveBeenCalledTimes(1);
+    }
+    const stale = createPostgresCheckoutReservationAdapter(
+      async () => ({ rows: [] }),
+    );
+    expect(await stale.compareAndSwap({
+      intentId: 'reserved-1', accountId: request.accountId,
+      expectedState: 'reserved', expectedVersion: 1,
+      nextState: 'provider_request_started',
+    })).toBeNull();
+  });
+
   it('requires a version-and-state matched atomic update', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [row({ state: 'provider_request_started', fencing_version: '2' })] });
     const adapter = createPostgresCheckoutReservationAdapter(query);

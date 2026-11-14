@@ -50,6 +50,11 @@ create table if not exists billing_private.checkout_intents (
     -- new mutations when the token has reached the final safe integer.
     fencing_version bigint not null default 1
       check (fencing_version between 1 and 9007199254740991),
+    -- A newly reserved intent must still have its original fencing token.
+    -- Otherwise the database could return a state the recovery policy rejects.
+    constraint checkout_reserved_initial_version check (
+      state <> 'reserved' or fencing_version = 1
+    ),
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     constraint checkout_provider_request_unique

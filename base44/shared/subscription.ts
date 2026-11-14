@@ -191,7 +191,7 @@ export function requiresExistingPayPalCheckoutReview(
   const currentStatus = normalizeStatus(status);
   // An unresolved approval can still become billable at PayPal. Until its
   // lifecycle is verified, do not allow a parallel Stripe/Wix agreement.
-  if (currentStatus === 'pending' || currentStatus === 'incomplete') return true;
+  if (currentStatus === 'pending' || currentStatus === 'incomplete' || currentStatus === 'unpaid') return true;
   if (currentStatus !== 'active') return false;
   const boundary = typeof currentPeriodEnd === 'string' ? Date.parse(currentPeriodEnd) : Number.NaN;
   const nowMs = Date.parse(now);

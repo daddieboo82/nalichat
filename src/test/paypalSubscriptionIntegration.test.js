@@ -62,12 +62,18 @@ describe('PayPal subscription integration contracts', () => {
     expect(webhookSetupSource).toContain("!existing.startsWith('REPLACE_')");
   });
 
-  it('uses dynamic or active app ID for PayPal webhook registration URL', async () => {
+  it('fails closed rather than registering PayPal webhooks against a fallback app', async () => {
     const webhookSetupSource = await read('base44/functions/setupPayPalWebhook/entry.ts');
-    const appParams = await read('src/lib/app-params.js');
-    expect(webhookSetupSource).toContain("secrets.get('BASE44_APP_ID') || 'cbef744a8545c389ef439ea6'");
-    expect(webhookSetupSource).not.toContain('6a1f5ee134147461560c2b37');
-    expect(appParams).toContain("VITE_BASE44_APP_ID || 'cbef744a8545c389ef439ea6'");
+    expect(webhookSetupSource).toContain("secrets.get('BASE44_APP_ID')");
+    expect(webhookSetupSource).toContain("secrets.get('PAYPAL_WEBHOOK_URL')");
+    expect(webhookSetupSource).not.toContain("secrets.get('BASE44_APP_ID') || 'cbef744a8545c389ef439ea6'");
+    expect(webhookSetupSource).toContain('Set the current BASE44_APP_ID before registering a PayPal webhook');
+    expect(webhookSetupSource).toContain('Webhook URL does not match the configured Base44 app');
+    expect(webhookSetupSource).toContain("parsedWebhookUrl.protocol !== 'https:'");
+    expect(webhookSetupSource).toContain("parsedWebhookUrl.hostname !== 'base44-dispatcher-production.base44.workers.dev'");
+    expect(webhookSetupSource.indexOf('const configuredAppId =')).toBeLessThan(
+      webhookSetupSource.indexOf('const accessToken = await token()'),
+    );
   });
 
   it('captures subscription_id for analytics deduplication on ThankYou return page', async () => {

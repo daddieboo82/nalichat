@@ -556,9 +556,9 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(beforeCreate).toContain('status: 409');
   });
 
-  it('defaults PayPal recurring checkout to disabled until atomic serialization is proven', async () => {
+  it('hard-disables PayPal checkout without an operator-only bypass until a real reservation is wired', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
-    const gate = code.indexOf("secrets.get('PAYPAL_CHECKOUT_SERIALIZATION_VERIFIED') !== 'true'");
+    const gate = code.indexOf('if (!hasAtomicPayPalCheckoutReservation())');
     const lookup = code.indexOf('const allSubs = await loadUserSubscriptions(');
     const create = code.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions', {");
     expect(gate).toBeGreaterThan(0);
@@ -567,7 +567,10 @@ describe('stale active PayPal subscription reconciliation', () => {
     const guarded = code.slice(gate, lookup);
     expect(guarded).toContain('status: 503');
     expect(guarded).toContain('checkout safety is verified');
-    expect(code).toContain('This operator-only flag is a gate, NOT the serialization mechanism.');
+    expect(code).toContain('function hasAtomicPayPalCheckoutReservation(): boolean {');
+    expect(code).toContain('return false;');
+    expect(code).not.toContain("secrets.get('PAYPAL_CHECKOUT_SERIALIZATION_VERIFIED')");
+    expect(guarded).toContain('if (!hasAtomicPayPalCheckoutReservation())');
   });
 
   it('blocks new PayPal agreements while an incomplete PayPal checkout remains unresolved', async () => {

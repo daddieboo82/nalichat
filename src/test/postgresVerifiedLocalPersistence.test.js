@@ -11,7 +11,7 @@ const intent = {
 };
 const receipt = {
   verified: true, intentId: intent.intentId, accountId: intent.accountId,
-  provider: intent.provider, sku: intent.sku,
+  requestKey: intent.requestKey, provider: intent.provider, sku: intent.sku,
   providerRequestId: intent.providerRequestId, providerId: intent.providerId,
 };
 const persisted = {
@@ -35,6 +35,7 @@ describe('draft local Subscription persistence confirmation (mock SQL only)', ()
     for (const proof of [
       null, { ...receipt, verified: false },
       { ...receipt, accountId: 'other-account' },
+      { ...receipt, requestKey: 'another-client-request-12345' },
       { ...receipt, sku: 'premium_plus_monthly' },
       { ...receipt, providerRequestId: 'other-provider-request' },
       { ...receipt, providerId: 'I-OTHERAGREEMENT123' },

@@ -76,6 +76,19 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
   const verifyPersistedSubscription = trusted?.verifyPersistedSubscription;
   return Object.freeze({
     async claimAtomic(input) {
+      // Validate again at the server-side persistence boundary. This adapter
+      // must never rely on every caller having used the coordinator first.
+      if (!input || typeof input.accountId !== 'string'
+        || !input.accountId.trim()
+        || !['paypal', 'wix'].includes(input.provider)
+        || typeof input.sku !== 'string'
+        || !/^(premium|premium_plus)_(monthly|yearly)$/.test(input.sku)
+        || typeof input.requestKey !== 'string'
+        || !/^[A-Za-z0-9._~-]{16,128}$/.test(input.requestKey)
+        || typeof input.providerRequestId !== 'string'
+        || !/^[A-Za-z0-9._~-]{16,128}$/.test(input.providerRequestId)) {
+        throw new Error('Invalid atomic checkout claim identity');
+      }
       // Database uniqueness, not an application read-before-create, picks
       // the winner. No external provider operation belongs in this adapter.
       const inserted = await query(

@@ -5,11 +5,13 @@
  *
  * Only EXPIRED is treated as terminal. CANCELLED can retain paid entitlement
  * through the billing period; SUSPENDED can recover; unknown outcomes block.
- * This helper does NOT verify webhook signatures or grant/revoke entitlements.
+ * The expected plan ID must come from trusted backend SKU configuration, never a
+ * browser parameter or untrusted checkout record. This helper does NOT verify
+ * webhook signatures or grant/revoke entitlements.
  * Wix is intentionally unsupported until an independently authenticated
  * provider outcome reader exists.
  */
-export async function verifyPayPalTerminalCheckout(intent, readPayPalSubscription) {
+export async function verifyPayPalTerminalCheckout(intent, readPayPalSubscription, expectedPlanId) {
   if (!intent || intent.provider !== 'paypal'
     || typeof intent.intentId !== 'string' || !intent.intentId
     || typeof intent.accountId !== 'string' || !intent.accountId
@@ -18,7 +20,9 @@ export async function verifyPayPalTerminalCheckout(intent, readPayPalSubscriptio
     || typeof intent.providerRequestId !== 'string' || !intent.providerRequestId
     || typeof intent.providerId !== 'string'
     || !/^[A-Za-z0-9-]{8,128}$/.test(intent.providerId)
-    || typeof readPayPalSubscription !== 'function') {
+    || typeof readPayPalSubscription !== 'function'
+    || typeof expectedPlanId !== 'string'
+    || !/^[A-Za-z0-9-]{8,128}$/.test(expectedPlanId)) {
     throw new Error('Trusted PayPal terminal verification unavailable');
   }
   // The remote result must be fetched by the trusted worker from PayPal's
@@ -27,7 +31,7 @@ export async function verifyPayPalTerminalCheckout(intent, readPayPalSubscriptio
   if (!remote || typeof remote !== 'object'
     || remote.id !== intent.providerId
     || remote.custom_id !== intent.accountId + ':' + intent.sku
-    || typeof remote.plan_id !== 'string' || !remote.plan_id
+    || remote.plan_id !== expectedPlanId
     || typeof remote.status !== 'string') {
     throw new Error('PayPal subscription identity or status unverified');
   }

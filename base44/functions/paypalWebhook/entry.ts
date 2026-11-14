@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
 import { paypalPeriodEndForStatus, requiresPayPalBillingVerification } from '../../shared/paypalSubscription.ts';
-import { paypalWebhookLedgerAction, shouldApplyPayPalEvent } from '../../shared/paypalWebhookLedger.ts';
+import { paypalWebhookEventIdentityMatches, paypalWebhookLedgerAction, shouldApplyPayPalEvent } from '../../shared/paypalWebhookLedger.ts';
 
 const HANDLED = new Set([
   'BILLING.SUBSCRIPTION.ACTIVATED',
@@ -125,11 +125,8 @@ Deno.serve(async (req) => {
     // with the same ID but a different type or creation instant is not a
     // legitimate duplicate; hold it for operator reconciliation rather than
     // acknowledging or applying a potentially conflicting event.
-    if (existing[0] && (
-      existing[0].event_type !== event.event_type ||
-      typeof existing[0].event_time !== 'string' ||
-      !Number.isFinite(Date.parse(existing[0].event_time)) ||
-      Date.parse(existing[0].event_time) !== eventCreatedAt
+    if (existing[0] && !paypalWebhookEventIdentityMatches(
+      existing[0], event.event_type, event.create_time,
     )) {
       console.error('PayPal webhook ledger event identity mismatch', event.id);
       return Response.json({ error: 'Webhook event identity requires reconciliation' }, { status: 503 });
@@ -179,11 +176,9 @@ Deno.serve(async (req) => {
         if (!raced[0]) throw createError;
         // Collision recovery must enforce the same event identity rules as
         // the regular read path before interpreting a row as a duplicate.
-        if (raced.length !== 1 ||
-            raced[0].event_type !== event.event_type ||
-            typeof raced[0].event_time !== 'string' ||
-            !Number.isFinite(Date.parse(raced[0].event_time)) ||
-            Date.parse(raced[0].event_time) !== eventCreatedAt) {
+        if (raced.length !== 1 || !paypalWebhookEventIdentityMatches(
+          raced[0], event.event_type, event.create_time,
+        )) {
           return Response.json({ error: 'Webhook event identity requires reconciliation' }, { status: 503 });
         }
         const racedAction = paypalWebhookLedgerAction(

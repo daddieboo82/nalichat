@@ -35,7 +35,10 @@ Deno.serve(async (req) => {
     });
     const sandboxMode = environment === 'sandbox';
     const rawWebhookId = String(secrets.get('PAYPAL_WEBHOOK_ID') || '').trim();
-    const webhookConfigured = Boolean(rawWebhookId && !rawWebhookId.startsWith('REPLACE_'));
+    const webhookIdPresent = Boolean(rawWebhookId && !rawWebhookId.startsWith('REPLACE_'));
+    // A stored ID does not establish a matching PayPal destination, subscribed
+    // event types, or successful deliveries. Only provider verification can.
+    const webhookConfigured = false;
 
     return Response.json({
       success: true,
@@ -50,6 +53,8 @@ Deno.serve(async (req) => {
       missingPriceSecrets: missingSecrets,
       missingSecrets,
       webhookConfigured,
+      webhookIdPresent,
+      webhookVerificationStatus: 'unverified',
     });
   } catch (error) {
     console.error('getBillingTestStatus error:', error);

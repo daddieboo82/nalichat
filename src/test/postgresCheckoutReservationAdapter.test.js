@@ -213,6 +213,25 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  it('rejects the last safe integer fencing token before a SQL mutation', async () => {
+    const query = vi.fn();
+    const adapter = createPostgresCheckoutReservationAdapter(query);
+    await expect(adapter.compareAndSwap({
+      intentId: 'reserved-1', accountId: request.accountId,
+      expectedState: 'reserved', expectedVersion: Number.MAX_SAFE_INTEGER,
+      nextState: 'provider_request_started',
+    })).rejects.toThrow('Invalid checkout state transition');
+    await expect(adapter.recordProviderSubscription({
+      intentId: 'reserved-1', accountId: request.accountId,
+      provider: request.provider, sku: request.sku,
+      providerRequestId: request.providerRequestId,
+      expectedState: 'provider_outcome_unknown',
+      expectedVersion: Number.MAX_SAFE_INTEGER,
+      providerId: 'I-MOCKSUBSCRIPTION123',
+    })).rejects.toThrow('Invalid verified provider subscription identity');
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it('requires a version-and-state matched atomic update', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [row({ state: 'provider_request_started', fencing_version: '2' })] });
     const adapter = createPostgresCheckoutReservationAdapter(query);

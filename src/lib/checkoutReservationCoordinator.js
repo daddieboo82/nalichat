@@ -11,7 +11,10 @@ export const CHECKOUT_STATES = Object.freeze([
 const ALLOWED = {
   reserved: new Set(['provider_request_started']),
   provider_request_started: new Set(['provider_outcome_unknown']),
-  provider_outcome_unknown: new Set(['verified_terminal']),
+  // An ambiguous provider create cannot be treated as terminal until the
+  // original provider agreement has been independently located and stored.
+  // Releasing an unidentified agreement risks duplicate paid subscriptions.
+  provider_outcome_unknown: new Set(),
   // local_recorded is deliberately unavailable until a separate, trusted
   // persisted-subscription receipt is implemented and checked.
   provider_created: new Set(['local_record_failed', 'verified_terminal']),

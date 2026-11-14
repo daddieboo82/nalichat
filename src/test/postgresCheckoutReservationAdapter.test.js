@@ -154,6 +154,30 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  it('rejects forbidden generic state transitions before issuing SQL', async () => {
+    const query = vi.fn();
+    const adapter = createPostgresCheckoutReservationAdapter(query);
+    for (const [expectedState, nextState] of [
+      ['reserved', 'local_recorded'],
+      ['provider_outcome_unknown', 'local_recorded'],
+      ['local_recorded', 'reserved'],
+      ['verified_terminal', 'provider_request_started'],
+      ['provider_created', 'provider_outcome_unknown'],
+      ['nonexistent', 'local_recorded'],
+    ]) {
+      await expect(adapter.compareAndSwap({
+        intentId: 'reserved-1', accountId: request.accountId,
+        expectedState, expectedVersion: 2, nextState,
+      })).rejects.toThrow('Invalid checkout state transition');
+    }
+    await expect(adapter.compareAndSwap({
+      intentId: 'reserved-1', accountId: request.accountId,
+      expectedState: 'reserved', expectedVersion: Number.MAX_SAFE_INTEGER + 1,
+      nextState: 'provider_request_started',
+    })).rejects.toThrow('Invalid checkout state transition');
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it('requires a version-and-state matched atomic update', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [row({ state: 'provider_request_started', fencing_version: '2' })] });
     const adapter = createPostgresCheckoutReservationAdapter(query);

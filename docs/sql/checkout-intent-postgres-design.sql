@@ -42,6 +42,10 @@ create table if not exists billing_private.checkout_intents (
       state not in ('provider_created', 'local_record_failed', 'local_recorded')
       or provider_id is not null
     ),
+    constraint checkout_unverified_has_no_provider_id check (
+      state not in ('reserved', 'provider_request_started', 'provider_outcome_unknown')
+      or provider_id is null
+    ),
     -- Bound fencing to JavaScript's exact-integer range; the server refuses
     -- new mutations when the token has reached the final safe integer.
     fencing_version bigint not null default 1

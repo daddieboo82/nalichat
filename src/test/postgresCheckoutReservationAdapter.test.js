@@ -52,6 +52,25 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     expect(sql).not.toContain(request.requestKey);
   });
 
+  it('rejects mismatched newly created reservation proofs at the SQL adapter boundary', async () => {
+    for (const mismatch of [
+      { account_id: 'other-account' },
+      { provider: 'wix' },
+      { sku: 'premium_plus_yearly' },
+      { client_idempotency_key: 'other-client-key-12345678' },
+      { provider_request_id: 'other-provider-key-12345678' },
+      { state: 'provider_request_started' },
+      { fencing_version: 2 },
+      { provider_id: 'I-OTHERAGREEMENT1234' },
+    ]) {
+      const query = vi.fn().mockResolvedValue({ rows: [row(mismatch)] });
+      const adapter = createPostgresCheckoutReservationAdapter(query);
+      await expect(adapter.claimAtomic(request))
+        .rejects.toThrow('Atomic checkout claim creation proof invalid');
+      expect(query).toHaveBeenCalledTimes(1);
+    }
+  });
+
   it('never creates a second intent after a conflict or terminal replay', async () => {
     const query = vi.fn()
       .mockResolvedValueOnce({ rows: [] })

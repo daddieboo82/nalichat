@@ -109,7 +109,7 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     await expect(advanceCheckoutIntent(db.adapter, first.intent, 'provider_request_started')).rejects.toThrow();
     expect(db.outstanding.size).toBe(1);
     const created = await recordVerifiedProviderCreation(db.adapter, started);
-    const recorded = await advanceCheckoutIntent(db.adapter, created, 'local_recorded');
+    const recorded = await advanceCheckoutIntent(db.adapter, created, 'local_record_failed');
     const terminal = await advanceCheckoutIntent(db.adapter, recorded, 'verified_terminal');
     expect(terminal.state).toBe('verified_terminal');
     expect(db.outstanding.size).toBe(0);
@@ -151,7 +151,7 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     const claimed = await claimCheckoutIntent(db.adapter, input(1));
     const started = await advanceCheckoutIntent(db.adapter, claimed.intent, 'provider_request_started');
     const created = await recordVerifiedProviderCreation(db.adapter, started);
-    const recorded = await advanceCheckoutIntent(db.adapter, created, 'local_recorded');
+    const recorded = await advanceCheckoutIntent(db.adapter, created, 'local_record_failed');
     const before = db.calls.cas;
     await expect(advanceCheckoutIntent({
       ...db.adapter,
@@ -172,6 +172,20 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     const final = await advanceCheckoutIntent(db.adapter, recorded, 'verified_terminal');
     expect(final.state).toBe('verified_terminal');
     expect(db.outstanding.has(recorded.accountId)).toBe(false);
+  });
+
+  it('never declares a local subscription record without verified durable receipt', async () => {
+    const db = createFakeAtomicStore();
+    const first = await claimCheckoutIntent(db.adapter, input(1));
+    const started = await advanceCheckoutIntent(db.adapter, first.intent, 'provider_request_started');
+    const created = await recordVerifiedProviderCreation(db.adapter, started);
+    const casBefore = db.calls.cas;
+    await expect(advanceCheckoutIntent(db.adapter, created, 'local_recorded'))
+      .rejects.toThrow('Transition requires verified reconciliation');
+    const failed = await advanceCheckoutIntent(db.adapter, created, 'local_record_failed');
+    await expect(advanceCheckoutIntent(db.adapter, failed, 'local_recorded'))
+      .rejects.toThrow('Transition requires verified reconciliation');
+    expect(db.calls.cas).toBe(casBefore + 1);
   });
 
   it('blocks generic provider-created transition without storing provider ID', async () => {

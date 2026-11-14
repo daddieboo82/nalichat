@@ -398,6 +398,33 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  it('preserves provider agreement identity when recording a local-write failure', async () => {
+    const providerId = 'I-MOCKSUBSCRIPTION123';
+    const query = vi.fn().mockResolvedValue({
+      rows: [row({
+        state: 'local_record_failed', provider_id: providerId, fencing_version: 4,
+      })],
+    });
+    const adapter = createPostgresCheckoutReservationAdapter(query);
+    const intent = {
+      ...casIdentity, providerId, state: 'provider_created', version: 3,
+    };
+    const updated = await advanceCheckoutIntent(adapter, intent, 'local_record_failed');
+    expect(updated.state).toBe('local_record_failed');
+    expect(updated.providerId).toBe(providerId);
+    expect(updated.version).toBe(4);
+    expect(query.mock.calls[0][0]).toContain('provider_id is not distinct from $10');
+    expect(query.mock.calls[0][1]).toEqual([
+      intent.intentId, intent.accountId, 'provider_created', 3, 'local_record_failed',
+      intent.provider, intent.sku, intent.requestKey, intent.providerRequestId, providerId,
+    ]);
+    await expect(adapter.compareAndSwap({
+      ...casIdentity, expectedState: 'provider_created', expectedVersion: 3,
+      nextState: 'local_record_failed',
+    })).rejects.toThrow('Invalid checkout state transition');
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
   it('requires a version-and-state matched atomic update', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [row({ state: 'provider_request_started', fencing_version: '2' })] });
     const adapter = createPostgresCheckoutReservationAdapter(query);
@@ -412,10 +439,11 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     expect(query.mock.calls[0][0]).toContain('fencing_version = $4');
     expect(query.mock.calls[0][0]).toContain('provider = $6 and sku = $7');
     expect(query.mock.calls[0][0]).toContain('client_idempotency_key = $8 and provider_request_id = $9');
-    expect(query.mock.calls[0][0]).toContain('provider_id is null');
+    expect(query.mock.calls[0][0]).toContain('provider_id is not distinct from $10');
     expect(query.mock.calls[0][1]).toEqual([
       reservation.intentId, reservation.accountId, 'reserved', 1, 'provider_request_started',
       reservation.provider, reservation.sku, reservation.requestKey, reservation.providerRequestId,
+      null,
     ]);
     const stale = createPostgresCheckoutReservationAdapter(async () => ({ rows: [] }));
     await expect(advanceCheckoutIntent(stale, reservation, 'provider_request_started')).rejects.toThrow();

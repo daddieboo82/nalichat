@@ -12,21 +12,6 @@ const CATALOG: Record<string, { plan: string; billingPeriod: string; price: stri
   premium_plus_yearly: { plan: 'premium_plus', billingPeriod: 'annual', price: '99.99', frequency: 'YEAR', name: 'NaliChat Premium Plus Yearly', description: 'Premium Plus yearly subscription with the highest AI limits and strongest Studio support.' },
 };
 
-function resolveAppUrl(req: Request): string {
-  const headerAppUrl = req.headers.get('X-Base44-App-Url');
-  if (headerAppUrl) {
-    try {
-      const parsed = new URL(headerAppUrl);
-      if (parsed.protocol === 'https:' && !parsed.username && !parsed.password && parsed.pathname === '/' && !parsed.search && !parsed.hash) {
-        return parsed.origin;
-      }
-    } catch {
-      // Invalid header — fall back to APP_BASE_URL
-    }
-  }
-  return APP_BASE_URL;
-}
-
 // No configuration toggle may bypass this safety stop.
 function hasVerifiedAtomicWixReservation(): boolean {
   return false;
@@ -124,10 +109,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Resolve return URLs from the X-Base44-App-Url header, falling back to APP_BASE_URL
-    const appBaseUrl = resolveAppUrl(req);
-    const successUrl = new URL('/ThankYou?subscription=1', appBaseUrl).toString();
-    const cancelUrl = new URL('/pricing', appBaseUrl).toString();
+    // Never derive payment return destinations from caller-controlled headers.
+    // The canonical configured origin must be used for every checkout.
+    const successUrl = new URL('/ThankYou?subscription=1', APP_BASE_URL).toString();
+    const cancelUrl = new URL('/pricing', APP_BASE_URL).toString();
 
     // Create Wix checkout session
     const wixApiKey = secrets.get('WIX_PAYMENTS_API_KEY') || secrets.get('WIX_CHECKOUT_API_KEY');

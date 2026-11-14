@@ -34,6 +34,12 @@ async function accessToken() {
   return data.access_token as string;
 }
 
+// There is no atomic checkout reservation in this release. This function is
+// intentionally NOT controlled by any environment variable or operator flag.
+function atomicCheckoutReservationIsImplemented(): boolean {
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
   try {
@@ -52,14 +58,13 @@ Deno.serve(async (req) => {
     const planId = secrets.get(item.secret);
     if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
 
-    // Emergency billing safety stop (#1047). No atomic per-user reservation
-    // exists for this route. A read-then-create scan can race with a second
-    // request using a different idempotency key and create two agreements.
-    // Do not replace this with an operator flag; restore new checkout only
-    // after durable atomic reservation and PayPal sandbox concurrency tests.
-    return Response.json({
-      error: 'New PayPal subscriptions are temporarily unavailable while billing safety is verified',
-    }, { status: 503 });
+    // Emergency billing safety stop (#1047). Do not replace with an
+    // operator flag: checkout needs a VERIFIED atomic per-user reservation.
+    if (!atomicCheckoutReservationIsImplemented()) {
+      return Response.json({
+        error: 'New PayPal subscriptions are temporarily unavailable while billing safety is verified',
+      }, { status: 503 });
+    }
 
     // Block duplicate checkout if the user already has active paid access.
     const allSubs = await base44.asServiceRole.entities.Subscription.filter(

@@ -10,8 +10,8 @@ export const CHECKOUT_STATES = Object.freeze([
 ]);
 const ALLOWED = {
   reserved: new Set(['provider_request_started']),
-  provider_request_started: new Set(['provider_outcome_unknown', 'provider_created']),
-  provider_outcome_unknown: new Set(['provider_created', 'verified_terminal']),
+  provider_request_started: new Set(['provider_outcome_unknown']),
+  provider_outcome_unknown: new Set(['verified_terminal']),
   provider_created: new Set(['local_record_failed', 'local_recorded', 'verified_terminal']),
   local_record_failed: new Set(['local_recorded', 'verified_terminal']),
   local_recorded: new Set(['verified_terminal']),
@@ -66,6 +66,57 @@ export async function claimCheckoutIntent(adapter, input) {
     intent: outcome.kind === 'conflict' ? null : outcome.intent,
   });
 }
+/**
+ * Provider creation is a special transition: atomically store the verified
+ * subscription identity along with the state change. A plain CAS must never
+ * move a checkout into provider_created with a missing provider ID.
+ *
+ * `verifyCreatedSubscription` must be implemented by a trusted backend that
+ * independently reads/authenticates the provider response; never pass user
+ * supplied verification callbacks into this function.
+ */
+export async function recordVerifiedProviderCreation(adapter, intent) {
+  if (!intent || !['provider_request_started', 'provider_outcome_unknown'].includes(intent.state)
+    || !Number.isSafeInteger(intent.version) || intent.version < 1
+    || typeof intent.intentId !== 'string' || !intent.intentId
+    || typeof intent.accountId !== 'string' || !intent.accountId
+    || !['paypal', 'wix'].includes(intent.provider)
+    || typeof intent.providerRequestId !== 'string' || !intent.providerRequestId) {
+    throw new Error('Checkout provider creation state invalid');
+  }
+  if (typeof adapter?.verifyCreatedSubscription !== 'function'
+    || typeof adapter?.recordProviderSubscription !== 'function') {
+    throw new Error('Trusted provider creation verification unavailable');
+  }
+  const evidence = await adapter.verifyCreatedSubscription(intent);
+  if (!evidence || evidence.verified !== true
+    || evidence.intentId !== intent.intentId
+    || evidence.accountId !== intent.accountId
+    || evidence.provider !== intent.provider
+    || evidence.providerRequestId !== intent.providerRequestId
+    || typeof evidence.providerId !== 'string'
+    || !/^[A-Za-z0-9-]{8,128}$/.test(evidence.providerId)) {
+    throw new Error('Provider creation identity unverified');
+  }
+  const updated = await adapter.recordProviderSubscription({
+    intentId: intent.intentId,
+    accountId: intent.accountId,
+    provider: intent.provider,
+    expectedState: intent.state,
+    expectedVersion: intent.version,
+    providerId: evidence.providerId,
+  });
+  if (!updated || updated.intentId !== intent.intentId
+    || updated.accountId !== intent.accountId
+    || updated.provider !== intent.provider
+    || updated.providerRequestId !== intent.providerRequestId
+    || updated.providerId !== evidence.providerId
+    || updated.state !== 'provider_created' || updated.version !== intent.version + 1) {
+    throw new Error('Verified provider creation was not durably recorded');
+  }
+  return Object.freeze(updated);
+}
+
 /**
  * Transition requires a compare-and-swap performed by the adapter. A lost
  * provider response must remain unresolved; no lease timeout unlock allowed.

@@ -93,6 +93,7 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     const adapter = createPostgresCheckoutReservationAdapter(query);
     const stored = await adapter.recordProviderSubscription({
       intentId: 'reserved-1', accountId: request.accountId, provider: 'paypal',
+      sku: request.sku, providerRequestId: request.providerRequestId,
       expectedState: 'provider_outcome_unknown', expectedVersion: 2, providerId,
     });
     expect(stored.providerId).toBe(providerId);
@@ -101,22 +102,28 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     expect(query).toHaveBeenCalledTimes(1);
     expect(query.mock.calls[0][0]).toContain('provider_id is null');
     expect(query.mock.calls[0][0]).toContain('fencing_version = $5');
+    expect(query.mock.calls[0][0]).toContain('sku = $7');
+    expect(query.mock.calls[0][0]).toContain('provider_request_id = $8');
     expect(query.mock.calls[0][1]).toEqual([
       'reserved-1', request.accountId, 'paypal',
       'provider_outcome_unknown', 2, providerId,
+      request.sku, request.providerRequestId,
     ]);
     const stale = createPostgresCheckoutReservationAdapter(async () => ({ rows: [] }));
     expect(await stale.recordProviderSubscription({
       intentId: 'reserved-1', accountId: request.accountId, provider: 'paypal',
+      sku: request.sku, providerRequestId: request.providerRequestId,
       expectedState: 'provider_outcome_unknown', expectedVersion: 2, providerId,
     })).toBeNull();
     const invalid = createPostgresCheckoutReservationAdapter(query);
     await expect(invalid.recordProviderSubscription({
       intentId: 'reserved-1', accountId: request.accountId, provider: 'paypal',
+      sku: request.sku, providerRequestId: request.providerRequestId,
       expectedState: 'reserved', expectedVersion: 1, providerId,
     })).rejects.toThrow();
     await expect(invalid.recordProviderSubscription({
       intentId: 'reserved-1', accountId: request.accountId, provider: 'paypal',
+      sku: request.sku, providerRequestId: request.providerRequestId,
       expectedState: 'provider_request_started', expectedVersion: 1, providerId: '../bad-id',
     })).rejects.toThrow();
     expect(query).toHaveBeenCalledTimes(1);
@@ -125,6 +132,8 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       { account_id: 'other-account' },
       { state: 'reserved' },
       { fencing_version: '4' },
+      { sku: 'premium_plus_monthly' },
+      { provider_request_id: 'different-request-12345678' },
     ]) {
       const mismatched = createPostgresCheckoutReservationAdapter(
         async () => ({ rows: [row({
@@ -133,6 +142,7 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       );
       await expect(mismatched.recordProviderSubscription({
         intentId: 'reserved-1', accountId: request.accountId, provider: 'paypal',
+      sku: request.sku, providerRequestId: request.providerRequestId,
         expectedState: 'provider_outcome_unknown', expectedVersion: 2, providerId,
       })).rejects.toThrow('Provider identity recording proof invalid');
     }

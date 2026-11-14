@@ -4,6 +4,9 @@ set -euo pipefail
 echo "==> Installing dependencies"
 npm ci
 
+echo "==> Checking local checkout reservation concurrency model (SQLite only)"
+python3 scripts/test-checkout-sqlite-model.py
+
 echo "==> Running release verification"
 npm run verify:release
 

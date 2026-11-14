@@ -76,7 +76,10 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [row()] })
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [row({ state: 'verified_terminal' })] });
+      .mockResolvedValueOnce({ rows: [row({
+        state: 'verified_terminal', provider_id: 'I-VERIFIEDTERMINAL123',
+        fencing_version: 3,
+      })] });
     const adapter = createPostgresCheckoutReservationAdapter(query);
     expect((await claimCheckoutIntent(adapter, request)).kind).toBe('existing');
     expect((await claimCheckoutIntent(adapter, request)).kind).toBe('conflict');

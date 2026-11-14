@@ -20,6 +20,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Verify recurring checkout safety stop
+        run: npm run verify:checkout-safety
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test -- --run

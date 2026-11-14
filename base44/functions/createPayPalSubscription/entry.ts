@@ -165,7 +165,6 @@ Deno.serve(async (req) => {
     // The authenticated status check can reconcile these records with PayPal.
     const unresolvedActivePayPal = allSubs.some((sub: any) => (
       sub.provider === 'paypal' &&
-      normalizePlan(sub.plan) !== 'free' &&
       normalizeStatus(sub.status) === 'active' &&
       !hasPaidTierAccess('active', {
         currentPeriodEnd: typeof sub.current_period_end === 'string' ? sub.current_period_end : null,
@@ -174,10 +173,22 @@ Deno.serve(async (req) => {
     ));
     const undatedActivePayPal = allSubs.some((sub: any) => (
       sub.provider === 'paypal' &&
-      normalizePlan(sub.plan) !== 'free' &&
       normalizeStatus(sub.status) === 'active' &&
       (typeof sub.current_period_end !== 'string' || !Number.isFinite(Date.parse(sub.current_period_end)))
     ));
+    // An ACTIVE PayPal record with missing or malformed legacy plan data is
+    // not evidence of a free account. A future date alone cannot establish
+    // the user's intended paid tier, so require reconciliation first.
+    const unverifiedActivePayPalPlan = allSubs.some((sub: any) =>
+      sub.provider === 'paypal' &&
+      normalizeStatus(sub.status) === 'active' &&
+      normalizePlan(sub.plan) === 'free'
+    );
+    if (unverifiedActivePayPalPlan) {
+      return Response.json({
+        error: 'Active PayPal agreement has unverified plan metadata',
+      }, { status: 409 });
+    }
     if (unresolvedActivePayPal || undatedActivePayPal) {
       return Response.json({
         error: 'An existing PayPal subscription requires status verification before another checkout',

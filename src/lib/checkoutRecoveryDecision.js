@@ -19,6 +19,13 @@ export function decideCheckoutRecovery(intent) {
   }
   const hasProviderId = typeof intent.providerId === 'string'
     && /^[A-Za-z0-9-]{8,128}$/.test(intent.providerId);
+  const beforeCreation = ['reserved', 'provider_request_started', 'provider_outcome_unknown']
+    .includes(intent.state);
+  if ((beforeCreation && intent.providerId !== null)
+    || (!beforeCreation && ['provider_created', 'local_record_failed',
+      'local_recorded', 'verified_terminal'].includes(intent.state) && !hasProviderId)) {
+    throw new Error('Checkout recovery provider identity inconsistent with state');
+  }
   if (intent.state === 'verified_terminal') {
     return Object.freeze({ action: 'no_checkout_create', reason: 'already_verified_terminal' });
   }
@@ -31,7 +38,7 @@ export function decideCheckoutRecovery(intent) {
     || intent.state === 'provider_outcome_unknown') {
     return Object.freeze({
       action: 'no_checkout_create',
-      reason: hasProviderId ? 'verify_existing_provider_agreement' : 'manual_provider_reconciliation_required',
+      reason: 'manual_provider_reconciliation_required',
     });
   }
   if (['provider_created', 'local_record_failed', 'local_recorded'].includes(intent.state)) {

@@ -155,6 +155,25 @@ describe('PayPal subscription integration contracts', () => {
     expect(dashboard).toContain('PayPal agreement or plan identity mismatch detected');
   });
 
+  it('requires matching PayPal identity before pending reconciliation or activation', async () => {
+    for (const path of [
+      'base44/functions/reconcilePendingPayPal/entry.ts',
+      'base44/functions/reconcilePendingPayPal/main.ts',
+      'base44/functions/checkSubscriptionStatus/entry.ts',
+    ]) {
+      const source = await read(path);
+      expect(source).toContain('remote?.plan_id !== subscription.paypal_plan_id');
+      expect(source).toContain('subscription.paypal_environment !==');
+      expect(source.indexOf('remote?.plan_id !== subscription.paypal_plan_id')).toBeLessThan(
+        source.indexOf('const remoteStatus = await resolvePayPalSubscriptionStatus'),
+      );
+    }
+    const scheduled = await read('base44/functions/reconcilePendingPayPal/main.ts');
+    expect(scheduled).toContain("result: 'provider_identity_mismatch'");
+    const requestStatus = await read('base44/functions/checkSubscriptionStatus/entry.ts');
+    expect(requestStatus).toContain('PayPal subscription identity mismatch; status not applied');
+  });
+
   it('captures subscription_id for analytics deduplication on ThankYou return page', async () => {
     const thankYouSource = await read('src/pages/ThankYou.jsx');
     expect(thankYouSource).toContain('urlParams.get("subscription_id")');

@@ -152,6 +152,62 @@ def main():
         """)
         if sameKeyReplay:
             fail("FAIL: replay of an existing account request key was accepted")
+        # Verify the same provider subscription ID cannot be bound to two
+        # separate customer accounts or intents, even when both accounts
+        # can independently reserve checkout rows.
+        provider_id = "I-TEST" + uuid.uuid4().hex[:22].upper()
+        agreement_a = "agreement_a_" + uuid.uuid4().hex
+        agreement_b = "agreement_b_" + uuid.uuid4().hex
+        for acct, ix in [(agreement_a, "a"), (agreement_b, "b")]:
+            inserted = psql(f"""
+                insert into {schema}.checkout_intents
+                  (account_id, provider, sku, client_idempotency_key, provider_request_id)
+                values ('{acct}', 'paypal', 'premium_monthly',
+                        'agreement_request_{ix}_123456789',
+                        'agreement_provider_{ix}_123456789')
+                on conflict do nothing returning intent_id;
+            """)
+            if not inserted:
+                fail("FAIL: isolated agreement test reservation could not be created")
+        updated = psql(f"""
+            update {schema}.checkout_intents
+               set state = 'provider_created', provider_id = '{provider_id}'
+             where account_id = '{agreement_a}' and state = 'reserved'
+             returning intent_id;
+        """)
+        if not updated:
+            fail("FAIL: valid provider agreement identity rejected")
+        # The DO block must fail unless the expected SQLSTATE is observed.
+        # A generic success or unrelated DB failure is not a pass.
+        psql(f"""
+            do $
+            begin
+              update {schema}.checkout_intents
+                 set state = 'provider_created', provider_id = '{provider_id}'
+               where account_id = '{agreement_b}' and state = 'reserved';
+              raise exception 'FAIL: duplicated provider subscription ID accepted';
+            exception when unique_violation then
+              null;
+            end $;
+        """)
+        psql(f"""
+            do $
+            begin
+              update {schema}.checkout_intents
+                 set state = 'provider_created'
+               where account_id = '{agreement_b}' and state = 'reserved';
+              raise exception 'FAIL: provider_created without provider_id accepted';
+            exception when check_violation then
+              null;
+            end $;
+        """)
+        unchanged = psql(f"""
+            select state || ':' || coalesce(provider_id, 'null')
+              from {schema}.checkout_intents where account_id = '{agreement_b}';
+        """)
+        if unchanged != "reserved:null":
+            fail("FAIL: rejected provider agreement writes altered the second reservation")
+        print("PASS: provider agreement IDs are unique and required for created states.")
         print("PASS: terminal index release and persistent request-key uniqueness.")
         print("PASS: 100 checkout attempts => exactly one outstanding claim;")
         print("PASS: different account can claim; stale fencing token rejected.")

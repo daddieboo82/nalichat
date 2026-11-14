@@ -141,6 +141,22 @@ describe('signed PayPal webhook event ordering', () => {
     expect(code.slice(ledgerAction, duplicate)).toContain("legacyUnreviewedAdjustment ? 'failed' : existing[0]?.processing_state");
   });
 
+  it('validates PayPal webhook event identifiers before verification and ledger lookup', async () => {
+    const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
+    const idCheck = code.indexOf("typeof event?.id !== 'string'");
+    const typeCheck = code.indexOf("typeof event?.event_type !== 'string'");
+    const signature = code.indexOf('if (!(await verify(req, event, token)))');
+    const ledger = code.indexOf('const existing = await entities.PayPalWebhookEvent.filter(');
+    expect(idCheck).toBeGreaterThan(0);
+    expect(typeCheck).toBeGreaterThan(idCheck);
+    expect(signature).toBeGreaterThan(typeCheck);
+    expect(ledger).toBeGreaterThan(signature);
+    const envelopeGuard = code.slice(idCheck, signature);
+    expect(envelopeGuard).toContain("event.id.length > 255");
+    expect(envelopeGuard).toContain("event.event_type.length > 255");
+    expect(envelopeGuard).toContain("status: 400");
+  });
+
   it('requires a valid signed creation time before the webhook ledger is touched', async () => {
     const code = await readFile('base44/functions/paypalWebhook/entry.ts', 'utf8');
     const verification = code.indexOf('if (!(await verify(req, event, token)))');

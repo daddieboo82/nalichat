@@ -47,6 +47,14 @@ check(wixStop >= 0 && wix503 > wixStop && wix503 < wixRateLimit
   && wixRateLimit < wixProviderCreate,
   'Wix checkout stop must precede account reads and provider session creation.');
 
+// PayPal's return destinations must also stay on the configured canonical
+// origin; an untrusted request header cannot redirect payment callbacks.
+check(backend.includes("new URL('/ThankYou?subscription=1', APP_BASE_URL)")
+  && backend.includes("new URL('/pricing?checkout=paypal_canceled', APP_BASE_URL)")
+  && !backend.includes('X-Base44-App-Url')
+  && !backend.includes('resolveAppUrl('),
+  'PayPal payment return URLs must use only the canonical configured origin.');
+
 // Checkout return destinations must never use untrusted app-origin headers.
 check(wixCheckout.includes("new URL('/ThankYou?subscription=1', APP_BASE_URL)")
   && wixCheckout.includes("new URL('/pricing', APP_BASE_URL)")

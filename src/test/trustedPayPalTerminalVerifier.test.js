@@ -3,7 +3,8 @@ import { createTrustedPayPalTerminalVerifier } from '@/lib/trustedPayPalTerminal
 
 const intent = {
   intentId: 'intent-1', accountId: 'account-123', provider: 'paypal',
-  sku: 'premium_monthly', providerRequestId: 'original-provider-request-1',
+  sku: 'premium_monthly', requestKey: 'original-client-request-key-1234',
+  providerRequestId: 'original-provider-request-1',
   providerId: 'I-MOCKSUBSCRIPTION1234',
 };
 const plans = {

@@ -17,7 +17,12 @@ create table checkout_intents (
  intent_id text primary key, account_id text not null, provider text not null,
  sku text not null, client_idempotency_key text not null,
  provider_request_id text not null, state text not null default 'reserved',
+ provider_id text,
  fencing_version integer not null default 1,
+ check (state not in ('reserved', 'provider_request_started', 'provider_outcome_unknown')
+        or provider_id is null),
+ check (state not in ('provider_created', 'local_record_failed', 'local_recorded', 'verified_terminal')
+        or provider_id is not null),
  unique (provider, provider_request_id),
  unique (account_id, client_idempotency_key)
 );
@@ -64,12 +69,30 @@ def main():
                 where intent_id=? and fencing_version=99999 returning intent_id
             """, (intent_id,)).fetchone()
             assert stale is None, 'Stale worker advanced reservation'
+            try:
+                connection.execute("""
+                    update checkout_intents set state='verified_terminal'
+                    where intent_id=? and state='reserved'
+                """, (intent_id,))
+                raise AssertionError('Terminal reservation without provider ID accepted')
+            except sqlite3.IntegrityError:
+                pass
+            synthetic_provider_id = 'I-SQLITE' + uuid.uuid4().hex[:20].upper()
+            created = connection.execute("""
+                update checkout_intents
+                   set state='provider_created', provider_id=?,
+                       fencing_version=fencing_version+1
+                 where intent_id=? and state='reserved' and fencing_version=1
+                returning intent_id
+            """, (synthetic_provider_id, intent_id)).fetchone()
+            assert created, 'Synthetic provider agreement could not be recorded'
             terminal = connection.execute("""
                 update checkout_intents set state='verified_terminal',
                   fencing_version=fencing_version+1
-                where intent_id=? and state='reserved' and fencing_version=1
+                where intent_id=? and state='provider_created'
+                  and provider_id=? and fencing_version=2
                 returning intent_id
-            """, (intent_id,)).fetchone()
+            """, (intent_id, synthetic_provider_id)).fetchone()
             assert terminal, 'Test-only terminal transition failed'
         assert claim(101), 'No new claim after simulated terminal transition'
         with closing(db()) as connection:
@@ -81,7 +104,7 @@ def main():
                   old_key, 'replay_'+uuid.uuid4().hex)).fetchone()
             assert replay is None, 'Previously used request key accepted'
         print('PASS: 100 concurrent claims => 1 accepted, 99 rejected')
-        print('PASS: other account; stale fencing; terminal successor; request replay')
+        print('PASS: provider ID required before terminal; other account; stale fencing; terminal successor; request replay')
         print('NOTE: SQLite only. PostgreSQL isolation/reconciliation NOT tested.')
 
 if __name__ == '__main__':

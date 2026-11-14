@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
 
 const load = () => readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
 
@@ -35,5 +37,69 @@ describe('PayPal emergency checkout safety stop (#1048)', () => {
     expect(pricing).toContain('setStartingPlan(null)');
     expect(subscriptionBilling).toContain('startSubscriptionCheckout');
     expect(subscriptionBilling).toContain('payload?.error');
+  });
+
+  it.each(['true', 'false', undefined])('returns 503 before DB or PayPal side effects when the legacy flag is %s', async (legacyFlag) => {
+    // Compile the *actual handler* with TypeScript to catch runtime mistakes
+    // that source-string assertions cannot detect. No Base44 or PayPal network.
+    const source = (await load()).replace(/^import .*;\\n/gm, '');
+    const compiled = ts.transpileModule(source, {
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.None,
+      },
+      reportDiagnostics: true,
+    });
+    const errors = compiled.diagnostics?.filter((d) => d.category === ts.DiagnosticCategory.Error) || [];
+    expect(errors).toEqual([]);
+
+    let handler;
+    const operations = { subscriptionReads: 0, subscriptionWrites: 0, providerRequests: 0 };
+    const Subscription = {
+      filter: async () => { operations.subscriptionReads += 1; return []; },
+      create: async () => { operations.subscriptionWrites += 1; return {}; },
+      update: async () => { operations.subscriptionWrites += 1; return {}; },
+    };
+    const env = {
+      PAYPAL_ENVIRONMENT: 'sandbox',
+      PAYPAL_CLIENT_ID: 'mock-only',
+      PAYPAL_CLIENT_SECRET: 'mock-only',
+      PAYPAL_PREMIUM_MONTHLY_PLAN_ID: 'P-MOCK-PLAN',
+      PAYPAL_CHECKOUT_SERIALIZATION_VERIFIED: legacyFlag,
+    };
+    const sandbox = {
+      createClientFromRequest: () => ({
+        auth: { me: async () => ({ id: 'mock-user' }) },
+        asServiceRole: { entities: { Subscription } },
+      }),
+      secrets: { get: (key) => env[key] },
+      APP_BASE_URL: 'https://nalichat.org',
+      paypalPeriodEndForStatus: () => undefined,
+      resolvePayPalSubscriptionStatus: async () => 'UNVERIFIED',
+      hasPaidTierAccess: () => false,
+      normalizePlan: (plan) => plan,
+      normalizeStatus: (status) => status,
+      Deno: { serve: (callback) => { handler = callback; } },
+      fetch: async () => {
+        operations.providerRequests += 1;
+        throw new Error('Test must not call PayPal');
+      },
+      Response: { json: (body, options = {}) => ({ status: options.status || 200, body }) },
+      console: { error: () => {} },
+      Date, URL, encodeURIComponent,
+      btoa: (value) => Buffer.from(value).toString('base64'),
+    };
+    runInNewContext(compiled.outputText, sandbox);
+    expect(typeof handler).toBe('function');
+
+    const result = await handler({
+      method: 'POST',
+      json: async () => ({ sku: 'premium_monthly', idempotencyKey: 'ABCDEFGHIJKLMNOP' }),
+    });
+    expect(result.status).toBe(503);
+    expect(result.body.error).toContain('temporarily unavailable');
+    expect(operations).toEqual({
+      subscriptionReads: 0, subscriptionWrites: 0, providerRequests: 0,
+    });
   });
 });

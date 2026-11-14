@@ -118,6 +118,9 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       { provider_id: '../malformed' },
       { provider_id: undefined },
       { provider_id: 1234 },
+      { state: 'reserved', provider_id: 'I-PREMATURE123456' },
+      { state: 'provider_request_started', provider_id: 'I-PREMATURE123456' },
+      { state: 'provider_outcome_unknown', provider_id: 'I-PREMATURE123456' },
       { state: 'provider_created', provider_id: null },
       { state: 'local_recorded', provider_id: null },
       { provider: 'unexpected-provider' },
@@ -135,13 +138,13 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     }
   });
 
-  it('maps provider subscription identity only from persisted database rows', async () => {
+  it('rejects provider IDs before verification and preserves null on fresh claims', async () => {
     const providerId = 'I-MOCKSUBSCRIPTION123';
-    const adapter = createPostgresCheckoutReservationAdapter(
+    const premature = createPostgresCheckoutReservationAdapter(
       async () => ({ rows: [row({ provider_id: providerId })] }),
     );
-    const result = await claimCheckoutIntent(adapter, request);
-    expect(result.intent.providerId).toBe(providerId);
+    await expect(claimCheckoutIntent(premature, request))
+      .rejects.toThrow('Malformed PostgreSQL checkout reservation identity');
     const absent = createPostgresCheckoutReservationAdapter(
       async () => ({ rows: [row()] }),
     );

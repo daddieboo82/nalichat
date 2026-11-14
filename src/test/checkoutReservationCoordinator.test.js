@@ -142,7 +142,7 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
       intentId: 'existing-reservation', accountId: request.accountId,
       provider: request.provider, sku: request.sku,
       requestKey: request.requestKey, providerRequestId: request.providerRequestId,
-      state: 'provider_outcome_unknown', version: 2,
+      state: 'provider_outcome_unknown', version: 2, providerId: null,
     };
     const mock = (kind, intent) => ({ claimAtomic: async () => ({ kind, intent }) });
     expect((await claimCheckoutIntent(mock('existing', proof), request)).kind).toBe('existing');
@@ -156,6 +156,13 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
       { ...proof, state: 'verified_terminal' },
       { ...proof, state: 'unknown' },
       { ...proof, version: Number.MAX_SAFE_INTEGER + 1 },
+      { ...proof, providerId: undefined },
+      { ...proof, providerId: 'not/valid/id' },
+      { ...proof, state: 'reserved', version: 2 },
+      { ...proof, state: 'reserved', version: 1, providerId: 'I-BOUNDAGREEMENT1234' },
+      { ...proof, state: 'provider_created', providerId: null },
+      { ...proof, state: 'local_record_failed', providerId: null },
+      { ...proof, state: 'local_recorded', providerId: null },
     ]) {
       await expect(claimCheckoutIntent(mock('existing', broken), request))
         .rejects.toThrow('Reservation proof invalid');

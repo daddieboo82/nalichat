@@ -30,7 +30,10 @@ create table if not exists billing_private.checkout_intents (
       state not in ('provider_created', 'local_record_failed', 'local_recorded')
       or provider_id is not null
     ),
-    fencing_version bigint not null default 1 check (fencing_version > 0),
+    -- Bound fencing to JavaScript's exact-integer range; the server refuses
+    -- new mutations when the token has reached the final safe integer.
+    fencing_version bigint not null default 1
+      check (fencing_version between 1 and 9007199254740991),
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     constraint checkout_provider_request_unique

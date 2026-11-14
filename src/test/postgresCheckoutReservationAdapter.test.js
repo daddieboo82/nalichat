@@ -93,7 +93,7 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     });
     await expect(claimCheckoutIntent(missing, request)).rejects.toThrow('DB unavailable');
     const malformed = createPostgresCheckoutReservationAdapter(async () => ({ rows: [row({ account_id: 'another-account' })] }));
-    await expect(claimCheckoutIntent(malformed, request)).rejects.toThrow('Reservation proof invalid');
+    await expect(claimCheckoutIntent(malformed, request)).rejects.toThrow('Atomic checkout claim creation proof invalid');
     const duplicate = createPostgresCheckoutReservationAdapter(async () => ({ rows: [row(), row()] }));
     await expect(claimCheckoutIntent(duplicate, request)).rejects.toThrow();
   });
@@ -121,6 +121,7 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       { provider_id: '../malformed' },
       { provider_id: undefined },
       { provider_id: 1234 },
+      { state: 'reserved', fencing_version: 2 },
       { state: 'reserved', provider_id: 'I-PREMATURE123456' },
       { state: 'provider_request_started', provider_id: 'I-PREMATURE123456' },
       { state: 'provider_outcome_unknown', provider_id: 'I-PREMATURE123456' },

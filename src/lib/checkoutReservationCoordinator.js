@@ -113,6 +113,7 @@ export async function recordVerifiedProviderCreation(adapter, intent) {
   if (!updated || updated.intentId !== intent.intentId
     || updated.accountId !== intent.accountId
     || updated.provider !== intent.provider
+    || updated.sku !== intent.sku || updated.requestKey !== intent.requestKey
     || updated.providerRequestId !== intent.providerRequestId
     || updated.providerId !== evidence.providerId
     || updated.state !== 'provider_created' || updated.version !== intent.version + 1) {

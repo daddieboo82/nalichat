@@ -64,6 +64,8 @@ export async function claimCheckoutIntent(adapter, input) {
         || (intent.providerId !== null && (typeof intent.providerId !== 'string'
           || !/^[A-Za-z0-9-]{8,128}$/.test(intent.providerId)))
         || (intent.state === 'reserved' && (intent.version !== 1 || intent.providerId !== null))
+        || (['provider_request_started', 'provider_outcome_unknown'].includes(intent.state)
+          && intent.providerId !== null)
         || (['provider_created', 'local_record_failed', 'local_recorded'].includes(intent.state)
           && intent.providerId === null)))
       || intent.state === 'verified_terminal') {

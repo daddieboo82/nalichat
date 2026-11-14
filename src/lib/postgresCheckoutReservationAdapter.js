@@ -123,7 +123,14 @@ export function createPostgresCheckoutReservationAdapter(query) {
       if (!Array.isArray(updated?.rows) || updated.rows.length > 1) {
         throw new Error('Provider identity recording response invalid');
       }
-      return asIntent(updated.rows[0]);
+      if (updated.rows.length === 0) return null; // stale/duplicate; never retry provider create
+      const stored = asIntent(updated.rows[0]);
+      if (!stored || stored.intentId !== intentId || stored.accountId !== accountId
+        || stored.provider !== provider || stored.providerId !== providerId
+        || stored.state !== 'provider_created' || stored.version !== expectedVersion + 1) {
+        throw new Error('Provider identity recording proof invalid');
+      }
+      return stored;
     },
     async compareAndSwap({ intentId, accountId, expectedState, expectedVersion, nextState }) {
       // Coordinator checks allowed state transitions. A trusted coordinator

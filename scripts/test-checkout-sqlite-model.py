@@ -19,6 +19,7 @@ create table checkout_intents (
  provider_request_id text not null, state text not null default 'reserved',
  provider_id text,
  fencing_version integer not null default 1,
+ check (state <> 'reserved' or fencing_version = 1),
  check (state not in ('reserved', 'provider_request_started', 'provider_outcome_unknown')
         or provider_id is null),
  check (state not in ('provider_created', 'local_record_failed', 'local_recorded', 'verified_terminal')
@@ -41,6 +42,30 @@ def main():
             return connection
         with closing(db()) as connection:
             connection.executescript(DDL)
+        # The database must reject a reserved row whose fencing token was
+        # advanced without first moving the state out of reserved.
+        with closing(db()) as connection:
+            connection.execute("""
+                insert into checkout_intents
+                  (intent_id, account_id, provider, sku, client_idempotency_key, provider_request_id)
+                values (?, ?, ?, ?, ?, ?)
+            """, ('reserved_version_probe', 'reserved_version_probe', 'paypal',
+                  'premium_monthly', 'reserved_version_probe_12345',
+                  'provider_version_probe_12345'))
+            try:
+                connection.execute("""
+                    update checkout_intents set fencing_version = 2
+                    where intent_id = 'reserved_version_probe'
+                """)
+            except sqlite3.IntegrityError:
+                pass
+            else:
+                raise AssertionError('Reserved fencing version advanced without state transition')
+            assert connection.execute("""
+                select fencing_version from checkout_intents
+                where intent_id = 'reserved_version_probe'
+            """).fetchone() == (1,), 'Rejected reserved version write changed the row'
+            connection.execute("delete from checkout_intents where intent_id = 'reserved_version_probe'")
         account = 'test_' + uuid.uuid4().hex
         def claim(index, user=account):
             with closing(db()) as connection:

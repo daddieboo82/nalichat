@@ -295,7 +295,10 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
         || evidence.intentId !== intent.intentId
         || evidence.accountId !== intent.accountId
         || evidence.provider !== intent.provider
-        || evidence.providerRequestId !== intent.providerRequestId) {
+        || evidence.sku !== intent.sku
+        || evidence.requestKey !== intent.requestKey
+        || evidence.providerRequestId !== intent.providerRequestId
+        || evidence.providerId !== intent.providerId) {
         throw new Error('Terminal provider outcome unverified');
       }
       const result = await query(

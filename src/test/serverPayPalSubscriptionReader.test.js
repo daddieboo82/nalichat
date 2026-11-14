@@ -5,6 +5,7 @@ import { verifyPayPalTerminalCheckout } from '@/lib/checkoutProviderTerminalVeri
 const intent = {
   intentId: 'draft-reservation', accountId: 'account-1', provider: 'paypal',
   providerRequestId: 'stable-provider-request-1', providerId: 'I-MOCKSUBSCRIPTION1234',
+  sku: 'premium_monthly',
 };
 const response = (payload, ok = true) => ({ ok, json: async () => payload });
 const setup = (calls) => createServerPayPalSubscriptionReader({
@@ -14,7 +15,8 @@ const setup = (calls) => createServerPayPalSubscriptionReader({
   fetchImpl: async (url, options) => {
     calls.push({ url, options });
     if (url.endsWith('/v1/oauth2/token')) return response({ access_token: 'mock-access-token' });
-    return response({ id: intent.providerId, status: 'EXPIRED' });
+    return response({ id: intent.providerId, status: 'EXPIRED',
+      custom_id: intent.accountId + ':' + intent.sku, plan_id: 'P-MOCKPLAN123' });
   },
 });
 
@@ -59,6 +61,13 @@ describe('server-only PayPal read adapter (all HTTP mocked)', () => {
       [response({ access_token: 'token' }), response({}, false)],
       [response({ access_token: 'token' }), response({ id: 'I-WRONG', status: 'EXPIRED' })],
       [response({ access_token: 'token' }), response({ id: intent.providerId, status: '' })],
+      [response({ access_token: 'token' }), response({
+        id: intent.providerId, status: 'EXPIRED', plan_id: 'P-MOCKPLAN123',
+      })],
+      [response({ access_token: 'token' }), response({
+        id: intent.providerId, status: 'EXPIRED',
+        custom_id: intent.accountId + ':' + intent.sku,
+      })],
     ];
     for (const [auth, read] of cases) {
       let index = 0;
@@ -77,7 +86,8 @@ describe('server-only PayPal read adapter (all HTTP mocked)', () => {
       encodeBasic: (x) => x,
       fetchImpl: async (url) => url.endsWith('/token')
         ? response({ access_token: 'token' })
-        : response({ id: intent.providerId, status: 'CANCELLED' }),
+        : response({ id: intent.providerId, status: 'CANCELLED',
+          custom_id: intent.accountId + ':' + intent.sku, plan_id: 'P-MOCKPLAN123' }),
     });
     await expect(verifyPayPalTerminalCheckout(intent, reader)).rejects.toThrow();
   });

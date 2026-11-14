@@ -188,6 +188,30 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     expect(db.calls.cas).toBe(casBefore + 1);
   });
 
+  it('rejects CAS results that change immutable checkout identities', async () => {
+    const db = createFakeAtomicStore();
+    const first = await claimCheckoutIntent(db.adapter, input(1));
+    const mismatches = [
+      { provider: 'wix' },
+      { sku: 'premium_plus_yearly' },
+      { requestKey: 'different-client-key-12345678' },
+      { providerRequestId: 'different-provider-key-12345678' },
+      { providerId: 'I-SUBSCRIPTION-MISMATCH' },
+    ];
+    for (const mismatch of mismatches) {
+      const forged = {
+        ...db.adapter,
+        compareAndSwap: async ({ nextState, expectedVersion }) => ({
+          ...first.intent, ...mismatch, state: nextState, version: expectedVersion + 1,
+        }),
+      };
+      await expect(advanceCheckoutIntent(forged, first.intent, 'provider_request_started'))
+        .rejects.toThrow('Checkout fencing/version mismatch');
+    }
+    expect(db.outstanding.get(first.intent.accountId).state).toBe('reserved');
+    expect(db.calls.cas).toBe(0);
+  });
+
   it('blocks generic provider-created transition without storing provider ID', async () => {
     const db = createFakeAtomicStore();
     const first = await claimCheckoutIntent(db.adapter, input(1));

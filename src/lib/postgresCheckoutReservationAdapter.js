@@ -10,6 +10,21 @@
 const TABLE = 'billing_private.checkout_intents';
 function asIntent(row) {
   if (!row) return null;
+  // PostgreSQL bigint often arrives as a string. Coercing an out-of-range
+  // value to Number would silently round the fencing version and could
+  // accept/reject a stale worker incorrectly. Fail closed instead.
+  const rawVersion = row.fencing_version;
+  const validRepresentation = (typeof rawVersion === 'string' && /^[1-9][0-9]*$/.test(rawVersion))
+    || (typeof rawVersion === 'number' && Number.isSafeInteger(rawVersion) && rawVersion > 0);
+  if (!validRepresentation) throw new Error('Invalid PostgreSQL checkout fencing version');
+  const version = Number(rawVersion);
+  if (!Number.isSafeInteger(version) || version < 1) {
+    throw new Error('Unsafe PostgreSQL checkout fencing version');
+  }
+  if (typeof row.intent_id !== 'string' || !row.intent_id
+    || typeof row.account_id !== 'string' || !row.account_id) {
+    throw new Error('Malformed PostgreSQL checkout reservation identity');
+  }
   return {
     intentId: row.intent_id,
     accountId: row.account_id,
@@ -18,7 +33,7 @@ function asIntent(row) {
     requestKey: row.client_idempotency_key,
     providerRequestId: row.provider_request_id,
     state: row.state,
-    version: Number(row.fencing_version),
+    version,
   };
 }
 function requireQuery(query) {

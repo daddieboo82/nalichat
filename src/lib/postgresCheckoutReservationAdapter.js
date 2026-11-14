@@ -103,7 +103,18 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
       );
       if (!Array.isArray(inserted?.rows)) throw new Error('Reservation query response invalid');
       if (inserted.rows.length === 1) {
-        return { kind: 'created', intent: asIntent(inserted.rows[0]) };
+        const created = asIntent(inserted.rows[0]);
+        // A successful INSERT must return the exact reservation that was
+        // requested, not merely one syntactically valid database row.
+        if (!created || created.accountId !== input.accountId
+          || created.provider !== input.provider || created.sku !== input.sku
+          || created.requestKey !== input.requestKey
+          || created.providerRequestId !== input.providerRequestId
+          || created.state !== 'reserved' || created.version !== 1
+          || created.providerId !== null) {
+          throw new Error('Atomic checkout claim creation proof invalid');
+        }
+        return { kind: 'created', intent: created };
       }
       if (inserted.rows.length !== 0) throw new Error('Unexpected number of claimed reservations');
 

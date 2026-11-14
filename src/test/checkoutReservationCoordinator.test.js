@@ -160,6 +160,15 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
       await expect(claimCheckoutIntent(mock('existing', broken), request))
         .rejects.toThrow('Reservation proof invalid');
     }
+    // A new claim cannot arrive with an already-bound provider agreement.
+    // A forged or inconsistent store response must never authorize creation.
+    await expect(claimCheckoutIntent(mock('created', {
+      ...proof, state: 'reserved', version: 1,
+      providerId: 'I-ALREADYBOUND123456',
+    }), request)).rejects.toThrow('Reservation proof invalid');
+    await expect(claimCheckoutIntent(mock('created', {
+      ...proof, state: 'reserved', version: 1, providerId: undefined,
+    }), request)).rejects.toThrow('Reservation proof invalid');
     const conflict = await claimCheckoutIntent(mock('conflict', {
       ...proof, accountId: 'another-account', providerRequestId: 'do-not-leak',
     }), request);

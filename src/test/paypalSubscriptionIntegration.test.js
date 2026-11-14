@@ -119,6 +119,16 @@ describe('PayPal subscription integration contracts', () => {
     );
   });
 
+  it('warns admins to reconcile missing PayPal agreements without restarting checkout', async () => {
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(dashboard).toContain('New recurring checkout is paused');
+    expect(dashboard).toContain('Verify the provider environment, merchant account, and agreement');
+    expect(dashboard).not.toContain('The customer must complete a new checkout before payment can be collected');
+    expect(dashboard).toContain('PayPal webhook:');
+    expect(dashboard).toContain('billingTestStatus?.webhookVerificationStatus === "verified"');
+    expect(dashboard).toContain('billingTestStatus?.webhookConfigured');
+  });
+
   it('captures subscription_id for analytics deduplication on ThankYou return page', async () => {
     const thankYouSource = await read('src/pages/ThankYou.jsx');
     expect(thankYouSource).toContain('urlParams.get("subscription_id")');

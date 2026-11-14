@@ -398,6 +398,38 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  it('retains an unknown provider outcome as the existing locked reservation', async () => {
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [row({
+        state: 'provider_outcome_unknown', fencing_version: '3',
+      })] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [row({
+        state: 'provider_outcome_unknown', fencing_version: '3',
+      })] });
+    const adapter = createPostgresCheckoutReservationAdapter(query);
+    const intent = {
+      ...casIdentity, state: 'provider_request_started', version: 2,
+    };
+    const updated = await advanceCheckoutIntent(adapter, intent, 'provider_outcome_unknown');
+    expect(updated.state).toBe('provider_outcome_unknown');
+    expect(updated.providerId).toBeNull();
+    expect(updated.version).toBe(3);
+    expect(query.mock.calls[0][1]).toEqual([
+      intent.intentId, intent.accountId, 'provider_request_started', 2,
+      'provider_outcome_unknown', intent.provider, intent.sku,
+      intent.requestKey, intent.providerRequestId, null,
+    ]);
+    const existing = await claimCheckoutIntent(adapter, request);
+    expect(existing.kind).toBe('existing');
+    expect(existing.intent.state).toBe('provider_outcome_unknown');
+    expect(existing.intent.version).toBe(3);
+    expect(query).toHaveBeenCalledTimes(3);
+    await expect(advanceCheckoutIntent(adapter, existing.intent, 'provider_request_started'))
+      .rejects.toThrow('Transition requires verified reconciliation');
+    expect(query).toHaveBeenCalledTimes(3);
+  });
+
   it('preserves provider agreement identity when recording a local-write failure', async () => {
     const providerId = 'I-MOCKSUBSCRIPTION123';
     const query = vi.fn().mockResolvedValue({

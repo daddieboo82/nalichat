@@ -133,6 +133,10 @@ export function createPostgresCheckoutReservationAdapter(query) {
       return stored;
     },
     async compareAndSwap({ intentId, accountId, expectedState, expectedVersion, nextState }) {
+      // Never bypass the separate atomic provider-ID recording operation.
+      if (nextState === 'provider_created') {
+        throw new Error('Provider identity must be durably recorded');
+      }
       // Coordinator checks allowed state transitions. A trusted coordinator
       // must independently verify a provider-terminal event before passing
       // `verified_terminal`; an arbitrary client must never call this.

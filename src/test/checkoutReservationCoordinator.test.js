@@ -165,6 +165,20 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
     expect(conflict).toEqual({ kind: 'conflict', intent: null });
   });
 
+  it('never releases an unknown provider create without identifying its agreement', async () => {
+    const db = createFakeAtomicStore();
+    const claim = await claimCheckoutIntent(db.adapter, input(1));
+    const started = await advanceCheckoutIntent(db.adapter, claim.intent, 'provider_request_started');
+    const unknown = await advanceCheckoutIntent(db.adapter, started, 'provider_outcome_unknown');
+    const before = db.calls.cas;
+    await expect(advanceCheckoutIntent({
+      ...db.adapter,
+      releaseVerifiedTerminal: async () => { throw new Error('Must not attempt release'); },
+    }, unknown, 'verified_terminal')).rejects.toThrow('Transition requires verified reconciliation');
+    expect(db.calls.cas).toBe(before);
+    expect(db.outstanding.get(unknown.accountId).state).toBe('provider_outcome_unknown');
+  });
+
   it('never releases an outstanding reservation without provider-verified terminal evidence', async () => {
     const db = createFakeAtomicStore();
     const claimed = await claimCheckoutIntent(db.adapter, input(1));

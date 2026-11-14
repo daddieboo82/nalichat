@@ -50,6 +50,15 @@ def main():
         fail("Production-linked NaliChat Supabase host is forbidden")
     if os.getenv("PGHOST", "").lower().startswith("db.xznlhezufooynxekoezl."):
         fail("Production-linked NaliChat Supabase project is forbidden")
+    # The draft DDL uses the Supabase-specific roles "anon" and
+    # "authenticated". Don't silently edit away those security grants to
+    # make a vanilla PostgreSQL test pass.
+    roles = psql("""
+        select count(*) from pg_roles
+        where rolname in ('anon', 'authenticated');
+    """)
+    if roles != "2":
+        fail("Staging DB lacks Supabase anon/authenticated roles; no schema created")
     schema = "checkout_test_" + uuid.uuid4().hex[:18]
     sql = pathlib.Path("docs/sql/checkout-intent-postgres-design.sql").read_text()
     sql = sql.replace("billing_private", schema)

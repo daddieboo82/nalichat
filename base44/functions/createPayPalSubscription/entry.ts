@@ -55,9 +55,6 @@ Deno.serve(async (req) => {
     }
     const item = CATALOG[sku];
     if (!item) return Response.json({ error: 'Unknown subscription plan' }, { status: 400 });
-    const planId = secrets.get(item.secret);
-    if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
-
     // Emergency billing safety stop (#1047). Do not replace with an
     // operator flag: checkout needs a VERIFIED atomic per-user reservation.
     if (!atomicCheckoutReservationIsImplemented()) {
@@ -65,6 +62,9 @@ Deno.serve(async (req) => {
         error: 'New PayPal subscriptions are temporarily unavailable while billing safety is verified',
       }, { status: 503 });
     }
+
+    const planId = secrets.get(item.secret);
+    if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
 
     // Block duplicate checkout if the user already has active paid access.
     const allSubs = await base44.asServiceRole.entities.Subscription.filter(

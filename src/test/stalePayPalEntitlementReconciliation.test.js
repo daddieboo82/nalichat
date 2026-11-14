@@ -584,6 +584,18 @@ describe('stale active PayPal subscription reconciliation', () => {
     expect(beforeCreate).toContain('status: 409');
   });
 
+  it('requires reconciliation of suspended or unpaid PayPal agreements before new checkout', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    const guard = code.indexOf('const unpaidPayPal = allSubs.some');
+    const create = code.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions', {");
+    expect(guard).toBeGreaterThan(0);
+    expect(create).toBeGreaterThan(guard);
+    const beforeCreate = code.slice(guard, create);
+    expect(beforeCreate).toContain("normalizeStatus(sub.status) === 'unpaid'");
+    expect(beforeCreate).toContain('if (unpaidPayPal)');
+    expect(beforeCreate).toContain('An unpaid PayPal agreement requires verification before another subscription');
+  });
+
   it('blocks a second PayPal checkout for an unresolved existing active subscription', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(code).toContain("const unresolvedActivePayPal = allSubs.some");

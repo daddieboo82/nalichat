@@ -42,16 +42,15 @@ Deno.serve(async (req) => {
     const existing = secrets.get('PAYPAL_WEBHOOK_ID');
     if (existing && !existing.startsWith('REPLACE_')) return Response.json({ success: true, reused: true, webhookId: existing });
 
-    const accessToken = await token();
-    // Never register a webhook to a fallback app: a misdirected PayPal event
-    // may leave the real account's subscription state unreconciled.
-    const configuredWebhookUrl = String(secrets.get('PAYPAL_WEBHOOK_URL') || '').trim();
+    // Do not use a different app's ID as a fallback or trust a webhook
+    // destination supplied without independently configured app identity.
     const configuredAppId = String(secrets.get('BASE44_APP_ID') || '').trim();
-    if (!configuredWebhookUrl && !/^[a-f0-9]{24}$/i.test(configuredAppId)) {
+    if (!/^[a-f0-9]{24}$/i.test(configuredAppId)) {
       return Response.json({
-        error: 'Set BASE44_APP_ID or PAYPAL_WEBHOOK_URL before registering a webhook',
+        error: 'Set the current BASE44_APP_ID before registering a PayPal webhook',
       }, { status: 503 });
     }
+    const configuredWebhookUrl = String(secrets.get('PAYPAL_WEBHOOK_URL') || '').trim();
     const webhookUrl = configuredWebhookUrl ||
       `https://base44-dispatcher-production.base44.workers.dev/api/apps/${configuredAppId}/functions/paypalWebhook`;
     let parsedWebhookUrl: URL;
@@ -59,12 +58,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid webhook URL configuration' }, { status: 503 });
     }
     if (parsedWebhookUrl.protocol !== 'https:' || parsedWebhookUrl.username
-        || parsedWebhookUrl.password || parsedWebhookUrl.search || parsedWebhookUrl.hash
-        || parsedWebhookUrl.hostname !== 'base44-dispatcher-production.base44.workers.dev'
-        || parsedWebhookUrl.pathname !==
-          `/api/apps/${configuredAppId || parsedWebhookUrl.pathname.split('/')[3]}/functions/paypalWebhook`) {
-      return Response.json({ error: 'Webhook URL must target a verified Base44 app' }, { status: 503 });
+      || parsedWebhookUrl.password || parsedWebhookUrl.search || parsedWebhookUrl.hash
+      || parsedWebhookUrl.hostname !== 'base44-dispatcher-production.base44.workers.dev'
+      || parsedWebhookUrl.pathname !==
+        `/api/apps/${configuredAppId}/functions/paypalWebhook`) {
+      return Response.json({ error: 'Webhook URL does not match the configured Base44 app' }, { status: 503 });
     }
+    const accessToken = await token();
     const r = await fetch(apiBase() + '/v1/notifications/webhooks', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },

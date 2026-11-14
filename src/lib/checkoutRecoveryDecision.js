@@ -13,7 +13,14 @@ export function decideCheckoutRecovery(intent) {
   if (!intent || !['paypal', 'wix'].includes(intent.provider)
     || typeof intent.intentId !== 'string' || !intent.intentId
     || typeof intent.accountId !== 'string' || !intent.accountId
-    || typeof intent.providerRequestId !== 'string' || !intent.providerRequestId
+    || typeof intent.sku !== 'string'
+    || !/^(premium|premium_plus)_(monthly|yearly)$/.test(intent.sku)
+    || typeof intent.requestKey !== 'string'
+    || !/^[A-Za-z0-9._~-]{16,128}$/.test(intent.requestKey)
+    || typeof intent.providerRequestId !== 'string'
+    || !/^[A-Za-z0-9._~-]{16,128}$/.test(intent.providerRequestId)
+    || !Number.isSafeInteger(intent.version) || intent.version < 1
+    || intent.version >= Number.MAX_SAFE_INTEGER
     || typeof intent.state !== 'string') {
     throw new Error('Checkout recovery context invalid');
   }

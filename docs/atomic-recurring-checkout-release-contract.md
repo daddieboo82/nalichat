@@ -41,3 +41,25 @@ The checkout coordinator must expose **one atomic claim per account** across all
 Only after the backend constraint, atomic implementation, reconciliation worker, authenticated sandbox E2E, and deployment/rollback checks pass: replace the hard-coded safety stops in a reviewed release. The release guard `scripts/verify-paypal-checkout-safety.mjs` must be updated in the same change to assert the **verified** atomic implementation, not simply deleted or bypassed.
 
 Until then **do not enable new PayPal or Wix recurring subscription checkout**.
+
+## Draft local Subscription read/write identity binding (NOT deployed)
+
+The new draft server-only `createTrustedLocalSubscriptionReader` requires
+a **fresh, exact** service-role read by `user_id`, `provider`, and the
+provider agreement/session field, with exactly one matching row:
+
+- PayPal: `subscription_id` must match the verified agreement ID.
+- Wix: `checkout_id` must match the verified checkout session ID.
+- All providers: `checkout_intent_id`, `checkout_request_key`,
+  `checkout_provider_request_id`, `sku`, and `user_id` must match
+  the reservation. No read-result timestamp or “latest record” is sufficient.
+
+The current PayPal checkout writer does **not** persist these complete identity
+bindings; the current Wix writer persists `checkout_request_key` but not
+`checkout_intent_id` or `checkout_provider_request_id`. Therefore existing
+records must **not** be treated as verified local persistence receipts.
+An approved server-only writer must durably and idempotently bind all fields,
+with tested uniqueness/atomicity where required, before using this reader to
+advance `local_recorded`. A read-only lookup is not an atomic lock.
+Provider agreement IDs and Wix session IDs may have different lifecycles;
+a Wix checkout session alone must **not** establish a paid subscription.

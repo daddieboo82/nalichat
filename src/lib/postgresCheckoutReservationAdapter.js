@@ -135,6 +135,7 @@ export function createPostgresCheckoutReservationAdapter(query) {
         || !/^[A-Za-z0-9._~-]{16,128}$/.test(providerRequestId)
         || !['provider_request_started', 'provider_outcome_unknown'].includes(expectedState)
         || !Number.isSafeInteger(expectedVersion) || expectedVersion < 1
+        || expectedVersion >= Number.MAX_SAFE_INTEGER
         || typeof providerId !== 'string'
         || !/^[A-Za-z0-9-]{8,128}$/.test(providerId)) {
         throw new Error('Invalid verified provider subscription identity');
@@ -177,6 +178,7 @@ export function createPostgresCheckoutReservationAdapter(query) {
       if (typeof intentId !== 'string' || !intentId
         || typeof accountId !== 'string' || !accountId
         || !Number.isSafeInteger(expectedVersion) || expectedVersion < 1
+        || expectedVersion >= Number.MAX_SAFE_INTEGER
         || !Object.hasOwn(GENERIC_TRANSITIONS, expectedState)
         || !GENERIC_TRANSITIONS[expectedState].includes(nextState)) {
         throw new Error('Invalid checkout state transition');

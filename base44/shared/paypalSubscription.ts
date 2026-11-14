@@ -28,10 +28,11 @@ export async function resolvePayPalSubscriptionStatus(
   } catch {
     activated = false;
   }
-  if (activated) remoteStatus = 'ACTIVE';
+  // A successful activation request is not independently verified paid access.
+  // Stay APPROVED until a subsequent matching PayPal GET confirms ACTIVE.
+  // An already-active concurrent transition is likewise accepted only after GET.
+  // The APPROVED payload often has no usable billing window.
 
-  // Activation can lose a race with PayPal auto-activation, and the APPROVED
-  // payload often has no usable billing window. Re-read before deciding access.
   try {
     const again = await fetch(
       apiBase + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId),
@@ -42,9 +43,13 @@ export async function resolvePayPalSubscriptionStatus(
       // An unexpected provider response cannot replace billing data or
       // lifecycle status from the agreement already identity-checked above.
       if (fresh?.id === subscriptionId && fresh?.plan_id === remote?.plan_id) {
-        if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
         const freshStatus = String(fresh?.status || '').toUpperCase();
-        if (freshStatus && (!activated || freshStatus === 'ACTIVE')) {
+        if (freshStatus === 'ACTIVE') {
+          if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
+          remoteStatus = 'ACTIVE';
+        } else if (freshStatus === 'APPROVED' || freshStatus === 'APPROVAL_PENDING'
+          || freshStatus === 'SUSPENDED' || freshStatus === 'CANCELLED'
+          || freshStatus === 'EXPIRED') {
           remoteStatus = freshStatus;
         }
       }

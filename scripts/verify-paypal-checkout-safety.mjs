@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 
 const backend = readFileSync('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
 const pricing = readFileSync('src/components/pricing/PricingPlans.jsx', 'utf8');
+const wixCheckout = readFileSync('base44/functions/create-checkout/entry.ts', 'utf8');
 const failures = [];
 const check = (condition, detail) => {
   if (!condition) failures.push(detail);
@@ -30,6 +31,21 @@ check(gate >= 0 && failureResponse > gate && failureResponse < planSecret
 'Hard stop must execute before PayPal plan secrets, subscription reads and agreement creation.');
 check(!backend.includes('PAYPAL_CHECKOUT_SERIALIZATION_VERIFIED'),
   'Legacy operator flag must not bypass checkout safety.');
+
+
+// The alternate Wix subscription checkout route needs the same protection.
+const wixReservation = wixCheckout.match(
+  /function\s+hasVerifiedAtomicWixReservation\s*\(\s*\)\s*:\s*boolean\s*\{([^}]*)\}/,
+);
+check(Boolean(wixReservation && /^\s*return\s+false\s*;\s*$/.test(wixReservation[1])),
+  'Wix checkout reservation helper must remain hard-closed.');
+const wixStop = wixCheckout.indexOf('if (!hasVerifiedAtomicWixReservation())');
+const wix503 = wixCheckout.indexOf('status: 503', wixStop);
+const wixRateLimit = wixCheckout.indexOf('const checkoutRate = await consumeHourlyLimit(');
+const wixProviderCreate = wixCheckout.indexOf("'https://www.wixapis.com/payments/platform/v1/checkout-sessions/construct'");
+check(wixStop >= 0 && wix503 > wixStop && wix503 < wixRateLimit
+  && wixRateLimit < wixProviderCreate,
+  'Wix checkout stop must precede account reads and provider session creation.');
 
 check(pricing.includes('isCheckoutPaused={!appleIAP.available}')
   && pricing.includes('disabled={isStarting || isCurrent || isPaidSubscriber || isCheckoutPaused}'),

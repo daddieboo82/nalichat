@@ -122,6 +122,25 @@ def main():
         """)
         if stale:
             fail("FAIL: stale fencing token updated a reservation")
+        # A reserved row with an advanced fencing token is inconsistent
+        # with the backend recovery policy, even if SQL bypasses the adapter.
+        psql(f"""
+            do $checkout_reserved_version$
+            begin
+              update {schema}.checkout_intents
+                 set fencing_version = 2
+               where account_id = '{account}' and state = 'reserved';
+              raise exception 'FAIL: advanced reserved fencing token accepted';
+            exception when check_violation then
+              null;
+            end $checkout_reserved_version$;
+        """)
+        unchanged_version = psql(f"""
+            select fencing_version from {schema}.checkout_intents
+             where account_id = '{account}' and state = 'reserved';
+        """)
+        if unchanged_version != "1":
+            fail("FAIL: rejected reserved fencing write altered reservation")
         # This isolated schema uses a synthetic provider agreement solely to
         # exercise the partial unique index. Never imply that this is payment
         # verification: no real provider subscription is created or consulted.

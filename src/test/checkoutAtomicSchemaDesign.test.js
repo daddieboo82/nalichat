@@ -11,6 +11,16 @@ describe('staging-only atomic checkout SQL design (not deployed)', () => {
     expect(normalized).toMatch(/constraint checkout_account_intent_key_unique\s+unique \(account_id, client_idempotency_key\)/);
   });
 
+  it('uniquely binds each provider subscription and disallows unbound created states', () => {
+    expect(normalized).toMatch(
+      /create unique index if not exists checkout_provider_agreement_unique\\s+on billing_private\\.checkout_intents \\(provider, provider_id\\)\\s+where provider_id is not null/,
+    );
+    expect(normalized).toContain('constraint checkout_created_has_provider_id check');
+    expect(normalized).toMatch(
+      /state not in \\('provider_created', 'local_record_failed', 'local_recorded'\\)\\s+or provider_id is not null/,
+    );
+  });
+
   it('keeps the reservation table out of the public data API', () => {
     expect(normalized).toContain('create schema if not exists billing_private;');
     expect(normalized).toContain('alter table billing_private.checkout_intents enable row level security;');

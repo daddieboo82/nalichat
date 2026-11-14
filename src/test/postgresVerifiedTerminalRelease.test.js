@@ -11,7 +11,8 @@ const intent = {
 const proof = {
   verified: true, terminal: true, intentId: intent.intentId,
   accountId: intent.accountId, provider: intent.provider,
-  providerRequestId: intent.providerRequestId,
+  sku: intent.sku, requestKey: intent.requestKey,
+  providerRequestId: intent.providerRequestId, providerId: intent.providerId,
 };
 const row = (changes = {}) => ({
   intent_id: intent.intentId, account_id: intent.accountId,
@@ -36,6 +37,9 @@ describe('draft PostgreSQL terminal release (mock SQL, not actual Postgres)', ()
       null, { ...proof, verified: false }, { ...proof, terminal: false },
       { ...proof, accountId: 'other-account' },
       { ...proof, providerRequestId: 'different-provider-request' },
+      { ...proof, providerId: 'I-DIFFERENTAGREEMENT123' },
+      { ...proof, sku: 'premium_plus_monthly' },
+      { ...proof, requestKey: 'different-client-key-12345678' },
       { ...proof, provider: 'wix' },
       { ...proof, intentId: 'other-intent' },
     ]) {

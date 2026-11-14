@@ -60,7 +60,6 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
       { client_idempotency_key: 'other-client-key-12345678' },
       { provider_request_id: 'other-provider-key-12345678' },
       { state: 'provider_request_started' },
-      { fencing_version: 2 },
       { provider_id: 'I-OTHERAGREEMENT1234' },
     ]) {
       const query = vi.fn().mockResolvedValue({ rows: [row(mismatch)] });

@@ -68,8 +68,11 @@ function asIntent(row) {
 function requireQuery(query) {
   if (typeof query !== 'function') throw new Error('Trusted PostgreSQL connection unavailable');
 }
-export function createPostgresCheckoutReservationAdapter(query) {
+export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
   requireQuery(query);
+  // Only the server-side composition root may inject this independently
+  // authenticated provider reader. Never populate it from a client request.
+  const verifyTerminalOutcome = trusted?.verifyTerminalOutcome;
   return Object.freeze({
     async claimAtomic(input) {
       // Database uniqueness, not an application read-before-create, picks
@@ -162,6 +165,71 @@ export function createPostgresCheckoutReservationAdapter(query) {
         || stored.sku !== sku || stored.providerRequestId !== providerRequestId
         || stored.state !== 'provider_created' || stored.version !== expectedVersion + 1) {
         throw new Error('Provider identity recording proof invalid');
+      }
+      return stored;
+    },
+    /**
+     * Draft terminal release: only a server-injected authenticated provider
+     * reader may authorize the row to become terminal. The SQL CAS binds the
+     * original provider agreement and every checkout identity. Unknown provider
+     * outcomes (including a missing provider ID) remain locked for manual
+     * reconciliation; there is no lease timeout or client override.
+     */
+    async releaseVerifiedTerminal(intent) {
+      if (typeof verifyTerminalOutcome !== 'function') {
+        throw new Error('Trusted terminal provider verification unavailable');
+      }
+      if (!intent || !['provider_created', 'local_record_failed', 'local_recorded'].includes(intent.state)
+        || !Number.isSafeInteger(intent.version) || intent.version < 1
+        || intent.version >= Number.MAX_SAFE_INTEGER
+        || typeof intent.intentId !== 'string' || !intent.intentId
+        || typeof intent.accountId !== 'string' || !intent.accountId
+        || !['paypal', 'wix'].includes(intent.provider)
+        || !/^(premium|premium_plus)_(monthly|yearly)$/.test(intent.sku)
+        || typeof intent.requestKey !== 'string'
+        || !/^[A-Za-z0-9._~-]{16,128}$/.test(intent.requestKey)
+        || typeof intent.providerRequestId !== 'string'
+        || !/^[A-Za-z0-9._~-]{16,128}$/.test(intent.providerRequestId)
+        || typeof intent.providerId !== 'string'
+        || !/^[A-Za-z0-9-]{8,128}$/.test(intent.providerId)) {
+        throw new Error('Terminal release requires a persisted provider agreement');
+      }
+      const evidence = await verifyTerminalOutcome(intent);
+      if (!evidence || evidence.verified !== true || evidence.terminal !== true
+        || evidence.intentId !== intent.intentId
+        || evidence.accountId !== intent.accountId
+        || evidence.provider !== intent.provider
+        || evidence.providerRequestId !== intent.providerRequestId) {
+        throw new Error('Terminal provider outcome unverified');
+      }
+      const result = await query(
+        `update ${TABLE}
+         set state = 'verified_terminal',
+           fencing_version = fencing_version + 1, updated_at = now()
+         where intent_id = $1 and account_id = $2
+           and provider = $3 and sku = $4
+           and client_idempotency_key = $5
+           and provider_request_id = $6 and provider_id = $7
+           and state = $8 and fencing_version = $9
+         returning intent_id, account_id, provider, sku, client_idempotency_key,
+           provider_request_id, provider_id, state, fencing_version`,
+        [intent.intentId, intent.accountId, intent.provider, intent.sku,
+          intent.requestKey, intent.providerRequestId, intent.providerId,
+          intent.state, intent.version],
+      );
+      if (!Array.isArray(result?.rows) || result.rows.length > 1) {
+        throw new Error('Terminal release response invalid');
+      }
+      const stored = asIntent(result.rows[0]);
+      if (!stored || stored.intentId !== intent.intentId
+        || stored.accountId !== intent.accountId
+        || stored.provider !== intent.provider || stored.sku !== intent.sku
+        || stored.requestKey !== intent.requestKey
+        || stored.providerRequestId !== intent.providerRequestId
+        || stored.providerId !== intent.providerId
+        || stored.state !== 'verified_terminal'
+        || stored.version !== intent.version + 1) {
+        throw new Error('Terminal release CAS or identity proof invalid');
       }
       return stored;
     },

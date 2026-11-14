@@ -91,6 +91,40 @@ export function createPostgresCheckoutReservationAdapter(query) {
         && found.provider === input.provider && found.sku === input.sku;
       return { kind: exact ? 'existing' : 'conflict', intent: found };
     },
+    /**
+     * Persist the provider-created subscription identity atomically with the
+     * transition out of provider_request_started / provider_outcome_unknown.
+     * Only trusted backend reconciliation may supply the provider ID. Never
+     * accept an ID from a browser request or a webhook without authentication.
+     * This operation cannot overwrite any previously persisted provider ID.
+     */
+    async recordProviderSubscription({
+      intentId, accountId, provider, expectedState, expectedVersion, providerId,
+    }) {
+      if (typeof intentId !== 'string' || !intentId
+        || typeof accountId !== 'string' || !accountId
+        || !['paypal', 'wix'].includes(provider)
+        || !['provider_request_started', 'provider_outcome_unknown'].includes(expectedState)
+        || !Number.isSafeInteger(expectedVersion) || expectedVersion < 1
+        || typeof providerId !== 'string'
+        || !/^[A-Za-z0-9-]{8,128}$/.test(providerId)) {
+        throw new Error('Invalid verified provider subscription identity');
+      }
+      const updated = await query(
+        `update ${TABLE}
+         set state = 'provider_created', provider_id = $6,
+           fencing_version = fencing_version + 1, updated_at = now()
+         where intent_id = $1 and account_id = $2 and provider = $3
+           and state = $4 and fencing_version = $5 and provider_id is null
+         returning intent_id, account_id, provider, sku, client_idempotency_key,
+           provider_request_id, provider_id, state, fencing_version`,
+        [intentId, accountId, provider, expectedState, expectedVersion, providerId],
+      );
+      if (!Array.isArray(updated?.rows) || updated.rows.length > 1) {
+        throw new Error('Provider identity recording response invalid');
+      }
+      return asIntent(updated.rows[0]);
+    },
     async compareAndSwap({ intentId, accountId, expectedState, expectedVersion, nextState }) {
       // Coordinator checks allowed state transitions. A trusted coordinator
       // must independently verify a provider-terminal event before passing

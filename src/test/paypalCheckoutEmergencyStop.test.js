@@ -108,6 +108,21 @@ describe('PayPal emergency checkout safety stop (#1048)', () => {
     ]);
     expect(first.status).toBe(503);
     expect(second.status).toBe(503);
+
+    // Input rejection must remain distinct from the temporary safety stop,
+    // so unauthenticated or malformed calls never reach provider operations.
+    const invalidKey = await handler({
+      method: 'POST',
+      json: async () => ({ sku: 'premium_monthly', idempotencyKey: 'short' }),
+    });
+    const unknownPlan = await handler({
+      method: 'POST',
+      json: async () => ({ sku: 'nonexistent_plan', idempotencyKey: 'ABCDEFGHIJKLMNOP' }),
+    });
+    const wrongMethod = await handler({ method: 'GET' });
+    expect(invalidKey.status).toBe(400);
+    expect(unknownPlan.status).toBe(400);
+    expect(wrongMethod.status).toBe(405);
     expect(first.body.error).toContain('temporarily unavailable');
     expect(second.body.error).toContain('temporarily unavailable');
     expect(operations).toEqual({

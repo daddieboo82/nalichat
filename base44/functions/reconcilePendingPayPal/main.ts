@@ -66,6 +66,15 @@ Deno.serve(async (req) => {
         continue;
       }
       const remote = await response.json();
+      // Do not activate or reconcile an agreement unless PayPal confirms
+      // that it is the exact locally recorded subscription and plan.
+      if (remote?.id !== subscriptionId || !subscription.paypal_plan_id
+        || remote?.plan_id !== subscription.paypal_plan_id
+        || subscription.paypal_environment !==
+          (secrets.get('PAYPAL_ENVIRONMENT') || 'live').trim().toLowerCase()) {
+        results.push({ subscriptionId, result: 'provider_identity_mismatch' });
+        continue;
+      }
       const remoteStatus = await resolvePayPalSubscriptionStatus(apiBase(), token, subscriptionId, remote);
       const status = localStatus(remoteStatus);
       if (!status) {

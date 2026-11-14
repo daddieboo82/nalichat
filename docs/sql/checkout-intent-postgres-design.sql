@@ -39,7 +39,7 @@ create table if not exists billing_private.checkout_intents (
       provider_id is null or provider_id ~ '^[A-Za-z0-9-]{8,128}$'
     ),
     constraint checkout_created_has_provider_id check (
-      state not in ('provider_created', 'local_record_failed', 'local_recorded')
+      state not in ('provider_created', 'local_record_failed', 'local_recorded', 'verified_terminal')
       or provider_id is not null
     ),
     constraint checkout_unverified_has_no_provider_id check (

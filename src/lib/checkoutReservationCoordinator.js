@@ -12,8 +12,10 @@ const ALLOWED = {
   reserved: new Set(['provider_request_started']),
   provider_request_started: new Set(['provider_outcome_unknown']),
   provider_outcome_unknown: new Set(['verified_terminal']),
-  provider_created: new Set(['local_record_failed', 'local_recorded', 'verified_terminal']),
-  local_record_failed: new Set(['local_recorded', 'verified_terminal']),
+  // local_recorded is deliberately unavailable until a separate, trusted
+  // persisted-subscription receipt is implemented and checked.
+  provider_created: new Set(['local_record_failed', 'verified_terminal']),
+  local_record_failed: new Set(['verified_terminal']),
   local_recorded: new Set(['verified_terminal']),
   verified_terminal: new Set(),
 };

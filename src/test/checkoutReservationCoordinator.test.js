@@ -250,6 +250,7 @@ describe('draft checkout reservation coordinator (no provider calls)', () => {
       { requestKey: 'different-client-key-12345678' },
       { providerRequestId: 'different-provider-key-12345678' },
       { providerId: 'I-SUBSCRIPTION-MISMATCH' },
+      { providerId: undefined },
     ];
     for (const mismatch of mismatches) {
       const forged = {

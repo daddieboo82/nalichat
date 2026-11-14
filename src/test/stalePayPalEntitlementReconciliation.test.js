@@ -619,6 +619,22 @@ describe('stale active PayPal subscription reconciliation', () => {
     );
   });
 
+  it('verifies locally canceled or ended PayPal agreements before creating another recurring agreement', async () => {
+    const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
+    const guard = code.indexOf('const locallyTerminalPayPal = allSubs.filter');
+    const create = code.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions', {");
+    expect(guard).toBeGreaterThan(0);
+    expect(create).toBeGreaterThan(guard);
+    const beforeCreate = code.slice(guard, create);
+    expect(beforeCreate).toContain("sub.status === 'canceled' || sub.status === 'ended'");
+    expect(beforeCreate).toContain('for (const previous of locallyTerminalPayPal)');
+    expect(beforeCreate).toContain("remotePrevious?.plan_id !== previous.paypal_plan_id");
+    expect(beforeCreate).toContain("remotePrevious?.custom_id !== user.id + ':' + previous.sku");
+    expect(beforeCreate).toContain("previousStatus !== 'CANCELLED' && previousStatus !== 'EXPIRED'");
+    expect(beforeCreate).toContain('Previous PayPal agreement is not confirmed terminal');
+    expect(beforeCreate).toContain('Could not verify previous PayPal agreement');
+  });
+
   it('does not create another PayPal agreement while an older pending agreement is unresolved', async () => {
     const code = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(code).toContain("const existing = allSubs.filter((sub: any)");

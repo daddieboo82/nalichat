@@ -274,7 +274,13 @@ export default function AdminDashboard() {
           {paypalAuditError && <p role="alert" className="mt-3 text-sm text-destructive">{paypalAuditError}</p>}
           {paypalAudit && (
             <div className="mt-4">
-              <p className="text-sm font-medium">Checked {paypalAudit.checked} PayPal attempts in {paypalAudit.environment} mode.</p>
+              <p className="text-sm font-medium">Checked {paypalAudit.checked} PayPal attempts in {paypalAudit.environment} mode; {paypalAudit.verifiedCount ?? 0} provider statuses verified.</p>
+              {paypalAudit.hasMorePending && (
+                <p role="alert" className="mt-2 text-sm text-amber-600">Partial audit: more than 100 pending records exist. This report does not cover every pending agreement; do not treat it as complete.</p>
+              )}
+              {(paypalAudit.verifiedCount ?? 0) < paypalAudit.checked && (
+                <p role="alert" className="mt-2 text-sm text-amber-600">Some provider statuses could not be verified. Do not infer that those subscriptions are inactive, unpaid, or safe to retry.</p>
+              )}
               {paypalAudit.referenceCheck && <p className="mt-1 text-sm text-muted-foreground">Known active subscription check: {paypalAudit.referenceCheck.status}{paypalAudit.referenceCheck.httpStatus ? ` (HTTP ${paypalAudit.referenceCheck.httpStatus})` : ""}.</p>}
               {paypalAudit.planChecks && <div className="mt-3 text-sm"><p className="font-medium">Live PayPal plans</p><ul className="mt-1 space-y-1">{paypalAudit.planChecks.map((plan) => <li key={plan.sku}>{plan.sku}: {plan.status}{plan.amount && plan.currency ? ` · ${plan.currency} ${plan.amount}/${plan.interval?.toLowerCase() || "cycle"}` : ""}{plan.matchesCatalog === false ? " · price or interval mismatch" : ""}{plan.httpStatus && plan.httpStatus !== 200 ? ` · HTTP ${plan.httpStatus}` : ""}</li>)}</ul></div>}
               <div className="mt-3 overflow-x-auto">

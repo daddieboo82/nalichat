@@ -59,7 +59,7 @@ export async function claimCheckoutIntent(adapter, input) {
       || intent.requestKey !== input.requestKey
       || !Number.isSafeInteger(intent.version) || intent.version < 1
     || intent.version >= Number.MAX_SAFE_INTEGER
-      || (outcome.kind === 'created' && intent.state !== 'reserved')
+      || (outcome.kind === 'created' && (intent.state !== 'reserved' || intent.providerId !== null))
       || (outcome.kind === 'existing' && !CHECKOUT_STATES.includes(intent.state))
       || intent.state === 'verified_terminal') {
       throw new Error('Reservation proof invalid');

@@ -28,7 +28,8 @@ export function decideCheckoutRecovery(intent) {
     && /^[A-Za-z0-9-]{8,128}$/.test(intent.providerId);
   const beforeCreation = ['reserved', 'provider_request_started', 'provider_outcome_unknown']
     .includes(intent.state);
-  if ((beforeCreation && intent.providerId !== null)
+  if ((intent.state === 'reserved' && intent.version !== 1)
+    || (beforeCreation && intent.providerId !== null)
     || (!beforeCreation && ['provider_created', 'local_record_failed',
       'local_recorded', 'verified_terminal'].includes(intent.state) && !hasProviderId)) {
     throw new Error('Checkout recovery provider identity inconsistent with state');

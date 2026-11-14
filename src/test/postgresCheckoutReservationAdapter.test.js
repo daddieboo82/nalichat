@@ -214,7 +214,6 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
     for (const mismatch of [
       { provider_id: 'I-INCORRECT1234567' },
       { account_id: 'other-account' },
-      { state: 'reserved' },
       { fencing_version: '4' },
       { sku: 'premium_plus_monthly' },
       { provider_request_id: 'different-request-12345678' },
@@ -232,6 +231,20 @@ describe('draft PostgreSQL checkout adapter (mock SQL, not a DB test)', () => {
         expectedState: 'provider_outcome_unknown', expectedVersion: 2, providerId,
       })).rejects.toThrow('Provider identity recording proof invalid');
     }
+  });
+
+  it('rejects provider-created proof if the returned row is still reserved', async () => {
+    const query = vi.fn().mockResolvedValue({
+      rows: [row({ state: 'reserved', provider_id: 'I-MOCKSUBSCRIPTION123', fencing_version: '3' })],
+    });
+    const adapter = createPostgresCheckoutReservationAdapter(query);
+    await expect(adapter.recordProviderSubscription({
+      intentId: 'reserved-1', accountId: request.accountId, provider: request.provider,
+      sku: request.sku, requestKey: request.requestKey,
+      providerRequestId: request.providerRequestId, expectedState: 'provider_outcome_unknown',
+      expectedVersion: 2, providerId: 'I-MOCKSUBSCRIPTION123',
+    })).rejects.toThrow('Malformed PostgreSQL checkout reservation identity');
+    expect(query).toHaveBeenCalledTimes(1);
   });
 
   it('does not let generic CAS release an account without a dedicated verified release', async () => {

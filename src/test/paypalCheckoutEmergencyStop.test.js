@@ -94,12 +94,22 @@ describe('PayPal emergency checkout safety stop (#1048)', () => {
     runInNewContext(compiled.outputText, sandbox);
     expect(typeof handler).toBe('function');
 
-    const result = await handler({
-      method: 'POST',
-      json: async () => ({ sku: 'premium_monthly', idempotencyKey: 'ABCDEFGHIJKLMNOP' }),
-    });
-    expect(result.status).toBe(503);
-    expect(result.body.error).toContain('temporarily unavailable');
+    // Reproduce the former duplicate-billing race: two concurrent requests
+    // for the same account and plan, but different idempotency keys.
+    const [first, second] = await Promise.all([
+      handler({
+        method: 'POST',
+        json: async () => ({ sku: 'premium_monthly', idempotencyKey: 'ABCDEFGHIJKLMNOP' }),
+      }),
+      handler({
+        method: 'POST',
+        json: async () => ({ sku: 'premium_monthly', idempotencyKey: 'QRSTUVWXYZabcdef' }),
+      }),
+    ]);
+    expect(first.status).toBe(503);
+    expect(second.status).toBe(503);
+    expect(first.body.error).toContain('temporarily unavailable');
+    expect(second.body.error).toContain('temporarily unavailable');
     expect(operations).toEqual({
       subscriptionReads: 0, subscriptionWrites: 0, providerRequests: 0,
     });

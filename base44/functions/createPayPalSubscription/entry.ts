@@ -130,13 +130,14 @@ Deno.serve(async (req) => {
       }, { status: 409 });
     }
 
+    // Do not trust missing or malformed legacy plan metadata as proof that an
+    // incomplete PayPal agreement is harmless.
     // An incomplete PayPal agreement may still be awaiting remote checkout or
     // payment confirmation. The pending-only provider reconciliation below
     // cannot establish it is terminal. Require explicit reconciliation instead
     // of issuing a second recurring agreement.
     const incompletePayPal = allSubs.some((sub: any) =>
       sub.provider === 'paypal' &&
-      normalizePlan(sub.plan) !== 'free' &&
       normalizeStatus(sub.status) === 'incomplete'
     );
     if (incompletePayPal) {
@@ -150,7 +151,6 @@ Deno.serve(async (req) => {
     // unpaid access is currently denied; reconcile the provider state first.
     const unpaidPayPal = allSubs.some((sub: any) =>
       sub.provider === 'paypal' &&
-      normalizePlan(sub.plan) !== 'free' &&
       normalizeStatus(sub.status) === 'unpaid'
     );
     if (unpaidPayPal) {
@@ -186,6 +186,8 @@ Deno.serve(async (req) => {
 
     const token = await accessToken();
 
+    // Include rows whose old plan metadata is absent or malformed: only the
+    // provider lookup can establish that an agreement is safely terminal.
     // A locally canceled/ended agreement may have been reactivated remotely
     // after the last local update. Do not treat local terminal status as proof
     // that PayPal cannot bill again. Verify the original agreement, its owner,
@@ -193,8 +195,7 @@ Deno.serve(async (req) => {
     // This is a sequential snapshot check, NOT the atomic checkout lock.
     const locallyTerminalPayPal = allSubs.filter((sub: any) =>
       sub.provider === 'paypal' &&
-      (sub.status === 'canceled' || sub.status === 'ended') &&
-      normalizePlan(sub.plan) !== 'free'
+      (sub.status === 'canceled' || sub.status === 'ended')
     );
     for (const previous of locallyTerminalPayPal) {
       if (!previous.subscription_id || !previous.paypal_plan_id ||

@@ -55,6 +55,7 @@ export async function claimCheckoutIntent(adapter, input) {
       || intent.provider !== input.provider || intent.sku !== input.sku
       || intent.requestKey !== input.requestKey
       || !Number.isSafeInteger(intent.version) || intent.version < 1
+    || intent.version >= Number.MAX_SAFE_INTEGER
       || (outcome.kind === 'created' && intent.state !== 'reserved')
       || (outcome.kind === 'existing' && !CHECKOUT_STATES.includes(intent.state))
       || intent.state === 'verified_terminal') {
@@ -80,6 +81,7 @@ export async function claimCheckoutIntent(adapter, input) {
 export async function recordVerifiedProviderCreation(adapter, intent) {
   if (!intent || !['provider_request_started', 'provider_outcome_unknown'].includes(intent.state)
     || !Number.isSafeInteger(intent.version) || intent.version < 1
+    || intent.version >= Number.MAX_SAFE_INTEGER
     || typeof intent.intentId !== 'string' || !intent.intentId
     || typeof intent.accountId !== 'string' || !intent.accountId
     || !['paypal', 'wix'].includes(intent.provider)
@@ -128,6 +130,7 @@ export async function recordVerifiedProviderCreation(adapter, intent) {
  */
 export async function advanceCheckoutIntent(adapter, intent, nextState) {
   if (!intent || !Number.isSafeInteger(intent.version) || intent.version < 1
+    || intent.version >= Number.MAX_SAFE_INTEGER
     || !ALLOWED[intent.state]?.has(nextState)) {
     throw new Error('Transition requires verified reconciliation');
   }

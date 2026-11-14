@@ -11,12 +11,14 @@ describe('PayPal emergency checkout safety stop (#1048)', () => {
     const functionStart = code.indexOf('function atomicCheckoutReservationIsImplemented(): boolean');
     const hardFalse = code.indexOf('return false;', functionStart);
     const gate = code.indexOf('if (!atomicCheckoutReservationIsImplemented())');
+    const firstPlanSecretRead = code.indexOf('const planId = secrets.get(item.secret)');
     const firstSubscriptionRead = code.indexOf('const allSubs = await');
     const providerCreate = code.indexOf("fetch(apiBase() + '/v1/billing/subscriptions', {");
     expect(functionStart).toBeGreaterThanOrEqual(0);
     expect(hardFalse).toBeGreaterThan(functionStart);
     expect(hardFalse).toBeLessThan(gate);
-    expect(gate).toBeLessThan(firstSubscriptionRead);
+    expect(gate).toBeLessThan(firstPlanSecretRead);
+    expect(firstPlanSecretRead).toBeLessThan(firstSubscriptionRead);
     expect(firstSubscriptionRead).toBeLessThan(providerCreate);
     expect(code.slice(gate, firstSubscriptionRead)).toContain('status: 503');
     expect(code.slice(gate, firstSubscriptionRead)).toContain('temporarily unavailable');

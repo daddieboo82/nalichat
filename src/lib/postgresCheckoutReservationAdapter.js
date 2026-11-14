@@ -73,6 +73,7 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
   // Only the server-side composition root may inject this independently
   // authenticated provider reader. Never populate it from a client request.
   const verifyTerminalOutcome = trusted?.verifyTerminalOutcome;
+  const verifyPersistedSubscription = trusted?.verifyPersistedSubscription;
   return Object.freeze({
     async claimAtomic(input) {
       // Database uniqueness, not an application read-before-create, picks
@@ -165,6 +166,72 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
         || stored.sku !== sku || stored.providerRequestId !== providerRequestId
         || stored.state !== 'provider_created' || stored.version !== expectedVersion + 1) {
         throw new Error('Provider identity recording proof invalid');
+      }
+      return stored;
+    },
+    /**
+     * DRAFT ONLY: independently read the durable local Subscription record
+     * using a trusted server-owned reader before claiming local_recorded.
+     * This method must never accept an HTTP-provided receipt or bypass a
+     * failed verification. It does not create or update Subscription records.
+     */
+    async confirmLocalSubscriptionRecorded(intent) {
+      if (typeof verifyPersistedSubscription !== 'function') {
+        throw new Error('Trusted local subscription verification unavailable');
+      }
+      if (!intent || !['provider_created', 'local_record_failed'].includes(intent.state)
+        || !Number.isSafeInteger(intent.version) || intent.version < 1
+        || intent.version >= Number.MAX_SAFE_INTEGER
+        || typeof intent.intentId !== 'string' || !intent.intentId
+        || typeof intent.accountId !== 'string' || !intent.accountId
+        || !['paypal', 'wix'].includes(intent.provider)
+        || !/^(premium|premium_plus)_(monthly|yearly)$/.test(intent.sku)
+        || typeof intent.requestKey !== 'string'
+        || !/^[A-Za-z0-9._~-]{16,128}$/.test(intent.requestKey)
+        || typeof intent.providerRequestId !== 'string'
+        || !/^[A-Za-z0-9._~-]{16,128}$/.test(intent.providerRequestId)
+        || typeof intent.providerId !== 'string'
+        || !/^[A-Za-z0-9-]{8,128}$/.test(intent.providerId)) {
+        throw new Error('Verified local record requires persisted provider identity');
+      }
+      const receipt = await verifyPersistedSubscription(intent);
+      if (!receipt || receipt.verified !== true
+        || receipt.intentId !== intent.intentId
+        || receipt.accountId !== intent.accountId
+        || receipt.provider !== intent.provider
+        || receipt.sku !== intent.sku
+        || receipt.providerRequestId !== intent.providerRequestId
+        || receipt.providerId !== intent.providerId) {
+        throw new Error('Durable local subscription receipt unverified');
+      }
+      const result = await query(
+        `update ${TABLE}
+         set state = 'local_recorded',
+           fencing_version = fencing_version + 1, updated_at = now()
+         where intent_id = $1 and account_id = $2
+           and provider = $3 and sku = $4
+           and client_idempotency_key = $5
+           and provider_request_id = $6 and provider_id = $7
+           and state = $8 and fencing_version = $9
+         returning intent_id, account_id, provider, sku, client_idempotency_key,
+           provider_request_id, provider_id, state, fencing_version`,
+        [intent.intentId, intent.accountId, intent.provider, intent.sku,
+          intent.requestKey, intent.providerRequestId, intent.providerId,
+          intent.state, intent.version],
+      );
+      if (!Array.isArray(result?.rows) || result.rows.length > 1) {
+        throw new Error('Local subscription persistence response invalid');
+      }
+      const stored = asIntent(result.rows[0]);
+      if (!stored || stored.intentId !== intent.intentId
+        || stored.accountId !== intent.accountId
+        || stored.provider !== intent.provider || stored.sku !== intent.sku
+        || stored.requestKey !== intent.requestKey
+        || stored.providerRequestId !== intent.providerRequestId
+        || stored.providerId !== intent.providerId
+        || stored.state !== 'local_recorded'
+        || stored.version !== intent.version + 1) {
+        throw new Error('Local subscription persistence CAS proof invalid');
       }
       return stored;
     },

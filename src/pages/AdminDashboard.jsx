@@ -290,7 +290,7 @@ export default function AdminDashboard() {
                   ))}</tbody>
                 </table>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">PayPal HTTP 404 means the ID is unavailable to this live merchant account. The customer must complete a new checkout before payment can be collected. A status lookup alone is not proof of payment.</p>
+              <p className="mt-3 text-xs text-muted-foreground">PayPal HTTP 404 means this merchant API could not find that subscription ID. Verify the provider environment, merchant account, and agreement before changing access or attempting another checkout. New recurring checkout is paused; a status lookup is not proof of payment.</p>
             </div>
           )}
         </div>
@@ -324,6 +324,9 @@ export default function AdminDashboard() {
                 </span>
                 <span className={`rounded-full border px-3 py-1 font-semibold ${billingTestStatus?.priceCatalogReady ? "border-green-500/30 bg-green-500/10 text-green-600" : "border-amber-500/30 bg-amber-500/10 text-amber-600"}`}>
                   Price catalog: {billingTestStatus?.priceCatalogReady ? "ready" : "incomplete"}
+                </span>
+                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 font-semibold text-amber-600">
+                  PayPal webhook: {billingTestStatus?.webhookVerificationStatus === "verified" && billingTestStatus?.webhookConfigured ? "verified" : "unverified"}
                 </span>
               </div>
 

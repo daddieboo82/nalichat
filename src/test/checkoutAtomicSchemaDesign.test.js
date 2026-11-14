@@ -13,11 +13,11 @@ describe('staging-only atomic checkout SQL design (not deployed)', () => {
 
   it('uniquely binds each provider subscription and disallows unbound created states', () => {
     expect(normalized).toMatch(
-      /create unique index if not exists checkout_provider_agreement_unique\\s+on billing_private\\.checkout_intents \\(provider, provider_id\\)\\s+where provider_id is not null/,
+      /create unique index if not exists checkout_provider_agreement_unique\s+on billing_private\.checkout_intents \(provider, provider_id\)\s+where provider_id is not null/,
     );
     expect(normalized).toContain('constraint checkout_created_has_provider_id check');
     expect(normalized).toMatch(
-      /state not in \\('provider_created', 'local_record_failed', 'local_recorded'\\)\\s+or provider_id is not null/,
+      /state not in \('provider_created', 'local_record_failed', 'local_recorded'\)\s+or provider_id is not null/,
     );
   });
 

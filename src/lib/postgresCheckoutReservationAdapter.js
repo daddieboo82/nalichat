@@ -370,7 +370,14 @@ export function createPostgresCheckoutReservationAdapter(query, trusted = {}) {
       if (!Array.isArray(updated?.rows) || updated.rows.length > 1) {
         throw new Error('Checkout fencing response invalid');
       }
-      return asIntent(updated.rows[0]);
+      if (updated.rows.length === 0) return null;
+      const stored = asIntent(updated.rows[0]);
+      if (!stored || stored.intentId !== intentId
+        || stored.accountId !== accountId || stored.state !== nextState
+        || stored.version !== expectedVersion + 1) {
+        throw new Error('Checkout fencing response proof invalid');
+      }
+      return stored;
     },
   });
 }

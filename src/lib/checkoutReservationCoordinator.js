@@ -93,7 +93,8 @@ export async function recordVerifiedProviderCreation(adapter, intent) {
     || typeof intent.intentId !== 'string' || !intent.intentId
     || typeof intent.accountId !== 'string' || !intent.accountId
     || !['paypal', 'wix'].includes(intent.provider)
-    || typeof intent.providerRequestId !== 'string' || !intent.providerRequestId) {
+    || typeof intent.providerRequestId !== 'string' || !intent.providerRequestId
+    || intent.providerId !== null) {
     throw new Error('Checkout provider creation state invalid');
   }
   if (typeof adapter?.verifyCreatedSubscription !== 'function'

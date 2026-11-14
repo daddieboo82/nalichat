@@ -112,6 +112,7 @@ export async function recordVerifiedProviderCreation(adapter, intent) {
     accountId: intent.accountId,
     provider: intent.provider,
     sku: intent.sku,
+    requestKey: intent.requestKey,
     providerRequestId: intent.providerRequestId,
     expectedState: intent.state,
     expectedVersion: intent.version,

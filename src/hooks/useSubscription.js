@@ -50,7 +50,9 @@ export function useSubscription() {
     hasEntitlement,
     hasPaidAccess: subscription.hasPaidAccess,
     isTrialActive: subscription.isTrialing,
-    isLoading: query.isLoading,
+    // A disabled query is pending in TanStack Query, but anonymous visitors
+    // must still be able to select a paid plan and reach registration.
+    isLoading: !!isAuthenticated && query.isLoading,
     isFetching: query.isFetching,
     isError: hasVerificationError,
     error: query.error || null,

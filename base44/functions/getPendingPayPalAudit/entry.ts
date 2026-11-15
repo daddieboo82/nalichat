@@ -84,6 +84,30 @@ Deno.serve(async (req) => {
           matchesCatalog, httpStatus: response.status });
       } catch { planChecks.push({ sku: item.sku, status: 'request_failed' }); }
     }
+    // Check every active PayPal record, not only the newest reference. An older
+    // local active row may be inaccessible to the current merchant credentials.
+    const activeChecks = [];
+    for (const record of active) {
+      if (!record.subscription_id || record.paypal_environment !== environment) {
+        activeChecks.push({ status: 'environment_mismatch' });
+        continue;
+      }
+      try {
+        const response = await fetch(apiBase(environment) + '/v1/billing/subscriptions/' + encodeURIComponent(record.subscription_id), { headers });
+        if (!response.ok) {
+          activeChecks.push({ status: response.status === 404 ? 'not_found' : 'lookup_failed', httpStatus: response.status });
+          continue;
+        }
+        const remote = await response.json();
+        const identityMatches = remote?.id === record.subscription_id &&
+          remote?.plan_id === record.paypal_plan_id &&
+          remote?.custom_id === record.user_id + ':' + record.sku;
+        activeChecks.push({ status: identityMatches ? String(remote.status || 'unknown').toUpperCase() : 'identity_mismatch',
+          identityMatches, paymentRecorded: identityMatches && remote.billing_info?.last_payment?.time ? true : null });
+      } catch {
+        activeChecks.push({ status: 'lookup_failed' });
+      }
+    }
     const pending = await base44.asServiceRole.entities.Subscription.filter(
       { provider: 'paypal', status: 'pending' }, '-created_date', 100,
     );
@@ -132,7 +156,7 @@ Deno.serve(async (req) => {
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
-      environment, referenceCheck, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, pendingAccountsWithActiveRecord, oldestAttempt, results });
+      environment, referenceCheck, activeChecks, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, pendingAccountsWithActiveRecord, oldestAttempt, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

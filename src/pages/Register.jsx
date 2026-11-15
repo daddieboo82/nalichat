@@ -24,6 +24,13 @@ import {
 
 export default function Register() {
   const isNativeIos = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === "ios";
+  // Keep paid-plan intent visible throughout registration; account creation
+  // remains free and never starts a charge.
+  const returnDestination = safeReturnTo();
+  const returnUrl = new URL(returnDestination, window.location.origin);
+  const selectedPlan = returnUrl.pathname.toLowerCase() === "/pricing" ? returnUrl.searchParams.get("plan") : null;
+  const paidSignup = selectedPlan === "premium" || selectedPlan === "premium_plus";
+  const selectedPlanLabel = selectedPlan === "premium_plus" ? "Premium Plus" : "Premium";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -311,8 +318,8 @@ export default function Register() {
   return (
     <AuthLayout
       icon={UserPlus}
-      title="Join NaliBase free"
-      subtitle={isNativeIos ? "Create your account with email. No payment required." : "Start with Google in one tap, or use your email. No payment required."}
+      title={paidSignup ? `Create your account for ${selectedPlanLabel}` : "Join NaliBase free"}
+      subtitle={paidSignup ? "Registration is free. After verifying your account, you'll return to your selected plan to choose whether to subscribe." : isNativeIos ? "Create your account with email. No payment required." : "Start with Google in one tap, or use your email. No payment required."}
       footer={
         <>
           Already have an account?{" "}

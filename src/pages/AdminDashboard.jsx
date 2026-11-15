@@ -140,6 +140,8 @@ export default function AdminDashboard() {
   const checkPendingPayPal = async () => {
     setPaypalAuditLoading(true);
     setPaypalAuditError("");
+    // Never leave a previous provider audit visible as though it were fresh.
+    setPaypalAudit(null);
     try {
       const res = await base44.functions.invoke("getPendingPayPalAudit", {});
       const data = res?.data ?? res;

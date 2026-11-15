@@ -147,6 +147,12 @@ gain_db values should be modest (-6 to +6). ratio 1.5-4. attack 0.003-0.05. rele
     return Response.json({ ...normalizeMasteringResult(result), quota });
   } catch (error) {
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
+    if (/limit of integrations for this month/i.test(String((error as any)?.message || error || ''))) {
+      return Response.json(
+        { error: 'AI generation is temporarily unavailable because the provider integration quota is exhausted.', code: 'INTEGRATION_QUOTA_EXHAUSTED' },
+        { status: 503 },
+      );
+    }
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('aiMasterSession error:', error);

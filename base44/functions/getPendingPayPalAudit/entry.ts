@@ -91,6 +91,21 @@ Deno.serve(async (req) => {
       eventTime: entry.event_time || entry.created_date || null,
     }));
 
+    // Failed webhook deliveries are operational blockers, not completed
+    // payments. Return a capped, read-only queue without raw error text,
+    // which might contain sensitive provider details.
+    const failedEventsPage = await base44.asServiceRole.entities.PayPalWebhookEvent.filter(
+      { processing_state: 'failed' }, '-created_date', 101,
+    );
+    const failedEventCount = Math.min(failedEventsPage.length, 100);
+    const hasMoreFailedEvents = failedEventsPage.length > 100;
+    const failedEvents = failedEventsPage.slice(0, 100).map((entry: any) => ({
+      eventId: entry.paypal_event_id,
+      eventType: entry.event_type,
+      eventTime: entry.event_time || entry.created_date || null,
+      attempts: entry.attempt_count || 1,
+    }));
+
     // Fetch one extra row to detect truncation without making an unbounded
     // number of provider calls. Never report the first page as a full audit.
     const pendingPage = await base44.asServiceRole.entities.Subscription.filter(
@@ -143,7 +158,8 @@ Deno.serve(async (req) => {
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
       environment, referenceCheck, planChecks, checked: results.length,
       verifiedCount: results.filter((result) => result.providerStatusVerified === true).length,
-      hasMorePending, reviewRequiredCount, hasMoreReviewEvents, reviewEvents, results });
+      hasMorePending, reviewRequiredCount, hasMoreReviewEvents, reviewEvents,
+      failedEventCount, hasMoreFailedEvents, failedEvents, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

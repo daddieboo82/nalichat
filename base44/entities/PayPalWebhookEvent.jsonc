@@ -19,7 +19,8 @@
         "processing",
         "processed",
         "failed",
-        "ignored"
+        "ignored",
+        "review_required"
       ]
     },
     "attempt_count": {

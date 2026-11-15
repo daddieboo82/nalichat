@@ -749,6 +749,9 @@ async function generateSummary(base44: any, user: any, body: any) {
     return Response.json({ ...(await snapshot(entities, session, user.id)), quota });
   } catch (error) {
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
+    if (/limit of integrations for this month/i.test(String((error as any)?.message || error || ''))) {
+      return jsonError(503, 'INTEGRATION_QUOTA_EXHAUSTED', 'AI call summaries are temporarily unavailable due to provider capacity.');
+    }
     if (!generationCompleted && summary?.id) {
       await entities.CallSummary.update(summary.id, {
         status: 'failed',

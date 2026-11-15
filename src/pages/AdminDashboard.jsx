@@ -278,6 +278,7 @@ export default function AdminDashboard() {
                 <p className="text-2xl font-bold">{stats.pendingSubscriptions ?? 0}</p>
                 <p className="text-xs text-muted-foreground mt-2">{stats.pendingPayPalAttempts ?? 0} PayPal · {stats.pendingStripeAttempts ?? 0} Stripe · {stats.pendingLegacyAttempts ?? 0} legacy · {stats.pendingAccounts ?? 0} accounts</p>
                 <p className="text-xs text-muted-foreground mt-1">Created before payment approval. Repeat attempts are counted; this is not revenue.</p>
+                <a href="#pending-paypal-audit" className="mt-3 inline-block text-sm font-semibold text-primary underline underline-offset-4">Check live PayPal agreement statuses</a>
               </div>
               <div className="bg-card border border-border rounded-xl p-5">
                 <p className="text-sm text-muted-foreground">Canceled / ended</p>
@@ -305,7 +306,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-6 mb-8">
+        <div id="pending-paypal-audit" className="bg-card border border-border rounded-xl p-6 mb-8">
           <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-primary" /> Pending PayPal status
           </h2>

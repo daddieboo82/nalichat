@@ -88,13 +88,11 @@ async function awardOnce(entities: any, userId: string, squad: any, progress: an
     throw createError;
   }
   try {
-    const creditUpdate = await entities.User.updateMany(
-      { id: userId },
-      { $inc: { squad_credits: CREDITS_REWARD } },
-    );
-    if (Number(creditUpdate?.updated || 0) !== 1) {
-      throw new Error('Squad credit update did not modify exactly one account');
-    }
+    const currentUser = await entities.User.get(userId);
+    if (!currentUser || currentUser.id !== userId) throw new Error('Squad reward account not found');
+    await entities.User.update(userId, {
+      squad_credits: Math.max(0, Number(currentUser.squad_credits) || 0) + CREDITS_REWARD,
+    });
   } catch (creditError) {
     // Keep the reward retryable if the protected user-credit update fails.
     try {

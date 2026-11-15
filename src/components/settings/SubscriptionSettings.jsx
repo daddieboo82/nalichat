@@ -32,6 +32,26 @@ export default function SubscriptionSettings() {
   } = useSubscription();
   const { user } = useAuth();
   const [openingPortal, setOpeningPortal] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
+
+  const upgradePayPal = async () => {
+    if (upgrading || !user?.id) return;
+    setUpgrading(true);
+    try {
+      const sku = subscription.billingPeriod === "annual" ? "premium_plus_yearly" : "premium_plus_monthly";
+      const response = await base44.functions.invoke("revisePayPalSubscription", { sku });
+      const payload = response?.data ?? response;
+      if (payload?.success !== true || payload?.action !== "revise_paypal_subscription" || payload.userId !== user.id || payload.sku !== sku) {
+        throw new Error(payload?.error || "PayPal upgrade could not be started");
+      }
+      const url = new URL(payload.approvalUrl);
+      if (url.protocol !== "https:" || url.hostname !== "www.paypal.com") throw new Error("PayPal approval URL was not trusted");
+      window.location.assign(url.toString());
+    } catch (err) {
+      toast.error(err?.response?.data?.error || err?.message || "Unable to upgrade. Your current plan remains unchanged.");
+      setUpgrading(false);
+    }
+  };
 
   const manageBilling = async () => {
     if (openingPortal) return;
@@ -147,6 +167,11 @@ export default function SubscriptionSettings() {
           <p className="text-sm text-muted-foreground">Manage or cancel an active subscription here at any time.</p>
         </div>
 
+        {subscription.provider === "paypal" && subscription.plan === "premium" && subscription.hasPaidAccess && (
+          <Button onClick={upgradePayPal} disabled={upgrading} className="ui-hover min-h-12 w-full shrink-0 rounded-xl font-semibold sm:w-auto">
+            {upgrading ? "Opening PayPal..." : "Upgrade to Premium Plus"}
+          </Button>
+        )}
         {canManageBilling ? (
           <Button onClick={manageBilling} disabled={openingPortal} className="ui-hover min-h-12 w-full shrink-0 gap-2 rounded-xl font-semibold focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-auto">
             {openingPortal ? (

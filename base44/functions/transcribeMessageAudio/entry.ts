@@ -145,6 +145,10 @@ Deno.serve(async (req) => {
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
+    const providerError = String((error as any)?.message || error || '');
+    if (/limit of integrations for this month/i.test(providerError)) {
+      return Response.json({ error: 'The integration provider is temporarily unavailable because its monthly quota is exhausted', code: 'INTEGRATION_QUOTA_EXHAUSTED' }, { status: 503 });
+    }
     console.error('transcribeMessageAudio error:', error);
     return Response.json({ error: 'Transcription failed' }, { status: 500 });
   }

@@ -62,6 +62,10 @@ Return a JSON object with a "translations" array where translations[i] is the tr
     return Response.json({ translations: translations.slice(0, texts.length) });
   } catch (error) {
     console.error("translateStrings error:", error);
-    return Response.json({ error: error?.message || "Translation failed" }, { status: 500 });
+    const message = String((error as any)?.message || error || "");
+    if (/limit of integrations for this month/i.test(message)) {
+      return Response.json({ error: "Translation is temporarily unavailable because the AI provider quota is exhausted", code: "AI_PROVIDER_QUOTA_EXHAUSTED" }, { status: 503 });
+    }
+    return Response.json({ error: "Translation failed" }, { status: 500 });
   }
 }

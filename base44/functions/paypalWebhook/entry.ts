@@ -224,6 +224,25 @@ Deno.serve(async (req) => {
     const newStatus = remoteStatus === 'ACTIVE' ? 'active'
       : remoteStatus === 'CANCELLED' || remoteStatus === 'EXPIRED' ? 'canceled'
       : remoteStatus === 'SUSPENDED' ? 'unpaid' : null;
+    if (!newStatus) {
+      // APPROVAL_PENDING / APPROVED do not grant paid access; they can be
+      // safely acknowledged without changing a subscription. An unfamiliar
+      // or missing status is a verification problem, not a processed payment.
+      if (remoteStatus === 'APPROVAL_PENDING' || remoteStatus === 'APPROVED') {
+        await entities.PayPalWebhookEvent.update(ledger.id, {
+          processing_state: 'ignored',
+          processed_at: new Date().toISOString(),
+          last_error: 'PayPal subscription not yet active; no entitlement change',
+        });
+        return Response.json({ received: true, ignored: true });
+      }
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'Unrecognized PayPal subscription status; provider verification required',
+      });
+      return Response.json({ error: 'Unrecognized PayPal subscription status' }, { status: 503 });
+    }
     if (newStatus) {
       const update: Record<string, unknown> = {
         status: newStatus,

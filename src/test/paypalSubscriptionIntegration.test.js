@@ -137,6 +137,21 @@ describe('PayPal subscription integration contracts', () => {
     expect(webhook).toContain("error: 'Missing PayPal subscription reference'");
   });
 
+  it('does not call an unknown PayPal state processed or grant pending approval access', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    const noStatus = webhook.indexOf('if (!newStatus) {');
+    const paidUpdate = webhook.indexOf('await entities.Subscription.update(record.id, update)');
+    expect(noStatus).toBeGreaterThan(-1);
+    expect(noStatus).toBeLessThan(paidUpdate);
+    expect(webhook).toContain("remoteStatus === 'APPROVAL_PENDING' || remoteStatus === 'APPROVED'");
+    expect(webhook).toContain('PayPal subscription not yet active; no entitlement change');
+    expect(webhook).toContain('Unrecognized PayPal subscription status; provider verification required');
+    expect(webhook).toContain("error: 'Unrecognized PayPal subscription status' }, { status: 503");
+    expect(webhook.indexOf("error: 'Unrecognized PayPal subscription status'")).toBeLessThan(
+      webhook.indexOf("processing_state: 'processed'"),
+    );
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");

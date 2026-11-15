@@ -81,6 +81,10 @@ The bio should be written in first person, highlight their expertise, and sound 
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
+    const providerError = String((error as any)?.message || error || '');
+    if (/limit of integrations for this month/i.test(providerError)) {
+      return Response.json({ error: 'This provider feature is temporarily unavailable because the integration quota is exhausted', code: 'INTEGRATION_QUOTA_EXHAUSTED' }, { status: 503 });
+    }
     console.error('generateArtistBio error:', error);
     return Response.json({ error: 'Artist bio generation failed' }, { status: 500 });
   }

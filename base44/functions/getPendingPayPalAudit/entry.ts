@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
           { headers },
         );
         if (!response.ok) {
-          results.push({ subscriptionId: record.subscription_id, plan: record.sku || record.plan, status: response.status === 404 ? 'not_found' : 'lookup_failed', httpStatus: response.status });
+          results.push({ subscriptionId: record.subscription_id, plan: record.sku || record.plan, createdDate: record.created_date || null, status: response.status === 404 ? 'not_found' : 'lookup_failed', httpStatus: response.status });
           continue;
         }
         const remote = await response.json();

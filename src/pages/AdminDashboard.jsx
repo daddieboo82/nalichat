@@ -365,8 +365,9 @@ export default function AdminDashboard() {
               <p className="mt-2 text-sm text-muted-foreground">Affected accounts with durable checkout claims: {paypalAudit.accountsWithCheckoutClaims ?? "unknown"} · Claims matching pending request keys: {paypalAudit.accountsWithMatchedCheckoutClaims ?? "unknown"} · Claims without matching pending request keys: {paypalAudit.accountsWithUnmatchedCheckoutClaims ?? "unknown"} · Claim states unavailable: {paypalAudit.accountsWithUnknownClaimState ?? "unknown"}. These claims must not be cleared without provider reconciliation.</p>
               {paypalAudit.results.some((row) => row.status === "not_found" && row.subscriptionId) && (
                 <Button type="button" variant="outline" className="mt-3 min-h-11 h-auto max-w-full whitespace-normal break-words text-left" onClick={() => {
-                  const ids = [...new Set(paypalAudit.results.filter((row) => row.status === "not_found" && row.subscriptionId).map((row) => row.subscriptionId))];
-                  navigator.clipboard.writeText("NaliChat PayPal merchant reconciliation — live subscription IDs (HTTP 404):\n" + ids.join("\n")).catch(() => {});
+                  const rows = paypalAudit.results.filter((row) => row.status === "not_found" && row.subscriptionId);
+                  const details = [...new Map(rows.map((row) => [row.subscriptionId, `${row.subscriptionId} | ${row.plan || "unknown plan"} | ${row.createdDate ? String(row.createdDate).slice(0, 10) : "unknown date"} | current merchant GET: HTTP 404`])).values()];
+                  navigator.clipboard.writeText("NaliChat PayPal merchant reconciliation (live environment). Please verify the merchant ownership, payment history, and current agreement status of each subscription before any new recurring checkout. HTTP 404 under current credentials does not prove no charges occurred.\n\n" + details.join("\n")).catch(() => {});
                 }}>
                   Copy unresolved PayPal agreement IDs for merchant support
                 </Button>

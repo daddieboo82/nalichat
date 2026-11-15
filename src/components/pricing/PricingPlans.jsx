@@ -289,7 +289,7 @@ export default function PricingPlans({
       const providerError = checkoutError?.response?.data || checkoutError?.data || {};
       const checkoutMessage = String(providerError?.error || checkoutError?.message || "");
       const checkoutCode = providerError?.code || checkoutError?.code;
-      if (checkoutCode === "PAYPAL_CHECKOUT_UNCERTAIN" || /pending|already been started|previous PayPal|check billing before retrying|review billing before trying again|duplicate subscriptions|checkout could not be confirmed/i.test(checkoutMessage)) {
+      if (checkoutCode === "PAYPAL_CHECKOUT_UNCERTAIN" || /pending|already been started|previous PayPal|check billing before retrying|review billing before trying again|duplicate subscriptions|checkout could not be confirmed|previous PayPal billing|previous PayPal checkout|account review|subscription history requires review/i.test(checkoutMessage)) {
         setCheckoutRecoveryNeeded(true);
       }
       toast.error(checkoutMessage || "Could not start checkout. Please try again.");

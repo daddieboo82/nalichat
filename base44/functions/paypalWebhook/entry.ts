@@ -135,10 +135,12 @@ Deno.serve(async (req) => {
     }
 
     // ── Resolve subscription record ──
-    let subscriptionId = event.resource?.id || event.resource?.billing_agreement_id || '';
-    if (event.event_type.startsWith('PAYMENT.') && event.resource?.billing_agreement_id) {
-      subscriptionId = event.resource.billing_agreement_id;
-    }
+    // PAYMENT.SALE.* resource.id identifies a sale, NOT a subscription.
+    // Never fall back to that sale ID for a customer entitlement lookup.
+    const paymentEvent = event.event_type.startsWith('PAYMENT.');
+    const subscriptionId = paymentEvent
+      ? event.resource?.billing_agreement_id
+      : event.resource?.id;
     if (!subscriptionId || typeof subscriptionId !== 'string') {
       // A handled, verified payment event without an agreement reference
       // cannot be matched to a customer. Preserve failure and ask PayPal to

@@ -400,7 +400,7 @@ export default function PricingPlans({
           </div>
         )}
 
-        {isError && (
+        {isAuthenticated && isError && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-destructive/50 p-4 text-center" role="alert">
             <p>We could not verify your subscription. Paid access has not been granted.</p>
             <Button className="ui-hover mt-3 min-h-10 rounded-xl" size="sm" variant="outline" onClick={() => refetch()}>

@@ -52,6 +52,34 @@ export async function startSubscriptionCheckout({
   return payload;
 }
 
+// Existing PayPal approval only: the backend verifies the currently signed-in
+// user's exact agreement and returns PayPal's current approval URL. No new
+// provider subscription is created by this action.
+export async function resumePendingPayPalApproval({
+  expectedUserId,
+  invoke = base44.functions.invoke,
+  redirect = (url) => window.location.assign(url),
+} = {}) {
+  const response = await invoke("resumePendingPayPal", {});
+  const payload = responsePayload(response);
+  if (payload?.success !== true || payload?.action !== "resume_pending_paypal" ||
+    (expectedUserId && payload?.userId !== expectedUserId) ||
+    typeof payload?.subscriptionId !== "string" || !payload.subscriptionId ||
+    typeof payload?.checkoutUrl !== "string") {
+    throw new Error("Existing PayPal approval could not be confirmed");
+  }
+  let checkoutUrl;
+  try { checkoutUrl = new URL(payload.checkoutUrl); } catch {
+    throw new Error("PayPal approval URL is invalid");
+  }
+  if (checkoutUrl.protocol !== "https:" ||
+    !["www.paypal.com", "www.sandbox.paypal.com"].includes(checkoutUrl.hostname)) {
+    throw new Error("PayPal approval URL was not trusted");
+  }
+  redirect(checkoutUrl.toString());
+  return payload;
+}
+
 export async function openBillingPortal({
   returnDestination = "settings",
   expectedUserId,

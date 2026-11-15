@@ -229,6 +229,12 @@ Return realistic values. BPM must be a whole number between 60 and 200.`;
     }
   } catch (error) {
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
+    if (/limit of integrations for this month/i.test(String((error as any)?.message || error || ''))) {
+      return Response.json(
+        { error: 'AI features are temporarily unavailable due to provider capacity. Please try again later.', code: 'INTEGRATION_QUOTA_EXHAUSTED' },
+        { status: 503 },
+      );
+    }
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('suggestTrackTags error:', error);

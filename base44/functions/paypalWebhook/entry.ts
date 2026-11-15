@@ -56,7 +56,7 @@ function state(type: string, resource: any) {
   if (type === 'BILLING.SUBSCRIPTION.ACTIVATED' || type === 'PAYMENT.SALE.COMPLETED') return 'active';
   if (type === 'BILLING.SUBSCRIPTION.CANCELLED' || type === 'BILLING.SUBSCRIPTION.EXPIRED') return 'canceled';
   if (type === 'BILLING.SUBSCRIPTION.SUSPENDED' || type === 'BILLING.SUBSCRIPTION.PAYMENT.FAILED') return 'unpaid';
-  if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return 'canceled';
+  // A refunded or reversed individual sale does not necessarily cancel the\n  // recurring billing agreement. Its current status must be read from PayPal.\n  if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return null;
   const s = String(resource?.status || '').toUpperCase();
   if (s === 'ACTIVE') return 'active';
   if (s === 'CANCELLED' || s === 'EXPIRED') return 'canceled';

@@ -123,16 +123,17 @@ Deno.serve(async (req) => {
     }
 
     try {
-      const userUpdate = await entities.User.updateMany(
-        { id: user.id },
-        { $inc: {
-          viral_concepts_generated: concepts.length,
-          ...(firstGeneration ? { xp: 50 } : {}),
-        } },
-      );
-      if (Number(userUpdate?.updated || 0) !== 1) {
-        throw new Error('ViralSeed user stats update did not modify exactly one account');
+      // Base44 forbids service-role bulk updates to User; update the single
+      // authenticated account instead. Keep the achievement claim as the
+      // source of truth for whether the first-time XP award applies.
+      const currentUser = await entities.User.get(user.id);
+      if (!currentUser || currentUser.id !== user.id) {
+        throw new Error('ViralSeed account no longer exists');
       }
+      await entities.User.update(user.id, {
+        viral_concepts_generated: Math.max(0, Number(currentUser.viral_concepts_generated) || 0) + concepts.length,
+        ...(firstGeneration ? { xp: Math.max(0, Number(currentUser.xp) || 0) + 50 } : {}),
+      });
     } catch (updateError) {
       // If the first award failed to reach the user record, remove the
       // achievement claim so a retry can award it correctly.

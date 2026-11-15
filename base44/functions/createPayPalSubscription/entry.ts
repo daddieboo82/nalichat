@@ -120,7 +120,11 @@ Deno.serve(async (req) => {
       });
       if (!lookup.ok) return Response.json({ error: 'Unable to verify previous PayPal billing' }, { status: 503 });
       const remote = await lookup.json();
+      // A canceled agreement must belong to this exact customer and SKU.
+      // Without custom_id validation, a foreign agreement could be accepted
+      // as evidence that the account is safe to bill again.
       if (remote?.id !== prior.subscription_id || remote?.plan_id !== prior.paypal_plan_id ||
+          !prior.sku || remote?.custom_id !== user.id + ':' + prior.sku ||
           !['CANCELLED', 'EXPIRED'].includes(remote?.status)) {
         return Response.json({ error: 'Previous PayPal billing needs review before another subscription' }, { status: 409 });
       }

@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
             status: !match ? 'webhook_id_not_registered' : 'registered',
             enabled: match?.status === 'ENABLED',
             urlIsHttps: webhookUrl.startsWith('https://'),
-            urlTargetsPayPalWebhook: /\\/paypalWebhook(?:[/?#]|$)/i.test(webhookUrl),
+            urlTargetsPayPalWebhook: webhookUrl.includes('/functions/paypalWebhook'),
             missingEvents: match ? missingEvents : [],
           };
         }

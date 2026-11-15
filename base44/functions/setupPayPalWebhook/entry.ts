@@ -40,12 +40,33 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user || user.role !== 'admin') return Response.json({ error: 'Admin required' }, { status: 403 });
     const existing = secrets.get('PAYPAL_WEBHOOK_ID');
-    if (existing && !existing.startsWith('REPLACE_')) return Response.json({ success: true, configured: true, verified: false, reused: true, webhookId: existing, message: 'Webhook ID exists locally; remote PayPal URL and event subscriptions have not been verified.' });
-
     const accessToken = await token();
     const appId = secrets.get('BASE44_APP_ID') || '6a1f5ee134147461560c2b37';
     const webhookUrl = secrets.get('PAYPAL_WEBHOOK_URL') ||
       `https://base44-dispatcher-production.base44.workers.dev/api/apps/${appId}/functions/paypalWebhook`;
+    if (existing && !existing.startsWith('REPLACE_')) {
+      const remoteResponse = await fetch(apiBase() + '/v1/notifications/webhooks/' + encodeURIComponent(existing), {
+        headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json' },
+      });
+      if (!remoteResponse.ok) {
+        return Response.json({ success: false, verified: false, webhookId: existing, error: 'PayPal webhook could not be verified', paypalStatus: remoteResponse.status }, { status: 502 });
+      }
+      const remote = await remoteResponse.json();
+      const subscribed = new Set((Array.isArray(remote.event_types) ? remote.event_types : []).map((item: any) => item?.name));
+      const missingEvents = EVENTS.filter((name) => !subscribed.has(name));
+      const urlMatches = remote.url === webhookUrl;
+      return Response.json({
+        success: urlMatches && missingEvents.length === 0,
+        verified: urlMatches && missingEvents.length === 0,
+        reused: true,
+        webhookId: existing,
+        webhookUrl: remote.url,
+        expectedWebhookUrl: webhookUrl,
+        urlMatches,
+        missingEvents,
+        message: urlMatches && missingEvents.length === 0 ? 'PayPal webhook configuration verified' : 'PayPal webhook configuration requires correction',
+      }, { status: urlMatches && missingEvents.length === 0 ? 200 : 409 });
+    }
     const r = await fetch(apiBase() + '/v1/notifications/webhooks', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },

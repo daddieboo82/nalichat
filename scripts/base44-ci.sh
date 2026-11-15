@@ -16,6 +16,9 @@ python3 scripts/test-paypal-webhook-race-demonstration.py
 echo "==> Running release verification"
 npm run verify:release
 
+echo "==> Enforcing PayPal webhook atomicity release gate"
+node scripts/verify-paypal-webhook-atomicity.mjs
+
 echo "==> Installing Playwright runners"
 npx playwright install --with-deps chromium webkit
 

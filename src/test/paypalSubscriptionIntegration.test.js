@@ -99,6 +99,19 @@ describe('PayPal subscription integration contracts', () => {
     expect(dashboard).toContain('This table is read-only and does not change subscriber access');
   });
 
+  it('displays failed PayPal webhook events in a capped, read-only admin queue', async () => {
+    const audit = await read('base44/functions/getPendingPayPalAudit/entry.ts');
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(audit).toContain("{ processing_state: 'failed' }, '-created_date', 101");
+    expect(audit).toContain('failedEventCount, hasMoreFailedEvents, failedEvents, results');
+    expect(audit).toContain('attempts: entry.attempt_count || 1');
+    expect(audit).not.toContain('lastError: entry.last_error');
+    expect(dashboard).toContain('Failed PayPal webhook events — read-only');
+    expect(dashboard).toContain('paypalAudit.failedEvents.map');
+    expect(dashboard).toContain('Only the newest 100 failed webhooks are shown');
+    expect(dashboard).toContain('No retries or subscription updates are triggered from this view');
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");

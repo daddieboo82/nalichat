@@ -7,6 +7,9 @@ npm ci
 echo "==> Checking local checkout reservation concurrency model (SQLite only)"
 python3 scripts/test-checkout-sqlite-model.py
 
+echo "==> Checking local PayPal webhook atomic-claim concurrency model (SQLite only)"
+python3 scripts/test-paypal-webhook-ledger-sqlite-model.py
+
 echo "==> Running release verification"
 npm run verify:release
 

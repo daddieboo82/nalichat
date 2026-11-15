@@ -105,7 +105,7 @@ export default function PricingPlans({
   const { isAuthenticated, user } = useAuth();
   const { subscription, isLoading, isError, error, refetch } = useSubscription();
   const appleIAP = useAppleIAP();
-  const [period, setPeriod] = useState("monthly");
+  const [period, setPeriod] = useState(() => new URLSearchParams(window.location.search).get("billing") === "annual" ? "annual" : "monthly");
   const [startingPlan, setStartingPlan] = useState(null);
   const [resumingPayPal, setResumingPayPal] = useState(false);
   const [checkoutCanceled, setCheckoutCanceled] = useState(false);
@@ -118,6 +118,7 @@ export default function PricingPlans({
   const copy = getPaywallCopy(variant);
   const upgradeFeature = new URLSearchParams(location.search).get("feature");
   const upgradeSource = new URLSearchParams(location.search).get("source");
+  const selectedBeforeSignup = new URLSearchParams(location.search).get("plan");
 
   useEffect(() => {
     // Preserve campaign context when an ad or sitelink lands directly on pricing.
@@ -238,7 +239,13 @@ export default function PricingPlans({
 
     if (!isAuthenticated) {
       trackProductEvent("signup_click", { source: "pricing_plan", cta: "select_paid_plan", plan: planId, billing_period: period });
-      navigate(`/register?returnTo=${encodeURIComponent(location.pathname + location.search)}`);
+      // Preserve the buyer's selected tier and billing period across signup.
+      // Registration returns to pricing; it must never initiate a charge
+      // without another explicit customer action.
+      const destination = new URL(location.pathname + location.search, window.location.origin);
+      destination.searchParams.set("plan", planId);
+      destination.searchParams.set("billing", period);
+      navigate(`/register?returnTo=${encodeURIComponent(destination.pathname + destination.search)}`);
       return;
     }
 
@@ -398,6 +405,12 @@ export default function PricingPlans({
             </Button>
             {error?.message && <p className="sr-only">{error.message}</p>}
           </div>
+        )}
+
+        {isAuthenticated && !paidSubscriber && PAID_PLAN_IDS.includes(selectedBeforeSignup) && (
+          <p className="mx-auto mt-6 max-w-2xl rounded-xl border border-primary/30 bg-primary/5 p-4 text-center text-sm" role="status">
+            Welcome back! Your selected {SUBSCRIPTION_CATALOG[selectedBeforeSignup].name} plan is ready below. Select its upgrade button to continue securely to PayPal.
+          </p>
         )}
 
         <fieldset className="mt-10">

@@ -37,6 +37,41 @@ Deno.serve(async (req) => {
     if (!auth.ok || !credentials.access_token) return Response.json({ error: 'PayPal authentication failed' }, { status: 502 });
 
     const headers = { Authorization: 'Bearer ' + credentials.access_token, Accept: 'application/json' };
+    // Read-only merchant-side webhook registration check. Never return secrets or
+    // full webhook URLs; report only whether this app's configured ID exists.
+    const configuredWebhookId = secrets.get('PAYPAL_WEBHOOK_ID');
+    let webhookCheck: Record<string, unknown> = { status: configuredWebhookId ? 'unverified' : 'missing_webhook_id' };
+    if (configuredWebhookId) {
+      try {
+        const response = await fetch(apiBase(environment) + '/v1/notifications/webhooks', { headers });
+        if (!response.ok) {
+          webhookCheck = { status: 'lookup_failed', httpStatus: response.status };
+        } else {
+          const payload = await response.json();
+          const registered = Array.isArray(payload?.webhooks) ? payload.webhooks : [];
+          const match = registered.find((hook: any) => hook.id === configuredWebhookId);
+          const requiredEvents = [
+            'BILLING.SUBSCRIPTION.ACTIVATED', 'BILLING.SUBSCRIPTION.UPDATED',
+            'BILLING.SUBSCRIPTION.CANCELLED', 'BILLING.SUBSCRIPTION.SUSPENDED',
+            'BILLING.SUBSCRIPTION.EXPIRED', 'PAYMENT.SALE.COMPLETED',
+            'BILLING.SUBSCRIPTION.PAYMENT.FAILED', 'PAYMENT.SALE.REFUNDED',
+            'PAYMENT.SALE.REVERSED',
+          ];
+          const eventNames = new Set((match?.event_types || []).map((entry: any) => entry.name));
+          const missingEvents = requiredEvents.filter((name) => !eventNames.has(name) && !eventNames.has('*'));
+          const webhookUrl = typeof match?.url === 'string' ? match.url : '';
+          webhookCheck = {
+            status: !match ? 'webhook_id_not_registered' : 'registered',
+            enabled: match?.status === 'ENABLED',
+            urlIsHttps: webhookUrl.startsWith('https://'),
+            urlTargetsPayPalWebhook: /\\/paypalWebhook(?:[/?#]|$)/i.test(webhookUrl),
+            missingEvents: match ? missingEvents : [],
+          };
+        }
+      } catch {
+        webhookCheck = { status: 'request_failed' };
+      }
+    }
     const active = await base44.asServiceRole.entities.Subscription.filter(
       { provider: 'paypal', status: 'active' }, '-created_date', 30,
     );
@@ -159,7 +194,7 @@ Deno.serve(async (req) => {
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
-      environment, referenceCheck, activeChecks, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, pendingAccountsWithActiveRecord, oldestAttempt, results });
+      environment, webhookCheck, referenceCheck, activeChecks, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, pendingAccountsWithActiveRecord, oldestAttempt, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

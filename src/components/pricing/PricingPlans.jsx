@@ -296,22 +296,30 @@ export default function PricingPlans({
         try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}
         sessionStorage.removeItem(CHECKOUT_ATTRIBUTION_KEY);
       } catch {}
+      // The SDK may reject non-2xx responses before responsePayload can read
+      // the structured code. Recover it from the transport response too.
+      const providerError = checkoutError?.response?.data || checkoutError?.data || {};
+      const checkoutMessage = String(providerError?.error || checkoutError?.message || "");
+      const checkoutCode = providerError?.code || checkoutError?.code;
+      // Report a bounded failure category, never provider messages or account details.
+      const failureReason = checkoutCode === "PAYPAL_CHECKOUT_UNCERTAIN" ? "provider_uncertain"
+        : checkoutCode === "CHECKOUT_DEPENDENCY_ERROR" ? "dependency_error"
+        : /pending|already been started|previous PayPal|account review|subscription history requires review/i.test(checkoutMessage) ? "existing_billing_review"
+        : /already has a paid subscription/i.test(checkoutMessage) ? "already_subscribed"
+        : /plan is not configured|credentials are not configured/i.test(checkoutMessage) ? "configuration"
+        : "other";
       trackPaywallEvent("purchase_failed", {
         variant,
         plan: planId,
         billing_period: period,
         sku,
         outcome: "checkout_error",
+        reason: failureReason,
         source: upgradeSource || "pricing",
         upgrade_feature: upgradeFeature || undefined,
         checkout_sku: sku,
         ...campaignContext(),
       });
-      // The SDK may reject non-2xx responses before responsePayload can read
-      // the structured code. Recover it from the transport response too.
-      const providerError = checkoutError?.response?.data || checkoutError?.data || {};
-      const checkoutMessage = String(providerError?.error || checkoutError?.message || "");
-      const checkoutCode = providerError?.code || checkoutError?.code;
       if (checkoutCode === "PAYPAL_CHECKOUT_UNCERTAIN" || /pending|already been started|previous PayPal|check billing before retrying|review billing before trying again|duplicate subscriptions|checkout could not be confirmed|previous PayPal billing|previous PayPal checkout|account review|subscription history requires review/i.test(checkoutMessage)) {
         setCheckoutRecoveryNeeded(true);
       }

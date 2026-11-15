@@ -29,8 +29,8 @@ export default function MusicCollaborationLanding() {
 
   useEffect(() => {
     const previousTitle = document.title;
-    const description = "Real-time creator messaging, audio sharing, music collaboration, a built-in Studio, and AI-assisted music tools. Start free with NaliBase.";
-    document.title = "Music Collaboration & Creator Messaging | NaliBase";
+    const description = "Real-time creator messaging, audio sharing, music collaboration, a built-in Studio, and AI-assisted music tools. Start free with NaliChat by NaliBase.";
+    document.title = "Music Collaboration & Creator Messaging | NaliChat by NaliBase";
     let meta = document.querySelector('meta[name="description"]');
     const previousDescription = meta?.getAttribute("content") || null;
     if (!meta) {

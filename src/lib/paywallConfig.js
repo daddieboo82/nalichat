@@ -40,10 +40,11 @@ function stableHash(value) {
 
 function anonymousIdentity(storage) {
   const key = "nalichat_paywall_anonymous_id";
-  let value = storage?.getItem(key);
+  let value;
+  try { value = storage?.getItem(key); } catch { /* Storage may be blocked. */ }
   if (!value) {
     value = globalThis.crypto?.randomUUID?.() || `anon-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    storage?.setItem(key, value);
+    try { storage?.setItem(key, value); } catch { /* Keep the in-memory identity. */ }
   }
   return value;
 }
@@ -55,13 +56,14 @@ export function assignPaywallVariant(userId, storage = globalThis.localStorage) 
 
   const identity = userId || anonymousIdentity(storage);
   const storageKey = `nalichat_paywall_variant:${identity}`;
-  const saved = storage?.getItem(storageKey);
+  let saved;
+  try { saved = storage?.getItem(storageKey); } catch { /* Storage may be blocked. */ }
   if (saved === "A" || saved === "B") {
     return saved;
   }
 
   const variant = stableHash(identity) % 2 === 0 ? "A" : "B";
-  storage?.setItem(storageKey, variant);
+  try { storage?.setItem(storageKey, variant); } catch { /* The variant is still usable. */ }
   return variant;
 }
 

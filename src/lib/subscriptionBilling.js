@@ -14,7 +14,9 @@ export function createCheckoutRequestKey() {
 function responsePayload(response) {
   const payload = response?.data ?? response;
   if (payload?.error) {
-    throw new Error(payload.error);
+    const error = new Error(payload.error);
+    if (typeof payload.code === "string") error.code = payload.code;
+    throw error;
   }
   return payload;
 }

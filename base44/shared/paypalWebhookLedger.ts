@@ -6,7 +6,8 @@ export function paypalWebhookLedgerAction(
   updatedAt: unknown,
   nowMs = Date.now(),
 ): 'duplicate' | 'busy' | 'retry' | 'start' {
-  if (state === 'processed' || state === 'ignored') {
+  // Manual review is durable: redelivery must not silently resolve the event.
+  if (state === 'processed' || state === 'ignored' || state === 'review_required') {
     return 'duplicate';
   }
   if (state !== 'processing') {

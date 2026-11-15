@@ -75,6 +75,14 @@ Deno.serve(async (req) => {
           matchesCatalog, httpStatus: response.status });
       } catch { planChecks.push({ sku: item.sku, status: 'request_failed' }); }
     }
+    // Expose payment reversals that require operator review. Fetch one
+    // extra ledger row so a truncated review queue is reported honestly.
+    const reviewEventsPage = await base44.asServiceRole.entities.PayPalWebhookEvent.filter(
+      { processing_state: 'review_required' }, '-created_date', 101,
+    );
+    const reviewRequiredCount = Math.min(reviewEventsPage.length, 100);
+    const hasMoreReviewEvents = reviewEventsPage.length > 100;
+
     // Fetch one extra row to detect truncation without making an unbounded
     // number of provider calls. Never report the first page as a full audit.
     const pendingPage = await base44.asServiceRole.entities.Subscription.filter(
@@ -127,7 +135,7 @@ Deno.serve(async (req) => {
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
       environment, referenceCheck, planChecks, checked: results.length,
       verifiedCount: results.filter((result) => result.providerStatusVerified === true).length,
-      hasMorePending, results });
+      hasMorePending, reviewRequiredCount, hasMoreReviewEvents, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

@@ -128,6 +128,15 @@ describe('PayPal subscription integration contracts', () => {
     }
   });
 
+  it('does not mistake a PayPal sale ID for the subscription agreement ID', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    expect(webhook).toContain("const paymentEvent = event.event_type.startsWith('PAYMENT.')");
+    expect(webhook).toContain("? event.resource?.billing_agreement_id");
+    expect(webhook).toContain(": event.resource?.id");
+    expect(webhook).not.toContain("event.resource?.id || event.resource?.billing_agreement_id");
+    expect(webhook).toContain("error: 'Missing PayPal subscription reference'");
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");

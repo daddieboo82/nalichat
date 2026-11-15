@@ -4,6 +4,7 @@ import {
   loginErrorMessage,
   otpErrorMessage,
   registrationErrorMessage,
+  authenticationHttpStatus,
   resendOtpErrorMessage,
   resetPasswordErrorMessage,
 } from '@/lib/authErrorMessages';
@@ -18,6 +19,19 @@ describe('safe auth error messages', () => {
     expect(resendOtpErrorMessage(new Error('429 rate limit'))).toContain('wait');
     expect(googleLoginErrorMessage(new Error('popup closed'))).toContain('canceled');
     expect(resetPasswordErrorMessage(new Error('reset token expired'))).toContain('expired');
+  });
+
+  it('identifies platform registration HTTP 500 without exposing raw errors', () => {
+    const error = {
+      message: 'Request failed with status code 500',
+      response: { status: 500, data: { message: 'sensitive internal provider stacktrace' } },
+    };
+    expect(authenticationHttpStatus(error)).toBe(500);
+    expect(registrationErrorMessage(error)).toContain('server error');
+    expect(registrationErrorMessage(error)).toContain('Google');
+    expect(registrationErrorMessage(error)).not.toContain('sensitive internal provider stacktrace');
+    expect(authenticationHttpStatus({ response: { status: 429 } })).toBe(429);
+    expect(authenticationHttpStatus(new Error('offline'))).toBeNull();
   });
 
   it('does not echo unknown provider/internal errors', () => {

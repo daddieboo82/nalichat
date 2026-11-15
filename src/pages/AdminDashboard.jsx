@@ -301,6 +301,32 @@ export default function AdminDashboard() {
                 </div>
               )}
 
+              {(paypalAudit.failedEventCount ?? 0) > 0 && (
+                <p role="alert" className="mt-3 text-sm text-destructive">
+                  {paypalAudit.failedEventCount}{paypalAudit.hasMoreFailedEvents ? "+" : ""} PayPal webhook deliveries are unresolved. Verify provider delivery history and local records before changing subscriber access.
+                </p>
+              )}
+              {Array.isArray(paypalAudit.failedEvents) && paypalAudit.failedEvents.length > 0 && (
+                <div className="mt-3 overflow-x-auto">
+                  <p className="text-sm font-medium mb-2">Failed PayPal webhook events — read-only</p>
+                  <table className="w-full min-w-[480px] text-left text-sm">
+                    <thead><tr className="border-b border-border"><th className="py-2 pr-3">Event ID</th><th className="py-2 pr-3">Type</th><th className="py-2 pr-3">Event date</th><th className="py-2">Attempts</th></tr></thead>
+                    <tbody>{paypalAudit.failedEvents.map((item, index) => (
+                      <tr key={item.eventId || index} className="border-b border-border/50">
+                        <td className="py-2 pr-3 font-mono break-all">{item.eventId || "—"}</td>
+                        <td className="py-2 pr-3">{item.eventType || "—"}</td>
+                        <td className="py-2 pr-3">{item.eventTime || "Unknown"}</td>
+                        <td className="py-2">{item.attempts ?? "—"}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                  {paypalAudit.hasMoreFailedEvents && (
+                    <p role="alert" className="mt-2 text-xs text-amber-600">Only the newest 100 failed webhooks are shown. This is not the entire backlog.</p>
+                  )}
+                  <p className="mt-2 text-xs text-muted-foreground">No retries or subscription updates are triggered from this view.</p>
+                </div>
+              )}
+
               {paypalAudit.hasMorePending && (
                 <p role="alert" className="mt-2 text-sm text-amber-600">Partial audit: more than 100 pending records exist. This report does not cover every pending agreement; do not treat it as complete.</p>
               )}

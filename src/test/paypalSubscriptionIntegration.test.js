@@ -80,7 +80,7 @@ describe('PayPal subscription integration contracts', () => {
     expect(ledger).toContain("state === 'review_required'");
     expect(schema).toContain('"review_required"');
     expect(audit).toContain("{ processing_state: 'review_required' }");
-    expect(audit).toContain('reviewRequiredCount, hasMoreReviewEvents, results');
+    expect(audit).toContain('reviewRequiredCount, hasMoreReviewEvents, reviewEvents,');
     expect(dashboard).toContain('paypalAudit.reviewRequiredCount');
     expect(dashboard).toContain('PayPal refund/reversal events require manual review');
   });
@@ -150,6 +150,20 @@ describe('PayPal subscription integration contracts', () => {
     expect(webhook.indexOf("error: 'Unrecognized PayPal subscription status'")).toBeLessThan(
       webhook.indexOf("processing_state: 'processed'"),
     );
+  });
+
+  it('fails closed on invalid PayPal webhook chronology', async () => {
+    const ledger = await read('base44/shared/paypalWebhookLedger.ts');
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    expect(ledger).toContain('if (!Number.isFinite(incomingMs)) return false');
+    expect(ledger).toContain('if (!Number.isFinite(lastMs)) return false');
+    expect(webhook).toContain('const incomingEventTime = event.create_time;');
+    expect(webhook).toContain('Invalid PayPal webhook event chronology; manual reconciliation required');
+    expect(webhook).toContain("error: 'Invalid PayPal webhook event chronology' }, { status: 503");
+    const validation = webhook.indexOf('if (typeof incomingEventTime');
+    const update = webhook.indexOf('await entities.Subscription.update(record.id, update)');
+    expect(validation).toBeGreaterThan(-1);
+    expect(validation).toBeLessThan(update);
   });
 
   it('handles an already active PayPal subscription without starting a second checkout', async () => {

@@ -1,0 +1,19 @@
+{
+  "name": "PayPalCheckoutProbe20261115",
+  "type": "object",
+  "properties": {
+    "checkout_claim": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "rls": {
+    "read": true,
+    "create": true,
+    "update": true,
+    "delete": true
+  },
+  "required": []
+}

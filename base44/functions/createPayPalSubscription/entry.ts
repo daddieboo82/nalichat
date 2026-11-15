@@ -34,10 +34,22 @@ async function accessToken() {
   return data.access_token as string;
 }
 
-// There is no atomic checkout reservation in this release. This function is
-// intentionally NOT controlled by any environment variable or operator flag.
-function atomicCheckoutReservationIsImplemented(): boolean {
-  return false;
+// Base44 User.updateMany conditional claim was exercised on a disposable
+// entity with two and four simultaneous contenders: exactly one won.
+// The reservation never auto-expires: PayPal may create an agreement even
+// when its response is lost.
+async function reservePayPalCheckout(users: any, userId: string, claimId: string): Promise<boolean> {
+  const claim = await users.updateMany({
+    id: userId,
+    $or: [
+      { paypal_checkout_claim_id: { $exists: false } },
+      { paypal_checkout_claim_id: null },
+      { paypal_checkout_claim_id: '' },
+    ],
+  }, {
+    $set: { paypal_checkout_claim_id: claimId, paypal_checkout_claimed_at: new Date().toISOString() },
+  });
+  return claim?.success === true && claim?.updated === 1;
 }
 
 Deno.serve(async (req) => {
@@ -55,14 +67,6 @@ Deno.serve(async (req) => {
     }
     const item = CATALOG[sku];
     if (!item) return Response.json({ error: 'Unknown subscription plan' }, { status: 400 });
-    // Emergency billing safety stop (#1047). Do not replace with an
-    // operator flag: checkout needs a VERIFIED atomic per-user reservation.
-    if (!atomicCheckoutReservationIsImplemented()) {
-      return Response.json({
-        error: 'New PayPal subscriptions are temporarily unavailable while billing safety is verified',
-      }, { status: 503 });
-    }
-
     const planId = secrets.get(item.secret);
     if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
 
@@ -70,6 +74,7 @@ Deno.serve(async (req) => {
     const allSubs = await base44.asServiceRole.entities.Subscription.filter(
       { user_id: user.id }, '-created_date', 100,
     );
+    if (allSubs.length >= 100) return Response.json({ error: 'Subscription history requires review before starting another checkout' }, { status: 409 });
     const now = new Date().toISOString();
     const alreadyPaid = allSubs.some((sub: any) => {
       const plan = normalizePlan(sub.plan);
@@ -85,37 +90,35 @@ Deno.serve(async (req) => {
     }
 
     const token = await accessToken();
-    const existing = await base44.asServiceRole.entities.Subscription.filter(
-      { user_id: user.id, provider: 'paypal', status: 'pending', sku }, '-created_date', 20,
-    );
-    for (const pending of existing) {
-      if (!pending.subscription_id || pending.paypal_plan_id !== planId ||
-          pending.paypal_environment !== (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase()) continue;
-      const lookup = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(pending.subscription_id), {
+    // Never create a second agreement while any earlier PayPal approval is
+    // pending. The separate resumePendingPayPal route handles these customers.
+    if (allSubs.some((sub: any) => sub.provider === 'paypal' && sub.status === 'pending')) {
+      return Response.json({ error: 'A previous PayPal checkout is pending. Continue your existing PayPal approval or review Settings.' }, { status: 409 });
+    }
+    // Fail closed on stale local statuses: check every other recorded PayPal
+    // agreement with PayPal before creating a new recurring billing agreement.
+    for (const prior of allSubs.filter((sub: any) => sub.provider === 'paypal' && sub.subscription_id)) {
+      if (prior.paypal_environment !== (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase() || !prior.paypal_plan_id) {
+        return Response.json({ error: 'Previous PayPal billing requires account review' }, { status: 409 });
+      }
+      const lookup = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(prior.subscription_id), {
         headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
       });
-      if (!lookup.ok) continue;
+      if (!lookup.ok) return Response.json({ error: 'Unable to verify previous PayPal billing' }, { status: 503 });
       const remote = await lookup.json();
-      const remoteStatus = await resolvePayPalSubscriptionStatus(apiBase(), token, pending.subscription_id, remote);
-      if (remoteStatus === 'ACTIVE') {
-        const update: Record<string, unknown> = { status: 'active' };
-        const periodEnd = paypalPeriodEndForStatus('active', remote?.billing_info?.next_billing_time);
-        if (periodEnd !== undefined) update.current_period_end = periodEnd;
-        await base44.asServiceRole.entities.Subscription.update(pending.id, update);
-        return Response.json({ error: 'This account already has a paid subscription; use the billing portal' }, { status: 409 });
+      if (remote?.id !== prior.subscription_id || remote?.plan_id !== prior.paypal_plan_id ||
+          !['CANCELLED', 'EXPIRED'].includes(remote?.status)) {
+        return Response.json({ error: 'Previous PayPal billing needs review before another subscription' }, { status: 409 });
       }
-      if (remoteStatus !== 'APPROVAL_PENDING' || remote.plan_id !== planId ||
-          remote.custom_id !== user.id + ':' + sku) continue;
-      const approval = (Array.isArray(remote.links) ? remote.links.find((link: any) => link.rel === 'approve')?.href : '') || pending.checkout_url;
-      const expectedHost = pending.paypal_environment === 'sandbox' ? 'www.sandbox.paypal.com' : 'www.paypal.com';
-      let approvalUrl: URL;
-      try { approvalUrl = new URL(approval); } catch { continue; }
-      if (approvalUrl.protocol !== 'https:' || approvalUrl.hostname !== expectedHost) continue;
-      return Response.json({
-        success: true, action: 'create_paypal_subscription', userId: user.id, sku,
-        checkoutUrl: approval, subscriptionId: pending.subscription_id, resumed: true,
-      });
     }
+    // Acquire a durable per-account compare-and-set claim immediately before
+    // the first PayPal subscription creation request.
+    const reserved = await reservePayPalCheckout(base44.asServiceRole.entities.User, user.id, idempotencyKey);
+    if (!reserved) {
+      return Response.json({ error: 'A PayPal checkout has already been started. Check billing before starting another.' }, { status: 409 });
+    }
+    // This claim is intentionally NOT released in catch or after a timeout.
+    // The provider may have created an agreement even if the response fails.
     // Always return buyers to the canonical site. The platform app URL can still
     // be the old Base44 host, and a session on nalichat.org cannot confirm a
     // payment that lands on a different origin.
@@ -146,7 +149,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unable to create PayPal checkout' }, { status: 502 });
     }
     const approval = Array.isArray(data.links) ? data.links.find((x: any) => x.rel === 'approve')?.href : '';
-    if (!approval || !data.id) return Response.json({ error: 'PayPal did not return an approval URL' }, { status: 502 });
+    let verifiedApproval: URL;
+    try { verifiedApproval = new URL(approval); } catch {
+      return Response.json({ error: 'PayPal approval could not be validated; check billing before retrying' }, { status: 502 });
+    }
+    const expectedHost = (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase() === 'sandbox'
+      ? 'www.sandbox.paypal.com' : 'www.paypal.com';
+    if (!data.id || verifiedApproval.protocol !== 'https:' || verifiedApproval.hostname !== expectedHost) {
+      return Response.json({ error: 'PayPal approval identity could not be validated; check billing before retrying' }, { status: 502 });
+    }
 
     await base44.asServiceRole.entities.Subscription.create({
       user_id: user.id,
@@ -158,7 +169,8 @@ Deno.serve(async (req) => {
       subscription_id: data.id,
       paypal_plan_id: planId,
       paypal_environment: (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase(),
-      checkout_url: approval,
+      checkout_url: verifiedApproval.toString(),
+      checkout_request_key: idempotencyKey,
     });
 
     return Response.json({
@@ -166,7 +178,7 @@ Deno.serve(async (req) => {
       action: 'create_paypal_subscription',
       userId: user.id,
       sku,
-      checkoutUrl: approval,
+      checkoutUrl: verifiedApproval.toString(),
       subscriptionId: data.id,
     });
   } catch (error) {

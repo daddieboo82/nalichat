@@ -150,6 +150,9 @@ Deno.serve(async (req) => {
           // An absent last_payment field is not proof that no money was collected.
           // Only return true for an observed provider payment; otherwise unknown.
           paymentRecorded: identityMatches && remote.billing_info?.last_payment?.time ? true : null,
+          nextBillingTime: identityMatches ? (remote.billing_info?.next_billing_time || null) : null,
+          lastPaymentTime: identityMatches ? (remote.billing_info?.last_payment?.time || null) : null,
+          billingCyclesCompleted: identityMatches ? (remote.billing_info?.cycle_executions || []) : [],
         });
       } catch {
         results.push({ subscriptionId: record.subscription_id, plan: record.sku || record.plan, status: 'lookup_failed' });

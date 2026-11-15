@@ -30,8 +30,17 @@ export function googleLoginErrorMessage(error) {
   return 'Google sign-in could not be started. Please try again.';
 }
 
+export function authenticationHttpStatus(error) {
+  const value = Number(error?.response?.status ?? error?.status ?? error?.data?.status);
+  return Number.isInteger(value) && value >= 400 && value <= 599 ? value : null;
+}
+
 export function registrationErrorMessage(error) {
+  const status = authenticationHttpStatus(error);
   const msg = normalized(error);
+  if (status >= 500) {
+    return 'Account registration is temporarily unavailable (server error). Your account may not have been created. You can try Continue with Google, or retry email registration later. If you already received a verification code, verify it instead of creating another account.';
+  }
   if (/already|exists|registered|duplicate/.test(msg)) {
     return 'An account with that email already exists. Try logging in instead.';
   }

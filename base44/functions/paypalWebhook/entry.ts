@@ -56,7 +56,9 @@ function state(type: string, resource: any) {
   if (type === 'BILLING.SUBSCRIPTION.ACTIVATED' || type === 'PAYMENT.SALE.COMPLETED') return 'active';
   if (type === 'BILLING.SUBSCRIPTION.CANCELLED' || type === 'BILLING.SUBSCRIPTION.EXPIRED') return 'canceled';
   if (type === 'BILLING.SUBSCRIPTION.SUSPENDED' || type === 'BILLING.SUBSCRIPTION.PAYMENT.FAILED') return 'unpaid';
-  // A refunded or reversed individual sale does not necessarily cancel the\n  // recurring billing agreement. Its current status must be read from PayPal.\n  if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return null;
+  // A refunded or reversed sale does not necessarily cancel the agreement.
+  // Its current status must be read from PayPal.
+  if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return null;
   const s = String(resource?.status || '').toUpperCase();
   if (s === 'ACTIVE') return 'active';
   if (s === 'CANCELLED' || s === 'EXPIRED') return 'canceled';
@@ -261,17 +263,10 @@ Deno.serve(async (req) => {
         }
       }
 
-      // For PAYMENT.SALE.* events, billing_info is on the subscription resource,
-      // not the sale resource — fetch it to get next_billing_time.
-      if (event.event_type.startsWith('PAYMENT.')) {
-        const billingInfo = await fetchSubscriptionBillingInfo(token, subscriptionId);
-        const periodEnd = paypalPeriodEndForStatus(newStatus, billingInfo?.nextBillingTime);
-        if (periodEnd !== undefined) update.current_period_end = periodEnd;
-      } else {
-        const end = event.resource?.billing_info?.next_billing_time || event.resource?.billing_info?.final_payment_time;
-        const periodEnd = paypalPeriodEndForStatus(newStatus, end);
-        if (periodEnd !== undefined) update.current_period_end = periodEnd;
-      }
+      // Always use the authenticated agreement's current billing schedule.
+      // Webhook event resources can be sparse or delayed.
+      const periodEnd = paypalPeriodEndForStatus(newStatus, verifiedRemote?.billing_info?.next_billing_time);
+      if (periodEnd !== undefined) update.current_period_end = periodEnd;
 
       await entities.Subscription.update(record.id, update);
     }

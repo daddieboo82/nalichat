@@ -75,7 +75,7 @@ async function moderateText(base44: any, user: any, text: string, conversationId
   // This conservative offline screen blocks obvious high-risk content while
   // preserving normal chat. Other moderation layers remain in place.
   const quotaFallback = () => {
-    const highRisk = /\\b(?:kill you|murder you|rape you|shoot you|bomb (?:the|a)|sell (?:cocaine|heroin)|child pornography)\\b/i;
+    const highRisk = /\b(?:kill you|murder you|rape you|shoot you|bomb (?:the|a)|sell (?:cocaine|heroin)|child pornography)\b/i;
     return highRisk.test(text)
       ? { flagged: true, category: 'violence', severity: 'high', explanation: 'Message requires moderation review' }
       : { flagged: false, category: 'none', severity: 'low', explanation: '' };

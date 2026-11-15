@@ -146,6 +146,23 @@ Deno.serve(async (req) => {
         activeChecks.push({ status: 'lookup_failed' });
       }
     }
+    // Ledger visibility distinguishes "no recorded webhook events" from
+    // an active webhook pipeline. A zero count does not prove no delivery.
+    let webhookLedgerCount: number | null = null;
+    let webhookLedgerRecentStates: Record<string, number> | null = null;
+    try {
+      const ledgerRows = await base44.asServiceRole.entities.PayPalWebhookEvent.filter(
+        {}, '-created_date', 100,
+      );
+      webhookLedgerCount = ledgerRows.length;
+      webhookLedgerRecentStates = {};
+      for (const row of ledgerRows) {
+        const state = String(row.processing_state || 'unknown');
+        webhookLedgerRecentStates[state] = (webhookLedgerRecentStates[state] || 0) + 1;
+      }
+    } catch {
+      // An unavailable ledger must not prevent the other read-only checks.
+    }
     const pending = await base44.asServiceRole.entities.Subscription.filter(
       { provider: 'paypal', status: 'pending' }, '-created_date', 100,
     );
@@ -226,7 +243,7 @@ Deno.serve(async (req) => {
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
-      environment, webhookCheck, referenceCheck, activeChecks, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, accountsWithCheckoutClaims, accountsWithMatchedCheckoutClaims, accountsWithUnmatchedCheckoutClaims, accountsWithUnknownClaimState, pendingAccountsWithActiveRecord, oldestAttempt, results });
+      environment, webhookCheck, webhookLedgerCount, webhookLedgerRecentStates, referenceCheck, activeChecks, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, accountsWithCheckoutClaims, accountsWithMatchedCheckoutClaims, accountsWithUnmatchedCheckoutClaims, accountsWithUnknownClaimState, pendingAccountsWithActiveRecord, oldestAttempt, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

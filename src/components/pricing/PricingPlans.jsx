@@ -85,7 +85,7 @@ function PlanCard({
           onClick={() => onSelect(plan.id)}
         >
           {isStarting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-          {isCurrent ? "Current plan" : isPaidSubscriber ? "Manage in Settings" : isCheckoutPaused ? "Temporarily unavailable" : cta}
+          {isCurrent ? "Current plan" : isPaidSubscriber ? "Manage in Settings" : isCheckoutPaused ? "Review existing billing" : cta}
         </Button>
       ) : (
         <Button className="ui-hover min-h-12 w-full rounded-xl font-semibold" variant="outline" onClick={onContinueFree}>
@@ -432,8 +432,8 @@ export default function PricingPlans({
               cta={period === "monthly" ? (planId === "premium" ? "Upgrade to Premium" : "Go Premium Plus") : paidCta}
               isCurrent={paidSubscriber && subscription.plan === planId}
               isPaidSubscriber={paidSubscriber}
-              isCheckoutPaused={false}
-              isStarting={startingPlan === planId || isLoading || isError || subscription.hasPending || appleIAP.purchasingProductId === subscriptionSku(planId, period)}
+              isCheckoutPaused={isError || subscription.hasPending}
+              isStarting={startingPlan === planId || isLoading || appleIAP.purchasingProductId === subscriptionSku(planId, period)}
               onSelect={startCheckout}
               onContinueFree={continueFree}
             />

@@ -109,6 +109,7 @@ export default function PricingPlans({
   const [startingPlan, setStartingPlan] = useState(null);
   const [resumingPayPal, setResumingPayPal] = useState(false);
   const [checkoutCanceled, setCheckoutCanceled] = useState(false);
+  const [checkoutRecoveryNeeded, setCheckoutRecoveryNeeded] = useState(false);
   const requestKeys = useRef(new Map());
   const variant = useMemo(
     () => variantOverride || assignPaywallVariant(user?.id),
@@ -236,6 +237,7 @@ export default function PricingPlans({
     }
 
     setCheckoutCanceled(false);
+    setCheckoutRecoveryNeeded(false);
     setStartingPlan(planId);
     try {
       if (!requestKeys.current.has(sku)) {
@@ -282,7 +284,11 @@ export default function PricingPlans({
         checkout_sku: sku,
         ...campaignContext(),
       });
-      toast.error(checkoutError?.message || "Could not start checkout. Please try again.");
+      const checkoutMessage = String(checkoutError?.message || "");
+      if (/pending|already been started|previous PayPal|check billing before retrying/i.test(checkoutMessage)) {
+        setCheckoutRecoveryNeeded(true);
+      }
+      toast.error(checkoutMessage || "Could not start checkout. Please try again.");
       setStartingPlan(null);
     }
   };
@@ -340,6 +346,20 @@ export default function PricingPlans({
               </Button>
             )}
             <p className="mt-2 text-xs text-muted-foreground">Your account and existing PayPal agreement are checked before any PayPal redirect. This does not start a new subscription.</p>
+          </div>
+        )}
+
+        {checkoutRecoveryNeeded && !subscription.hasPending && !paidSubscriber && (
+          <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-primary/40 bg-primary/5 p-4 text-center" role="status">
+            <p className="font-semibold">Your earlier PayPal checkout may still be open.</p>
+            <p className="mt-2 text-sm text-muted-foreground">To avoid duplicate subscriptions, continue the existing approval if PayPal still has one. If it cannot be resumed, review billing in Settings before starting another.</p>
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              <Button className="min-h-11" onClick={resumePayPal} disabled={resumingPayPal}>
+                {resumingPayPal && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+                Continue PayPal approval
+              </Button>
+              <Button variant="outline" className="min-h-11" onClick={() => navigate("/settings")}>Review billing</Button>
+            </div>
           </div>
         )}
 

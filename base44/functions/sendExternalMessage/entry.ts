@@ -125,6 +125,10 @@ Deno.serve(async (req) => {
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
+    const providerError = String((error as any)?.message || error || '');
+    if (/limit of integrations for this month/i.test(providerError)) {
+      return Response.json({ error: 'The integration provider is temporarily unavailable because its monthly quota is exhausted', code: 'INTEGRATION_QUOTA_EXHAUSTED' }, { status: 503 });
+    }
     console.error('sendExternalMessage error:', error);
     return Response.json({ error: 'External message delivery failed' }, { status: 500 });
   }

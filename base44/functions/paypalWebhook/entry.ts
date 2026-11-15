@@ -187,6 +187,33 @@ Deno.serve(async (req) => {
     }
     const record = records[0];
 
+    // A sale/refund event identifies a billing agreement, but does not itself
+    // prove that the agreement belongs to this user or merchant. Verify the
+    // provider-side subscription binding before changing paid access.
+    if (event.event_type.startsWith('PAYMENT.')) {
+      const lookup = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId), {
+        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+      });
+      if (!lookup.ok) {
+        await entities.PayPalWebhookEvent.update(ledger.id, {
+          processing_state: 'failed',
+          processed_at: new Date().toISOString(),
+          last_error: 'Unable to verify PayPal subscription identity',
+        });
+        return Response.json({ error: 'PayPal subscription verification unavailable' }, { status: 503 });
+      }
+      const remote = await lookup.json();
+      if (remote?.id !== subscriptionId || remote?.plan_id !== record.paypal_plan_id ||
+          remote?.custom_id !== record.user_id + ':' + record.sku) {
+        await entities.PayPalWebhookEvent.update(ledger.id, {
+          processing_state: 'failed',
+          processed_at: new Date().toISOString(),
+          last_error: 'PayPal subscription identity mismatch',
+        });
+        return Response.json({ error: 'PayPal subscription identity mismatch' }, { status: 409 });
+      }
+    }
+
     // ── Stale-event protection ──
     const incomingEventTime = event.create_time || new Date().toISOString();
     if (

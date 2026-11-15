@@ -380,6 +380,12 @@ export default function AdminDashboard() {
               )}
               <p className="mt-2 text-xs text-muted-foreground">This is a read-only provider audit. Active status alone does not establish that a payment was collected. Do not restart a recurring checkout until its existing PayPal agreement is reconciled.</p>
               {paypalAudit.referenceCheck && <p className="mt-1 text-sm text-muted-foreground">Known active subscription check: {paypalAudit.referenceCheck.status}{paypalAudit.referenceCheck.httpStatus ? ` (HTTP ${paypalAudit.referenceCheck.httpStatus})` : ""}.</p>}
+              {Array.isArray(paypalAudit.planChecks) && paypalAudit.planChecks.some((plan) => plan.status !== "ACTIVE" || plan.matchesCatalog !== true) && (
+                <div className="mt-3 rounded-lg border border-destructive/50 p-3 text-sm" role="alert">
+                  <p className="font-semibold">PayPal plan readiness needs attention</p>
+                  <p className="mt-1">At least one paid plan is not confirmed ACTIVE at PayPal with the advertised USD price and billing interval. Review the plan checks below before treating its checkout as operational. This read-only audit does not change billing.</p>
+                </div>
+              )}
               {paypalAudit.planChecks && <div className="mt-3 text-sm"><p className="font-medium">Live PayPal plans</p><ul className="mt-1 space-y-1">{paypalAudit.planChecks.map((plan) => <li key={plan.sku}>{plan.sku}: {plan.status}{plan.amount && plan.currency ? ` · ${plan.currency} ${plan.amount}/${plan.interval?.toLowerCase() || "cycle"}` : ""}{plan.matchesCatalog === false ? " · price or interval mismatch" : ""}{plan.httpStatus && plan.httpStatus !== 200 ? ` · HTTP ${plan.httpStatus}` : ""}</li>)}</ul></div>}
               <div className="mt-3 overflow-x-auto">
                 <table className="w-full min-w-[480px] text-left text-sm">

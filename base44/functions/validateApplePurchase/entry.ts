@@ -84,11 +84,16 @@ async function createAppleServerApiJwt(): Promise<string | null> {
   if (!issuerId || !keyId || !privateKeyPem || !bundleId) return null;
 
   try {
-    // Import the private key for ES256 signing.
+    // WebCrypto requires DER PKCS#8 bytes, not the PEM text itself.
     const keyData = privateKeyPem.replace(/\\n/g, '\n');
+    const base64Key = keyData
+      .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+      .replace(/-----END PRIVATE KEY-----/g, '')
+      .replace(/\s/g, '');
+    const der = Uint8Array.from(atob(base64Key), (char) => char.charCodeAt(0));
     const key = await crypto.subtle.importKey(
       'pkcs8',
-      new TextEncoder().encode(keyData),
+      der,
       { name: 'ECDSA', namedCurve: 'P-256' },
       false,
       ['sign'],

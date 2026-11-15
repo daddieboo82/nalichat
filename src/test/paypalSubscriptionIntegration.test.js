@@ -66,6 +66,22 @@ describe('PayPal subscription integration contracts', () => {
     expect(branch).not.toContain("processing_state: 'ignored'");
   });
 
+  it('persists PayPal refund/reversal as a visible manual-review state', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    const ledger = await read('base44/shared/paypalWebhookLedger.ts');
+    const schema = await read('base44/entities/PayPalWebhookEvent.jsonc');
+    const audit = await read('base44/functions/getPendingPayPalAudit/entry.ts');
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(webhook).toContain("processing_state: 'review_required'");
+    expect(webhook).toContain("Payment reversal needs independent transaction review");
+    expect(ledger).toContain("state === 'review_required'");
+    expect(schema).toContain('"review_required"');
+    expect(audit).toContain("{ processing_state: 'review_required' }");
+    expect(audit).toContain('reviewRequiredCount, hasMoreReviewEvents, results');
+    expect(dashboard).toContain('paypalAudit.reviewRequiredCount');
+    expect(dashboard).toContain('PayPal refund/reversal events require manual review');
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");

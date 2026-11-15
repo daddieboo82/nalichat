@@ -190,8 +190,11 @@ Deno.serve(async (req) => {
       trialEndDate: selected?.trial_end_date || null,
       now,
     });
+    // Only a pending PayPal agreement blocks a fresh PayPal checkout.
+    // Historical incomplete Stripe attempts and providerless test records
+    // must not disable the PayPal upgrade buttons.
     const hasPending = subs.some((subscription) => (
-      subscription.status === 'pending' || subscription.status === 'incomplete'
+      subscription.provider === 'paypal' && subscription.status === 'pending'
     ));
     const eligibility = trialEligibility(user.trial_used_at, subs);
 

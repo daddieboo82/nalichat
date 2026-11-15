@@ -200,7 +200,20 @@ Deno.serve(async (req) => {
     }
 
     // ── Stale-event protection ──
-    const incomingEventTime = event.create_time || new Date().toISOString();
+    const incomingEventTime = event.create_time;
+    // A timestamp synthesized from receipt time can falsely supersede
+    // a real newer event. Keep unorderable events retryable for investigation.
+    if (typeof incomingEventTime !== 'string'
+      || !Number.isFinite(Date.parse(incomingEventTime))
+      || (record.paypal_event_time
+        && !Number.isFinite(Date.parse(String(record.paypal_event_time))))) {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'Invalid PayPal webhook event chronology; manual reconciliation required',
+      });
+      return Response.json({ error: 'Invalid PayPal webhook event chronology' }, { status: 503 });
+    }
     if (
       !shouldApplyPayPalEvent(
         record.paypal_event_id,

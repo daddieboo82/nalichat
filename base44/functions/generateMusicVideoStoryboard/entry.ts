@@ -47,6 +47,8 @@ Exactly ${count} scenes. Every prompt must describe an original, copyright-safe,
   return Response.json({summary:String(plan.summary||''),transcript,scenes:generated});
  } catch(error) {
   const bodyError=requestBodyErrorResponse(error); if(bodyError) return bodyError;
+  const detail=String((error as any)?.message||error||'');
+  if(/limit of integrations for this month/i.test(detail)) return Response.json({error:'Music video storyboard generation is temporarily unavailable because the AI provider quota is exhausted',code:'AI_PROVIDER_QUOTA_EXHAUSTED'},{status:503});
   console.error('generateMusicVideoStoryboard error',error); return Response.json({error:'AI music video storyboard generation failed'},{status:500});
  }
 });

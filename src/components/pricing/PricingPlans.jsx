@@ -452,7 +452,7 @@ export default function PricingPlans({
               cta={period === "monthly" ? (planId === "premium" ? "Upgrade to Premium" : "Go Premium Plus") : paidCta}
               isCurrent={paidSubscriber && subscription.plan === planId}
               isPaidSubscriber={paidSubscriber}
-              isCheckoutPaused={isError || subscription.hasPending}
+              isCheckoutPaused={isAuthenticated && (isError || subscription.hasPending)}
               isStarting={startingPlan === planId || isLoading || appleIAP.purchasingProductId === subscriptionSku(planId, period)}
               onSelect={startCheckout}
               onContinueFree={continueFree}

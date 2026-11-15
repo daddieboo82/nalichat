@@ -94,11 +94,17 @@ Deno.serve(async (req) => {
           continue;
         }
         const remote = await response.json();
+        // A provider status is not trustworthy for this local account until
+        // the provider agreement ID, plan and custom account binding match.
+        const identityMatches = remote.id === record.subscription_id &&
+          remote.plan_id === record.paypal_plan_id &&
+          remote.custom_id === record.user_id + ':' + record.sku;
         results.push({
           subscriptionId: record.subscription_id,
           plan: record.sku || record.plan,
-          status: String(remote.status || 'unknown').toUpperCase(),
-          paymentRecorded: Boolean(remote.billing_info?.last_payment?.time),
+          status: identityMatches ? String(remote.status || 'unknown').toUpperCase() : 'identity_mismatch',
+          identityMatches,
+          paymentRecorded: identityMatches && Boolean(remote.billing_info?.last_payment?.time),
         });
       } catch {
         results.push({ subscriptionId: record.subscription_id, plan: record.sku || record.plan, status: 'lookup_failed' });

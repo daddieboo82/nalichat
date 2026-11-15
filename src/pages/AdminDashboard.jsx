@@ -281,6 +281,26 @@ export default function AdminDashboard() {
                 </p>
               )}
 
+              {Array.isArray(paypalAudit.reviewEvents) && paypalAudit.reviewEvents.length > 0 && (
+                <div className="mt-3 overflow-x-auto">
+                  <p className="text-sm font-medium mb-2">PayPal events awaiting transaction review</p>
+                  <table className="w-full min-w-[480px] text-left text-sm">
+                    <thead><tr className="border-b border-border"><th className="py-2 pr-3">Event ID</th><th className="py-2 pr-3">Event type</th><th className="py-2">Event date</th></tr></thead>
+                    <tbody>{paypalAudit.reviewEvents.map((item, index) => (
+                      <tr key={item.eventId || index} className="border-b border-border/50">
+                        <td className="py-2 pr-3 font-mono break-all">{item.eventId || "—"}</td>
+                        <td className="py-2 pr-3">{item.eventType || "—"}</td>
+                        <td className="py-2">{item.eventTime || "Unknown"}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                  {paypalAudit.hasMoreReviewEvents && (
+                    <p role="alert" className="mt-2 text-xs text-amber-600">Only the newest 100 review events are shown. Older events still require investigation.</p>
+                  )}
+                  <p className="mt-2 text-xs text-muted-foreground">Use the event ID to locate the payment in PayPal before deciding on refund handling. This table is read-only and does not change subscriber access.</p>
+                </div>
+              )}
+
               {paypalAudit.hasMorePending && (
                 <p role="alert" className="mt-2 text-sm text-amber-600">Partial audit: more than 100 pending records exist. This report does not cover every pending agreement; do not treat it as complete.</p>
               )}

@@ -275,6 +275,12 @@ export default function AdminDashboard() {
           {paypalAudit && (
             <div className="mt-4">
               <p className="text-sm font-medium">Checked {paypalAudit.checked} PayPal attempts in {paypalAudit.environment} mode; {paypalAudit.verifiedCount ?? 0} provider statuses verified.</p>
+              {(paypalAudit.reviewRequiredCount ?? 0) > 0 && (
+                <p role="alert" className="mt-2 text-sm text-destructive">
+                  {paypalAudit.reviewRequiredCount}{paypalAudit.hasMoreReviewEvents ? "+" : ""} PayPal refund/reversal events require manual review. Verify individual transactions before changing subscriptions or access.
+                </p>
+              )}
+
               {paypalAudit.hasMorePending && (
                 <p role="alert" className="mt-2 text-sm text-amber-600">Partial audit: more than 100 pending records exist. This report does not cover every pending agreement; do not treat it as complete.</p>
               )}

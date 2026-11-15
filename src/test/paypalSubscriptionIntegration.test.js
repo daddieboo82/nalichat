@@ -195,6 +195,21 @@ describe('PayPal subscription integration contracts', () => {
     expect(pricing).toContain("isCheckoutPaused={!appleIAP.available}");
   });
 
+  it('holds durable PayPal checkout ownership unless provider reconciliation explicitly clears it', async () => {
+    const helper = await read('base44/shared/paypalCheckoutClaim.ts');
+    const userSchema = JSON.parse(await read('base44/entities/User.jsonc'));
+    expect(userSchema.properties.paypal_checkout_claim_id.rls.read).toBe(false);
+    expect(userSchema.properties.paypal_checkout_claimed_at.rls.read).toBe(false);
+    expect(helper).toContain('await users.updateMany(');
+    expect(helper).toContain('paypal_checkout_claim_id: { $exists: false }');
+    expect(helper).toContain("paypal_checkout_claim_id: claimId");
+    expect(helper).toContain('claim?.success === true && claim?.updated === 1');
+    expect(helper).not.toContain('leaseCutoff');
+    expect(helper).not.toContain("Date.now() -");
+    const endpoint = await read('base44/functions/createPayPalSubscription/entry.ts');
+    expect(endpoint).toContain('return false;');
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");

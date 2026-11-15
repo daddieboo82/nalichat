@@ -102,6 +102,10 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       });
       if (!response.ok) continue;
       const remote = await response.json();
+      // Never assign renewal dates or paid status to a different merchant agreement.
+      if (remote?.id !== subscription.subscription_id ||
+          remote?.plan_id !== subscription.paypal_plan_id ||
+          remote?.custom_id !== subscription.user_id + ':' + subscription.sku) continue;
       const remoteStatus = await resolvePayPalSubscriptionStatus(
         paypalApiBase(),
         token,
@@ -113,6 +117,7 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       const update: Record<string, unknown> = { status };
       const periodEnd = paypalPeriodEndForStatus(status, remote?.billing_info?.next_billing_time);
       if (periodEnd !== undefined) update.current_period_end = periodEnd;
+      // The provider owns renewal scheduling. Do not invent or shift a billing date.
       if (status === 'canceled') update.cancel_at_period_end = false;
       await subscriptionEntity.update(subscription.id as string, update);
       Object.assign(subscription, update);

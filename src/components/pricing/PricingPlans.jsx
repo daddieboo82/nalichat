@@ -453,7 +453,7 @@ export default function PricingPlans({
               isCurrent={paidSubscriber && subscription.plan === planId}
               isPaidSubscriber={paidSubscriber}
               isCheckoutPaused={isAuthenticated && (isError || subscription.hasPending)}
-              isStarting={startingPlan === planId || isLoading || appleIAP.purchasingProductId === subscriptionSku(planId, period)}
+              isStarting={startingPlan === planId || (isAuthenticated && (isLoading || appleIAP.purchasingProductId === subscriptionSku(planId, period)))}
               onSelect={startCheckout}
               onContinueFree={continueFree}
             />

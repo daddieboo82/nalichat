@@ -184,6 +184,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'PayPal subscription verification mismatch' }, { status: 409 });
     }
 
+    // Individual refunds/reversals do not necessarily cancel the agreement;
+    // those events need separate payment-level review rather than an automatic
+    // subscription cancellation.
+    if (event.event_type === 'PAYMENT.SALE.REFUNDED'
+      || event.event_type === 'PAYMENT.SALE.REVERSED') {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'review_required',
+        processed_at: new Date().toISOString(),
+        last_error: 'Payment reversal needs independent transaction review',
+      });
+      return Response.json({ received: true, requiresReview: true });
+    }
+
     // ── Stale-event protection ──
     const incomingEventTime = event.create_time || new Date().toISOString();
     if (
@@ -205,18 +218,6 @@ Deno.serve(async (req) => {
     // ── Apply status update ──
     // The webhook verifies delivery, but the current PayPal agreement state
     // controls access. A delayed event must not override a newer remote state.
-    // Individual refunds/reversals do not necessarily cancel the agreement;
-    // those events need separate payment-level review rather than an automatic
-    // subscription cancellation.
-    if (event.event_type === 'PAYMENT.SALE.REFUNDED'
-      || event.event_type === 'PAYMENT.SALE.REVERSED') {
-      await entities.PayPalWebhookEvent.update(ledger.id, {
-        processing_state: 'review_required',
-        processed_at: new Date().toISOString(),
-        last_error: 'Payment reversal needs independent transaction review',
-      });
-      return Response.json({ received: true, requiresReview: true });
-    }
     const remoteStatus = String(remoteSubscription?.status || '').toUpperCase();
     const newStatus = remoteStatus === 'ACTIVE' ? 'active'
       : remoteStatus === 'CANCELLED' || remoteStatus === 'EXPIRED' ? 'canceled'

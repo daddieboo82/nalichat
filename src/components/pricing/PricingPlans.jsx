@@ -265,8 +265,9 @@ export default function PricingPlans({
 
     // On iOS native, use Apple In-App Purchase instead of PayPal checkout.
     if (appleIAP.available) {
-      setStartingPlan(planId);
-      appleIAP.purchase(sku);
+      // StoreKit owns its purchase/loading lifecycle. Do not also set the
+      // PayPal-only startingPlan flag: it would stay stuck after cancellation.
+      await appleIAP.purchase(sku);
       return;
     }
 

@@ -38,13 +38,24 @@ export function useAppleIAP() {
         if (!payload || payload.success !== true) {
           throw new Error(payload?.error || "Apple purchase validation failed");
         }
-        refreshSubscription();
-        trackPaywallEvent("purchase_completed", {
-          plan: transactionData.plan,
-          billing_period: transactionData.billingPeriod,
-          provider: "apple",
-          source: "apple_iap",
-        });
+        // Backend entitlement confirmation is the only requirement for
+        // acknowledging the StoreKit receipt. UI refresh and analytics are
+        // best-effort and must not turn a granted purchase into a failure.
+        try {
+          refreshSubscription();
+        } catch (refreshError) {
+          console.warn("Apple IAP: subscription refresh unavailable");
+        }
+        try {
+          trackPaywallEvent("purchase_completed", {
+            plan: transactionData.plan,
+            billing_period: transactionData.billingPeriod,
+            provider: "apple",
+            source: "apple_iap",
+          });
+        } catch (analyticsError) {
+          console.warn("Apple IAP: purchase analytics unavailable");
+        }
         return true;
       } catch (error) {
         console.error("Apple IAP: backend validation failed", error);

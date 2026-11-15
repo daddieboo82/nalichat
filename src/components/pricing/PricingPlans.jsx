@@ -207,19 +207,6 @@ export default function PricingPlans({
   const startCheckout = async (planId) => {
     const sku = subscriptionSku(planId, period);
     if (!sku || startingPlan) return;
-    if (isLoading || isError) {
-      toast.error("We could not verify your current billing status. Try again before starting a subscription.");
-      return;
-    }
-    if (subscription.hasPaidAccess) {
-      toast.error("Your account already has paid access. Manage billing in Settings.");
-      return;
-    }
-    if (subscription.hasPending) {
-      setCheckoutRecoveryNeeded(true);
-      toast.error("An earlier checkout needs review before starting another subscription.");
-      return;
-    }
     trackPaywallEvent("paywall_tier_select", {
       variant,
       plan: planId,
@@ -246,6 +233,22 @@ export default function PricingPlans({
       destination.searchParams.set("plan", planId);
       destination.searchParams.set("billing", period);
       navigate(`/register?returnTo=${encodeURIComponent(destination.pathname + destination.search)}`);
+      return;
+    }
+
+    // Verify billing only when a signed-in customer is about to start
+    // a payment. Anonymous plan selection is not a payment operation.
+    if (isLoading || isError) {
+      toast.error("We could not verify your current billing status. Try again before starting a subscription.");
+      return;
+    }
+    if (subscription.hasPaidAccess) {
+      toast.error("Your account already has paid access. Manage billing in Settings.");
+      return;
+    }
+    if (subscription.hasPending) {
+      setCheckoutRecoveryNeeded(true);
+      toast.error("An earlier checkout needs review before starting another subscription.");
       return;
     }
 

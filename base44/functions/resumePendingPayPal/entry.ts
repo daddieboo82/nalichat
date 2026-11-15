@@ -74,7 +74,18 @@ Deno.serve(async (req: Request) => {
       const response = await fetch(apiBase(environment) + '/v1/billing/subscriptions/' + encodeURIComponent(record.subscription_id), {
         headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
       });
-      if (!response.ok) return Response.json({ error: 'Unable to verify all existing PayPal agreements' }, { status: 503 });
+      if (!response.ok) {
+        // A 404 under this merchant does not prove the agreement was never
+        // billed under another merchant. Give the buyer an actionable status
+        // without silently deleting or restarting a recurring subscription.
+        if (response.status === 404) {
+          return Response.json({
+            error: 'Your earlier PayPal agreement cannot be found in the current billing account. Contact NaliChat support for billing reconciliation before starting another subscription.',
+            code: 'PAYPAL_AGREEMENT_RECONCILIATION_REQUIRED',
+          }, { status: 409 });
+        }
+        return Response.json({ error: 'Unable to verify all existing PayPal agreements' }, { status: 503 });
+      }
       const remote = await response.json();
       if (remote?.id !== record.subscription_id || remote?.plan_id !== planId
         || remote?.custom_id !== user.id + ':' + record.sku) {

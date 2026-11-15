@@ -32,8 +32,10 @@ describe('PayPal subscription integration contracts', () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     const userSchema = JSON.parse(await read('base44/entities/User.jsonc'));
     expect(userSchema.properties.paypal_checkout_claim_id.rls.read).toBe(false);
-    expect(createSource).toContain('users.updateMany({');
-    expect(createSource).toContain('claim?.success === true && claim?.updated === 1');
+    expect(createSource).toContain('await users.update(userId, {');
+    expect(createSource).toContain('await users.get(userId)');
+    expect(createSource).not.toContain('users.updateMany(');
+    expect(createSource).toContain('persisted?.paypal_checkout_claim_id === claimId');
     expect(createSource).toContain("sub.status === 'pending'");
     expect(createSource).toContain("['CANCELLED', 'EXPIRED'].includes(remote?.status)");
     expect(createSource.indexOf('const reserved = await reservePayPalCheckout('))
@@ -62,6 +64,7 @@ describe('PayPal subscription integration contracts', () => {
     expect(createSource).toContain("crypto.subtle.digest('SHA-256', bytes)");
     expect(createSource).toContain('.slice(0, 36)');
     expect(createSource).toContain("'PayPal-Request-Id': await paypalRequestId(user.id, idempotencyKey)");
+    expect(createSource).toContain("userId + ':subscription:' + day");
   });
 
   it('keeps pending PayPal approval recovery available after checkout cancellation', async () => {

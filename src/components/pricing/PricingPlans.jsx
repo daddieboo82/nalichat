@@ -358,7 +358,6 @@ export default function PricingPlans({
   }
 
   const paidSubscriber = subscription.hasPaidAccess;
-  const paidCta = "Choose plan";
 
   return (
     <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background">
@@ -478,7 +477,7 @@ export default function PricingPlans({
               plan={SUBSCRIPTION_CATALOG[planId]}
               period={period}
               badge={period === "monthly" ? (planId === "premium" ? "Best value to get started" : "Maximum power") : copy.badges[planId]}
-              cta={period === "monthly" ? (planId === "premium" ? "Upgrade to Premium" : "Go Premium Plus") : paidCta}
+              cta={!isAuthenticated ? `Sign up for ${SUBSCRIPTION_CATALOG[planId].name}` : appleIAP.available ? "Continue with Apple" : "Continue to PayPal"}
               isCurrent={paidSubscriber && subscription.plan === planId}
               isPaidSubscriber={paidSubscriber}
               isCheckoutPaused={isAuthenticated && (isError || subscription.hasPending)}

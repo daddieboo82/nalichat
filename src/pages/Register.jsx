@@ -31,6 +31,7 @@ export default function Register() {
   const selectedPlan = returnUrl.pathname.toLowerCase() === "/pricing" ? returnUrl.searchParams.get("plan") : null;
   const paidSignup = selectedPlan === "premium" || selectedPlan === "premium_plus";
   const selectedPlanLabel = selectedPlan === "premium_plus" ? "Premium Plus" : "Premium";
+  const signupPlanContext = paidSignup ? { plan: selectedPlan, billing_period: returnUrl.searchParams.get("billing") === "annual" ? "annual" : "monthly" } : {};
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -66,6 +67,7 @@ export default function Register() {
     captureMarketingAttribution();
     const attribution = getMarketingAttribution();
     trackPaywallEvent("registration_view", {
+      ...signupPlanContext,
       source: "register",
       campaign_source: attribution?.utm_source || undefined,
       campaign_medium: attribution?.utm_medium || undefined,
@@ -88,6 +90,7 @@ export default function Register() {
     const attribution = getMarketingAttribution();
     if (!emailStartedTracked) setEmailStartedTracked(true);
     trackPaywallEvent("registration_started", {
+      ...signupPlanContext,
       source: "email",
       campaign_source: attribution?.utm_source || undefined,
       campaign_medium: attribution?.utm_medium || undefined,
@@ -108,6 +111,7 @@ export default function Register() {
       const safeReason = registrationErrorMessage(err);
       const httpStatus = authenticationHttpStatus(err);
       trackPaywallEvent("registration_failed", {
+      ...signupPlanContext,
         source: "email",
         outcome: httpStatus !== null && httpStatus >= 500 ? "register_server_error" : "register_error",
         http_status: httpStatus || undefined,
@@ -141,6 +145,7 @@ export default function Register() {
       markAuthActivity();
       const attribution = getMarketingAttribution();
       trackPaywallEvent("registration_completed", {
+      ...signupPlanContext,
         source: "email_otp",
         campaign_source: attribution?.utm_source || undefined,
         campaign_medium: attribution?.utm_medium || undefined,
@@ -163,6 +168,7 @@ export default function Register() {
             ? "otp_rate_limited"
             : "otp_unknown_error";
       trackPaywallEvent("registration_failed", {
+      ...signupPlanContext,
         source: "email_otp",
         outcome: otpOutcome,
         reason: otpReason,
@@ -196,6 +202,7 @@ export default function Register() {
     } catch (err) {
       const attribution = getMarketingAttribution();
       trackPaywallEvent("registration_failed", {
+      ...signupPlanContext,
         source: "email_otp",
         outcome: "otp_resend_error",
         reason: resendOtpErrorMessage(err),
@@ -218,6 +225,7 @@ export default function Register() {
     try {
       const attribution = getMarketingAttribution();
       trackPaywallEvent("registration_started", {
+      ...signupPlanContext,
         source: "google",
         campaign_source: attribution?.utm_source || undefined,
         campaign_medium: attribution?.utm_medium || undefined,
@@ -238,6 +246,7 @@ export default function Register() {
       const attribution = getMarketingAttribution();
       const msg = googleLoginErrorMessage(err);
       trackPaywallEvent("registration_failed", {
+      ...signupPlanContext,
         source: "google",
         outcome: "oauth_launch_error",
         reason: msg,

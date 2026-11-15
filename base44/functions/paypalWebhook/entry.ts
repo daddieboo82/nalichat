@@ -87,9 +87,11 @@ Deno.serve(async (req) => {
   try {
     event = await req.json();
     if (!event?.id || !event?.event_type) return Response.json({ error: 'Invalid PayPal event' }, { status: 400 });
-    if (!HANDLED.has(event.event_type)) return Response.json({ received: true, ignored: true });
+    // Authenticate every incoming event before acknowledging it, including
+    // event types this handler does not currently process.
     const token = await accessToken();
     if (!(await verify(req, event, token))) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!HANDLED.has(event.event_type)) return Response.json({ received: true, ignored: true });
 
     const base44 = createClientFromRequest(req);
     const entities = base44.asServiceRole.entities;

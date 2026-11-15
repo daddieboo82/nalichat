@@ -285,7 +285,7 @@ export default function PricingPlans({
         ...campaignContext(),
       });
       const checkoutMessage = String(checkoutError?.message || "");
-      if (/pending|already been started|previous PayPal|check billing before retrying|review billing before trying again|duplicate subscriptions|checkout could not be confirmed/i.test(checkoutMessage)) {
+      if (checkoutError?.code === "PAYPAL_CHECKOUT_UNCERTAIN" || /pending|already been started|previous PayPal|check billing before retrying|review billing before trying again|duplicate subscriptions|checkout could not be confirmed/i.test(checkoutMessage)) {
         setCheckoutRecoveryNeeded(true);
       }
       toast.error(checkoutMessage || "Could not start checkout. Please try again.");

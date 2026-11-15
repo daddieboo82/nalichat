@@ -17,7 +17,7 @@
  *  reloads the page.
  */
 
-const CACHE_NAME = 'nalichat-v4';
+const CACHE_NAME = 'nalichat-v5-paypal-checkout';
 
 // App shell — pre-cached on install so the app works offline on first load.
 const APP_SHELL = [

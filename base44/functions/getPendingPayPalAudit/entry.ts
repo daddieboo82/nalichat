@@ -46,13 +46,13 @@ Deno.serve(async (req) => {
     let webhookCheck: Record<string, unknown> = { status: configuredWebhookId ? 'unverified' : 'missing_webhook_id' };
     if (configuredWebhookId) {
       try {
-        const response = await fetch(apiBase(environment) + '/v1/notifications/webhooks', { headers });
+        // Fetch the configured webhook by ID. The list endpoint is paginated
+        // and can falsely report a registered webhook as missing.
+        const response = await fetch(apiBase(environment) + '/v1/notifications/webhooks/' + encodeURIComponent(configuredWebhookId), { headers });
         if (!response.ok) {
-          webhookCheck = { status: 'lookup_failed', httpStatus: response.status };
+          webhookCheck = { status: response.status === 404 ? 'webhook_id_not_registered' : 'lookup_failed', httpStatus: response.status };
         } else {
-          const payload = await response.json();
-          const registered = Array.isArray(payload?.webhooks) ? payload.webhooks : [];
-          const match = registered.find((hook: any) => hook.id === configuredWebhookId);
+          const match = await response.json();
           const requiredEvents = [
             'BILLING.SUBSCRIPTION.CREATED', 'BILLING.SUBSCRIPTION.ACTIVATED', 'BILLING.SUBSCRIPTION.UPDATED',
             'BILLING.SUBSCRIPTION.CANCELLED', 'BILLING.SUBSCRIPTION.SUSPENDED',
@@ -64,11 +64,11 @@ Deno.serve(async (req) => {
           const missingEvents = requiredEvents.filter((name) => !eventNames.has(name) && !eventNames.has('*'));
           const webhookUrl = typeof match?.url === 'string' ? match.url : '';
           webhookCheck = {
-            status: !match ? 'webhook_id_not_registered' : 'registered',
+            status: 'registered',
             enabled: match?.status === 'ENABLED',
             urlIsHttps: webhookUrl.startsWith('https://'),
             urlMatchesExpected: webhookUrl === expectedWebhookUrl,
-            missingEvents: match ? missingEvents : [],
+            missingEvents,
           };
         }
       } catch {

@@ -42,6 +42,21 @@ describe('PayPal subscription integration contracts', () => {
     expect(createSource).not.toContain('atomicCheckoutReservationIsImplemented');
   });
 
+  it('classifies checkout dependency failures without risking duplicate PayPal subscriptions', async () => {
+    const source = await read('base44/functions/createPayPalSubscription/entry.ts');
+    expect(source).toContain("checkoutStage = 'load_subscriptions'");
+    expect(source).toContain("checkoutStage = 'paypal_authentication'");
+    expect(source).toContain("checkoutStage = 'reserve_checkout'");
+    expect(source).toContain("checkoutStage = 'paypal_create_subscription'");
+    expect(source).toContain("checkoutStage = 'persist_pending_subscription'");
+    expect(source).toContain('Array.isArray(allSubsResult)');
+    expect(source).toContain("res.json().catch(() => null)");
+    expect(source).toContain('PAYPAL_CHECKOUT_UNCERTAIN');
+    expect(source).toContain('CHECKOUT_DEPENDENCY_ERROR');
+    expect(source).toContain('status: 503');
+    expect(source).not.toContain('releasePayPalCheckoutClaim(');
+  });
+
   it('uses PayPal-compatible, deterministic request IDs', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("crypto.subtle.digest('SHA-256', bytes)");

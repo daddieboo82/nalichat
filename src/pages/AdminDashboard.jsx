@@ -45,6 +45,9 @@ export default function AdminDashboard() {
   const [paypalAudit, setPaypalAudit] = useState(null);
   const [paypalAuditLoading, setPaypalAuditLoading] = useState(false);
   const [paypalAuditError, setPaypalAuditError] = useState("");
+  const [webhookVerification, setWebhookVerification] = useState(null);
+  const [webhookVerificationLoading, setWebhookVerificationLoading] = useState(false);
+  const [webhookVerificationError, setWebhookVerificationError] = useState("");
 
   const {
     data: stats = EMPTY_STATS,
@@ -149,6 +152,27 @@ export default function AdminDashboard() {
       setPaypalAuditError(error?.response?.data?.error || error?.message || "Could not check PayPal");
     } finally {
       setPaypalAuditLoading(false);
+    }
+  };
+
+  const verifyLivePayPalWebhook = async () => {
+    setWebhookVerificationLoading(true);
+    setWebhookVerificationError("");
+    setWebhookVerification(null);
+    try {
+      const response = await base44.functions.invoke("setupPayPalWebhook", {});
+      const payload = response?.data ?? response;
+      if (payload?.verified !== true) {
+        setWebhookVerification(payload);
+        throw new Error(payload?.error || payload?.message || "PayPal webhook configuration requires correction");
+      }
+      setWebhookVerification(payload);
+    } catch (error) {
+      const details = error?.response?.data;
+      if (details && typeof details === "object") setWebhookVerification(details);
+      setWebhookVerificationError(details?.error || details?.message || error?.message || "Webhook verification failed");
+    } finally {
+      setWebhookVerificationLoading(false);
     }
   };
 
@@ -262,6 +286,24 @@ export default function AdminDashboard() {
             </div>
           </>
         )}
+
+        <div className="bg-card border border-border rounded-xl p-6 mb-8">
+          <h2 className="text-xl font-bold mb-3">Live PayPal webhook verification</h2>
+          <p className="mb-4 text-sm text-muted-foreground">Read-only check against PayPal's live registered webhook URL and subscribed events. Does not charge customers or create another webhook.</p>
+          <Button type="button" variant="outline" onClick={verifyLivePayPalWebhook} disabled={webhookVerificationLoading}>
+            {webhookVerificationLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Verify webhook with PayPal
+          </Button>
+          {webhookVerificationError && <p role="alert" className="mt-3 text-sm text-destructive">{webhookVerificationError}</p>}
+          {webhookVerification && (
+            <div className="mt-3 space-y-1 text-sm" role="status">
+              <p className="font-semibold">{webhookVerification.verified ? "Webhook configuration verified" : "Webhook requires review"}</p>
+              {webhookVerification.urlMatches !== undefined && <p>Destination URL matches: {webhookVerification.urlMatches ? "Yes" : "No"}</p>}
+              {Array.isArray(webhookVerification.missingEvents) && <p>Missing event subscriptions: {webhookVerification.missingEvents.length ? webhookVerification.missingEvents.join(", ") : "None"}</p>}
+              {webhookVerification.paypalStatus && <p>PayPal HTTP status: {webhookVerification.paypalStatus}</p>}
+            </div>
+          )}
+        </div>
 
         <div className="bg-card border border-border rounded-xl p-6 mb-8">
           <h2 className="text-xl font-bold mb-3 flex items-center gap-2">

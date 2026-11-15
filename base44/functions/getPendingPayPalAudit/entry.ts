@@ -82,6 +82,14 @@ Deno.serve(async (req) => {
     );
     const reviewRequiredCount = Math.min(reviewEventsPage.length, 100);
     const hasMoreReviewEvents = reviewEventsPage.length > 100;
+    // Show only the minimal identifiers needed to locate the matching
+    // transaction in PayPal. No user credentials or payment details leave
+    // the administrator-only endpoint.
+    const reviewEvents = reviewEventsPage.slice(0, 100).map((entry: any) => ({
+      eventId: entry.paypal_event_id,
+      eventType: entry.event_type,
+      eventTime: entry.event_time || entry.created_date || null,
+    }));
 
     // Fetch one extra row to detect truncation without making an unbounded
     // number of provider calls. Never report the first page as a full audit.
@@ -135,7 +143,7 @@ Deno.serve(async (req) => {
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
       environment, referenceCheck, planChecks, checked: results.length,
       verifiedCount: results.filter((result) => result.providerStatusVerified === true).length,
-      hasMorePending, reviewRequiredCount, hasMoreReviewEvents, results });
+      hasMorePending, reviewRequiredCount, hasMoreReviewEvents, reviewEvents, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

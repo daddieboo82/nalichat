@@ -91,6 +91,9 @@ Deno.serve(async (req) => {
     // Aggregate historical checkout metadata without exposing customer identities.
     const uniqueAccounts = new Set(pending.map((record: any) => record.user_id).filter(Boolean)).size;
     const missingRequestKeys = pending.filter((record: any) => !record.checkout_request_key).length;
+    // An active local row is a reconciliation warning, not proof of payment.
+    const activeAccountIds = new Set(active.map((record: any) => record.user_id).filter(Boolean));
+    const pendingAccountsWithActiveRecord = new Set(pending.filter((record: any) => activeAccountIds.has(record.user_id)).map((record: any) => record.user_id)).size;
     const oldestAttempt = pending.reduce((oldest: string | null, record: any) => {
       const date = typeof record.created_date === 'string' ? record.created_date : null;
       return date && (!oldest || date < oldest) ? date : oldest;
@@ -129,7 +132,7 @@ Deno.serve(async (req) => {
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
-      environment, referenceCheck, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, oldestAttempt, results });
+      environment, referenceCheck, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, pendingAccountsWithActiveRecord, oldestAttempt, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

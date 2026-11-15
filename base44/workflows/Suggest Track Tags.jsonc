@@ -25,7 +25,11 @@
           "with": {
             "function_name": "suggestTrackTags",
             "args": {
-              "workflow_key": "Vj3uQn8kH1zP5mRt9Cx4Ls7Yw2Fa6De0GbKcNqUvMIs"
+              "workflow_key": "Vj3uQn8kH1zP5mRt9Cx4Ls7Yw2Fa6De0GbKcNqUvMIs",
+              "event": {
+                "type": "${ .trigger.event_type }",
+                "entity_id": "${ .trigger.entity_id }"
+              }
             }
           },
           "then": "end"

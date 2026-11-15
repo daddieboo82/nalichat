@@ -317,6 +317,13 @@ export default function AdminDashboard() {
           {paypalAudit && (
             <div className="mt-4">
               <p className="text-sm font-medium">Checked {paypalAudit.checked} PayPal attempts in {paypalAudit.environment} mode.</p>
+              <div className="mt-2 flex flex-wrap gap-3 text-sm">
+                <span>Awaiting approval: {paypalAudit.results.filter((row) => row.status === "APPROVAL_PENDING").length}</span>
+                <span>Active at PayPal: {paypalAudit.results.filter((row) => row.status === "ACTIVE").length}</span>
+                <span>Ended: {paypalAudit.results.filter((row) => ["CANCELLED", "EXPIRED"].includes(row.status)).length}</span>
+                <span>Needs investigation: {paypalAudit.results.filter((row) => !["APPROVAL_PENDING", "ACTIVE", "CANCELLED", "EXPIRED"].includes(row.status)).length}</span>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">This is a read-only provider audit. Active status alone does not establish that a payment was collected. Do not restart a recurring checkout until its existing PayPal agreement is reconciled.</p>
               {paypalAudit.referenceCheck && <p className="mt-1 text-sm text-muted-foreground">Known active subscription check: {paypalAudit.referenceCheck.status}{paypalAudit.referenceCheck.httpStatus ? ` (HTTP ${paypalAudit.referenceCheck.httpStatus})` : ""}.</p>}
               {paypalAudit.planChecks && <div className="mt-3 text-sm"><p className="font-medium">Live PayPal plans</p><ul className="mt-1 space-y-1">{paypalAudit.planChecks.map((plan) => <li key={plan.sku}>{plan.sku}: {plan.status}{plan.amount && plan.currency ? ` · ${plan.currency} ${plan.amount}/${plan.interval?.toLowerCase() || "cycle"}` : ""}{plan.matchesCatalog === false ? " · price or interval mismatch" : ""}{plan.httpStatus && plan.httpStatus !== 200 ? ` · HTTP ${plan.httpStatus}` : ""}</li>)}</ul></div>}
               <div className="mt-3 overflow-x-auto">

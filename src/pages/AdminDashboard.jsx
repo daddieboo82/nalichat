@@ -329,7 +329,7 @@ export default function AdminDashboard() {
                     <>
                       <p>Enabled: {paypalAudit.webhookCheck.enabled ? "Yes" : "No"}</p>
                       <p>HTTPS destination: {paypalAudit.webhookCheck.urlIsHttps ? "Yes" : "No"}</p>
-                      <p>Targets NaliChat PayPal handler: {paypalAudit.webhookCheck.urlTargetsPayPalWebhook ? "Yes" : "No"}</p>
+                      <p>Matches configured PayPal webhook destination: {paypalAudit.webhookCheck.urlMatchesExpected ? "Yes" : "No"}</p>
                       <p>Required event types missing: {paypalAudit.webhookCheck.missingEvents?.length ?? "Unknown"}</p>
                       {paypalAudit.webhookCheck.missingEvents?.length > 0 && (
                         <p className="text-destructive">Missing: {paypalAudit.webhookCheck.missingEvents.join(", ")}</p>

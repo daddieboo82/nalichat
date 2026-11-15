@@ -53,6 +53,19 @@ describe('PayPal subscription integration contracts', () => {
     );
   });
 
+  it('retries signed payment events that lack an agreement reference instead of discarding them', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    const start = webhook.indexOf("if (!subscriptionId || typeof subscriptionId !== 'string')");
+    const finish = webhook.indexOf("const records = await entities.Subscription.filter", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(finish).toBeGreaterThan(start);
+    const branch = webhook.slice(start, finish);
+    expect(branch).toContain("processing_state: 'failed'");
+    expect(branch).toContain("status: 503");
+    expect(branch).toContain('Missing PayPal subscription reference');
+    expect(branch).not.toContain("processing_state: 'ignored'");
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");
@@ -172,7 +185,7 @@ describe('PayPal subscription integration contracts', () => {
     expect(backend).toContain("'-created_date', 101");
     expect(backend).toContain('const hasMorePending = pendingPage.length > 100');
     expect(backend).toContain('const pending = pendingPage.slice(0, 100)');
-    expect(backend).toContain('providerStatusVerified: typeof remote.status');
+    expect(backend).toContain('providerStatusVerified: knownStatus');
     expect(backend).toContain('verifiedCount: results.filter((result) => result.providerStatusVerified === true).length');
     expect(backend).toContain('hasMorePending, results');
     expect(dashboard).toContain('paypalAudit.hasMorePending');

@@ -45,6 +45,26 @@ Deno.serve(async (req) => {
         remote.custom_id !== user.id + ':' + current.sku || remote.status !== 'ACTIVE') {
       return Response.json({ error: 'PayPal could not verify your existing subscription for upgrade' }, { status: 409 });
     }
+    // PayPal only permits revising an agreement to a compatible, active plan.
+    // Reject invalid merchant plan configuration before sending customers to checkout.
+    const [currentPlanResponse, targetPlanResponse] = await Promise.all([
+      fetch(apiBase() + '/v1/billing/plans/' + encodeURIComponent(current.paypal_plan_id), { headers }),
+      fetch(apiBase() + '/v1/billing/plans/' + encodeURIComponent(targetPlanId), { headers }),
+    ]);
+    const [currentPlan, targetPlan] = await Promise.all([
+      currentPlanResponse.json().catch(() => ({})),
+      targetPlanResponse.json().catch(() => ({})),
+    ]);
+    if (!currentPlanResponse.ok || !targetPlanResponse.ok ||
+        currentPlan.id !== current.paypal_plan_id || targetPlan.id !== targetPlanId ||
+        currentPlan.product_id !== targetPlan.product_id || targetPlan.status !== 'ACTIVE') {
+      console.error('PayPal upgrade plan preflight failed', {
+        currentStatus: currentPlanResponse.status, targetStatus: targetPlanResponse.status,
+        compatibleProduct: Boolean(currentPlan.product_id && currentPlan.product_id === targetPlan.product_id),
+        targetActive: targetPlan.status === 'ACTIVE',
+      });
+      return Response.json({ error: 'The Premium Plus upgrade plan is not available for this PayPal agreement. Your existing subscription remains unchanged.' }, { status: 409 });
+    }
     const revision = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(current.subscription_id) + '/revise', {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },

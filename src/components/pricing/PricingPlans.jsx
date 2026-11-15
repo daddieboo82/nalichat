@@ -208,7 +208,9 @@ export default function PricingPlans({
       trackPaywallEvent("paypal_approval_resume_click", { source: upgradeSource || "pricing" });
       await resumePendingPayPalApproval({ expectedUserId: user?.id });
     } catch (error) {
-      toast.error(error?.message || "We could not resume your earlier PayPal approval. Check billing in Settings.");
+      const message = String(error?.response?.data?.error || error?.data?.error || error?.message || "We could not resume your earlier PayPal approval.");
+      if (/reconciliation|required|not found|could not be verified|review/i.test(message)) setCheckoutRecoveryNeeded(true);
+      toast.error(message + " If the agreement cannot be verified, contact billing support before starting another checkout.");
       setResumingPayPal(false);
     }
   };

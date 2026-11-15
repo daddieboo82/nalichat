@@ -166,6 +166,14 @@ describe('PayPal subscription integration contracts', () => {
     expect(validation).toBeLessThan(update);
   });
 
+  it('verifies the PayPal signature before acknowledging unsupported event types', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    const verification = webhook.indexOf('if (!(await verify(req, event, token)))');
+    const ignored = webhook.indexOf('if (!HANDLED.has(event.event_type))');
+    expect(verification).toBeGreaterThan(-1);
+    expect(ignored).toBeGreaterThan(verification);
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");

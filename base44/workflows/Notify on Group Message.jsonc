@@ -25,7 +25,11 @@
           "with": {
             "function_name": "notifyOnMessage",
             "args": {
-              "workflow_key": "T7Bbfzu8ahvcSa6O3yFK1Y__8JZVjYxjq8KwSqhoaIU"
+              "workflow_key": "T7Bbfzu8ahvcSa6O3yFK1Y__8JZVjYxjq8KwSqhoaIU",
+              "event": {
+                "type": "${ .trigger.event_type }",
+                "entity_id": "${ .trigger.entity_id }"
+              }
             }
           },
           "then": "end"

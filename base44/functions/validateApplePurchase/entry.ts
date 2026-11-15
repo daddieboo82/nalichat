@@ -48,12 +48,12 @@ function validateInput(body: unknown): AppleTransactionInput | null {
   const mapping = PRODUCT_TO_PLAN[productId];
   if (!mapping) return null;
 
-  const plan = isNonEmpty(data.plan) && VALID_PLANS.has(String(data.plan))
-    ? String(data.plan)
-    : mapping.plan;
-  const billingPeriod = isNonEmpty(data.billingPeriod) && VALID_PERIODS.has(String(data.billingPeriod))
-    ? String(data.billingPeriod)
-    : mapping.billingPeriod;
+  // Product identity is authoritative for the tier and billing interval.
+  // Never let a client-provided plan or period override the SKU mapping.
+  if (isNonEmpty(data.plan) && data.plan !== mapping.plan) return null;
+  if (isNonEmpty(data.billingPeriod) && data.billingPeriod !== mapping.billingPeriod) return null;
+  const plan = mapping.plan;
+  const billingPeriod = mapping.billingPeriod;
 
   if (!isNonEmpty(data.transactionId)) return null;
 

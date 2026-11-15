@@ -29,8 +29,8 @@ async function accessToken() {
     },
     body: 'grant_type=client_credentials',
   });
-  const data = await res.json();
-  if (!res.ok || !data.access_token) throw new Error('PayPal authentication failed');
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.access_token) throw new Error('PayPal authentication failed');
   return data.access_token as string;
 }
 
@@ -63,6 +63,7 @@ async function paypalRequestId(userId: string, requestKey: string): Promise<stri
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  let checkoutStage = 'authenticate';
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -80,9 +81,12 @@ Deno.serve(async (req) => {
     if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
 
     // Block duplicate checkout if the user already has active paid access.
-    const allSubs = await base44.asServiceRole.entities.Subscription.filter(
+    checkoutStage = 'load_subscriptions';
+    const allSubsResult = await base44.asServiceRole.entities.Subscription.filter(
       { user_id: user.id }, '-created_date', 100,
     );
+    const allSubs = Array.isArray(allSubsResult) ? allSubsResult : allSubsResult?.data;
+    if (!Array.isArray(allSubs)) throw new Error('Subscription query returned an invalid result');
     if (allSubs.length >= 100) return Response.json({ error: 'Subscription history requires review before starting another checkout' }, { status: 409 });
     const now = new Date().toISOString();
     const alreadyPaid = allSubs.some((sub: any) => {
@@ -98,6 +102,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'This account already has a paid subscription; use the billing portal' }, { status: 409 });
     }
 
+    checkoutStage = 'paypal_authentication';
     const token = await accessToken();
     // Never create a second agreement while any earlier PayPal approval is
     // pending. The separate resumePendingPayPal route handles these customers.
@@ -122,6 +127,7 @@ Deno.serve(async (req) => {
     }
     // Acquire a durable per-account compare-and-set claim immediately before
     // the first PayPal subscription creation request.
+    checkoutStage = 'reserve_checkout';
     const reserved = await reservePayPalCheckout(base44.asServiceRole.entities.User, user.id, idempotencyKey);
     if (!reserved) {
       return Response.json({ error: 'A PayPal checkout has already been started. Check billing before starting another.' }, { status: 409 });
@@ -133,6 +139,7 @@ Deno.serve(async (req) => {
     // payment that lands on a different origin.
     const successUrl = new URL('/ThankYou?subscription=1', APP_BASE_URL).toString();
     const cancelUrl = new URL('/pricing?checkout=paypal_canceled', APP_BASE_URL).toString();
+    checkoutStage = 'paypal_create_subscription';
     const res = await fetch(apiBase() + '/v1/billing/subscriptions', {
       method: 'POST',
       headers: {
@@ -152,7 +159,7 @@ Deno.serve(async (req) => {
         },
       }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
     if (!res.ok) {
       console.error('PayPal subscription creation failed', data);
       return Response.json({ error: 'Unable to create PayPal checkout' }, { status: 502 });
@@ -168,6 +175,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'PayPal approval identity could not be validated; check billing before retrying' }, { status: 502 });
     }
 
+    checkoutStage = 'persist_pending_subscription';
     await base44.asServiceRole.entities.Subscription.create({
       user_id: user.id,
       plan: item.plan,
@@ -191,7 +199,15 @@ Deno.serve(async (req) => {
       subscriptionId: data.id,
     });
   } catch (error) {
-    console.error('PayPal checkout error', error);
-    return Response.json({ error: 'Unable to create PayPal checkout' }, { status: 500 });
+    console.error('PayPal checkout error at stage', checkoutStage, error);
+    // Do not retry an uncertain PayPal creation automatically: the provider
+    // may have created a recurring agreement even when the response was lost.
+    const providerMayHaveCreatedAgreement = checkoutStage === 'paypal_create_subscription' || checkoutStage === 'persist_pending_subscription';
+    return Response.json({
+      error: providerMayHaveCreatedAgreement
+        ? 'PayPal checkout could not be confirmed. Check billing before retrying.'
+        : 'Subscription checkout is temporarily unavailable. Please try again later.',
+      code: providerMayHaveCreatedAgreement ? 'PAYPAL_CHECKOUT_UNCERTAIN' : 'CHECKOUT_DEPENDENCY_ERROR',
+    }, { status: 503 });
   }
 });

@@ -88,6 +88,13 @@ Deno.serve(async (req) => {
       { provider: 'paypal', status: 'pending' }, '-created_date', 100,
     );
     const results = [];
+    // Aggregate historical checkout metadata without exposing customer identities.
+    const uniqueAccounts = new Set(pending.map((record: any) => record.user_id).filter(Boolean)).size;
+    const missingRequestKeys = pending.filter((record: any) => !record.checkout_request_key).length;
+    const oldestAttempt = pending.reduce((oldest: string | null, record: any) => {
+      const date = typeof record.created_date === 'string' ? record.created_date : null;
+      return date && (!oldest || date < oldest) ? date : oldest;
+    }, null);
     for (const record of pending) {
       if (!record.subscription_id || record.paypal_environment !== environment) {
         results.push({ subscriptionId: record.subscription_id || null, plan: record.sku || record.plan, status: 'environment_mismatch' });
@@ -122,7 +129,7 @@ Deno.serve(async (req) => {
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
-      environment, referenceCheck, planChecks, checked: results.length, results });
+      environment, referenceCheck, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, oldestAttempt, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

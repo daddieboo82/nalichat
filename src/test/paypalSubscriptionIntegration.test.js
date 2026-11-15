@@ -174,6 +174,27 @@ describe('PayPal subscription integration contracts', () => {
     expect(ignored).toBeGreaterThan(verification);
   });
 
+  it('resumes only the current user\'s exact existing PayPal approval without creating a subscription', async () => {
+    const endpoint = await read('base44/functions/resumePendingPayPal/entry.ts');
+    const client = await read('src/lib/subscriptionBilling.js');
+    const pricing = await read('src/components/pricing/PricingPlans.jsx');
+    expect(endpoint).toContain("const user = await base44.auth.me().catch(() => null)");
+    expect(endpoint).toContain("{ user_id: user.id }");
+    expect(endpoint).toContain("pending.length !== 1");
+    expect(endpoint).toContain("remote?.custom_id !== user.id + ':' + record.sku");
+    expect(endpoint).toContain("remote.status !== 'APPROVAL_PENDING'");
+    expect(endpoint).toContain("link.rel === 'approve'");
+    expect(endpoint).toContain("url.hostname !== host");
+    expect(endpoint).not.toContain("/v1/billing/subscriptions', {");
+    expect(endpoint).not.toContain("Subscription.create(");
+    expect(endpoint).not.toContain("Subscription.update(");
+    expect(client).toContain('invoke("resumePendingPayPal", {})');
+    expect(client).toContain('action !== "resume_pending_paypal"');
+    expect(pricing).toContain("Continue existing PayPal approval");
+    expect(pricing).toContain("await resumePendingPayPalApproval({ expectedUserId: user?.id })");
+    expect(pricing).toContain("isCheckoutPaused={!appleIAP.available}");
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");

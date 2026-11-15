@@ -330,7 +330,7 @@ export default function PricingPlans({
           <div className="mx-auto mt-6 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-5">{[[MessageSquare,"Messages"],[Music2,"Studio"],[Files,"File sharing"],[Sparkles,"NALI.ai"],[ShieldCheck,"Privacy"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-card/60 px-3 py-2 text-xs font-semibold"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" />{label}</div>)}</div>
         </div>
 
-        {subscription.hasPending && !subscription.hasPaidAccess && !checkoutCanceled && (
+        {subscription.hasPending && !subscription.hasPaidAccess && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-primary/40 bg-primary/5 p-4 text-center" role="status">
             <p>{appleIAP.available ? "An earlier approval is pending. Check your subscription in Settings." : "You already have a pending PayPal checkout. Continue it below rather than starting another."}</p>
             {!appleIAP.available && isAuthenticated && (

@@ -186,6 +186,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Subscription reconciliation required' }, { status: 409 });
     }
     const record = records[0];
+    let verifiedRemote: any = null;
 
     // A sale/refund event identifies a billing agreement, but does not itself
     // prove that the agreement belongs to this user or merchant. Verify the
@@ -203,7 +204,8 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'PayPal subscription verification unavailable' }, { status: 503 });
       }
       const remote = await lookup.json();
-      if (remote?.id !== subscriptionId || remote?.plan_id !== record.paypal_plan_id ||
+      verifiedRemote = remote;
+      if (remote?.id !== subscriptionId || (!remote?.plan_id || ![record.paypal_plan_id, secrets.get('PAYPAL_PREMIUM_PLUS_MONTHLY_PLAN_ID'), secrets.get('PAYPAL_PREMIUM_PLUS_YEARLY_PLAN_ID')].includes(remote.plan_id)) ||
           remote?.custom_id !== record.user_id + ':' + record.sku) {
         await entities.PayPalWebhookEvent.update(ledger.id, {
           processing_state: 'failed',
@@ -241,6 +243,19 @@ Deno.serve(async (req) => {
         paypal_event_time: incomingEventTime,
       };
       if (newStatus === 'canceled') update.cancel_at_period_end = false;
+      // Apply an approved PayPal plan revision only after a signed webhook and
+      // an authoritative provider lookup confirm the changed plan.
+      if (verifiedRemote?.status === 'ACTIVE' && newStatus === 'active' &&
+          verifiedRemote.plan_id !== record.paypal_plan_id) {
+        const plusMonthly = secrets.get('PAYPAL_PREMIUM_PLUS_MONTHLY_PLAN_ID');
+        const plusYearly = secrets.get('PAYPAL_PREMIUM_PLUS_YEARLY_PLAN_ID');
+        if (verifiedRemote.plan_id === plusMonthly || verifiedRemote.plan_id === plusYearly) {
+          update.plan = 'premium_plus';
+          update.billing_period = verifiedRemote.plan_id === plusYearly ? 'annual' : 'monthly';
+          update.sku = verifiedRemote.plan_id === plusYearly ? 'premium_plus_yearly' : 'premium_plus_monthly';
+          update.paypal_plan_id = verifiedRemote.plan_id;
+        }
+      }
 
       // For PAYMENT.SALE.* events, billing_info is on the subscription resource,
       // not the sale resource — fetch it to get next_billing_time.

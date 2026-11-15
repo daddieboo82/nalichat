@@ -211,7 +211,7 @@ Deno.serve(async (req) => {
     if (event.event_type === 'PAYMENT.SALE.REFUNDED'
       || event.event_type === 'PAYMENT.SALE.REVERSED') {
       await entities.PayPalWebhookEvent.update(ledger.id, {
-        processing_state: 'ignored',
+        processing_state: 'review_required',
         processed_at: new Date().toISOString(),
         last_error: 'Payment reversal needs independent transaction review',
       });

@@ -17,7 +17,6 @@ describe('PayPal subscription integration contracts', () => {
       'base44/functions/checkSubscriptionStatus/entry.ts',
       'base44/functions/reconcilePendingPayPal/entry.ts',
       'base44/functions/reconcilePendingPayPal/main.ts',
-      'base44/functions/createPayPalSubscription/entry.ts',
     ];
     for (const file of callers) {
       const source = await read(file);
@@ -29,10 +28,33 @@ describe('PayPal subscription integration contracts', () => {
     expect(statusSource).toContain('update.cancel_at_period_end = false');
   });
 
-  it('handles an already active PayPal subscription without starting a second checkout', async () => {
+  it('reserves a single PayPal agreement per account before provider creation', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
-    expect(createSource).toContain("remoteStatus === 'ACTIVE'");
-    expect(createSource).toContain('This account already has a paid subscription; use the billing portal');
+    const userSchema = JSON.parse(await read('base44/entities/User.jsonc'));
+    expect(userSchema.properties.paypal_checkout_claim_id.rls.read).toBe(false);
+    expect(createSource).toContain('users.updateMany({');
+    expect(createSource).toContain('claim?.success === true && claim?.updated === 1');
+    expect(createSource).toContain("sub.status === 'pending'");
+    expect(createSource).toContain("['CANCELLED', 'EXPIRED'].includes(remote?.status)");
+    expect(createSource.indexOf('const reserved = await reservePayPalCheckout('))
+      .toBeLessThan(createSource.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions', {"));
+    expect(createSource).toContain('checkout_request_key: idempotencyKey');
+    expect(createSource).not.toContain('atomicCheckoutReservationIsImplemented');
+  });
+
+  it('uses PayPal-compatible, deterministic request IDs', async () => {
+    const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
+    expect(createSource).toContain("crypto.subtle.digest('SHA-256', bytes)");
+    expect(createSource).toContain('.slice(0, 36)');
+    expect(createSource).toContain("'PayPal-Request-Id': await paypalRequestId(user.id, idempotencyKey)");
+  });
+
+  it('keeps pending PayPal approval recovery available after checkout cancellation', async () => {
+    const ui = await read('src/components/pricing/PricingPlans.jsx');
+    expect(ui).toContain('{subscription.hasPending && !subscription.hasPaidAccess && (');
+    expect(ui).not.toContain('!checkoutCanceled && (');
+    expect(ui).toContain('Continue existing PayPal approval');
+    expect(ui).toContain('isCheckoutPaused={false}');
   });
 
   it('returns PayPal buyers to the canonical domain instead of the request host', async () => {

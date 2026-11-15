@@ -64,20 +64,18 @@ function state(type: string, resource: any) {
   return null;
 }
 
-// For PAYMENT.SALE.* events the billing_info lives on the subscription resource,
-// not the sale resource. Fetch the subscription to get next_billing_time.
-async function fetchSubscriptionBillingInfo(token: string, subscriptionId: string): Promise<{ nextBillingTime: string | null } | null> {
-  try {
-    const response = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId), {
-      headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
-    });
-    if (!response.ok) return null;
-    const remote = await response.json();
-    const nextBilling = remote?.billing_info?.next_billing_time;
-    return { nextBillingTime: typeof nextBilling === 'string' ? nextBilling : null };
-  } catch {
-    return null;
-  }
+// Read the canonical subscription identity after verifying the webhook signature.
+// Webhook resource IDs and statuses alone are not sufficient access evidence.
+async function fetchVerifiedSubscription(token: string, subscriptionId: string, record: any): Promise<any | null> {
+  if (!record?.paypal_plan_id || record?.paypal_environment !==
+    (secrets.get('PAYPAL_ENVIRONMENT') || 'live').trim().toLowerCase()) return null;
+  const response = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId), {
+    headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error('PayPal subscription verification lookup failed');
+  const remote = await response.json();
+  if (remote?.id !== subscriptionId || remote?.plan_id !== record.paypal_plan_id) return null;
+  return remote;
 }
 
 Deno.serve(async (req) => {
@@ -184,6 +182,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Subscription reconciliation required' }, { status: 409 });
     }
     const record = records[0];
+    const remoteSubscription = await fetchVerifiedSubscription(token, subscriptionId, record);
+    if (!remoteSubscription) {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'PayPal subscription identity or environment mismatch',
+      });
+      return Response.json({ error: 'PayPal subscription verification mismatch' }, { status: 409 });
+    }
 
     // ── Stale-event protection ──
     const incomingEventTime = event.create_time || new Date().toISOString();
@@ -213,17 +220,12 @@ Deno.serve(async (req) => {
       };
       if (newStatus === 'canceled') update.cancel_at_period_end = false;
 
-      // For PAYMENT.SALE.* events, billing_info is on the subscription resource,
-      // not the sale resource — fetch it to get next_billing_time.
-      if (event.event_type.startsWith('PAYMENT.')) {
-        const billingInfo = await fetchSubscriptionBillingInfo(token, subscriptionId);
-        const periodEnd = paypalPeriodEndForStatus(newStatus, billingInfo?.nextBillingTime);
-        if (periodEnd !== undefined) update.current_period_end = periodEnd;
-      } else {
-        const end = event.resource?.billing_info?.next_billing_time || event.resource?.billing_info?.final_payment_time;
-        const periodEnd = paypalPeriodEndForStatus(newStatus, end);
-        if (periodEnd !== undefined) update.current_period_end = periodEnd;
-      }
+      // Use billing timestamps from the independently verified agreement,
+      // never from an unbound payment-sale payload.
+      const end = remoteSubscription?.billing_info?.next_billing_time
+        || remoteSubscription?.billing_info?.final_payment_time;
+      const periodEnd = paypalPeriodEndForStatus(newStatus, end);
+      if (periodEnd !== undefined) update.current_period_end = periodEnd;
 
       await entities.Subscription.update(record.id, update);
     }

@@ -317,6 +317,12 @@ Respond as JSON: {
     }
   } catch (error) {
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
+    if (/limit of integrations for this month/i.test(String((error as any)?.message || error || ''))) {
+      return Response.json(
+        { error: 'AI generation is temporarily unavailable because the provider integration quota is exhausted.', code: 'INTEGRATION_QUOTA_EXHAUSTED' },
+        { status: 503 },
+      );
+    }
     if (error instanceof Error && error.message === 'VOICE_TRANSCRIPTION_FAILED') {
       return Response.json({ error: 'Could not transcribe the voice note. Try a text message instead.' }, { status: 400 });
     }

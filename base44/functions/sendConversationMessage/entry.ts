@@ -71,6 +71,17 @@ async function resolveStoredFileSize(url: string): Promise<number | null> {
 }
 
 async function moderateText(base44: any, user: any, text: string, conversationId: string, clientMessageKey = '') {
+  // A temporary quota failure must not turn every ordinary message into HTTP 500.
+  // This conservative offline screen blocks obvious high-risk content while
+  // preserving normal chat. Other moderation layers remain in place.
+  const quotaFallback = () => {
+    const highRisk = /\\b(?:kill you|murder you|rape you|shoot you|bomb (?:the|a)|sell (?:cocaine|heroin)|child pornography)\\b/i;
+    return highRisk.test(text)
+      ? { flagged: true, category: 'violence', severity: 'high', explanation: 'Message requires moderation review' }
+      : { flagged: false, category: 'none', severity: 'low', explanation: '' };
+  };
+  let result: any;
+  try {
   const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
     prompt: `You are a strict content moderation system for a music collaboration platform. Analyze the user message delimited by XML tags below and determine if it violates community policy.
 
@@ -101,6 +112,13 @@ ${text}
       required: ['flagged'],
     },
   });
+
+  } catch (error) {
+    const detail = String((error as any)?.message || error || '');
+    if (!/limit of integrations for this month/i.test(detail)) throw error;
+    console.warn('AI moderation quota exhausted; applying local safety screen');
+    result = quotaFallback();
+  }
 
   if (!result?.flagged || result.category === 'none') return null;
 

@@ -94,11 +94,14 @@ export async function initializeAppleIAP(onVerified) {
       store.when().verified(async (receipt) => {
         try {
           const transaction = receipt.lastTransaction();
-          if (transaction && verifiedCallback) {
-            const data = normalizeTransaction(transaction);
-            if (data) await verifiedCallback(data);
-          }
-          await receipt.finish();
+          if (!transaction || !verifiedCallback) return;
+          const data = normalizeTransaction(transaction);
+          if (!data) return;
+          // Finish only after the server confirms entitlement validation.
+          // An unsuccessful callback leaves the transaction available for
+          // StoreKit recovery rather than acknowledging an unpaid entitlement.
+          const granted = await verifiedCallback(data);
+          if (granted === true) await receipt.finish();
         } catch (error) {
           console.error("Apple IAP: receipt fulfillment failed", error);
         }

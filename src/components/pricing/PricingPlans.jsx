@@ -25,6 +25,7 @@ import {
   CHECKOUT_ATTRIBUTION_KEY,
   createCheckoutRequestKey,
   startSubscriptionCheckout,
+  resumePendingPayPalApproval,
 } from "@/lib/subscriptionBilling";
 import { useAppleIAP } from "@/hooks/useAppleIAP";
 
@@ -106,6 +107,7 @@ export default function PricingPlans({
   const appleIAP = useAppleIAP();
   const [period, setPeriod] = useState("monthly");
   const [startingPlan, setStartingPlan] = useState(null);
+  const [resumingPayPal, setResumingPayPal] = useState(false);
   const [checkoutCanceled, setCheckoutCanceled] = useState(false);
   const requestKeys = useRef(new Map());
   const variant = useMemo(
@@ -182,6 +184,22 @@ export default function PricingPlans({
       source: "pricing",
       ...campaignContext(),
     });
+  };
+
+  const resumePayPal = async () => {
+    if (!isAuthenticated) {
+      navigate(`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`);
+      return;
+    }
+    if (resumingPayPal || subscription.hasPaidAccess) return;
+    setResumingPayPal(true);
+    try {
+      trackPaywallEvent("paypal_approval_resume_click", { source: upgradeSource || "pricing" });
+      await resumePendingPayPalApproval({ expectedUserId: user?.id });
+    } catch (error) {
+      toast.error(error?.message || "We could not resume your earlier PayPal approval. Check billing in Settings.");
+      setResumingPayPal(false);
+    }
   };
 
   const startCheckout = async (planId) => {
@@ -326,7 +344,14 @@ export default function PricingPlans({
 
         {subscription.hasPending && !subscription.hasPaidAccess && !checkoutCanceled && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-primary/40 bg-primary/5 p-4 text-center" role="status">
-            {appleIAP.available ? "An earlier PayPal approval is still pending. You can check its status in Settings." : "A previous PayPal checkout is pending. New PayPal checkout attempts are paused while billing safety is verified. Check your subscription status in Settings."}
+            <p>{appleIAP.available ? "An earlier approval is pending. Check your subscription in Settings." : "You may be able to finish an earlier PayPal approval without starting a new subscription."}</p>
+            {!appleIAP.available && isAuthenticated && (
+              <Button className="mt-3 min-h-11" onClick={resumePayPal} disabled={resumingPayPal}>
+                {resumingPayPal && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+                Continue existing PayPal approval
+              </Button>
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">Your account and existing PayPal agreement are checked before any PayPal redirect. This does not start a new subscription.</p>
           </div>
         )}
 

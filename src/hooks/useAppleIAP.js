@@ -48,6 +48,10 @@ export function useAppleIAP() {
       } catch (error) {
         console.error("Apple IAP: backend validation failed", error);
         toast.error("Purchase verified but entitlement could not be granted. Tap Restore Purchases to retry.");
+      } finally {
+        // The StoreKit callback completed; do not leave the purchase CTA
+        // permanently disabled while entitlement refreshes or needs repair.
+        setPurchasingProductId(null);
       }
     },
     [refreshSubscription],
@@ -92,12 +96,10 @@ export function useAppleIAP() {
     setRestoring(true);
     try {
       await restoreApplePurchases();
-      // Restored transactions arrive via the verified listener. Give the
-      // store a brief moment to deliver them before showing feedback.
-      setTimeout(() => {
-        refreshSubscription();
-        toast.success("Purchases restored. Your subscription has been verified.");
-      }, 1500);
+      // StoreKit restore requests may complete before backend validation.
+      // Refresh entitlement state, but never claim verified paid access here.
+      refreshSubscription();
+      toast.info("Restore requested. We are checking your purchases; paid access appears after verification.");
     } catch (error) {
       console.error("Apple IAP restore error", error);
       toast.error("Could not restore purchases. Please try again later.");

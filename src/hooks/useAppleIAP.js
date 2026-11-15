@@ -45,9 +45,11 @@ export function useAppleIAP() {
           provider: "apple",
           source: "apple_iap",
         });
+        return true;
       } catch (error) {
         console.error("Apple IAP: backend validation failed", error);
         toast.error("Purchase verified but entitlement could not be granted. Tap Restore Purchases to retry.");
+        return false;
       } finally {
         // The StoreKit callback completed; do not leave the purchase CTA
         // permanently disabled while entitlement refreshes or needs repair.

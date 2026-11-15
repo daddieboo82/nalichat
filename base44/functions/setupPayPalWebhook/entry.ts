@@ -67,17 +67,16 @@ Deno.serve(async (req) => {
         message: urlMatches && missingEvents.length === 0 ? 'PayPal webhook configuration verified' : 'PayPal webhook configuration requires correction',
       }, { status: urlMatches && missingEvents.length === 0 ? 200 : 409 });
     }
-    const r = await fetch(apiBase() + '/v1/notifications/webhooks', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: webhookUrl, event_types: EVENTS.map((name) => ({ name })) }),
-    });
-    const data = await r.json();
-    if (!r.ok || !data.id) {
-      console.error('PayPal webhook registration failed', data);
-      return Response.json({ error: 'Unable to register PayPal webhook', details: data }, { status: 502 });
-    }
-    return Response.json({ success: true, webhookId: data.id, webhookUrl, eventTypes: EVENTS });
+    // Never create an untracked live webhook: this function cannot persist
+    // PAYPAL_WEBHOOK_ID into the runtime secret store. A newly created webhook
+    // without its ID would be impossible for the signature verifier to use.
+    return Response.json({
+      success: false,
+      verified: false,
+      error: 'PAYPAL_WEBHOOK_ID is missing. Configure the existing live PayPal webhook ID before verification.',
+      expectedWebhookUrl: webhookUrl,
+      requiredEvents: EVENTS,
+    }, { status: 409 });
   } catch (error) {
     console.error('PayPal webhook setup failed', error);
     return Response.json({ error: error instanceof Error ? error.message : 'PayPal webhook setup failed' }, { status: 500 });

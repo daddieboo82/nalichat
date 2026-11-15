@@ -40,6 +40,9 @@ Deno.serve(async (req) => {
     // Read-only merchant-side webhook registration check. Never return secrets or
     // full webhook URLs; report only whether this app's configured ID exists.
     const configuredWebhookId = secrets.get('PAYPAL_WEBHOOK_ID');
+    const appId = secrets.get('BASE44_APP_ID') || '6a1f5ee134147461560c2b37';
+    const expectedWebhookUrl = secrets.get('PAYPAL_WEBHOOK_URL') ||
+      `https://base44-dispatcher-production.base44.workers.dev/api/apps/${appId}/functions/paypalWebhook`;
     let webhookCheck: Record<string, unknown> = { status: configuredWebhookId ? 'unverified' : 'missing_webhook_id' };
     if (configuredWebhookId) {
       try {
@@ -51,7 +54,7 @@ Deno.serve(async (req) => {
           const registered = Array.isArray(payload?.webhooks) ? payload.webhooks : [];
           const match = registered.find((hook: any) => hook.id === configuredWebhookId);
           const requiredEvents = [
-            'BILLING.SUBSCRIPTION.ACTIVATED', 'BILLING.SUBSCRIPTION.UPDATED',
+            'BILLING.SUBSCRIPTION.CREATED', 'BILLING.SUBSCRIPTION.ACTIVATED', 'BILLING.SUBSCRIPTION.UPDATED',
             'BILLING.SUBSCRIPTION.CANCELLED', 'BILLING.SUBSCRIPTION.SUSPENDED',
             'BILLING.SUBSCRIPTION.EXPIRED', 'PAYMENT.SALE.COMPLETED',
             'BILLING.SUBSCRIPTION.PAYMENT.FAILED', 'PAYMENT.SALE.REFUNDED',
@@ -64,7 +67,7 @@ Deno.serve(async (req) => {
             status: !match ? 'webhook_id_not_registered' : 'registered',
             enabled: match?.status === 'ENABLED',
             urlIsHttps: webhookUrl.startsWith('https://'),
-            urlTargetsPayPalWebhook: webhookUrl.includes('/functions/paypalWebhook'),
+            urlMatchesExpected: webhookUrl === expectedWebhookUrl,
             missingEvents: match ? missingEvents : [],
           };
         }

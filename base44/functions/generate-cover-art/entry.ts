@@ -156,6 +156,12 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
     return Response.json({ ...result, quota });
   } catch (error) {
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
+    if (/limit of integrations for this month/i.test(String((error as any)?.message || error || ''))) {
+      return Response.json(
+        { error: 'AI generation is temporarily unavailable because the provider integration quota is exhausted.', code: 'INTEGRATION_QUOTA_EXHAUSTED' },
+        { status: 503 },
+      );
+    }
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('generate-cover-art error:', error);

@@ -139,13 +139,16 @@ Deno.serve(async (req) => {
     if (event.event_type.startsWith('PAYMENT.') && event.resource?.billing_agreement_id) {
       subscriptionId = event.resource.billing_agreement_id;
     }
-    if (!subscriptionId) {
+    if (!subscriptionId || typeof subscriptionId !== 'string') {
+      // A handled, verified payment event without an agreement reference
+      // cannot be matched to a customer. Preserve failure and ask PayPal to
+      // retry rather than permanently acknowledging an unprocessed payment.
       await entities.PayPalWebhookEvent.update(ledger.id, {
-        processing_state: 'ignored',
+        processing_state: 'failed',
         processed_at: new Date().toISOString(),
-        last_error: '',
+        last_error: 'Missing PayPal subscription reference; manual investigation required',
       });
-      return Response.json({ received: true, ignored: true });
+      return Response.json({ error: 'Missing PayPal subscription reference' }, { status: 503 });
     }
 
     const records = await entities.Subscription.filter({ provider: 'paypal', subscription_id: subscriptionId }, '-created_date', 2);

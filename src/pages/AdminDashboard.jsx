@@ -321,6 +321,25 @@ export default function AdminDashboard() {
           {paypalAudit && (
             <div className="mt-4">
               <p className="text-sm font-medium">Checked {paypalAudit.checked} PayPal attempts in {paypalAudit.environment} mode.</p>
+              {paypalAudit.webhookCheck && (
+                <div className="mt-3 rounded-lg border border-border p-3 text-sm" role="status">
+                  <p className="font-semibold">Live PayPal webhook registration</p>
+                  <p className="mt-1">Merchant lookup: {paypalAudit.webhookCheck.status}</p>
+                  {paypalAudit.webhookCheck.status === "registered" && (
+                    <>
+                      <p>Enabled: {paypalAudit.webhookCheck.enabled ? "Yes" : "No"}</p>
+                      <p>HTTPS destination: {paypalAudit.webhookCheck.urlIsHttps ? "Yes" : "No"}</p>
+                      <p>Targets NaliChat PayPal handler: {paypalAudit.webhookCheck.urlTargetsPayPalWebhook ? "Yes" : "No"}</p>
+                      <p>Required event types missing: {paypalAudit.webhookCheck.missingEvents?.length ?? "Unknown"}</p>
+                      {paypalAudit.webhookCheck.missingEvents?.length > 0 && (
+                        <p className="text-destructive">Missing: {paypalAudit.webhookCheck.missingEvents.join(", ")}</p>
+                      )}
+                    </>
+                  )}
+                  <p className="mt-1 text-xs text-muted-foreground">Registration alone does not prove webhook delivery or a settled payment.</p>
+                </div>
+              )}
+
               <div className="mt-2 flex flex-wrap gap-3 text-sm">
                 <span>Awaiting approval: {paypalAudit.results.filter((row) => row.status === "APPROVAL_PENDING").length}</span>
                 <span>Active at PayPal: {paypalAudit.results.filter((row) => row.status === "ACTIVE").length}</span>

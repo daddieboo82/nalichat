@@ -206,6 +206,19 @@ export default function PricingPlans({
   const startCheckout = async (planId) => {
     const sku = subscriptionSku(planId, period);
     if (!sku || startingPlan) return;
+    if (isLoading || isError) {
+      toast.error("We could not verify your current billing status. Try again before starting a subscription.");
+      return;
+    }
+    if (subscription.hasPaidAccess) {
+      toast.error("Your account already has paid access. Manage billing in Settings.");
+      return;
+    }
+    if (subscription.hasPending) {
+      setCheckoutRecoveryNeeded(true);
+      toast.error("An earlier checkout needs review before starting another subscription.");
+      return;
+    }
     trackPaywallEvent("paywall_tier_select", {
       variant,
       plan: planId,
@@ -420,7 +433,7 @@ export default function PricingPlans({
               isCurrent={paidSubscriber && subscription.plan === planId}
               isPaidSubscriber={paidSubscriber}
               isCheckoutPaused={false}
-              isStarting={startingPlan === planId || isLoading || appleIAP.purchasingProductId === subscriptionSku(planId, period)}
+              isStarting={startingPlan === planId || isLoading || isError || subscription.hasPending || appleIAP.purchasingProductId === subscriptionSku(planId, period)}
               onSelect={startCheckout}
               onContinueFree={continueFree}
             />

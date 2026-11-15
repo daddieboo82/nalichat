@@ -392,7 +392,7 @@ export default function PricingPlans({
 
         {subscription.hasPending && !subscription.hasPaidAccess && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-primary/40 bg-primary/5 p-4 text-center" role="status">
-            <p>{appleIAP.available ? "An earlier approval is pending. Check your subscription in Settings." : "You already have a pending PayPal checkout. Continue it below rather than starting another."}</p>
+            <p>{appleIAP.available ? "An earlier approval is pending. Check your subscription in Settings." : "Your account has an unresolved PayPal checkout record. We must verify the earlier agreement before starting another subscription."}</p>
             {!appleIAP.available && isAuthenticated && (
               <>
               <Button className="mt-3 min-h-11" onClick={resumePayPal} disabled={resumingPayPal}>
@@ -402,7 +402,7 @@ export default function PricingPlans({
               <Button variant="outline" className="mt-3 ml-2 min-h-11" onClick={() => navigate("/settings")}>Review billing in Settings</Button>
               </>
             )}
-            <p className="mt-2 text-xs text-muted-foreground">Your account and existing PayPal agreement are checked before any PayPal redirect. This does not start a new subscription.</p>
+            <p className="mt-2 text-xs text-muted-foreground">Continue approval only if PayPal still recognizes the earlier agreement. If it cannot be verified, no redirect or new subscription will be started. Contact billing support for reconciliation.</p>
             <p className="mt-3 text-sm text-muted-foreground">If PayPal cannot find your previous agreement, <a className="font-semibold underline underline-offset-2" href="mailto:nalichat@nalichat.org?subject=NaliChat%20PayPal%20subscription%20review">contact billing support</a> so we can reconcile it without risking a duplicate charge.</p>
           </div>
         )}

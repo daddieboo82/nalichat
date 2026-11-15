@@ -284,8 +284,12 @@ export default function PricingPlans({
         checkout_sku: sku,
         ...campaignContext(),
       });
-      const checkoutMessage = String(checkoutError?.message || "");
-      if (checkoutError?.code === "PAYPAL_CHECKOUT_UNCERTAIN" || /pending|already been started|previous PayPal|check billing before retrying|review billing before trying again|duplicate subscriptions|checkout could not be confirmed/i.test(checkoutMessage)) {
+      // The SDK may reject non-2xx responses before responsePayload can read
+      // the structured code. Recover it from the transport response too.
+      const providerError = checkoutError?.response?.data || checkoutError?.data || {};
+      const checkoutMessage = String(providerError?.error || checkoutError?.message || "");
+      const checkoutCode = providerError?.code || checkoutError?.code;
+      if (checkoutCode === "PAYPAL_CHECKOUT_UNCERTAIN" || /pending|already been started|previous PayPal|check billing before retrying|review billing before trying again|duplicate subscriptions|checkout could not be confirmed/i.test(checkoutMessage)) {
         setCheckoutRecoveryNeeded(true);
       }
       toast.error(checkoutMessage || "Could not start checkout. Please try again.");

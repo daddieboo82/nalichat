@@ -250,10 +250,8 @@ Deno.serve(async (req) => {
         const plusMonthly = secrets.get('PAYPAL_PREMIUM_PLUS_MONTHLY_PLAN_ID');
         const plusYearly = secrets.get('PAYPAL_PREMIUM_PLUS_YEARLY_PLAN_ID');
         if (verifiedRemote.plan_id === plusMonthly || verifiedRemote.plan_id === plusYearly) {
-          update.paypal_original_sku = record.paypal_original_sku || record.sku;
           update.plan = 'premium_plus';
           update.billing_period = verifiedRemote.plan_id === plusYearly ? 'annual' : 'monthly';
-          update.sku = verifiedRemote.plan_id === plusYearly ? 'premium_plus_yearly' : 'premium_plus_monthly';
           update.paypal_plan_id = verifiedRemote.plan_id;
         }
       }

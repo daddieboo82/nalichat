@@ -339,7 +339,7 @@ export default function AdminDashboard() {
                   ))}</tbody>
                 </table>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">PayPal HTTP 404 means the ID is unavailable to this live merchant account. The customer must complete a new checkout before payment can be collected. A status lookup alone is not proof of payment.</p>
+              <p className="mt-3 text-xs text-muted-foreground">PayPal HTTP 404 means this merchant account could not retrieve the agreement. It does not authorize a new checkout: reconcile the existing claim and provider history first. A status lookup alone is not proof of payment.</p>
             </div>
           )}
         </div>

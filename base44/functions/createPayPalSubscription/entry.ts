@@ -161,8 +161,13 @@ Deno.serve(async (req) => {
     });
     const data = await res.json().catch(() => null);
     if (!res.ok) {
-      console.error('PayPal subscription creation failed', data);
-      return Response.json({ error: 'Unable to create PayPal checkout' }, { status: 502 });
+      // A failed provider response does not prove that no agreement was created.
+      // Keep the account claim and direct the customer to billing review.
+      console.error('PayPal subscription creation failed', { status: res.status, issue: data?.name || 'provider_error' });
+      return Response.json({
+        error: 'PayPal could not confirm this checkout. Review billing before trying again to avoid duplicate subscriptions.',
+        code: 'PAYPAL_CHECKOUT_UNCERTAIN',
+      }, { status: 503 });
     }
     const approval = Array.isArray(data.links) ? data.links.find((x: any) => x.rel === 'approve')?.href : '';
     let verifiedApproval: URL;

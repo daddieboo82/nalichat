@@ -342,6 +342,14 @@ export default function AdminDashboard() {
               </div>
               {Array.isArray(paypalAudit.activeChecks) && <p className="mt-2 text-sm text-muted-foreground">Active PayPal records verified: {paypalAudit.activeChecks.filter((item) => item.status === "ACTIVE" && item.identityMatches).length} / {paypalAudit.activeChecks.length} · Active records not found at merchant: {paypalAudit.activeChecks.filter((item) => item.status === "not_found").length}. A local active record alone does not prove a payment.</p>}
               <p className="mt-2 text-sm text-muted-foreground">Affected accounts: {paypalAudit.uniqueAccounts ?? "unknown"} · Accounts also holding active PayPal records: {paypalAudit.pendingAccountsWithActiveRecord ?? "unknown"} · Attempts missing checkout request keys: {paypalAudit.missingRequestKeys ?? "unknown"}{paypalAudit.oldestAttempt ? ` · Oldest attempt: ${String(paypalAudit.oldestAttempt).slice(0, 10)}` : ""}</p>
+              {paypalAudit.results.some((row) => row.status === "not_found" && row.subscriptionId) && (
+                <Button type="button" variant="outline" className="mt-3 min-h-11" onClick={() => {
+                  const ids = [...new Set(paypalAudit.results.filter((row) => row.status === "not_found" && row.subscriptionId).map((row) => row.subscriptionId))];
+                  navigator.clipboard.writeText("NaliChat PayPal merchant reconciliation — live subscription IDs (HTTP 404):\\n" + ids.join("\\n")).catch(() => {});
+                }}>
+                  Copy unresolved PayPal agreement IDs for merchant support
+                </Button>
+              )}
               <p className="mt-2 text-xs text-muted-foreground">This is a read-only provider audit. Active status alone does not establish that a payment was collected. Do not restart a recurring checkout until its existing PayPal agreement is reconciled.</p>
               {paypalAudit.referenceCheck && <p className="mt-1 text-sm text-muted-foreground">Known active subscription check: {paypalAudit.referenceCheck.status}{paypalAudit.referenceCheck.httpStatus ? ` (HTTP ${paypalAudit.referenceCheck.httpStatus})` : ""}.</p>}
               {paypalAudit.planChecks && <div className="mt-3 text-sm"><p className="font-medium">Live PayPal plans</p><ul className="mt-1 space-y-1">{paypalAudit.planChecks.map((plan) => <li key={plan.sku}>{plan.sku}: {plan.status}{plan.amount && plan.currency ? ` · ${plan.currency} ${plan.amount}/${plan.interval?.toLowerCase() || "cycle"}` : ""}{plan.matchesCatalog === false ? " · price or interval mismatch" : ""}{plan.httpStatus && plan.httpStatus !== 200 ? ` · HTTP ${plan.httpStatus}` : ""}</li>)}</ul></div>}

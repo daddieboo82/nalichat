@@ -58,43 +58,61 @@ Deno.serve(async (req: Request) => {
     }
     const pending = subscriptions.filter((row: any) => row.provider === 'paypal' && row.status === 'pending');
     if (pending.length === 0) return Response.json({ error: 'No existing PayPal approval to continue' }, { status: 404 });
-    if (pending.length !== 1) {
-      return Response.json({ error: 'Multiple pending PayPal approvals require review before continuing' }, { status: 409 });
-    }
-    const record = pending[0];
-    const planSecret = CATALOG[record.sku];
+    // Never create new agreements here. For accounts with multiple old
+    // pending records, inspect every one before offering a single resume.
+    // Any provider error or ambiguous identity blocks the redirect.
     const environment = paypalEnvironment();
-    const planId = planSecret ? secrets.get(planSecret) : null;
-    if (!planId || !record.subscription_id || record.paypal_plan_id !== planId
-      || record.paypal_environment !== environment) {
-      return Response.json({ error: 'Existing PayPal approval needs account review' }, { status: 409 });
-    }
     const token = await accessToken(environment);
-    const response = await fetch(apiBase(environment) + '/v1/billing/subscriptions/' + encodeURIComponent(record.subscription_id), {
-      headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
-    });
-    if (!response.ok) return Response.json({ error: 'Unable to confirm existing PayPal approval' }, { status: 503 });
-    const remote = await response.json();
-    if (remote?.id !== record.subscription_id || remote?.plan_id !== planId
-      || remote?.custom_id !== user.id + ':' + record.sku) {
-      return Response.json({ error: 'PayPal approval identity mismatch' }, { status: 409 });
+    const resumable: Array<{ record: any; approval: URL }> = [];
+    for (const record of pending) {
+      const planSecret = CATALOG[record.sku];
+      const planId = planSecret ? secrets.get(planSecret) : null;
+      if (!planId || !record.subscription_id || record.paypal_plan_id !== planId
+        || record.paypal_environment !== environment) {
+        return Response.json({ error: 'Existing PayPal agreements need account review' }, { status: 409 });
+      }
+      const response = await fetch(apiBase(environment) + '/v1/billing/subscriptions/' + encodeURIComponent(record.subscription_id), {
+        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+      });
+      if (!response.ok) return Response.json({ error: 'Unable to verify all existing PayPal agreements' }, { status: 503 });
+      const remote = await response.json();
+      if (remote?.id !== record.subscription_id || remote?.plan_id !== planId
+        || remote?.custom_id !== user.id + ':' + record.sku) {
+        return Response.json({ error: 'PayPal agreement identity mismatch' }, { status: 409 });
+      }
+      if (remote.status === 'ACTIVE' || remote.status === 'APPROVED') {
+        return Response.json({ error: 'A PayPal agreement may already be approved. Review billing in Settings.' }, { status: 409 });
+      }
+      if (remote.status === 'CANCELLED' || remote.status === 'EXPIRED' || remote.status === 'SUSPENDED') {
+        continue;
+      }
+      if (remote.status !== 'APPROVAL_PENDING') {
+        return Response.json({ error: 'PayPal agreement state requires review' }, { status: 409 });
+      }
+      // Only use the freshly fetched provider approval URL, never a stored one.
+      const approval = Array.isArray(remote.links)
+        ? remote.links.find((link: any) => link.rel === 'approve')?.href : null;
+      let url: URL;
+      try { url = new URL(approval); } catch {
+        return Response.json({ error: 'PayPal approval link is unavailable' }, { status: 503 });
+      }
+      const host = environment === 'sandbox' ? 'www.sandbox.paypal.com' : 'www.paypal.com';
+      if (url.protocol !== 'https:' || url.hostname !== host) {
+        return Response.json({ error: 'PayPal approval link failed validation' }, { status: 503 });
+      }
+      resumable.push({ record, approval: url });
     }
-    if (remote.status !== 'APPROVAL_PENDING') {
-      return Response.json({ error: 'This PayPal approval is no longer awaiting checkout. Check billing in Settings.' }, { status: 409 });
+    if (resumable.length !== 1) {
+      return Response.json({
+        error: resumable.length ? 'Multiple open PayPal approvals need review before continuing'
+          : 'No open PayPal approval remains. Check billing in Settings.',
+      }, { status: 409 });
     }
-    // Never redirect to an untrusted locally saved checkout_url.
-    const approval = Array.isArray(remote.links) ? remote.links.find((link: any) => link.rel === 'approve')?.href : null;
-    let url: URL;
-    try { url = new URL(approval); } catch {
-      return Response.json({ error: 'PayPal approval link is unavailable' }, { status: 503 });
-    }
-    const host = environment === 'sandbox' ? 'www.sandbox.paypal.com' : 'www.paypal.com';
-    if (url.protocol !== 'https:' || url.hostname !== host) {
-      return Response.json({ error: 'PayPal approval link failed validation' }, { status: 503 });
-    }
+    const selected = resumable[0];
     return Response.json({
       success: true, action: 'resume_pending_paypal', userId: user.id,
-      subscriptionId: record.subscription_id, sku: record.sku, checkoutUrl: url.toString(),
+      subscriptionId: selected.record.subscription_id, sku: selected.record.sku,
+      checkoutUrl: selected.approval.toString(),
     });
   } catch (error) {
     console.error('Cannot resume existing PayPal approval', error);

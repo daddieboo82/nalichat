@@ -66,7 +66,7 @@ export default function AppLayout() {
             <div className="flex min-w-0 items-center gap-2">
               <Sparkles className="h-4 w-4 shrink-0 text-amber-400" />
               <p className="truncate text-xs text-foreground/80">
-                <strong className="text-foreground">Unlock NALI.ai + Studio AI.</strong>
+                <strong className="text-foreground"><span className="sm:hidden">Get Studio AI</span><span className="hidden sm:inline">Unlock NALI.ai + Studio AI.</span></strong>
                 <span className="hidden sm:inline"> Premium also adds advanced messaging and larger creative transfers.</span>
               </p>
             </div>

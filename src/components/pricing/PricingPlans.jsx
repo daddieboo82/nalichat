@@ -282,7 +282,12 @@ export default function PricingPlans({
         try { sessionStorage.setItem(CHECKOUT_RETURN_KEY, "1"); } catch {}
         sessionStorage.setItem(CHECKOUT_ATTRIBUTION_KEY, JSON.stringify({ source: upgradeSource || "pricing", feature: upgradeFeature || undefined, sku, userId: user?.id }));
       } catch {}
-      const attribution = getMarketingAttribution();
+      // Marketing attribution is optional. Storage or analytics failures must
+      // never prevent an authenticated customer from reaching PayPal.
+      let attribution = null;
+      try { attribution = getMarketingAttribution(); } catch {
+        console.warn("Checkout attribution unavailable");
+      }
       trackPaywallEvent("checkout_started", {
         variant,
         plan: planId,

@@ -29,10 +29,189 @@ describe('PayPal subscription integration contracts', () => {
     expect(statusSource).toContain('update.cancel_at_period_end = false');
   });
 
+  it('requires confirmed PayPal ACTIVE after an accepted activation request', async () => {
+    const helper = await read('base44/shared/paypalSubscription.ts');
+    expect(helper).toContain("if (freshStatus === 'ACTIVE')");
+    expect(helper).toContain("remoteStatus = 'ACTIVE'");
+    expect(helper).toContain('fresh?.id === subscriptionId && fresh?.plan_id === remote?.plan_id');
+    expect(helper).not.toContain("if (activated) remoteStatus = 'ACTIVE'");
+    expect(helper.indexOf("if (freshStatus === 'ACTIVE')")).toBeLessThan(
+      helper.indexOf("remoteStatus = 'ACTIVE'"),
+    );
+  });
+
+  it('verifies signed webhook agreement identity before applying the current PayPal state', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    expect(webhook).toContain('const remoteSubscription = await fetchVerifiedSubscription(token, subscriptionId, record)');
+    expect(webhook).toContain('remote?.id !== subscriptionId || remote?.plan_id !== record.paypal_plan_id');
+    expect(webhook).toContain('PayPal subscription verification mismatch');
+    expect(webhook).toContain("remoteStatus === 'ACTIVE' ? 'active'");
+    expect(webhook).toContain('Payment reversal needs independent transaction review');
+    expect(webhook).not.toContain("const newStatus = state(event.event_type, event.resource)");
+    expect(webhook.indexOf('const remoteSubscription = await fetchVerifiedSubscription')).toBeLessThan(
+      webhook.indexOf('await entities.Subscription.update(record.id, update)'),
+    );
+  });
+
+  it('retries signed payment events that lack an agreement reference instead of discarding them', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    const start = webhook.indexOf("if (!subscriptionId || typeof subscriptionId !== 'string')");
+    const finish = webhook.indexOf("const records = await entities.Subscription.filter", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(finish).toBeGreaterThan(start);
+    const branch = webhook.slice(start, finish);
+    expect(branch).toContain("processing_state: 'failed'");
+    expect(branch).toContain("status: 503");
+    expect(branch).toContain('Missing PayPal subscription reference');
+    expect(branch).not.toContain("processing_state: 'ignored'");
+  });
+
+  it('persists PayPal refund/reversal as a visible manual-review state', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    const ledger = await read('base44/shared/paypalWebhookLedger.ts');
+    const schema = await read('base44/entities/PayPalWebhookEvent.jsonc');
+    const audit = await read('base44/functions/getPendingPayPalAudit/entry.ts');
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(webhook).toContain("processing_state: 'review_required'");
+    expect(webhook).toContain("Payment reversal needs independent transaction review");
+    expect(webhook.indexOf("event.event_type === 'PAYMENT.SALE.REFUNDED'")).toBeLessThan(
+      webhook.indexOf('// ── Stale-event protection ──'),
+    );
+    expect(ledger).toContain("state === 'review_required'");
+    expect(schema).toContain('"review_required"');
+    expect(audit).toContain("{ processing_state: 'review_required' }");
+    expect(audit).toContain('reviewRequiredCount, hasMoreReviewEvents, reviewEvents,');
+    expect(dashboard).toContain('paypalAudit.reviewRequiredCount');
+    expect(dashboard).toContain('PayPal refund/reversal events require manual review');
+  });
+
+  it('exposes actionable, read-only PayPal reversal review identifiers to admins', async () => {
+    const audit = await read('base44/functions/getPendingPayPalAudit/entry.ts');
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(audit).toContain('const reviewEvents = reviewEventsPage.slice(0, 100).map');
+    expect(audit).toContain('eventId: entry.paypal_event_id');
+    expect(audit).toContain('eventType: entry.event_type');
+    expect(audit).toContain('eventTime: entry.event_time || entry.created_date || null');
+    expect(audit).toContain('hasMoreReviewEvents, reviewEvents, results');
+    expect(dashboard).toContain('PayPal events awaiting transaction review');
+    expect(dashboard).toContain('paypalAudit.reviewEvents.map');
+    expect(dashboard).toContain('Only the newest 100 review events are shown');
+    expect(dashboard).toContain('This table is read-only and does not change subscriber access');
+  });
+
+  it('displays failed PayPal webhook events in a capped, read-only admin queue', async () => {
+    const audit = await read('base44/functions/getPendingPayPalAudit/entry.ts');
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(audit).toContain("{ processing_state: 'failed' }, '-created_date', 101");
+    expect(audit).toContain('failedEventCount, hasMoreFailedEvents, failedEvents, results');
+    expect(audit).toContain('attempts: entry.attempt_count || 1');
+    expect(audit).not.toContain('lastError: entry.last_error');
+    expect(dashboard).toContain('Failed PayPal webhook events — read-only');
+    expect(dashboard).toContain('paypalAudit.failedEvents.map');
+    expect(dashboard).toContain('Only the newest 100 failed webhooks are shown');
+    expect(dashboard).toContain('No retries or subscription updates are triggered from this view');
+  });
+
+  it('does not authorize PayPal reconciliation from a hardcoded public workflow key', async () => {
+    for (const path of [
+      'base44/functions/reconcilePendingPayPal/main.ts',
+      'base44/functions/reconcilePendingPayPal/entry.ts',
+    ]) {
+      const source = await read(path);
+      expect(source).toContain("const WORKFLOW_SECRET_NAME = 'PAYPAL_RECONCILE_WORKFLOW_KEY'");
+      expect(source).toContain("secrets.get(WORKFLOW_SECRET_NAME)");
+      expect(source).toContain('configuredWorkflowKey.length >= 32');
+      expect(source).toContain("!configuredWorkflowKey.startsWith('REPLACE_')");
+      expect(source).toContain('submittedWorkflowKey === configuredWorkflowKey');
+      expect(source).toContain("const adminAuthorized = user?.role === 'admin' && !user?.is_banned");
+      expect(source).not.toContain("const WORKFLOW_KEY = 'nali-paypal-reconcile-v1-20260925'");
+    }
+  });
+
+  it('does not mistake a PayPal sale ID for the subscription agreement ID', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    expect(webhook).toContain("const paymentEvent = event.event_type.startsWith('PAYMENT.')");
+    expect(webhook).toContain("? event.resource?.billing_agreement_id");
+    expect(webhook).toContain(": event.resource?.id");
+    expect(webhook).not.toContain("event.resource?.id || event.resource?.billing_agreement_id");
+    expect(webhook).toContain("error: 'Missing PayPal subscription reference'");
+  });
+
+  it('does not call an unknown PayPal state processed or grant pending approval access', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    const noStatus = webhook.indexOf('if (!newStatus) {');
+    const paidUpdate = webhook.indexOf('await entities.Subscription.update(record.id, update)');
+    expect(noStatus).toBeGreaterThan(-1);
+    expect(noStatus).toBeLessThan(paidUpdate);
+    expect(webhook).toContain("remoteStatus === 'APPROVAL_PENDING' || remoteStatus === 'APPROVED'");
+    expect(webhook).toContain('PayPal subscription not yet active; no entitlement change');
+    expect(webhook).toContain('Unrecognized PayPal subscription status; provider verification required');
+    expect(webhook).toContain("error: 'Unrecognized PayPal subscription status' }, { status: 503");
+    expect(webhook.indexOf("error: 'Unrecognized PayPal subscription status'")).toBeLessThan(
+      webhook.indexOf("processing_state: 'processed'"),
+    );
+  });
+
+  it('fails closed on invalid PayPal webhook chronology', async () => {
+    const ledger = await read('base44/shared/paypalWebhookLedger.ts');
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    expect(ledger).toContain('if (!Number.isFinite(incomingMs)) return false');
+    expect(ledger).toContain('if (!Number.isFinite(lastMs)) return false');
+    expect(webhook).toContain('const incomingEventTime = event.create_time;');
+    expect(webhook).toContain('Invalid PayPal webhook event chronology; manual reconciliation required');
+    expect(webhook).toContain("error: 'Invalid PayPal webhook event chronology' }, { status: 503");
+    const validation = webhook.indexOf('if (typeof incomingEventTime');
+    const update = webhook.indexOf('await entities.Subscription.update(record.id, update)');
+    expect(validation).toBeGreaterThan(-1);
+    expect(validation).toBeLessThan(update);
+  });
+
+  it('verifies the PayPal signature before acknowledging unsupported event types', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    const verification = webhook.indexOf('if (!(await verify(req, event, token)))');
+    const ignored = webhook.indexOf('if (!HANDLED.has(event.event_type))');
+    expect(verification).toBeGreaterThan(-1);
+    expect(ignored).toBeGreaterThan(verification);
+  });
+
+  it('resumes only the current user\'s exact existing PayPal approval without creating a subscription', async () => {
+    const endpoint = await read('base44/functions/resumePendingPayPal/entry.ts');
+    const client = await read('src/lib/subscriptionBilling.js');
+    const pricing = await read('src/components/pricing/PricingPlans.jsx');
+    expect(endpoint).toContain("const user = await base44.auth.me().catch(() => null)");
+    expect(endpoint).toContain("{ user_id: user.id }");
+    expect(endpoint).toContain("pending.length !== 1");
+    expect(endpoint).toContain("remote?.custom_id !== user.id + ':' + record.sku");
+    expect(endpoint).toContain("remote.status !== 'APPROVAL_PENDING'");
+    expect(endpoint).toContain("link.rel === 'approve'");
+    expect(endpoint).toContain("url.hostname !== host");
+    expect(endpoint).not.toContain("/v1/billing/subscriptions', {");
+    expect(endpoint).not.toContain("Subscription.create(");
+    expect(endpoint).not.toContain("Subscription.update(");
+    expect(client).toContain('invoke("resumePendingPayPal", {})');
+    expect(client).toContain('action !== "resume_pending_paypal"');
+    expect(pricing).toContain("Continue existing PayPal approval");
+    expect(pricing).toContain("await resumePendingPayPalApproval({ expectedUserId: user?.id })");
+    expect(pricing).toContain("isCheckoutPaused={!appleIAP.available}");
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");
     expect(createSource).toContain('This account already has a paid subscription; use the billing portal');
+  });
+
+  it('verifies the provider agreement, plan, and account binding before checkout resume activation', async () => {
+    const source = await read('base44/functions/createPayPalSubscription/entry.ts');
+    const identityGuard = source.indexOf('remote?.id !== pending.subscription_id');
+    const planGuard = source.indexOf('remote?.plan_id !== planId', identityGuard);
+    const ownershipGuard = source.indexOf("remote?.custom_id !== user.id + ':' + sku", identityGuard);
+    const resolver = source.indexOf('const remoteStatus = await resolvePayPalSubscriptionStatus', identityGuard);
+    expect(identityGuard).toBeGreaterThan(-1);
+    expect(planGuard).toBeGreaterThan(identityGuard);
+    expect(ownershipGuard).toBeGreaterThan(planGuard);
+    expect(resolver).toBeGreaterThan(ownershipGuard);
+    expect(source).toContain('PayPal checkout resume identity mismatch; existing agreement not applied');
   });
 
   it('returns PayPal buyers to the canonical domain instead of the request host', async () => {
@@ -62,12 +241,118 @@ describe('PayPal subscription integration contracts', () => {
     expect(webhookSetupSource).toContain("!existing.startsWith('REPLACE_')");
   });
 
-  it('uses dynamic or active app ID for PayPal webhook registration URL', async () => {
+  it('fails closed rather than registering PayPal webhooks against a fallback app', async () => {
     const webhookSetupSource = await read('base44/functions/setupPayPalWebhook/entry.ts');
-    const appParams = await read('src/lib/app-params.js');
-    expect(webhookSetupSource).toContain("secrets.get('BASE44_APP_ID') || 'cbef744a8545c389ef439ea6'");
-    expect(webhookSetupSource).not.toContain('6a1f5ee134147461560c2b37');
-    expect(appParams).toContain("VITE_BASE44_APP_ID || 'cbef744a8545c389ef439ea6'");
+    expect(webhookSetupSource).toContain("secrets.get('BASE44_APP_ID')");
+    expect(webhookSetupSource).toContain("secrets.get('PAYPAL_WEBHOOK_URL')");
+    expect(webhookSetupSource).not.toContain("secrets.get('BASE44_APP_ID') || 'cbef744a8545c389ef439ea6'");
+    expect(webhookSetupSource).toContain('Set the current BASE44_APP_ID before registering a PayPal webhook');
+    expect(webhookSetupSource).toContain('Webhook URL does not match the configured Base44 app');
+    expect(webhookSetupSource).toContain("parsedWebhookUrl.protocol !== 'https:'");
+    expect(webhookSetupSource).toContain("parsedWebhookUrl.hostname !== 'base44-dispatcher-production.base44.workers.dev'");
+    expect(webhookSetupSource.indexOf('const configuredAppId =')).toBeLessThan(
+      webhookSetupSource.indexOf('const accessToken = await token()'),
+    );
+  });
+
+  it('checks an existing PayPal webhook against authenticated provider configuration before reuse', async () => {
+    const source = await read('base44/functions/setupPayPalWebhook/entry.ts');
+    expect(source).not.toContain("return Response.json({ success: true, reused: true, webhookId: existing })");
+    expect(source).toContain("'/v1/notifications/webhooks/' + encodeURIComponent(existing)");
+    expect(source).toContain("remote?.id !== existing || remote?.url !== webhookUrl");
+    expect(source).toContain("EVENTS.every((eventName) => remoteEvents.has(eventName))");
+    expect(source).toContain('Unable to verify existing PayPal webhook');
+    expect(source).toContain('Existing PayPal webhook destination or event types do not match this app');
+    expect(source.indexOf('if (existing && !existing.startsWith')).toBeGreaterThan(
+      source.indexOf('const accessToken = await token()'),
+    );
+    expect(source).toContain('success: true, reused: true, verified: true');
+  });
+
+  it('does not create an untracked PayPal webhook without durable ID persistence', async () => {
+    const source = await read('base44/functions/setupPayPalWebhook/entry.ts');
+    expect(source).not.toContain("fetch(apiBase() + '/v1/notifications/webhooks', {");
+    expect(source).toContain('PayPal webhook registration requires controlled provisioning and persisted webhook ID');
+    expect(source).toContain('status: 503');
+    expect(source).toContain("'/v1/notifications/webhooks/' + encodeURIComponent(existing)");
+  });
+
+  it('does not treat a stored webhook ID as verified PayPal billing readiness', async () => {
+    for (const path of [
+      'base44/functions/getBillingTestStatus/entry.ts',
+      'base44/functions/getBillingTestStatus/main.ts',
+    ]) {
+      const source = await read(path);
+      expect(source).toContain('const webhookIdPresent = Boolean(');
+      expect(source).toContain('const webhookConfigured = false;');
+      expect(source).toContain('webhookIdPresent,');
+      expect(source).toContain("webhookVerificationStatus: 'unverified'");
+    }
+  });
+
+  it('does not request a PayPal token for webhook setup without a stored provider ID', async () => {
+    const source = await read('base44/functions/setupPayPalWebhook/entry.ts');
+    expect(source).toContain("if (!existing || existing.startsWith('REPLACE_'))");
+    expect(source.indexOf("if (!existing || existing.startsWith('REPLACE_'))")).toBeLessThan(
+      source.indexOf('const accessToken = await token()'),
+    );
+  });
+
+  it('warns admins to reconcile missing PayPal agreements without restarting checkout', async () => {
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(dashboard).toContain('New recurring checkout is paused');
+    expect(dashboard).toContain('Verify the provider environment, merchant account, and agreement');
+    expect(dashboard).not.toContain('The customer must complete a new checkout before payment can be collected');
+    expect(dashboard).toContain('PayPal webhook:');
+    expect(dashboard).toContain('billingTestStatus?.webhookVerificationStatus === "verified"');
+    expect(dashboard).toContain('billingTestStatus?.webhookConfigured');
+  });
+
+  it('does not present a truncated or unverified PayPal provider audit as complete', async () => {
+    const backend = await read('base44/functions/getPendingPayPalAudit/entry.ts');
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(backend).toContain("'-created_date', 101");
+    expect(backend).toContain('const hasMorePending = pendingPage.length > 100');
+    expect(backend).toContain('const pending = pendingPage.slice(0, 100)');
+    expect(backend).toContain('providerStatusVerified: knownStatus');
+    expect(backend).toContain('verifiedCount: results.filter((result) => result.providerStatusVerified === true).length');
+    expect(backend).toContain('hasMorePending, results');
+    expect(dashboard).toContain('paypalAudit.hasMorePending');
+    expect(dashboard).toContain('paypalAudit.verifiedCount');
+    expect(dashboard).toContain('This report does not cover every pending agreement');
+    expect(dashboard).toContain('Some provider statuses could not be verified');
+  });
+
+  it('counts PayPal status as verified only after agreement and plan identity checks', async () => {
+    const audit = await read('base44/functions/getPendingPayPalAudit/entry.ts');
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(audit).toContain('remote.id !== record.subscription_id');
+    expect(audit).toContain('remote.plan_id !== record.paypal_plan_id');
+    expect(audit).toContain("status: 'identity_mismatch', providerStatusVerified: false");
+    expect(audit).toContain('providerStatusVerified: knownStatus');
+    expect(audit).toContain("['APPROVAL_PENDING', 'APPROVED', 'ACTIVE', 'SUSPENDED'");
+    expect(dashboard).toContain('PayPal agreement or plan identity mismatch detected');
+  });
+
+  it('requires matching PayPal identity before pending reconciliation or activation', async () => {
+    for (const path of [
+      'base44/functions/reconcilePendingPayPal/entry.ts',
+      'base44/functions/reconcilePendingPayPal/main.ts',
+      'base44/functions/checkSubscriptionStatus/entry.ts',
+    ]) {
+      const source = await read(path);
+      expect(source).toContain('remote?.plan_id !== subscription.paypal_plan_id');
+      expect(source).toContain('subscription.paypal_environment !==');
+      expect(source.indexOf('remote?.plan_id !== subscription.paypal_plan_id')).toBeLessThan(
+        source.indexOf('const remoteStatus = await resolvePayPalSubscriptionStatus'),
+      );
+    }
+    const helper = await read('base44/shared/paypalSubscription.ts');
+    expect(helper).toContain('fresh?.id === subscriptionId && fresh?.plan_id === remote?.plan_id');
+    const scheduled = await read('base44/functions/reconcilePendingPayPal/main.ts');
+    expect(scheduled).toContain("result: 'provider_identity_mismatch'");
+    const requestStatus = await read('base44/functions/checkSubscriptionStatus/entry.ts');
+    expect(requestStatus).toContain('PayPal subscription identity mismatch; status not applied');
   });
 
   it('captures subscription_id for analytics deduplication on ThankYou return page', async () => {

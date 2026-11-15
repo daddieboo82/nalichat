@@ -96,6 +96,15 @@ Deno.serve(async (req) => {
       });
       if (!lookup.ok) continue;
       const remote = await lookup.json();
+      // Match the exact provider agreement, plan, and account/plan binding
+      // BEFORE activation or local entitlement changes. This also applies to
+      // an already ACTIVE agreement, not only a pending approval URL.
+      if (remote?.id !== pending.subscription_id ||
+          remote?.plan_id !== planId ||
+          remote?.custom_id !== user.id + ':' + sku) {
+        console.warn('PayPal checkout resume identity mismatch; existing agreement not applied');
+        continue;
+      }
       const remoteStatus = await resolvePayPalSubscriptionStatus(apiBase(), token, pending.subscription_id, remote);
       if (remoteStatus === 'ACTIVE') {
         const update: Record<string, unknown> = { status: 'active' };

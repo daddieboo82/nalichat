@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import PricingPlans from "@/components/pricing/PricingPlans";
 import BounceDialog from "@/components/studio/BounceDialog";
@@ -24,6 +24,7 @@ const mockAuth = vi.hoisted(() => ({
   current: { isAuthenticated: true, user: { id: "user-1" } },
 }));
 const mockStartCheckout = vi.hoisted(() => vi.fn());
+const mockApple = vi.hoisted(() => ({ available: false, purchase: vi.fn() }));
 const mockTrack = vi.hoisted(() => vi.fn());
 
 vi.mock("@/hooks/useSubscription", () => ({
@@ -43,10 +44,10 @@ vi.mock("@/lib/paywallAnalytics", () => ({
 }));
 vi.mock("@/hooks/useAppleIAP", () => ({
   useAppleIAP: () => ({
-    available: false,
+    available: mockApple.available,
     purchasingProductId: null,
     restoring: false,
-    purchase: vi.fn(),
+    purchase: mockApple.purchase,
     restore: vi.fn(),
   }),
 }));
@@ -75,6 +76,7 @@ describe("pricing plans", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockApple.available = false;
     sessionStorage.clear();
     mockStartCheckout.mockResolvedValue({ checkoutUrl: "https://checkout.example" });
     mockSubscription.current = {
@@ -126,7 +128,8 @@ describe("pricing plans", () => {
 
     renderPricing({}, "/pricing?checkout=paypal_canceled");
 
-    expect(screen.getByText(/returned from PayPal without completing/i)).toBeTruthy();
+    expect(screen.getByText(/Your previous PayPal checkout was not completed/i)).toBeTruthy();
+    expect(screen.getByText(/Starting another PayPal checkout is temporarily unavailable/i)).toBeTruthy();
     expect(mockTrack).toHaveBeenCalledWith("checkout_canceled", {
       source: "studio_bounce",
       upgrade_feature: "studio.ai_mastering",
@@ -135,21 +138,20 @@ describe("pricing plans", () => {
     expect(sessionStorage.getItem("nalichat_subscription_checkout_started")).toBeNull();
   });
 
-  it("keeps Studio mastering attribution through checkout", async () => {
+  it("keeps Studio mastering information visible but pauses web PayPal checkout", () => {
     renderPricing({ variantOverride: "A" }, "/pricing?source=studio_bounce&feature=studio.ai_mastering");
 
     expect(screen.getByText(/AI Auto-Mastering applies EQ, compression, and limiting/)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
-
-    await waitFor(() => expect(mockStartCheckout).toHaveBeenCalledWith(expect.objectContaining({
-      sku: "premium_monthly",
-    })));
-    for (const event of ["paywall_view", "paywall_tier_select", "checkout_started"]) {
-      expect(mockTrack).toHaveBeenCalledWith(event, expect.objectContaining({
-        source: "studio_bounce",
-        upgrade_feature: "studio.ai_mastering",
-      }));
-    }
+    expect(screen.getByText("New PayPal subscriptions are temporarily unavailable")).toBeTruthy();
+    const paused = screen.getAllByRole("button", { name: "Temporarily unavailable" });
+    expect(paused.length).toBe(2);
+    expect(paused.every((button) => button.disabled)).toBe(true);
+    fireEvent.click(paused[0]);
+    expect(mockStartCheckout).not.toHaveBeenCalled();
+    expect(mockTrack).toHaveBeenCalledWith("paywall_view", expect.objectContaining({
+      source: "studio_bounce",
+      upgrade_feature: "studio.ai_mastering",
+    }));
   });
 
   it("renders variant A, defaults monthly, and toggles to yearly prices", () => {
@@ -169,22 +171,40 @@ describe("pricing plans", () => {
     expect(screen.getByRole("heading", { name: "Turn ideas into finished releases faster." })).toBeTruthy();
     expect(screen.getByText("Best value to get started")).toBeTruthy();
     expect(screen.queryByText("Try Premium free")).toBeNull();
-    expect(screen.getByRole("button", { name: "Upgrade to Premium" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Go Premium Plus" })).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "Temporarily unavailable" })).toHaveLength(2);
   });
 
-  it("sends the approved plan and period SKU to checkout once", async () => {
+  it("never invokes PayPal checkout when web plan buttons are paused", () => {
     renderPricing({ variantOverride: "A" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
+    const paused = screen.getAllByRole("button", { name: "Temporarily unavailable" });
+    expect(paused).toHaveLength(2);
+    for (const button of paused) {
+      expect(button.disabled).toBe(true);
+      fireEvent.click(button);
+    }
+    expect(mockStartCheckout).not.toHaveBeenCalled();
+  });
 
-    await waitFor(() => expect(mockStartCheckout).toHaveBeenCalledTimes(1));
-    expect(mockStartCheckout).toHaveBeenCalledWith({
-      sku: "premium_monthly",
-      idempotencyKey: "checkout_request_1234",
-      expectedUserId: "user-1",
-    });
+  it("preserves the native Apple in-app purchase path while web PayPal is paused", () => {
+    mockApple.available = true;
+    renderPricing({ variantOverride: "A" });
+    expect(screen.queryByText("New PayPal subscriptions are temporarily unavailable")).toBeNull();
+    const upgrade = screen.getByRole("button", { name: "Upgrade to Premium" });
+    expect(upgrade.disabled).toBe(false);
+    fireEvent.click(upgrade);
+    expect(mockApple.purchase).toHaveBeenCalledWith("premium_monthly");
+    expect(mockStartCheckout).not.toHaveBeenCalled();
+  });
+
+  it("does not tell users to restart unresolved PayPal checkout while purchases are paused", () => {
+    mockSubscription.current.subscription.hasPending = true;
+    renderPricing({ variantOverride: "A" });
+
+    expect(screen.getByText(/A previous PayPal checkout is pending/i)).toBeTruthy();
+    expect(screen.getByText(/New PayPal checkout attempts are paused while billing safety is verified/i)).toBeTruthy();
+    expect(screen.queryByText(/Choose the same plan below to resume checkout/i)).toBeNull();
+    expect(mockStartCheckout).not.toHaveBeenCalled();
   });
 
   it("keeps the current-plan escape visible and returns directly to chat", async () => {

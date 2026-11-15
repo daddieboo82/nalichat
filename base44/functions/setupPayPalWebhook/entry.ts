@@ -40,23 +40,68 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user || user.role !== 'admin') return Response.json({ error: 'Admin required' }, { status: 403 });
     const existing = secrets.get('PAYPAL_WEBHOOK_ID');
-    if (existing && !existing.startsWith('REPLACE_')) return Response.json({ success: true, reused: true, webhookId: existing });
 
-    const accessToken = await token();
-    const appId = secrets.get('BASE44_APP_ID') || 'cbef744a8545c389ef439ea6';
-    const webhookUrl = secrets.get('PAYPAL_WEBHOOK_URL') ||
-      `https://base44-dispatcher-production.base44.workers.dev/api/apps/${appId}/functions/paypalWebhook`;
-    const r = await fetch(apiBase() + '/v1/notifications/webhooks', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: webhookUrl, event_types: EVENTS.map((name) => ({ name })) }),
-    });
-    const data = await r.json();
-    if (!r.ok || !data.id) {
-      console.error('PayPal webhook registration failed', data);
-      return Response.json({ error: 'Unable to register PayPal webhook', details: data }, { status: 502 });
+    // Do not use a different app's ID as a fallback or trust a webhook
+    // destination supplied without independently configured app identity.
+    const configuredAppId = String(secrets.get('BASE44_APP_ID') || '').trim();
+    if (!/^[a-f0-9]{24}$/i.test(configuredAppId)) {
+      return Response.json({
+        error: 'Set the current BASE44_APP_ID before registering a PayPal webhook',
+      }, { status: 503 });
     }
-    return Response.json({ success: true, webhookId: data.id, webhookUrl, eventTypes: EVENTS });
+    const configuredWebhookUrl = String(secrets.get('PAYPAL_WEBHOOK_URL') || '').trim();
+    const webhookUrl = configuredWebhookUrl ||
+      `https://base44-dispatcher-production.base44.workers.dev/api/apps/${configuredAppId}/functions/paypalWebhook`;
+    let parsedWebhookUrl: URL;
+    try { parsedWebhookUrl = new URL(webhookUrl); } catch {
+      return Response.json({ error: 'Invalid webhook URL configuration' }, { status: 503 });
+    }
+    if (parsedWebhookUrl.protocol !== 'https:' || parsedWebhookUrl.username
+      || parsedWebhookUrl.password || parsedWebhookUrl.search || parsedWebhookUrl.hash
+      || parsedWebhookUrl.hostname !== 'base44-dispatcher-production.base44.workers.dev'
+      || parsedWebhookUrl.pathname !==
+        `/api/apps/${configuredAppId}/functions/paypalWebhook`) {
+      return Response.json({ error: 'Webhook URL does not match the configured Base44 app' }, { status: 503 });
+    }
+    // No stored webhook ID means there is nothing to verify. Fail before
+    // requesting a provider OAuth token; creation is disabled below.
+    if (!existing || existing.startsWith('REPLACE_')) {
+      return Response.json({
+        error: 'PayPal webhook registration requires controlled provisioning and persisted webhook ID',
+      }, { status: 503 });
+    }
+    const accessToken = await token();
+    if (existing && !existing.startsWith('REPLACE_')) {
+      // An ID in the secret store is not proof that PayPal registered it
+      // for this app or subscribed it to the necessary lifecycle events.
+      const lookup = await fetch(
+        apiBase() + '/v1/notifications/webhooks/' + encodeURIComponent(existing),
+        { headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json' } },
+      );
+      if (!lookup.ok) {
+        return Response.json({ error: 'Unable to verify existing PayPal webhook' }, { status: 503 });
+      }
+      const remote = await lookup.json();
+      const remoteEvents = Array.isArray(remote?.event_types)
+        ? new Set(remote.event_types.map((event: any) => event?.name))
+        : new Set();
+      if (remote?.id !== existing || remote?.url !== webhookUrl
+        || !EVENTS.every((eventName) => remoteEvents.has(eventName))) {
+        return Response.json({
+          error: 'Existing PayPal webhook destination or event types do not match this app',
+        }, { status: 409 });
+      }
+      return Response.json({
+        success: true, reused: true, verified: true,
+        webhookId: existing, webhookUrl, eventTypes: EVENTS,
+      });
+    }
+    // This runtime has no verified atomic way to persist PAYPAL_WEBHOOK_ID.
+    // Creating a remote webhook here would leave an untracked registration,
+    // and retrying this endpoint could create duplicates.
+    return Response.json({
+      error: 'PayPal webhook registration requires controlled provisioning and persisted webhook ID',
+    }, { status: 503 });
   } catch (error) {
     console.error('PayPal webhook setup failed', error);
     return Response.json({ error: error instanceof Error ? error.message : 'PayPal webhook setup failed' }, { status: 500 });

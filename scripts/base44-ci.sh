@@ -4,8 +4,20 @@ set -euo pipefail
 echo "==> Installing dependencies"
 npm ci
 
+echo "==> Checking local checkout reservation concurrency model (SQLite only)"
+python3 scripts/test-checkout-sqlite-model.py
+
+echo "==> Checking local PayPal webhook atomic-claim concurrency model (SQLite only)"
+python3 scripts/test-paypal-webhook-ledger-sqlite-model.py
+
+echo "==> Demonstrating read-then-create PayPal webhook race vs atomic unique claim"
+python3 scripts/test-paypal-webhook-race-demonstration.py
+
 echo "==> Running release verification"
 npm run verify:release
+
+echo "==> Enforcing PayPal webhook atomicity release gate"
+node scripts/verify-paypal-webhook-atomicity.mjs
 
 echo "==> Installing Playwright runners"
 npx playwright install --with-deps chromium webkit

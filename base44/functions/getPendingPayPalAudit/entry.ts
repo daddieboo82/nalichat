@@ -75,9 +75,44 @@ Deno.serve(async (req) => {
           matchesCatalog, httpStatus: response.status });
       } catch { planChecks.push({ sku: item.sku, status: 'request_failed' }); }
     }
-    const pending = await base44.asServiceRole.entities.Subscription.filter(
-      { provider: 'paypal', status: 'pending' }, '-created_date', 100,
+    // Expose payment reversals that require operator review. Fetch one
+    // extra ledger row so a truncated review queue is reported honestly.
+    const reviewEventsPage = await base44.asServiceRole.entities.PayPalWebhookEvent.filter(
+      { processing_state: 'review_required' }, '-created_date', 101,
     );
+    const reviewRequiredCount = Math.min(reviewEventsPage.length, 100);
+    const hasMoreReviewEvents = reviewEventsPage.length > 100;
+    // Show only the minimal identifiers needed to locate the matching
+    // transaction in PayPal. No user credentials or payment details leave
+    // the administrator-only endpoint.
+    const reviewEvents = reviewEventsPage.slice(0, 100).map((entry: any) => ({
+      eventId: entry.paypal_event_id,
+      eventType: entry.event_type,
+      eventTime: entry.event_time || entry.created_date || null,
+    }));
+
+    // Failed webhook deliveries are operational blockers, not completed
+    // payments. Return a capped, read-only queue without raw error text,
+    // which might contain sensitive provider details.
+    const failedEventsPage = await base44.asServiceRole.entities.PayPalWebhookEvent.filter(
+      { processing_state: 'failed' }, '-created_date', 101,
+    );
+    const failedEventCount = Math.min(failedEventsPage.length, 100);
+    const hasMoreFailedEvents = failedEventsPage.length > 100;
+    const failedEvents = failedEventsPage.slice(0, 100).map((entry: any) => ({
+      eventId: entry.paypal_event_id,
+      eventType: entry.event_type,
+      eventTime: entry.event_time || entry.created_date || null,
+      attempts: entry.attempt_count || 1,
+    }));
+
+    // Fetch one extra row to detect truncation without making an unbounded
+    // number of provider calls. Never report the first page as a full audit.
+    const pendingPage = await base44.asServiceRole.entities.Subscription.filter(
+      { provider: 'paypal', status: 'pending' }, '-created_date', 101,
+    );
+    const hasMorePending = pendingPage.length > 100;
+    const pending = pendingPage.slice(0, 100);
     const results = [];
     for (const record of pending) {
       if (!record.subscription_id || record.paypal_environment !== environment) {
@@ -94,18 +129,37 @@ Deno.serve(async (req) => {
           continue;
         }
         const remote = await response.json();
+        // A successful HTTP response alone does not prove that the payload
+        // identifies the exact agreement and plan held in the local record.
+        // Never count a mismatched or malformed provider result as verified.
+        if (!remote || remote.id !== record.subscription_id
+          || !record.paypal_plan_id || remote.plan_id !== record.paypal_plan_id) {
+          results.push({
+            subscriptionId: record.subscription_id, plan: record.sku || record.plan,
+            status: 'identity_mismatch', providerStatusVerified: false,
+          });
+          continue;
+        }
+        const remoteStatus = typeof remote.status === 'string'
+          ? remote.status.trim().toUpperCase() : '';
+        const knownStatus = ['APPROVAL_PENDING', 'APPROVED', 'ACTIVE', 'SUSPENDED',
+          'CANCELLED', 'EXPIRED'].includes(remoteStatus);
         results.push({
           subscriptionId: record.subscription_id,
           plan: record.sku || record.plan,
-          status: String(remote.status || 'unknown').toUpperCase(),
-          paymentRecorded: Boolean(remote.billing_info?.last_payment?.time),
+          status: knownStatus ? remoteStatus : 'unknown',
+          providerStatusVerified: knownStatus,
+          paymentRecorded: knownStatus && Boolean(remote.billing_info?.last_payment?.time),
         });
       } catch {
         results.push({ subscriptionId: record.subscription_id, plan: record.sku || record.plan, status: 'lookup_failed' });
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
-      environment, referenceCheck, planChecks, checked: results.length, results });
+      environment, referenceCheck, planChecks, checked: results.length,
+      verifiedCount: results.filter((result) => result.providerStatusVerified === true).length,
+      hasMorePending, reviewRequiredCount, hasMoreReviewEvents, reviewEvents,
+      failedEventCount, hasMoreFailedEvents, failedEvents, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

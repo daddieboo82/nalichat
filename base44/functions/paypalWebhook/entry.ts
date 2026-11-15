@@ -52,32 +52,19 @@ async function verify(req: Request, event: any, token: string) {
   const d = await r.json();
   return r.ok && d.verification_status === 'SUCCESS';
 }
-function state(type: string, resource: any) {
-  if (type === 'BILLING.SUBSCRIPTION.ACTIVATED' || type === 'PAYMENT.SALE.COMPLETED') return 'active';
-  if (type === 'BILLING.SUBSCRIPTION.CANCELLED' || type === 'BILLING.SUBSCRIPTION.EXPIRED') return 'canceled';
-  if (type === 'BILLING.SUBSCRIPTION.SUSPENDED' || type === 'BILLING.SUBSCRIPTION.PAYMENT.FAILED') return 'unpaid';
-  if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return 'canceled';
-  const s = String(resource?.status || '').toUpperCase();
-  if (s === 'ACTIVE') return 'active';
-  if (s === 'CANCELLED' || s === 'EXPIRED') return 'canceled';
-  if (s === 'SUSPENDED') return 'unpaid';
-  return null;
-}
 
-// For PAYMENT.SALE.* events the billing_info lives on the subscription resource,
-// not the sale resource. Fetch the subscription to get next_billing_time.
-async function fetchSubscriptionBillingInfo(token: string, subscriptionId: string): Promise<{ nextBillingTime: string | null } | null> {
-  try {
-    const response = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId), {
-      headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
-    });
-    if (!response.ok) return null;
-    const remote = await response.json();
-    const nextBilling = remote?.billing_info?.next_billing_time;
-    return { nextBillingTime: typeof nextBilling === 'string' ? nextBilling : null };
-  } catch {
-    return null;
-  }
+// Read the canonical subscription identity after verifying the webhook signature.
+// Webhook resource IDs and statuses alone are not sufficient access evidence.
+async function fetchVerifiedSubscription(token: string, subscriptionId: string, record: any): Promise<any | null> {
+  if (!record?.paypal_plan_id || record?.paypal_environment !==
+    (secrets.get('PAYPAL_ENVIRONMENT') || 'live').trim().toLowerCase()) return null;
+  const response = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId), {
+    headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error('PayPal subscription verification lookup failed');
+  const remote = await response.json();
+  if (remote?.id !== subscriptionId || remote?.plan_id !== record.paypal_plan_id) return null;
+  return remote;
 }
 
 Deno.serve(async (req) => {
@@ -87,9 +74,11 @@ Deno.serve(async (req) => {
   try {
     event = await req.json();
     if (!event?.id || !event?.event_type) return Response.json({ error: 'Invalid PayPal event' }, { status: 400 });
-    if (!HANDLED.has(event.event_type)) return Response.json({ received: true, ignored: true });
+    // Even unsupported event types must pass signature verification before
+    // acknowledging receipt; never send an unauthenticated success response.
     const token = await accessToken();
     if (!(await verify(req, event, token))) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!HANDLED.has(event.event_type)) return Response.json({ received: true, ignored: true });
 
     const base44 = createClientFromRequest(req);
     const entities = base44.asServiceRole.entities;
@@ -148,17 +137,22 @@ Deno.serve(async (req) => {
     }
 
     // ── Resolve subscription record ──
-    let subscriptionId = event.resource?.id || event.resource?.billing_agreement_id || '';
-    if (event.event_type.startsWith('PAYMENT.') && event.resource?.billing_agreement_id) {
-      subscriptionId = event.resource.billing_agreement_id;
-    }
-    if (!subscriptionId) {
+    // PAYMENT.SALE.* resource.id identifies a sale, NOT a subscription.
+    // Never fall back to that sale ID for a customer entitlement lookup.
+    const paymentEvent = event.event_type.startsWith('PAYMENT.');
+    const subscriptionId = paymentEvent
+      ? event.resource?.billing_agreement_id
+      : event.resource?.id;
+    if (!subscriptionId || typeof subscriptionId !== 'string') {
+      // A handled, verified payment event without an agreement reference
+      // cannot be matched to a customer. Preserve failure and ask PayPal to
+      // retry rather than permanently acknowledging an unprocessed payment.
       await entities.PayPalWebhookEvent.update(ledger.id, {
-        processing_state: 'ignored',
+        processing_state: 'failed',
         processed_at: new Date().toISOString(),
-        last_error: '',
+        last_error: 'Missing PayPal subscription reference; manual investigation required',
       });
-      return Response.json({ received: true, ignored: true });
+      return Response.json({ error: 'Missing PayPal subscription reference' }, { status: 503 });
     }
 
     const records = await entities.Subscription.filter({ provider: 'paypal', subscription_id: subscriptionId }, '-created_date', 2);
@@ -184,9 +178,44 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Subscription reconciliation required' }, { status: 409 });
     }
     const record = records[0];
+    const remoteSubscription = await fetchVerifiedSubscription(token, subscriptionId, record);
+    if (!remoteSubscription) {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'PayPal subscription identity or environment mismatch',
+      });
+      return Response.json({ error: 'PayPal subscription verification mismatch' }, { status: 409 });
+    }
+
+    // Individual refunds/reversals do not necessarily cancel the agreement;
+    // those events need separate payment-level review rather than an automatic
+    // subscription cancellation.
+    if (event.event_type === 'PAYMENT.SALE.REFUNDED'
+      || event.event_type === 'PAYMENT.SALE.REVERSED') {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'review_required',
+        processed_at: new Date().toISOString(),
+        last_error: 'Payment reversal needs independent transaction review',
+      });
+      return Response.json({ received: true, requiresReview: true });
+    }
 
     // ── Stale-event protection ──
-    const incomingEventTime = event.create_time || new Date().toISOString();
+    const incomingEventTime = event.create_time;
+    // A timestamp synthesized from receipt time can falsely supersede
+    // a real newer event. Keep unorderable events retryable for investigation.
+    if (typeof incomingEventTime !== 'string'
+      || !Number.isFinite(Date.parse(incomingEventTime))
+      || (record.paypal_event_time
+        && !Number.isFinite(Date.parse(String(record.paypal_event_time))))) {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'Invalid PayPal webhook event chronology; manual reconciliation required',
+      });
+      return Response.json({ error: 'Invalid PayPal webhook event chronology' }, { status: 503 });
+    }
     if (
       !shouldApplyPayPalEvent(
         record.paypal_event_id,
@@ -204,7 +233,31 @@ Deno.serve(async (req) => {
     }
 
     // ── Apply status update ──
-    const newStatus = state(event.event_type, event.resource);
+    // The webhook verifies delivery, but the current PayPal agreement state
+    // controls access. A delayed event must not override a newer remote state.
+    const remoteStatus = String(remoteSubscription?.status || '').toUpperCase();
+    const newStatus = remoteStatus === 'ACTIVE' ? 'active'
+      : remoteStatus === 'CANCELLED' || remoteStatus === 'EXPIRED' ? 'canceled'
+      : remoteStatus === 'SUSPENDED' ? 'unpaid' : null;
+    if (!newStatus) {
+      // APPROVAL_PENDING / APPROVED do not grant paid access; they can be
+      // safely acknowledged without changing a subscription. An unfamiliar
+      // or missing status is a verification problem, not a processed payment.
+      if (remoteStatus === 'APPROVAL_PENDING' || remoteStatus === 'APPROVED') {
+        await entities.PayPalWebhookEvent.update(ledger.id, {
+          processing_state: 'ignored',
+          processed_at: new Date().toISOString(),
+          last_error: 'PayPal subscription not yet active; no entitlement change',
+        });
+        return Response.json({ received: true, ignored: true });
+      }
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'Unrecognized PayPal subscription status; provider verification required',
+      });
+      return Response.json({ error: 'Unrecognized PayPal subscription status' }, { status: 503 });
+    }
     if (newStatus) {
       const update: Record<string, unknown> = {
         status: newStatus,
@@ -213,17 +266,12 @@ Deno.serve(async (req) => {
       };
       if (newStatus === 'canceled') update.cancel_at_period_end = false;
 
-      // For PAYMENT.SALE.* events, billing_info is on the subscription resource,
-      // not the sale resource — fetch it to get next_billing_time.
-      if (event.event_type.startsWith('PAYMENT.')) {
-        const billingInfo = await fetchSubscriptionBillingInfo(token, subscriptionId);
-        const periodEnd = paypalPeriodEndForStatus(newStatus, billingInfo?.nextBillingTime);
-        if (periodEnd !== undefined) update.current_period_end = periodEnd;
-      } else {
-        const end = event.resource?.billing_info?.next_billing_time || event.resource?.billing_info?.final_payment_time;
-        const periodEnd = paypalPeriodEndForStatus(newStatus, end);
-        if (periodEnd !== undefined) update.current_period_end = periodEnd;
-      }
+      // Use billing timestamps from the independently verified agreement,
+      // never from an unbound payment-sale payload.
+      const end = remoteSubscription?.billing_info?.next_billing_time
+        || remoteSubscription?.billing_info?.final_payment_time;
+      const periodEnd = paypalPeriodEndForStatus(newStatus, end);
+      if (periodEnd !== undefined) update.current_period_end = periodEnd;
 
       await entities.Subscription.update(record.id, update);
     }

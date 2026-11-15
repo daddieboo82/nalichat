@@ -2,7 +2,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
 import { paypalPeriodEndForStatus, resolvePayPalSubscriptionStatus } from '../../shared/paypalSubscription.ts';
 
-const WORKFLOW_KEY = 'nali-paypal-reconcile-v1-20260925';
+// The scheduled workflow key must be provisioned via Base44 Secrets and
+// rotated outside source control. A missing secret must never authorize writes.
+const WORKFLOW_SECRET_NAME = 'PAYPAL_RECONCILE_WORKFLOW_KEY';
 
 function apiBase() {
   return (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase() === 'sandbox'
@@ -41,8 +43,16 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
     const user = await base44.auth.me().catch(() => null);
-    const workflowAuthorized = body?.workflow_key === WORKFLOW_KEY;
-    if (!workflowAuthorized && user?.role !== 'admin') {
+    const configuredWorkflowKey = String(secrets.get(WORKFLOW_SECRET_NAME) || '').trim();
+    const submittedWorkflowKey = typeof body?.workflow_key === 'string'
+      ? body.workflow_key.trim() : '';
+    const workflowAuthorized = configuredWorkflowKey.length >= 32
+      && !configuredWorkflowKey.startsWith('REPLACE_')
+      && submittedWorkflowKey.length > 0
+      && submittedWorkflowKey === configuredWorkflowKey;
+    const adminAuthorized = user?.role === 'admin' && !user?.is_banned
+      && !(user?.timeout_until && new Date(user.timeout_until).getTime() > Date.now());
+    if (!workflowAuthorized && !adminAuthorized) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -66,6 +76,15 @@ Deno.serve(async (req) => {
         continue;
       }
       const remote = await response.json();
+      // Do not activate or reconcile an agreement unless PayPal confirms
+      // that it is the exact locally recorded subscription and plan.
+      if (remote?.id !== subscriptionId || !subscription.paypal_plan_id
+        || remote?.plan_id !== subscription.paypal_plan_id
+        || subscription.paypal_environment !==
+          (secrets.get('PAYPAL_ENVIRONMENT') || 'live').trim().toLowerCase()) {
+        results.push({ subscriptionId, result: 'provider_identity_mismatch' });
+        continue;
+      }
       const remoteStatus = await resolvePayPalSubscriptionStatus(apiBase(), token, subscriptionId, remote);
       const status = localStatus(remoteStatus);
       if (!status) {

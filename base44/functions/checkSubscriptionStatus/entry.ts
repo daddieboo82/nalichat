@@ -102,6 +102,15 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       });
       if (!response.ok) continue;
       const remote = await response.json();
+      // Reject mismatched provider identity before activation or local access
+      // changes. The current PayPal environment must match the record too.
+      if (remote?.id !== subscription.subscription_id || !subscription.paypal_plan_id
+        || remote?.plan_id !== subscription.paypal_plan_id
+        || subscription.paypal_environment !==
+          (secrets.get('PAYPAL_ENVIRONMENT') || 'live').trim().toLowerCase()) {
+        console.warn('PayPal subscription identity mismatch; status not applied');
+        continue;
+      }
       const remoteStatus = await resolvePayPalSubscriptionStatus(
         paypalApiBase(),
         token,

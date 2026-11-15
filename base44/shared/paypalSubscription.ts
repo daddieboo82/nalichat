@@ -11,9 +11,8 @@ export async function resolvePayPalSubscriptionStatus(
   let remoteStatus = String(remote?.status || '').toUpperCase();
   if (remoteStatus !== 'APPROVED') return remoteStatus;
 
-  let activated = false;
   try {
-    const actRes = await fetch(
+    await fetch(
       apiBase + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId) + '/activate',
       {
         method: 'POST',
@@ -24,14 +23,14 @@ export async function resolvePayPalSubscriptionStatus(
         body: JSON.stringify({ reason: 'Activating subscription after customer approval' }),
       },
     );
-    activated = actRes.ok || actRes.status === 204;
   } catch {
-    activated = false;
+    // The next GET is the only source of verified activation state.
   }
-  if (activated) remoteStatus = 'ACTIVE';
+  // A successful activation request is not independently verified paid access.
+  // Stay APPROVED until a subsequent matching PayPal GET confirms ACTIVE.
+  // An already-active concurrent transition is likewise accepted only after GET.
+  // The APPROVED payload often has no usable billing window.
 
-  // Activation can lose a race with PayPal auto-activation, and the APPROVED
-  // payload often has no usable billing window. Re-read before deciding access.
   try {
     const again = await fetch(
       apiBase + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId),
@@ -39,10 +38,18 @@ export async function resolvePayPalSubscriptionStatus(
     );
     if (again.ok) {
       const fresh = await again.json();
-      if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
-      const freshStatus = String(fresh?.status || '').toUpperCase();
-      if (freshStatus && (!activated || freshStatus === 'ACTIVE')) {
-        remoteStatus = freshStatus;
+      // An unexpected provider response cannot replace billing data or
+      // lifecycle status from the agreement already identity-checked above.
+      if (fresh?.id === subscriptionId && fresh?.plan_id === remote?.plan_id) {
+        const freshStatus = String(fresh?.status || '').toUpperCase();
+        if (freshStatus === 'ACTIVE') {
+          if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
+          remoteStatus = 'ACTIVE';
+        } else if (freshStatus === 'APPROVED' || freshStatus === 'APPROVAL_PENDING'
+          || freshStatus === 'SUSPENDED' || freshStatus === 'CANCELLED'
+          || freshStatus === 'EXPIRED') {
+          remoteStatus = freshStatus;
+        }
       }
     }
   } catch {

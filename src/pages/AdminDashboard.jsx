@@ -274,7 +274,68 @@ export default function AdminDashboard() {
           {paypalAuditError && <p role="alert" className="mt-3 text-sm text-destructive">{paypalAuditError}</p>}
           {paypalAudit && (
             <div className="mt-4">
-              <p className="text-sm font-medium">Checked {paypalAudit.checked} PayPal attempts in {paypalAudit.environment} mode.</p>
+              <p className="text-sm font-medium">Checked {paypalAudit.checked} PayPal attempts in {paypalAudit.environment} mode; {paypalAudit.verifiedCount ?? 0} provider statuses verified.</p>
+              {(paypalAudit.reviewRequiredCount ?? 0) > 0 && (
+                <p role="alert" className="mt-2 text-sm text-destructive">
+                  {paypalAudit.reviewRequiredCount}{paypalAudit.hasMoreReviewEvents ? "+" : ""} PayPal refund/reversal events require manual review. Verify individual transactions before changing subscriptions or access.
+                </p>
+              )}
+
+              {Array.isArray(paypalAudit.reviewEvents) && paypalAudit.reviewEvents.length > 0 && (
+                <div className="mt-3 overflow-x-auto">
+                  <p className="text-sm font-medium mb-2">PayPal events awaiting transaction review</p>
+                  <table className="w-full min-w-[480px] text-left text-sm">
+                    <thead><tr className="border-b border-border"><th className="py-2 pr-3">Event ID</th><th className="py-2 pr-3">Event type</th><th className="py-2">Event date</th></tr></thead>
+                    <tbody>{paypalAudit.reviewEvents.map((item, index) => (
+                      <tr key={item.eventId || index} className="border-b border-border/50">
+                        <td className="py-2 pr-3 font-mono break-all">{item.eventId || "—"}</td>
+                        <td className="py-2 pr-3">{item.eventType || "—"}</td>
+                        <td className="py-2">{item.eventTime || "Unknown"}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                  {paypalAudit.hasMoreReviewEvents && (
+                    <p role="alert" className="mt-2 text-xs text-amber-600">Only the newest 100 review events are shown. Older events still require investigation.</p>
+                  )}
+                  <p className="mt-2 text-xs text-muted-foreground">Use the event ID to locate the payment in PayPal before deciding on refund handling. This table is read-only and does not change subscriber access.</p>
+                </div>
+              )}
+
+              {(paypalAudit.failedEventCount ?? 0) > 0 && (
+                <p role="alert" className="mt-3 text-sm text-destructive">
+                  {paypalAudit.failedEventCount}{paypalAudit.hasMoreFailedEvents ? "+" : ""} PayPal webhook deliveries are unresolved. Verify provider delivery history and local records before changing subscriber access.
+                </p>
+              )}
+              {Array.isArray(paypalAudit.failedEvents) && paypalAudit.failedEvents.length > 0 && (
+                <div className="mt-3 overflow-x-auto">
+                  <p className="text-sm font-medium mb-2">Failed PayPal webhook events — read-only</p>
+                  <table className="w-full min-w-[480px] text-left text-sm">
+                    <thead><tr className="border-b border-border"><th className="py-2 pr-3">Event ID</th><th className="py-2 pr-3">Type</th><th className="py-2 pr-3">Event date</th><th className="py-2">Attempts</th></tr></thead>
+                    <tbody>{paypalAudit.failedEvents.map((item, index) => (
+                      <tr key={item.eventId || index} className="border-b border-border/50">
+                        <td className="py-2 pr-3 font-mono break-all">{item.eventId || "—"}</td>
+                        <td className="py-2 pr-3">{item.eventType || "—"}</td>
+                        <td className="py-2 pr-3">{item.eventTime || "Unknown"}</td>
+                        <td className="py-2">{item.attempts ?? "—"}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                  {paypalAudit.hasMoreFailedEvents && (
+                    <p role="alert" className="mt-2 text-xs text-amber-600">Only the newest 100 failed webhooks are shown. This is not the entire backlog.</p>
+                  )}
+                  <p className="mt-2 text-xs text-muted-foreground">No retries or subscription updates are triggered from this view.</p>
+                </div>
+              )}
+
+              {paypalAudit.hasMorePending && (
+                <p role="alert" className="mt-2 text-sm text-amber-600">Partial audit: more than 100 pending records exist. This report does not cover every pending agreement; do not treat it as complete.</p>
+              )}
+              {(paypalAudit.verifiedCount ?? 0) < paypalAudit.checked && (
+                <p role="alert" className="mt-2 text-sm text-amber-600">Some provider statuses could not be verified. Do not infer that those subscriptions are inactive, unpaid, or safe to retry.</p>
+              )}
+              {paypalAudit.results.some((row) => row.status === "identity_mismatch") && (
+                <p role="alert" className="mt-2 text-sm text-destructive">PayPal agreement or plan identity mismatch detected. Stop billing changes and investigate the stored provider reference before reconciling access.</p>
+              )}
               {paypalAudit.referenceCheck && <p className="mt-1 text-sm text-muted-foreground">Known active subscription check: {paypalAudit.referenceCheck.status}{paypalAudit.referenceCheck.httpStatus ? ` (HTTP ${paypalAudit.referenceCheck.httpStatus})` : ""}.</p>}
               {paypalAudit.planChecks && <div className="mt-3 text-sm"><p className="font-medium">Live PayPal plans</p><ul className="mt-1 space-y-1">{paypalAudit.planChecks.map((plan) => <li key={plan.sku}>{plan.sku}: {plan.status}{plan.amount && plan.currency ? ` · ${plan.currency} ${plan.amount}/${plan.interval?.toLowerCase() || "cycle"}` : ""}{plan.matchesCatalog === false ? " · price or interval mismatch" : ""}{plan.httpStatus && plan.httpStatus !== 200 ? ` · HTTP ${plan.httpStatus}` : ""}</li>)}</ul></div>}
               <div className="mt-3 overflow-x-auto">
@@ -290,7 +351,7 @@ export default function AdminDashboard() {
                   ))}</tbody>
                 </table>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">PayPal HTTP 404 means the ID is unavailable to this live merchant account. The customer must complete a new checkout before payment can be collected. A status lookup alone is not proof of payment.</p>
+              <p className="mt-3 text-xs text-muted-foreground">PayPal HTTP 404 means this merchant API could not find that subscription ID. Verify the provider environment, merchant account, and agreement before changing access or attempting another checkout. New recurring checkout is paused; a status lookup is not proof of payment.</p>
             </div>
           )}
         </div>
@@ -324,6 +385,9 @@ export default function AdminDashboard() {
                 </span>
                 <span className={`rounded-full border px-3 py-1 font-semibold ${billingTestStatus?.priceCatalogReady ? "border-green-500/30 bg-green-500/10 text-green-600" : "border-amber-500/30 bg-amber-500/10 text-amber-600"}`}>
                   Price catalog: {billingTestStatus?.priceCatalogReady ? "ready" : "incomplete"}
+                </span>
+                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 font-semibold text-amber-600">
+                  PayPal webhook: {billingTestStatus?.webhookVerificationStatus === "verified" && billingTestStatus?.webhookConfigured ? "verified" : "unverified"}
                 </span>
               </div>
 

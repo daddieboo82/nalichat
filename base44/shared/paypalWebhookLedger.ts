@@ -6,7 +6,8 @@ export function paypalWebhookLedgerAction(
   updatedAt: unknown,
   nowMs = Date.now(),
 ): 'duplicate' | 'busy' | 'retry' | 'start' {
-  if (state === 'processed' || state === 'ignored') {
+  // Manual review is durable: redelivery must not silently resolve the event.
+  if (state === 'processed' || state === 'ignored' || state === 'review_required') {
     return 'duplicate';
   }
   if (state !== 'processing') {
@@ -29,13 +30,15 @@ export function shouldApplyPayPalEvent(
   if (lastEventId === incomingEventId) {
     return false;
   }
+  const incomingMs = Date.parse(incomingEventTime);
+  // Invalid timestamps cannot safely establish ordering.
+  if (!Number.isFinite(incomingMs)) return false;
   if (typeof lastEventTime !== 'string' || lastEventTime.length === 0) {
     return true;
   }
   const lastMs = Date.parse(lastEventTime);
-  const incomingMs = Date.parse(incomingEventTime);
-  if (!Number.isFinite(lastMs) || !Number.isFinite(incomingMs)) {
-    return true;
-  }
+  // A malformed previous timestamp requires manual reconciliation; never
+  // allow an unorderable event to overwrite an existing subscription state.
+  if (!Number.isFinite(lastMs)) return false;
   return incomingMs >= lastMs;
 }

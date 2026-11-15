@@ -14,6 +14,9 @@ Deno.serve(async req => {
     return await withBattleLock(entities, battleId, async () => {
       const battle = await entities.LiveBattle.get(battleId).catch(() => null);
       if (!battle) return Response.json({ error: 'Battle not found.' }, { status: 404 });
+      if (user.role !== 'admin' && user.id !== battle.creator_id && user.id !== battle.opponent_id) {
+        return Response.json({ error: 'You cannot finalize this battle.' }, { status: 403 });
+      }
       if (battle.status === 'completed') return Response.json({ success: true, alreadyComplete: true, winnerId: battle.winner_id || null, creatorScore: battle.creator_score, opponentScore: battle.opponent_score, ballots: battle.ballots_count });
       if (battle.status !== 'voting' || !battle.video_room_id || !battle.opponent_id
         || !battle.voting_end_at || !Number.isFinite(Date.parse(battle.voting_end_at))

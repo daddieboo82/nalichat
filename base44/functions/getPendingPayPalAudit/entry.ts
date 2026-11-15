@@ -45,9 +45,18 @@ Deno.serve(async (req) => {
     if (reference) {
       try {
         const response = await fetch(apiBase(environment) + '/v1/billing/subscriptions/' + encodeURIComponent(reference.subscription_id), { headers });
-        referenceCheck = response.ok
-          ? { status: String((await response.json()).status || 'unknown').toUpperCase(), httpStatus: response.status }
-          : { status: 'lookup_failed', httpStatus: response.status };
+        if (!response.ok) {
+          referenceCheck = { status: 'lookup_failed', httpStatus: response.status };
+        } else {
+          const remote = await response.json();
+          const identityMatches = remote?.id === reference.subscription_id &&
+            remote?.plan_id === reference.paypal_plan_id &&
+            remote?.custom_id === reference.user_id + ':' + reference.sku;
+          referenceCheck = {
+            status: identityMatches ? String(remote.status || 'unknown').toUpperCase() : 'identity_mismatch',
+            httpStatus: response.status,
+          };
+        }
       } catch {
         referenceCheck = { status: 'request_failed' };
       }

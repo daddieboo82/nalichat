@@ -40,6 +40,19 @@ describe('PayPal subscription integration contracts', () => {
     );
   });
 
+  it('verifies signed webhook agreement identity before applying the current PayPal state', async () => {
+    const webhook = await read('base44/functions/paypalWebhook/entry.ts');
+    expect(webhook).toContain('const remoteSubscription = await fetchVerifiedSubscription(token, subscriptionId, record)');
+    expect(webhook).toContain('remote?.id !== subscriptionId || remote?.plan_id !== record.paypal_plan_id');
+    expect(webhook).toContain('PayPal subscription verification mismatch');
+    expect(webhook).toContain("remoteStatus === 'ACTIVE' ? 'active'");
+    expect(webhook).toContain('Payment reversal needs independent transaction review');
+    expect(webhook).not.toContain("const newStatus = state(event.event_type, event.resource)");
+    expect(webhook.indexOf('const remoteSubscription = await fetchVerifiedSubscription')).toBeLessThan(
+      webhook.indexOf('await entities.Subscription.update(record.id, update)'),
+    );
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");

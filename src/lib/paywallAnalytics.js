@@ -56,12 +56,22 @@ export function trackPaywallEvent(name, properties = {}, userId) {
       .filter(([key, value]) => ALLOWED_FIELDS.has(key) && ["string", "boolean", "number"].includes(typeof value)),
   );
 
-  trackProductEvent(name, userId ? { ...safeProperties, user_id: userId } : safeProperties);
+  // Telemetry is best-effort: a blocked SDK, browser extension, or broken
+  // analytics adapter must never interrupt a customer-initiated checkout.
+  try {
+    trackProductEvent(name, userId ? { ...safeProperties, user_id: userId } : safeProperties);
+  } catch (error) {
+    console.warn("Paywall product analytics unavailable", name);
+  }
 
-  const analytics = typeof window !== "undefined" ? Reflect.get(window, "gtag") : null;
-  if (typeof analytics === "function") {
-    analytics("event", name, safeProperties);
-    return true;
+  try {
+    const analytics = typeof window !== "undefined" ? Reflect.get(window, "gtag") : null;
+    if (typeof analytics === "function") {
+      analytics("event", name, safeProperties);
+      return true;
+    }
+  } catch (error) {
+    console.warn("Paywall analytics adapter failed", name);
   }
   if (!reportedUnavailable) {
     console.info("Paywall analytics adapter is unavailable; events will remain local.");

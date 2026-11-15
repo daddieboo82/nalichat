@@ -411,6 +411,7 @@ export default function PricingPlans({
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-primary/40 bg-primary/5 p-4 text-center" role="status">
             <p className="font-semibold">Your earlier PayPal checkout may still be open.</p>
             <p className="mt-2 text-sm text-muted-foreground">To avoid duplicate subscriptions, continue the existing approval if PayPal still has one. If it cannot be resumed, review billing in Settings before starting another.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Still blocked? <a className="font-semibold underline underline-offset-2" href="mailto:nalichat@nalichat.org?subject=NaliChat%20blocked%20PayPal%20checkout">Contact billing support for a checkout review</a>. Do not start another PayPal agreement until the earlier attempt is verified.</p>
             <div className="mt-3 flex flex-wrap justify-center gap-2">
               <Button className="min-h-11" onClick={resumePayPal} disabled={resumingPayPal}>
                 {resumingPayPal && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}

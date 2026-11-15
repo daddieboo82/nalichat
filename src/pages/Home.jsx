@@ -449,7 +449,7 @@ export default function Home() {
                     Explore Premium · $7.99/mo
                   </Link>
                 </Button>
-                <p className="mt-3 text-center text-sm text-muted-foreground sm:text-left">No card · Google or email</p>
+                <p className="w-full text-center text-xs text-muted-foreground">Free signup requires no card. Premium subscriptions are optional and billed after your approval.</p>
                 <Button size="lg" variant="outline" className="ui-hover min-h-12 w-full rounded-xl border-white/20 bg-card/30 px-7 text-base font-semibold backdrop-blur-xl sm:w-auto" asChild>
                   <a
                     href="#studio-demo"

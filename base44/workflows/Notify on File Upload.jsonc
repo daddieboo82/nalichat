@@ -25,7 +25,11 @@
           "with": {
             "function_name": "notifyOnFileUpload",
             "args": {
-              "workflow_key": "9UETOXLnqkrU97-IpWyC2ju5A0_HEsntt5vp0P04DYo"
+              "workflow_key": "9UETOXLnqkrU97-IpWyC2ju5A0_HEsntt5vp0P04DYo",
+              "event": {
+                "type": "${ .trigger.event_type }",
+                "entity_id": "${ .trigger.entity_id }"
+              }
             }
           },
           "then": "end"

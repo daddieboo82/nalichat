@@ -28,8 +28,8 @@ export default function MusicStudioLanding() {
 
   useEffect(() => {
     const previousTitle = document.title;
-    const description = "Built-in music Studio workflows, AI-assisted creator tools, audio sharing, files, and real-time creator messaging. Start free with NaliBase.";
-    document.title = "Music Studio for Creators | NaliBase";
+    const description = "Built-in music Studio workflows, AI-assisted creator tools, audio sharing, files, and real-time creator messaging. Start free with NaliChat by NaliBase.";
+    document.title = "Music Studio for Creators | NaliChat by NaliBase";
     let meta = document.querySelector('meta[name="description"]');
     const previousDescription = meta?.getAttribute("content") || null;
     if (!meta) {

@@ -120,6 +120,14 @@ export default function PricingPlans({
   const upgradeFeature = new URLSearchParams(location.search).get("feature");
   const upgradeSource = new URLSearchParams(location.search).get("source");
   const selectedBeforeSignup = new URLSearchParams(location.search).get("plan");
+  useEffect(() => {
+    // Returning from registration should put the chosen paid plan in view.
+    // Scrolling is navigation only; checkout still requires an explicit click.
+    if (!isAuthenticated || isLoading || !PAID_PLAN_IDS.includes(selectedBeforeSignup)) return;
+    const card = document.getElementById(`${selectedBeforeSignup}-plan`);
+    if (card) card.scrollIntoView({ block: "start", behavior: "auto" });
+  }, [isAuthenticated, isLoading, selectedBeforeSignup]);
+
 
   useEffect(() => {
     // Preserve campaign context when an ad or sitelink lands directly on pricing.

@@ -50,6 +50,7 @@ function PlanCard({
         badge ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border bg-card"
       }`}
       aria-labelledby={`${plan.id}-plan-title`}
+      id={`${plan.id}-plan`}
     >
       {badge && (
         <span className="mb-4 w-fit rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
@@ -352,6 +353,16 @@ export default function PricingPlans({
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">{copy.subhead}</p>
           <p className="mt-4 font-semibold">Make music. Find collaborators. Finish songs. Release more.</p>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Premium starts at $7.99/month. Unlock more NALI.ai, larger creative transfers, advanced messaging, and deeper Studio tools. Cancel anytime in Settings.</p>
+          {!paidSubscriber && (
+            <div className="mx-auto mt-4 flex max-w-lg flex-wrap justify-center gap-2">
+              <a href="#premium-plan" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground focus-visible:ring-2 focus-visible:ring-primary/50">
+                View Premium plans
+              </a>
+              <a href="#premium_plus-plan" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-primary/50">
+                Compare Premium Plus
+              </a>
+            </div>
+          )}
           {!paidSubscriber && (
             <div className="mx-auto mt-5 grid max-w-3xl gap-2 text-left sm:grid-cols-2">
               <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">

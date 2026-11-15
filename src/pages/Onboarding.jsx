@@ -61,15 +61,31 @@ export default function Onboarding() {
       toast.error("Your account changed. Please wait for setup to reload.");
       return;
     }
-    if (!form.display_name) {
+    const displayName = form.display_name.trim();
+    if (!displayName) {
       toast.error("Please enter your display name");
       return;
+    }
+    // The backend accepts only a real YYYY-MM-DD birthdate that is not in
+    // the future. Validate locally so mobile users receive a useful message
+    // instead of an opaque HTTP 400 during onboarding.
+    if (form.birthdate) {
+      const parsed = new Date(form.birthdate + "T00:00:00Z");
+      const today = new Date();
+      const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+      if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(form.birthdate) ||
+          Number.isNaN(parsed.getTime()) ||
+          parsed.toISOString().slice(0, 10) !== form.birthdate ||
+          parsed.getTime() > todayUtc) {
+        toast.error("Enter a valid birthdate that is not in the future, or leave it blank.");
+        return;
+      }
     }
     trackProductEvent("onboarding_submit", { source: "profile_setup" });
     setLoading(true);
     try {
       const res = await base44.functions.invoke("completeOnboarding", {
-        display_name: form.display_name,
+        display_name: displayName,
         birthdate: form.birthdate,
         bio: form.bio,
         location: form.location,

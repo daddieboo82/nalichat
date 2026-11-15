@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
     // A sale/refund event identifies a billing agreement, but does not itself
     // prove that the agreement belongs to this user or merchant. Verify the
     // provider-side subscription binding before changing paid access.
-    if (event.event_type.startsWith('PAYMENT.')) {
+    {
       const lookup = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId), {
         headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
       });
@@ -206,7 +206,7 @@ Deno.serve(async (req) => {
       const remote = await lookup.json();
       verifiedRemote = remote;
       if (remote?.id !== subscriptionId || (!remote?.plan_id || ![record.paypal_plan_id, secrets.get('PAYPAL_PREMIUM_PLUS_MONTHLY_PLAN_ID'), secrets.get('PAYPAL_PREMIUM_PLUS_YEARLY_PLAN_ID')].includes(remote.plan_id)) ||
-          remote?.custom_id !== record.user_id + ':' + record.sku) {
+          remote?.custom_id !== record.user_id + ':' + (record.paypal_original_sku || record.sku)) {
         await entities.PayPalWebhookEvent.update(ledger.id, {
           processing_state: 'failed',
           processed_at: new Date().toISOString(),
@@ -250,6 +250,7 @@ Deno.serve(async (req) => {
         const plusMonthly = secrets.get('PAYPAL_PREMIUM_PLUS_MONTHLY_PLAN_ID');
         const plusYearly = secrets.get('PAYPAL_PREMIUM_PLUS_YEARLY_PLAN_ID');
         if (verifiedRemote.plan_id === plusMonthly || verifiedRemote.plan_id === plusYearly) {
+          update.paypal_original_sku = record.paypal_original_sku || record.sku;
           update.plan = 'premium_plus';
           update.billing_period = verifiedRemote.plan_id === plusYearly ? 'annual' : 'monthly';
           update.sku = verifiedRemote.plan_id === plusYearly ? 'premium_plus_yearly' : 'premium_plus_monthly';

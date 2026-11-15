@@ -173,7 +173,9 @@ Snapshot coverage:
 - Truncation flags: ${JSON.stringify(snapshotTruncated)}
 `.trim();
 
-    const llmResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
+    let llmResult: any;
+    try {
+      llmResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `You are Nali, the AI assistant for NaliBase (an entertainment and creativity universe). This is your weekly app health report for the app owner. Based on the data snapshot below, write a concise, friendly report that:
 1. Summarizes any concrete issues that need fixing (use the detected issues).
 2. Clearly states that this is a lightweight recent-record snapshot, not a complete database audit, whenever any truncation flag is true.
@@ -191,6 +193,17 @@ ${dataSummary}`,
         required: ['headline', 'report', 'needs_attention'],
       },
     });
+
+    } catch (error) {
+      const detail = String((error as any)?.message || error || '');
+      if (!/limit of integrations for this month/i.test(detail)) throw error;
+      console.warn('AI health report unavailable due to integration quota; sending factual snapshot');
+      llmResult = {
+        headline: issues.length ? 'Weekly app health check: issues detected' : 'Weekly app health check complete',
+        report: dataSummary,
+        needs_attention: issues.length > 0,
+      };
+    }
 
     const headline = llmResult?.headline || 'Weekly app health check complete';
     const report = llmResult?.report || dataSummary;

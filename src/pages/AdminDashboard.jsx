@@ -270,6 +270,7 @@ export default function AdminDashboard() {
               ))}
             </div>
 
+            <p className="mb-4 text-sm text-muted-foreground">Active subscription records by provider: {stats.activePayPalRecords ?? 0} PayPal · {stats.activeManualRecords ?? 0} manual · {stats.activeOtherRecords ?? 0} other. These are database statuses, not verified payments or unique customers.</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
               <div className="bg-card border border-border rounded-xl p-5">
                 <p className="text-sm text-muted-foreground">Premium</p>

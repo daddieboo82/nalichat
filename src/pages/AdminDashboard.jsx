@@ -334,7 +334,7 @@ export default function AdminDashboard() {
                       <td className="py-2 pr-3 font-mono">{row.subscriptionId || "—"}</td>
                       <td className="py-2 pr-3">{row.plan || "—"}</td>
                       <td className="py-2 pr-3">{row.status}{row.identityMatches === false ? " · agreement/account mismatch" : ""}{row.httpStatus ? ` (HTTP ${row.httpStatus})` : ""}{row.errorType ? ` (${row.errorType})` : ""}</td>
-                      <td className="py-2">{row.paymentRecorded ? "Yes" : row.status === "ACTIVE" ? "No payment reported" : "Unknown"}</td>
+                      <td className="py-2">{row.paymentRecorded === true ? "Observed at PayPal" : "Unknown — verify payment history"}</td>
                     </tr>
                   ))}</tbody>
                 </table>

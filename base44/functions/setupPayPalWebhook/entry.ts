@@ -54,18 +54,21 @@ Deno.serve(async (req) => {
       const remote = await remoteResponse.json();
       const subscribed = new Set((Array.isArray(remote.event_types) ? remote.event_types : []).map((item: any) => item?.name));
       const missingEvents = EVENTS.filter((name) => !subscribed.has(name));
+      const enabled = remote.status === 'ENABLED';
       const urlMatches = remote.url === webhookUrl;
+      const verified = enabled && urlMatches && missingEvents.length === 0;
       return Response.json({
-        success: urlMatches && missingEvents.length === 0,
-        verified: urlMatches && missingEvents.length === 0,
+        success: verified,
+        verified: verified,
         reused: true,
         webhookId: existing,
         webhookUrl: remote.url,
         expectedWebhookUrl: webhookUrl,
         urlMatches,
+        enabled,
         missingEvents,
-        message: urlMatches && missingEvents.length === 0 ? 'PayPal webhook configuration verified' : 'PayPal webhook configuration requires correction',
-      }, { status: urlMatches && missingEvents.length === 0 ? 200 : 409 });
+        message: verified ? 'PayPal webhook configuration verified' : 'PayPal webhook configuration requires correction',
+      }, { status: verified ? 200 : 409 });
     }
     // Never create an untracked live webhook: this function cannot persist
     // PAYPAL_WEBHOOK_ID into the runtime secret store. A newly created webhook

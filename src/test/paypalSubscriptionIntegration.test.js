@@ -74,6 +74,9 @@ describe('PayPal subscription integration contracts', () => {
     const dashboard = await read('src/pages/AdminDashboard.jsx');
     expect(webhook).toContain("processing_state: 'review_required'");
     expect(webhook).toContain("Payment reversal needs independent transaction review");
+    expect(webhook.indexOf("event.event_type === 'PAYMENT.SALE.REFUNDED'")).toBeLessThan(
+      webhook.indexOf('// ── Stale-event protection ──'),
+    );
     expect(ledger).toContain("state === 'review_required'");
     expect(schema).toContain('"review_required"');
     expect(audit).toContain("{ processing_state: 'review_required' }");

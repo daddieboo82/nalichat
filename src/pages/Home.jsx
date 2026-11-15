@@ -440,6 +440,15 @@ export default function Home() {
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
+                <Button size="lg" variant="outline" className="ui-hover min-h-12 w-full rounded-xl border-amber-400/50 bg-amber-400/10 px-6 font-bold text-foreground hover:bg-amber-400/20 sm:w-auto" asChild>
+                  <Link
+                    to="/pricing?source=home_hero_premium"
+                    onClick={() => trackProductEvent("upgrade_click", { source: "home_hero_premium", cta: "compare_premium" })}
+                  >
+                    <Sparkles className="mr-2 h-4 w-4 text-amber-400" />
+                    Explore Premium · $7.99/mo
+                  </Link>
+                </Button>
                 <p className="mt-3 text-center text-sm text-muted-foreground sm:text-left">No card · Google or email</p>
                 <Button size="lg" variant="outline" className="ui-hover min-h-12 w-full rounded-xl border-white/20 bg-card/30 px-7 text-base font-semibold backdrop-blur-xl sm:w-auto" asChild>
                   <a

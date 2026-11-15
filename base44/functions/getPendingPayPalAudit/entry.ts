@@ -158,11 +158,25 @@ Deno.serve(async (req) => {
     const affectedUserIds = [...new Set(pending.map((record: any) => record.user_id).filter(Boolean))];
     let accountsWithCheckoutClaims = 0;
     let accountsWithUnknownClaimState = 0;
+    let accountsWithUnmatchedCheckoutClaims = 0;
+    let accountsWithMatchedCheckoutClaims = 0;
     for (const affectedUserId of affectedUserIds) {
       try {
         const affectedUser = await base44.asServiceRole.entities.User.get(affectedUserId);
-        if (!affectedUser) accountsWithUnknownClaimState++;
-        else if (affectedUser.paypal_checkout_claim_id) accountsWithCheckoutClaims++;
+        if (!affectedUser) {
+          accountsWithUnknownClaimState++;
+        } else if (affectedUser.paypal_checkout_claim_id) {
+          accountsWithCheckoutClaims++;
+          // A claim that matches a local checkout request key can be traced
+          // to a recorded attempt. An unmatched claim needs separate review;
+          // neither result authorizes clearing it or creating a new agreement.
+          const claim = String(affectedUser.paypal_checkout_claim_id);
+          const matched = pending.some((record: any) =>
+            record.user_id === affectedUserId && record.checkout_request_key === claim
+          );
+          if (matched) accountsWithMatchedCheckoutClaims++;
+          else accountsWithUnmatchedCheckoutClaims++;
+        }
       } catch {
         accountsWithUnknownClaimState++;
       }
@@ -212,7 +226,7 @@ Deno.serve(async (req) => {
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
-      environment, webhookCheck, referenceCheck, activeChecks, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, accountsWithCheckoutClaims, accountsWithUnknownClaimState, pendingAccountsWithActiveRecord, oldestAttempt, results });
+      environment, webhookCheck, referenceCheck, activeChecks, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, accountsWithCheckoutClaims, accountsWithMatchedCheckoutClaims, accountsWithUnmatchedCheckoutClaims, accountsWithUnknownClaimState, pendingAccountsWithActiveRecord, oldestAttempt, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

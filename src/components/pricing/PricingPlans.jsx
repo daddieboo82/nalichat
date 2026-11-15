@@ -455,13 +455,6 @@ export default function PricingPlans({
         </fieldset>
 
         <div className="mt-8 grid gap-4 sm:mt-10 sm:gap-6 md:grid-cols-3">
-          <PlanCard
-            plan={SUBSCRIPTION_CATALOG.free}
-            period={period}
-            isCurrent={!paidSubscriber}
-            isPaidSubscriber={paidSubscriber}
-            onContinueFree={continueFree}
-          />
           {PAID_PLAN_IDS.map((planId) => (
             <PlanCard
               key={planId}
@@ -477,6 +470,13 @@ export default function PricingPlans({
               onContinueFree={continueFree}
             />
           ))}
+          <PlanCard
+            plan={SUBSCRIPTION_CATALOG.free}
+            period={period}
+            isCurrent={!paidSubscriber}
+            isPaidSubscriber={paidSubscriber}
+            onContinueFree={continueFree}
+          />
         </div>
 
         {paidSubscriber && (

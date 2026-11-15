@@ -366,6 +366,7 @@ export default function PricingPlans({
               </>
             )}
             <p className="mt-2 text-xs text-muted-foreground">Your account and existing PayPal agreement are checked before any PayPal redirect. This does not start a new subscription.</p>
+            <p className="mt-3 text-sm text-muted-foreground">If PayPal cannot find your previous agreement, <a className="font-semibold underline underline-offset-2" href="mailto:nalichat@nalichat.org?subject=NaliChat%20PayPal%20subscription%20review">contact billing support</a> so we can reconcile it without risking a duplicate charge.</p>
           </div>
         )}
 

@@ -444,9 +444,10 @@ export default function PricingPlans({
         </div>
 
         {paidSubscriber && (
-          <p className="mt-8 text-center text-sm text-muted-foreground">
-            Plan changes are managed in Settings.
-          </p>
+          <div className="mt-8 text-center">
+            <p className="mb-3 text-sm text-muted-foreground">Already subscribed? Change your plan without starting another subscription.</p>
+            <Button className="min-h-12 rounded-xl" onClick={() => navigate("/settings")}>Manage or upgrade subscription</Button>
+          </div>
         )}
         <div className="mt-8 text-center">
           {appleIAP.available && (

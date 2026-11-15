@@ -33,6 +33,23 @@ export default function SubscriptionSettings() {
   const { user } = useAuth();
   const [openingPortal, setOpeningPortal] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
+  const [verifyingUpgrade, setVerifyingUpgrade] = useState(false);
+  const returnedFromUpgrade = new URLSearchParams(window.location.search).get("paypal_upgrade") === "returned";
+
+  const verifyUpgrade = async () => {
+    if (verifyingUpgrade || !user?.id) return;
+    setVerifyingUpgrade(true);
+    try {
+      const response = await base44.functions.invoke("verifyPayPalUpgrade", {});
+      const payload = response?.data ?? response;
+      if (payload?.success !== true || payload?.action !== "verify_paypal_upgrade" || payload.userId !== user.id || !payload.upgraded)
+        throw new Error(payload?.error || "PayPal has not confirmed the upgrade yet");
+      await refetch();
+      toast.success("Premium Plus upgrade verified with PayPal.");
+    } catch (err) {
+      toast.error(err?.response?.data?.error || err?.message || "Upgrade is still awaiting PayPal confirmation.");
+    } finally { setVerifyingUpgrade(false); }
+  };
 
   const upgradePayPal = async () => {
     if (upgrading || !user?.id) return;
@@ -115,6 +132,14 @@ export default function SubscriptionSettings() {
 
   return (
     <div className="ui-surface rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:p-6">
+      {returnedFromUpgrade && subscription.provider === "paypal" && (
+        <div className="mb-5 rounded-xl border border-border p-4">
+          <p className="mb-3 text-sm">Returned from PayPal? Verify your approved plan change to activate Premium Plus.</p>
+          <Button onClick={verifyUpgrade} disabled={verifyingUpgrade} className="min-h-11">
+            {verifyingUpgrade ? "Checking PayPal..." : "Verify PayPal upgrade"}
+          </Button>
+        </div>
+      )}
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
         <div>
           <div className="flex flex-wrap items-center gap-2">

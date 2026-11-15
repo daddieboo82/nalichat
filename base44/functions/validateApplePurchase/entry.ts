@@ -159,7 +159,7 @@ async function validateWithAppleServerApi(transactionId: string): Promise<Record
       if (!response.ok) continue;
       const data = await response.json();
       // The response contains a signedTransactionInfo JWS.
-      const signedInfo = data?.data?.signedTransactionInfo;
+      const signedInfo = data?.signedTransactionInfo;
       if (!signedInfo || typeof signedInfo !== 'string') continue;
 
       // Decode the JWS payload (middle segment) to get transaction details.
@@ -208,23 +208,26 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid transaction data' }, { status: 400 });
     }
 
-    // If Apple API credentials are configured, validate server-side.
-    let serverValidated = false;
-    let validatedExpirationDate = input.expirationDate;
-    let validatedProductId = input.productId;
-
+    // Never grant entitlements from client-supplied receipt fields alone.
+    // A failed or unconfigured Apple server lookup is recoverable, not paid.
     const appleResult = await validateWithAppleServerApi(input.transactionId);
-    if (appleResult) {
-      serverValidated = true;
-      const expiryMs = appleResult.expiresDate;
-      if (typeof expiryMs === 'number' && expiryMs > 0) {
-        validatedExpirationDate = new Date(expiryMs).toISOString();
-      }
-      const serverProductId = appleResult.productId;
-      if (typeof serverProductId === 'string' && serverProductId) {
-        validatedProductId = serverProductId;
-      }
+    if (!appleResult) {
+      return Response.json({ error: 'Apple purchase verification is temporarily unavailable. Restore purchases after verification is configured.' }, { status: 503 });
     }
+    const expectedBundleId = secrets.get('APPLE_BUNDLE_ID');
+    const serverProductId = appleResult.productId;
+    const serverTransactionId = appleResult.transactionId;
+    const serverOriginalId = appleResult.originalTransactionId;
+    const expiryMs = Number(appleResult.expiresDate);
+    if (!expectedBundleId || appleResult.bundleId !== expectedBundleId ||
+        serverTransactionId !== input.transactionId ||
+        serverProductId !== input.productId ||
+        !isNonEmpty(serverOriginalId) || !Number.isFinite(expiryMs) || expiryMs <= 0) {
+      return Response.json({ error: 'Apple transaction details could not be verified' }, { status: 422 });
+    }
+    const serverValidated = true;
+    const validatedExpirationDate = new Date(expiryMs).toISOString();
+    const validatedProductId = serverProductId;
 
     // Determine subscription status from the expiration date.
     const now = new Date();
@@ -236,11 +239,20 @@ Deno.serve(async (req) => {
 
     // Idempotency: use the original transaction ID as the subscription_id.
     // Apple reuses the same originalTransactionId across renewals.
-    const subscriptionId = input.originalTransactionId;
+    const subscriptionId = serverOriginalId;
     const plan = normalizePlan(input.plan);
     const billingPeriod = input.billingPeriod as 'monthly' | 'annual';
 
     // Check for an existing Apple subscription with the same original transaction ID.
+    // Do not attach a verified Apple transaction to a second user account.
+    const linked = await base44.asServiceRole.entities.Subscription.filter(
+      { provider: 'apple', subscription_id: subscriptionId },
+      '-created_date', 10, 0,
+    );
+    if (Array.isArray(linked) && linked.some((record) => record.user_id !== user.id)) {
+      return Response.json({ error: 'This Apple subscription is already linked to another account' }, { status: 409 });
+    }
+
     const existing = await base44.asServiceRole.entities.Subscription.filter(
       {
         user_id: user.id,

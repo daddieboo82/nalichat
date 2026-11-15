@@ -7,6 +7,10 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 
 export default async function (req: Request): Promise<Response> {
   try {
+    if (req.method !== "POST") return Response.json({ error: "Method not allowed" }, { status: 405 });
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me().catch(() => null);
+    if (!user?.id) return Response.json({ error: "Sign in to use translation." }, { status: 401 });
     const body = await req.json();
     const texts = Array.isArray(body?.texts)
       ? body.texts.filter((t) => typeof t === "string" && t.trim())
@@ -27,7 +31,6 @@ export default async function (req: Request): Promise<Response> {
       return Response.json({ error: "Batch too large" }, { status: 400 });
     }
 
-    const base44 = createClientFromRequest(req);
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `You are a professional UI translator. Translate each string in the following JSON array from English to ${targetLanguage}.
 

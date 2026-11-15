@@ -10,6 +10,9 @@ python3 scripts/test-checkout-sqlite-model.py
 echo "==> Checking local PayPal webhook atomic-claim concurrency model (SQLite only)"
 python3 scripts/test-paypal-webhook-ledger-sqlite-model.py
 
+echo "==> Demonstrating read-then-create PayPal webhook race vs atomic unique claim"
+python3 scripts/test-paypal-webhook-race-demonstration.py
+
 echo "==> Running release verification"
 npm run verify:release
 

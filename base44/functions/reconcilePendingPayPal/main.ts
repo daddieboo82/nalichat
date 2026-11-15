@@ -3,7 +3,7 @@ import { secrets } from 'base44:runtime';
 import { validWorkflowKey } from '../../shared/workflowAuth.ts';
 import { paypalPeriodEndForStatus, resolvePayPalSubscriptionStatus } from '../../shared/paypalSubscription.ts';
 
-const WORKFLOW_KEY_SHA256 = 'bf5563120e2b37965b76a6a6a6864ea5b9c7e98e869551b45c945816fca3f8e3';
+const WORKFLOW_KEY_SHA256 = '323252dba547287b9145ee4298f77c69f5f454b1e1457a59822d31fadbb608f1';
 
 function apiBase() {
   return (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase() === 'sandbox'

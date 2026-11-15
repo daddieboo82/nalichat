@@ -175,6 +175,24 @@ export default function MobileHeader() {
           </SheetHeader>
 
           <div className="p-4 space-y-5">
+            {!isAuthenticated && (
+              <button
+                onClick={() => {
+                  trackProductEvent("upgrade_click", { source: "mobile_menu_premium", cta: "compare_premium" });
+                  handleNavigate("/pricing?source=mobile_menu_premium");
+                }}
+                className="ui-hover flex min-h-[72px] w-full items-center gap-3 rounded-2xl border border-amber-400/35 bg-amber-400/10 p-3 text-left focus-visible:ring-2 focus-visible:ring-amber-400"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/20">
+                  <Gem className="h-5 w-5 text-amber-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold">Explore Premium · $7.99/mo</p>
+                  <p className="text-xs text-muted-foreground">NALI.ai, Studio AI and more creator tools</p>
+                </div>
+              </button>
+            )}
+
             {/* Recently Visited */}
             <RecentlyVisited onNavigate={handleNavigate} currentPath={path} currentWorldId="" />
 

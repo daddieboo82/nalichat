@@ -4,6 +4,8 @@ import { paypalPeriodEndForStatus } from '../../shared/paypalSubscription.ts';
 import { paypalWebhookLedgerAction, shouldApplyPayPalEvent } from '../../shared/paypalWebhookLedger.ts';
 
 const HANDLED = new Set([
+  // CREATED is recorded for delivery diagnostics, never treated as payment.
+  'BILLING.SUBSCRIPTION.CREATED',
   'BILLING.SUBSCRIPTION.ACTIVATED',
   'BILLING.SUBSCRIPTION.UPDATED',
   'BILLING.SUBSCRIPTION.CANCELLED',

@@ -90,7 +90,7 @@ ${text}
     const detail = String((error as any)?.message || error || '');
     if (!/limit of integrations for this month/i.test(detail)) throw error;
     console.warn('AI edit moderation quota exhausted; applying local safety screen');
-    const highRisk = /\\b(?:kill you|murder you|rape you|shoot you|bomb (?:the|a)|sell (?:cocaine|heroin)|child pornography)\\b/i;
+    const highRisk = /\b(?:kill you|murder you|rape you|shoot you|bomb (?:the|a)|sell (?:cocaine|heroin)|child pornography)\b/i;
     result = highRisk.test(text)
       ? { flagged: true, category: 'violence', severity: 'high', explanation: 'Message requires moderation review' }
       : { flagged: false, category: 'none', severity: 'low', explanation: '' };

@@ -235,7 +235,12 @@ Deno.serve(async (req) => {
     }
 
     // ── Apply status update ──
-    // A plan revision may arrive as UPDATED with a sparse event resource.\n    // Use the verified PayPal agreement state rather than trusting that sparse payload.\n    const providerStatus = String(verifiedRemote?.status || '').toUpperCase();\n    const newStatus = event.event_type === 'BILLING.SUBSCRIPTION.UPDATED'\n      ? (providerStatus === 'ACTIVE' ? 'active' : providerStatus === 'CANCELLED' || providerStatus === 'EXPIRED' ? 'canceled' : providerStatus === 'SUSPENDED' ? 'unpaid' : null)\n      : state(event.event_type, event.resource);
+    // Always derive entitlement from the current verified PayPal agreement.
+    // An old activation/sale webhook must not reactivate a canceled agreement.
+    const providerStatus = String(verifiedRemote?.status || '').toUpperCase();
+    const newStatus = providerStatus === 'ACTIVE' ? 'active'
+      : providerStatus === 'CANCELLED' || providerStatus === 'EXPIRED' ? 'canceled'
+      : providerStatus === 'SUSPENDED' ? 'unpaid' : null;
     if (newStatus) {
       const update: Record<string, unknown> = {
         status: newStatus,

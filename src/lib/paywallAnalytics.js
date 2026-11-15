@@ -11,6 +11,7 @@ const EVENT_NAMES = new Set([
   "trial_started",
   "purchase_completed",
   "purchase_failed",
+  "paypal_approval_resume_click",
   "billing_portal_opened",
   "entitlement_prompt_view",
   "entitlement_prompt_convert",

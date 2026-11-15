@@ -175,7 +175,7 @@ Welcome to NaliChat! This is our initial release.
 ### Step 6: App Signing
 - Google Play App Signing is **opt-in but recommended**. When you upload your first AAB, Google will ask you to opt in.
 - Opt in — Google manages the app signing key for you.
-- Your Codemagic build uses a self-signed keystore (passwords: `nalichat-store`, alias: `nalichat`) for upload signing. Google's app signing handles the final distribution key separately.
+- Your Codemagic build uses a self-signed keystore (password stored securely in Codemagic, alias: `nalichat`) for upload signing. Google's app signing handles the final distribution key separately.
 
 ---
 
@@ -307,7 +307,7 @@ If you list in-app purchases in the store listing:
 - Your AAB package ID is `com.nalichat` (set in Codemagic `PACKAGE_ID`). The Play Console app must have been created with this same package ID. If you accidentally created it with a different ID, you must create a new app — package IDs cannot be changed after creation.
 
 **"App signing key mismatch" on subsequent uploads**
-- If you opted into Google Play App Signing, use the upload key (your self-signed keystore) for all uploads. Google re-signs with the distribution key. Download the keystore from Codemagic artifacts if needed (passwords: `nalichat-store`, alias: `nalichat`).
+- If you opted into Google Play App Signing, use the upload key (your self-signed keystore) for all uploads. Google re-signs with the distribution key. Download the keystore from Codemagic artifacts if needed (password stored securely in Codemagic, alias: `nalichat`).
 
 **Review rejected for "Missing privacy policy"**
 - Ensure the Privacy Policy URL is publicly accessible without login: https://nalichat.org/privacy

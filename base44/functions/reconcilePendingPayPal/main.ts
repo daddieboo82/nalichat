@@ -1,8 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
+import { validWorkflowKey } from '../../shared/workflowAuth.ts';
 import { paypalPeriodEndForStatus, resolvePayPalSubscriptionStatus } from '../../shared/paypalSubscription.ts';
 
-const WORKFLOW_KEY = 'nali-paypal-reconcile-v1-20260925';
+const WORKFLOW_KEY_SHA256 = 'bf5563120e2b37965b76a6a6a6864ea5b9c7e98e869551b45c945816fca3f8e3';
 
 function apiBase() {
   return (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase() === 'sandbox'
@@ -41,7 +42,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
     const user = await base44.auth.me().catch(() => null);
-    const workflowAuthorized = body?.workflow_key === WORKFLOW_KEY;
+    const workflowAuthorized = await validWorkflowKey(body?.workflow_key, WORKFLOW_KEY_SHA256);
     if (!workflowAuthorized && user?.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }

@@ -357,11 +357,13 @@ export default function PricingPlans({
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-primary/40 bg-primary/5 p-4 text-center" role="status">
             <p>{appleIAP.available ? "An earlier approval is pending. Check your subscription in Settings." : "You already have a pending PayPal checkout. Continue it below rather than starting another."}</p>
             {!appleIAP.available && isAuthenticated && (
+              <>
               <Button className="mt-3 min-h-11" onClick={resumePayPal} disabled={resumingPayPal}>
                 {resumingPayPal && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                 Continue existing PayPal approval
               </Button>
               <Button variant="outline" className="mt-3 ml-2 min-h-11" onClick={() => navigate("/settings")}>Review billing in Settings</Button>
+              </>
             )}
             <p className="mt-2 text-xs text-muted-foreground">Your account and existing PayPal agreement are checked before any PayPal redirect. This does not start a new subscription.</p>
           </div>

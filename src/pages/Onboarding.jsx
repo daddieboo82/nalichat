@@ -73,7 +73,7 @@ export default function Onboarding() {
       const parsed = new Date(form.birthdate + "T00:00:00Z");
       const today = new Date();
       const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-      if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(form.birthdate) ||
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(form.birthdate) ||
           Number.isNaN(parsed.getTime()) ||
           parsed.toISOString().slice(0, 10) !== form.birthdate ||
           parsed.getTime() > todayUtc) {

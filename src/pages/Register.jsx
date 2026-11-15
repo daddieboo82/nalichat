@@ -17,6 +17,7 @@ import { trackProductEvent } from "@/lib/productAnalytics";
 import {
   otpErrorMessage,
   registrationErrorMessage,
+  authenticationHttpStatus,
   resendOtpErrorMessage,
   googleLoginErrorMessage,
 } from "@/lib/authErrorMessages";
@@ -98,9 +99,11 @@ export default function Register() {
       setShowOtp(true);
     } catch (err) {
       const safeReason = registrationErrorMessage(err);
+      const httpStatus = authenticationHttpStatus(err);
       trackPaywallEvent("registration_failed", {
         source: "email",
-        outcome: "register_error",
+        outcome: httpStatus !== null && httpStatus >= 500 ? "register_server_error" : "register_error",
+        http_status: httpStatus || undefined,
         reason: safeReason,
         campaign_source: attribution?.utm_source || undefined,
         campaign_medium: attribution?.utm_medium || undefined,

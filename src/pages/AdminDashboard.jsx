@@ -333,7 +333,7 @@ export default function AdminDashboard() {
                     <tr key={row.subscriptionId || index} className="border-b border-border/50">
                       <td className="py-2 pr-3 font-mono">{row.subscriptionId || "—"}</td>
                       <td className="py-2 pr-3">{row.plan || "—"}</td>
-                      <td className="py-2 pr-3">{row.status}{row.httpStatus ? ` (HTTP ${row.httpStatus})` : ""}{row.errorType ? ` (${row.errorType})` : ""}</td>
+                      <td className="py-2 pr-3">{row.status}{row.identityMatches === false ? " · agreement/account mismatch" : ""}{row.httpStatus ? ` (HTTP ${row.httpStatus})` : ""}{row.errorType ? ` (${row.errorType})` : ""}</td>
                       <td className="py-2">{row.paymentRecorded ? "Yes" : row.status === "ACTIVE" ? "No payment reported" : "Unknown"}</td>
                     </tr>
                   ))}</tbody>

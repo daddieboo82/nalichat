@@ -66,7 +66,7 @@ export default function AppLayout() {
             <div className="flex min-w-0 items-center gap-2">
               <Sparkles className="h-4 w-4 shrink-0 text-amber-400" />
               <p className="truncate text-xs text-foreground/80">
-                <strong className="text-foreground"><span className="sm:hidden">Get Studio AI</span><span className="hidden sm:inline">Unlock NALI.ai + Studio AI.</span></strong>
+                <strong className="text-foreground"><span className="sm:hidden">Premium from $7.99/mo</span><span className="hidden sm:inline">Unlock NALI.ai + Studio AI from $7.99/mo.</span></strong>
                 <span className="hidden sm:inline"> Premium also adds advanced messaging and larger creative transfers.</span>
               </p>
             </div>
@@ -75,7 +75,7 @@ export default function AppLayout() {
               onClick={() => trackProductEvent("upgrade_click", { source: "app_upgrade_banner", cta: "see_premium" })}
               className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-black text-black shadow-sm transition hover:bg-amber-300"
             >
-              <Gem className="h-3.5 w-3.5" /> See Premium
+              <Gem className="h-3.5 w-3.5" /> Compare plans
             </Link>
           </div>
         </div>

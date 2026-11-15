@@ -52,6 +52,15 @@ async function reservePayPalCheckout(users: any, userId: string, claimId: string
   return claim?.success === true && claim?.updated === 1;
 }
 
+// PayPal-Request-Id is limited to 38 single-byte characters. Hash the
+// authenticated user and stable client request key into 36 hex chars.
+// Identical retries produce the same provider idempotency key.
+async function paypalRequestId(userId: string, requestKey: string): Promise<string> {
+  const bytes = new TextEncoder().encode(userId + ':' + requestKey);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('').slice(0, 36);
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
   try {
@@ -130,7 +139,7 @@ Deno.serve(async (req) => {
         Authorization: 'Bearer ' + token,
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'PayPal-Request-Id': 'nalichat-' + user.id + '-' + idempotencyKey,
+        'PayPal-Request-Id': await paypalRequestId(user.id, idempotencyKey),
       },
       body: JSON.stringify({
         plan_id: planId,

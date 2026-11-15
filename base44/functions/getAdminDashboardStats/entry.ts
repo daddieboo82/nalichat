@@ -16,6 +16,9 @@ async function aggregateSubscriptions(entities: any) {
   const counts = {
     totalSubscriptions: 0,
     activeSubscriptions: 0,
+    activePayPalRecords: 0,
+    activeManualRecords: 0,
+    activeOtherRecords: 0,
     trialSubscriptions: 0,
     pendingSubscriptions: 0,
     pendingPayPalAttempts: 0,
@@ -31,7 +34,12 @@ async function aggregateSubscriptions(entities: any) {
     const page = await entities.Subscription.filter({}, '-created_date', PAGE_SIZE, skip);
     counts.totalSubscriptions += page.length;
     for (const subscription of page) {
-      if (subscription.status === 'active') counts.activeSubscriptions += 1;
+      if (subscription.status === 'active') {
+        counts.activeSubscriptions += 1;
+        if (subscription.provider === 'paypal') counts.activePayPalRecords += 1;
+        else if (subscription.provider === 'manual') counts.activeManualRecords += 1;
+        else counts.activeOtherRecords += 1;
+      }
       if (subscription.status === 'trial' || subscription.status === 'trialing') {
         counts.trialSubscriptions += 1;
       }

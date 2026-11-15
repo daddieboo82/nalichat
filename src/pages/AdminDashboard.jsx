@@ -345,7 +345,7 @@ export default function AdminDashboard() {
               {paypalAudit.results.some((row) => row.status === "not_found" && row.subscriptionId) && (
                 <Button type="button" variant="outline" className="mt-3 min-h-11" onClick={() => {
                   const ids = [...new Set(paypalAudit.results.filter((row) => row.status === "not_found" && row.subscriptionId).map((row) => row.subscriptionId))];
-                  navigator.clipboard.writeText("NaliChat PayPal merchant reconciliation — live subscription IDs (HTTP 404):\\n" + ids.join("\\n")).catch(() => {});
+                  navigator.clipboard.writeText("NaliChat PayPal merchant reconciliation — live subscription IDs (HTTP 404):\n" + ids.join("\n")).catch(() => {});
                 }}>
                   Copy unresolved PayPal agreement IDs for merchant support
                 </Button>

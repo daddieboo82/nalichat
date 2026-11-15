@@ -97,6 +97,10 @@ Deno.serve(async (req) => {
       file_url: fileUrl,
     });
   } catch (error) {
+    const providerError = String((error as any)?.message || error || '');
+    if (/limit of integrations for this month/i.test(providerError)) {
+      return Response.json({ error: 'This provider feature is temporarily unavailable because the integration quota is exhausted', code: 'INTEGRATION_QUOTA_EXHAUSTED' }, { status: 503 });
+    }
     console.error('secureUploadFile error:', error);
     return Response.json({ error: 'File upload failed' }, { status: 500 });
   }

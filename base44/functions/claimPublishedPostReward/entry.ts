@@ -62,13 +62,11 @@ Deno.serve(async (req) => {
     }
 
     try {
-      const xpUpdate = await entities.User.updateMany(
-        { id: user.id },
-        { $inc: { xp: 50 } },
-      );
-      if (Number(xpUpdate?.updated || 0) !== 1) {
-        throw new Error('User XP update did not modify exactly one account');
-      }
+      const currentUser = await entities.User.get(user.id);
+      if (!currentUser || currentUser.id !== user.id) throw new Error('Reward account not found');
+      await entities.User.update(user.id, {
+        xp: Math.max(0, Number(currentUser.xp) || 0) + 50,
+      });
     } catch (xpError) {
       // Compensate the deterministic dedupe record so a transient user-update
       // failure does not permanently consume an unawarded reward.

@@ -32,6 +32,20 @@ export default function SubscriptionSettings() {
   } = useSubscription();
   const { user } = useAuth();
   const [openingPortal, setOpeningPortal] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [paypalReceipt, setPaypalReceipt] = useState(null);
+  const checkPayment = async () => {
+    if (checkingPayment) return;
+    setCheckingPayment(true);
+    try {
+      const response = await base44.functions.invoke("getMyPayPalBillingReceipt", {});
+      const result = response?.data ?? response;
+      if (result?.success !== true || result?.action !== "paypal_billing_receipt" || result.userId !== user?.id)
+        throw new Error(result?.error || "Could not verify PayPal billing");
+      setPaypalReceipt(result);
+    } catch (err) { toast.error(err?.response?.data?.error || err?.message || "Could not check PayPal billing."); }
+    finally { setCheckingPayment(false); }
+  };
   const [upgrading, setUpgrading] = useState(false);
   const [verifyingUpgrade, setVerifyingUpgrade] = useState(false);
   const returnedFromUpgrade = new URLSearchParams(window.location.search).get("paypal_upgrade") === "returned";
@@ -190,6 +204,21 @@ export default function SubscriptionSettings() {
           )}
           <p className="mt-4 text-sm text-muted-foreground">Premium expands NaliBase with advanced creator, AI, Studio, messaging, and privacy tools.</p>
           <p className="text-sm text-muted-foreground">Manage or cancel an active subscription here at any time.</p>
+          {subscription.provider === "paypal" && (
+            <div className="mt-4 space-y-2 rounded-xl border border-border p-3">
+              <Button variant="outline" className="min-h-11" onClick={checkPayment} disabled={checkingPayment}>
+                {checkingPayment ? "Checking PayPal..." : "Check payment and next billing date"}
+              </Button>
+              {paypalReceipt && (
+                <div className="space-y-1 text-sm" aria-live="polite">
+                  <p>PayPal agreement: {paypalReceipt.providerStatus}</p>
+                  <p>Last recorded PayPal payment: {paypalReceipt.lastPayment ? `${paypalReceipt.lastPayment.amount} ${paypalReceipt.lastPayment.currency} on ${formattedDate(paypalReceipt.lastPayment.time)}` : "No payment details returned"}</p>
+                  <p>Next PayPal billing date: {formattedDate(paypalReceipt.nextBillingTime) || "Not available"}</p>
+                  <p className="text-muted-foreground">A previous payment does not mean the upgrade itself was charged.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {subscription.provider === "paypal" && subscription.plan === "premium" && subscription.hasPaidAccess && (

@@ -85,6 +85,20 @@ describe('PayPal subscription integration contracts', () => {
     expect(dashboard).toContain('PayPal refund/reversal events require manual review');
   });
 
+  it('exposes actionable, read-only PayPal reversal review identifiers to admins', async () => {
+    const audit = await read('base44/functions/getPendingPayPalAudit/entry.ts');
+    const dashboard = await read('src/pages/AdminDashboard.jsx');
+    expect(audit).toContain('const reviewEvents = reviewEventsPage.slice(0, 100).map');
+    expect(audit).toContain('eventId: entry.paypal_event_id');
+    expect(audit).toContain('eventType: entry.event_type');
+    expect(audit).toContain('eventTime: entry.event_time || entry.created_date || null');
+    expect(audit).toContain('hasMoreReviewEvents, reviewEvents, results');
+    expect(dashboard).toContain('PayPal events awaiting transaction review');
+    expect(dashboard).toContain('paypalAudit.reviewEvents.map');
+    expect(dashboard).toContain('Only the newest 100 review events are shown');
+    expect(dashboard).toContain('This table is read-only and does not change subscriber access');
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");

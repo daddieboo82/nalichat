@@ -112,6 +112,22 @@ describe('PayPal subscription integration contracts', () => {
     expect(dashboard).toContain('No retries or subscription updates are triggered from this view');
   });
 
+  it('does not authorize PayPal reconciliation from a hardcoded public workflow key', async () => {
+    for (const path of [
+      'base44/functions/reconcilePendingPayPal/main.ts',
+      'base44/functions/reconcilePendingPayPal/entry.ts',
+    ]) {
+      const source = await read(path);
+      expect(source).toContain("const WORKFLOW_SECRET_NAME = 'PAYPAL_RECONCILE_WORKFLOW_KEY'");
+      expect(source).toContain("secrets.get(WORKFLOW_SECRET_NAME)");
+      expect(source).toContain('configuredWorkflowKey.length >= 32');
+      expect(source).toContain("!configuredWorkflowKey.startsWith('REPLACE_')");
+      expect(source).toContain('submittedWorkflowKey === configuredWorkflowKey');
+      expect(source).toContain("const adminAuthorized = user?.role === 'admin' && !user?.is_banned");
+      expect(source).not.toContain("const WORKFLOW_KEY = 'nali-paypal-reconcile-v1-20260925'");
+    }
+  });
+
   it('handles an already active PayPal subscription without starting a second checkout', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("remoteStatus === 'ACTIVE'");

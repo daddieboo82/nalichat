@@ -22,6 +22,27 @@ export default function ThankYou() {
   const purchaseToken = urlParams.get("purchase_token");
   const isSubscriptionCheckout = urlParams.get("subscription") === "1";
 
+  const trackVerifiedPurchaseConversion = (checkoutId) => {
+    try {
+      if (!checkoutId) return;
+      const purchaseValueKey = `gads_purchase_value:${checkoutId}`;
+      const pendingPurchaseValue = parseFloat(localStorage.getItem(purchaseValueKey) || "0");
+      if (!(pendingPurchaseValue > 0) || typeof window.gtag !== "function") return;
+      const sentKey = `gads_purchase_sent:${checkoutId}`;
+      if (localStorage.getItem(sentKey) === "1") return;
+      window.gtag("event", "conversion", {
+        send_to: "AW-18416125487/4WavCNzZ5ekcEK-Mv81E",
+        value: pendingPurchaseValue,
+        currency: "USD",
+        transaction_id: checkoutId,
+      });
+      localStorage.setItem(sentKey, "1");
+      localStorage.removeItem(purchaseValueKey);
+    } catch {
+      // Conversion attribution must not interfere with confirmed access.
+    }
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -48,6 +69,7 @@ export default function ThankYou() {
 
       setSubscriptionConfirmation(result.outcome);
       if (result.outcome === "confirmed") {
+        trackVerifiedPurchaseConversion(checkoutId || subscriptionId);
         const analyticsKey = `nalichat_subscription_confirmation:${checkoutId || subscriptionId || "unknown"}`;
         let alreadyTracked = false;
         try {
@@ -101,22 +123,8 @@ export default function ThankYou() {
 
   useEffect(() => {
     const processThankYou = async () => {
-      // Fire Google Ads PURCHASE conversion once (value stashed before checkout redirect).
-      try {
-        const purchaseValueKey = checkoutId ? `gads_purchase_value:${checkoutId}` : null;
-        const pendingPurchaseValue = purchaseValueKey
-          ? parseFloat(localStorage.getItem(purchaseValueKey) || '0')
-          : 0;
-        if (purchaseValueKey) localStorage.removeItem(purchaseValueKey);
-        if (pendingPurchaseValue > 0 && typeof window !== 'undefined' && window.gtag) {
-          window.gtag('event', 'conversion', {
-            send_to: 'AW-18416125487/4WavCNzZ5ekcEK-Mv81E',
-            value: pendingPurchaseValue,
-            currency: 'USD',
-          });
-        }
-      } catch (e) {}
-
+      // Never attribute a purchase from the return URL alone.
+      // Conversion tracking happens only after authoritative payment confirmation.
       if (isSubscriptionCheckout) {
         return;
       }
@@ -143,6 +151,7 @@ export default function ThankYou() {
           return;
         }
         setPurchaseVerification("confirmed");
+        trackVerifiedPurchaseConversion(checkoutId);
       } catch (err) {
         console.error("Payment verification failed:", err);
         setPurchaseVerification("failed");

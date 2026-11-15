@@ -82,7 +82,7 @@ async function moderateText(base44: any, user: any, text: string, conversationId
   };
   let result: any;
   try {
-  const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+  result = await base44.asServiceRole.integrations.Core.InvokeLLM({
     prompt: `You are a strict content moderation system for a music collaboration platform. Analyze the user message delimited by XML tags below and determine if it violates community policy.
 
 Flag ONLY genuine violations in these categories:

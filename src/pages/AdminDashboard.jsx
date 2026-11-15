@@ -327,6 +327,19 @@ export default function AdminDashboard() {
                 <span>Ended: {paypalAudit.results.filter((row) => ["CANCELLED", "EXPIRED"].includes(row.status)).length}</span>
                 <span>Needs investigation: {paypalAudit.results.filter((row) => !["APPROVAL_PENDING", "ACTIVE", "CANCELLED", "EXPIRED"].includes(row.status)).length}</span>
               </div>
+              <div className="mt-3 rounded-lg border border-border p-3 text-sm">
+                <p className="font-semibold mb-2">Why pending attempts need investigation</p>
+                {Object.entries(paypalAudit.results.filter((row) => !["APPROVAL_PENDING", "ACTIVE", "CANCELLED", "EXPIRED"].includes(row.status)).reduce((counts, row) => {
+                  const key = row.status === "environment_mismatch" ? "Missing agreement ID or PayPal environment mismatch"
+                    : row.status === "identity_mismatch" ? "Agreement/account identity mismatch"
+                    : row.status === "not_found" ? "PayPal agreement not found for merchant"
+                    : row.status === "lookup_failed" ? "PayPal lookup failed"
+                    : row.status || "Unknown provider status";
+                  counts[key] = (counts[key] || 0) + 1;
+                  return counts;
+                }, {})).map(([reason, count]) => <p key={reason} className="py-1">{reason}: <strong>{count}</strong></p>)}
+                <p className="mt-2 text-xs text-muted-foreground">These categories are diagnostic, not permission to restart billing or delete checkout claims.</p>
+              </div>
               <p className="mt-2 text-xs text-muted-foreground">This is a read-only provider audit. Active status alone does not establish that a payment was collected. Do not restart a recurring checkout until its existing PayPal agreement is reconciled.</p>
               {paypalAudit.referenceCheck && <p className="mt-1 text-sm text-muted-foreground">Known active subscription check: {paypalAudit.referenceCheck.status}{paypalAudit.referenceCheck.httpStatus ? ` (HTTP ${paypalAudit.referenceCheck.httpStatus})` : ""}.</p>}
               {paypalAudit.planChecks && <div className="mt-3 text-sm"><p className="font-medium">Live PayPal plans</p><ul className="mt-1 space-y-1">{paypalAudit.planChecks.map((plan) => <li key={plan.sku}>{plan.sku}: {plan.status}{plan.amount && plan.currency ? ` · ${plan.currency} ${plan.amount}/${plan.interval?.toLowerCase() || "cycle"}` : ""}{plan.matchesCatalog === false ? " · price or interval mismatch" : ""}{plan.httpStatus && plan.httpStatus !== 200 ? ` · HTTP ${plan.httpStatus}` : ""}</li>)}</ul></div>}

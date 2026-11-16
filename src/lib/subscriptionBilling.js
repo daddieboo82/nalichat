@@ -103,6 +103,11 @@ export async function resumePendingPayPalApproval({
     !["www.paypal.com", "www.sandbox.paypal.com"].includes(checkoutUrl.hostname)) {
     throw new Error("PayPal approval URL was not trusted");
   }
+  // A resumed approval must use the same return-page agreement matching as
+  // a newly created checkout. This ID identifies an agreement, not payment.
+  try {
+    sessionStorage.setItem(CHECKOUT_SUBSCRIPTION_ID_KEY, payload.subscriptionId);
+  } catch { /* Some browsers restrict storage; paid access is still server-verified. */ }
   redirect(checkoutUrl.toString());
   return payload;
 }

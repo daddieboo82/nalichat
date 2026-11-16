@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X } from "lucide-react";
 import { useNaliPresence } from "@/lib/NaliPresenceContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/lib/AuthContext";
 
 // Context-aware, proactive-but-muted suggestion chips per surface.
 // Only auto-surfaces when the user's level is 'proactive'; always dismissible.
@@ -26,9 +27,11 @@ const SURFACE_HINTS = {
   ],
 };
 
-const DISMISS_KEY = (surface) => `nali_hint_dismissed_${surface}`;
+const DISMISS_KEY = (surface, userId) => `nali_hint_dismissed_${surface}:${userId || "anonymous"}`;
 
 export default function NaliContextHint({ surface = "global", contextLabel, customHint, delayMs = 6000 }) {
+  const { user } = useAuth();
+  const userId = user?.id;
   const { hasEntitlement, isLoading } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
   const { isProactive, isMuted } = useNaliPresence();
@@ -45,14 +48,14 @@ export default function NaliContextHint({ surface = "global", contextLabel, cust
 
   useEffect(() => {
     if (isLoading || !canUseAi || !isProactive || isMuted || !hint) { setVisible(false); return; }
-    try { if (sessionStorage.getItem(DISMISS_KEY(surface))) { setVisible(false); return; } } catch {}
+    try { if (sessionStorage.getItem(DISMISS_KEY(surface, userId))) { setVisible(false); return; } } catch {}
     const t = setTimeout(() => setVisible(true), delayMs);
     return () => clearTimeout(t);
-  }, [isLoading, canUseAi, isProactive, isMuted, hint, surface, delayMs]);
+  }, [isLoading, canUseAi, isProactive, isMuted, hint, surface, delayMs, userId]);
 
   const dismiss = () => {
     setVisible(false);
-    try { sessionStorage.setItem(DISMISS_KEY(surface), "1"); } catch {}
+    try { sessionStorage.setItem(DISMISS_KEY(surface, userId), "1"); } catch {}
   };
 
   const act = () => {

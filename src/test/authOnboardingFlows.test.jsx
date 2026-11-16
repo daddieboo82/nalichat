@@ -233,6 +233,26 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.auth.resendOtp).not.toHaveBeenCalled();
   });
 
+  it('lets a returning signup user enter a previously issued code without registering again', async () => {
+    renderInRouter(<Register />);
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'previous@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'I already have a verification code' }));
+    await screen.findByText('Verify your email');
+    expect(mockBase44.auth.register).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('OTP'), { target: { value: '123456' } });
+    mockBase44.auth.verifyOtp.mockRejectedValueOnce(new Error('Invalid verification code'));
+    fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
+    await screen.findByText('That verification code is invalid. Check the code and try again.');
+    expect(mockBase44.auth.verifyOtp).toHaveBeenCalledWith({ email: 'previous@example.com', otpCode: '123456' });
+  });
+
+  it('requires a plausible email before showing the return-to-verification screen', async () => {
+    renderInRouter(<Register />);
+    fireEvent.click(screen.getByRole('button', { name: 'I already have a verification code' }));
+    await screen.findByText('Enter the email address where your verification code was sent.');
+    expect(mockBase44.auth.verifyOtp).not.toHaveBeenCalled();
+  });
+
   it('requires display name before onboarding can complete', async () => {
     mockAuthState.current = {
       ...mockAuthState.current,

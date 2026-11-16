@@ -69,8 +69,14 @@ export default function ThankYou() {
 
       setSubscriptionConfirmation(result.outcome);
       if (result.outcome === "confirmed") {
-        trackVerifiedPurchaseConversion(checkoutId || subscriptionId);
-        const analyticsKey = `nalichat_subscription_confirmation:${checkoutId || subscriptionId || "unknown"}`;
+        const verifiedSubscriptionRecordId = result.subscription.subscriptionRecordId;
+        // Provider returns may contain only ?subscription=1. Never reuse an
+        // "unknown" key across distinct, verified paid subscription records.
+        const verifiedTransactionKey = verifiedSubscriptionRecordId || null;
+        if (verifiedTransactionKey) trackVerifiedPurchaseConversion(checkoutId || subscriptionId || verifiedTransactionKey);
+        const analyticsKey = verifiedTransactionKey
+          ? `nalichat_subscription_confirmation:${verifiedTransactionKey}`
+          : null;
         let alreadyTracked = false;
         try {
           alreadyTracked = localStorage.getItem(analyticsKey) === "1";

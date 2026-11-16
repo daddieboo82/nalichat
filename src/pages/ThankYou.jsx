@@ -165,14 +165,24 @@ export default function ThankYou() {
       }
       try {
         const res = await base44.functions.invoke('verifyCheckoutPayment', { checkoutId, purchaseToken });
+        const verified = res?.data;
         if (
-          res?.data?.success !== true ||
-          res?.data?.checkoutId !== checkoutId ||
-          res?.data?.status !== 'paid' ||
-          !Array.isArray(res?.data?.items) ||
-          res.data.items.length === 0 ||
-          res.data.items.some((item) => item?.type !== "donation")
+          verified?.success !== true ||
+          verified?.checkoutId !== checkoutId ||
+          !Array.isArray(verified?.items) ||
+          verified.items.length === 0 ||
+          verified.items.some((item) => item?.type !== "donation")
         ) {
+          setPurchaseVerification("failed");
+          setProcessing(false);
+          return;
+        }
+        if (verified.status === "pending") {
+          setPurchaseVerification("pending");
+          setProcessing(false);
+          return;
+        }
+        if (verified.status !== "paid") {
           setPurchaseVerification("failed");
           setProcessing(false);
           return;
@@ -262,6 +272,25 @@ export default function ThankYou() {
               </Button>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Delayed settlement is not a failed donation and is not proof of payment.
+  if (!processing && purchaseVerification === "pending") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8 sm:px-6">
+        <div className="ui-surface w-full max-w-2xl rounded-3xl border border-amber-500/20 bg-card/30 p-6 text-center sm:p-8" aria-live="polite">
+          <CircleAlert className="mx-auto mb-6 h-16 w-16 text-amber-500" aria-hidden="true" />
+          <h1 className="mb-4 font-heading text-3xl font-black">Donation payment processing</h1>
+          <p className="mb-6 text-base text-muted-foreground">
+            Stripe has not confirmed that your donation was paid yet. This may happen with delayed payment methods. Please check again later rather than starting another donation.
+          </p>
+          <div className="flex flex-col justify-center gap-3 sm:flex-row">
+            <Button size="lg" onClick={() => window.location.reload()}>Check payment status again</Button>
+            <Button size="lg" variant="outline" asChild><Link to="/">Back to NaliChat</Link></Button>
+          </div>
         </div>
       </div>
     );

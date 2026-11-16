@@ -36,12 +36,14 @@ describe('PayPal pending approval recovery in Settings', () => {
     expect(backend).toContain("const current = await subscriptions.get(row.id)");
     expect(backend).toContain("current.paypal_plan_id !== row.paypal_plan_id");
     expect(backend).toContain("current.paypal_environment !== env");
-    expect(backend).toContain("await subscriptions.updateMany(");
-    expect(backend).toContain("status: 'pending',");
-    expect(backend).toContain("$set: { status: 'canceled', cancel_at_period_end: false }");
-    expect(backend).toContain("Number(outcome?.updated || 0) !== 1");
+    expect(backend).toContain("applyVerifiedTerminalPayPalRows(");
+    const helper = await readFile('base44/shared/terminalPayPalRecovery.ts', 'utf8');
+    expect(helper).toContain("await subscriptions.updateMany(");
+    expect(helper).toContain("status: 'pending',");
+    expect(helper).toContain("$set: { status: 'canceled', cancel_at_period_end: false }");
+    expect(helper).toContain("Number(outcome?.updated || 0) !== 1");
     expect(backend.indexOf("const latest = await subscriptions.filter(")).toBeLessThan(
-      backend.indexOf("await subscriptions.updateMany(")
+      backend.indexOf("applyVerifiedTerminalPayPalRows(")
     );
     expect(backend).not.toContain("await subscriptions.update(row.id");
     expect(backend).not.toContain("'/activate'");

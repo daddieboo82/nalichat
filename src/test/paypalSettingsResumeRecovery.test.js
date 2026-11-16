@@ -33,20 +33,17 @@ describe('PayPal pending approval recovery in Settings', () => {
     expect(backend).toContain("const latest = await subscriptions.filter(");
     expect(backend).toContain("latest.length !== pending.length");
     expect(backend).toContain("latest.some((row: any) => !originalIds.has(row.id))");
+    expect(backend).toContain("const current = await subscriptions.get(row.id)");
     expect(backend).toContain("current.paypal_plan_id !== row.paypal_plan_id");
     expect(backend).toContain("current.paypal_environment !== env");
+    expect(backend).toContain("await subscriptions.updateMany(");
+    expect(backend).toContain("status: 'pending',");
+    expect(backend).toContain("$set: { status: 'canceled', cancel_at_period_end: false }");
+    expect(backend).toContain("Number(outcome?.updated || 0) !== 1");
     expect(backend.indexOf("const latest = await subscriptions.filter(")).toBeLessThan(
-      backend.indexOf("await subscriptions.update(row.id, { status: 'canceled'")
+      backend.indexOf("await subscriptions.updateMany(")
     );
-    expect(backend).toContain("const current = await subscriptions.get(row.id)");
-    expect((backend.match(/const current = await subscriptions.get\(row.id\)/g) || []).length).toBe(2);
-    expect(backend).toContain("Subscription changed during recovery; refresh billing status");
-    expect(backend).toContain("current.status !== 'pending'");
-    expect(backend).toContain("current.subscription_id !== row.subscription_id");
-    expect(backend.indexOf("const current = await subscriptions.get(row.id)")).toBeLessThan(
-      backend.indexOf("await subscriptions.update(row.id, { status: 'canceled'")
-    );
-    expect(backend).toContain("await subscriptions.update(row.id, { status: 'canceled'");
+    expect(backend).not.toContain("await subscriptions.update(row.id");
     expect(backend).not.toContain("'/activate'");
     expect(backend).not.toContain("'/cancel'");
     expect(backend).not.toContain("subscriptions.create(");

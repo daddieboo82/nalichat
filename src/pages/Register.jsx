@@ -459,7 +459,7 @@ export default function Register() {
         type="button"
         onClick={() => {
           const normalizedEmail = email.trim().toLowerCase();
-          if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
             setError("Enter the email address where your verification code was sent.");
             return;
           }

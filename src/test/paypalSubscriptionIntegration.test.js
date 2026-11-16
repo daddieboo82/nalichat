@@ -78,7 +78,8 @@ describe('PayPal subscription integration contracts', () => {
     expect(ui).toContain('isCheckoutPaused={isAuthenticated && (isError || subscription.hasPending)}');
     const statusCheck = await read('base44/functions/checkSubscriptionStatus/entry.ts');
     expect(statusCheck).toContain('await reconcilePendingPayPal(subscriptionEntity, subs)');
-    expect(statusCheck).toContain("subscription.provider === 'paypal' && subscription.status === 'pending'");
+    expect(statusCheck).toContain("if (subscription.provider !== 'paypal' || subscription.status !== 'pending') return false;");
+    expect(statusCheck).toContain('subscription.paypal_environment !== paypalEnvironment');
   });
 
   it('keeps billing review reachable without initiating another PayPal checkout', async () => {
@@ -131,7 +132,9 @@ describe('PayPal subscription integration contracts', () => {
   it('captures subscription_id for analytics deduplication on ThankYou return page', async () => {
     const thankYouSource = await read('src/pages/ThankYou.jsx');
     expect(thankYouSource).toContain('urlParams.get("subscription_id")');
-    expect(thankYouSource).toContain('subscriptionId || "unknown"');
+    // Dedupe keys use only provider-verified agreement evidence, never "unknown".
+    expect(thankYouSource).toContain('const analyticsKey = verifiedTransactionKey');
+    expect(thankYouSource).not.toContain('subscriptionId || "unknown"');
     expect(thankYouSource).toContain('Sign in to confirm access');
     expect(thankYouSource).toContain('login?returnTo=');
   });

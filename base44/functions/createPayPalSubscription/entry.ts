@@ -40,24 +40,27 @@ async function accessToken() {
 // supported per-user update and verify the persisted claim. This is not an
 // atomic compare-and-set, so PayPal request idempotency is additionally
 // scoped to the account and UTC day to protect concurrent creation requests.
+// An abandoned checkout must never lock a customer out permanently. A claim is
+// recyclable once its earlier agreement is verified closed/absent at PayPal, or
+// once the claim itself is older than this lease. Open agreements still block.
+const CHECKOUT_CLAIM_LEASE_MS = 30 * 60 * 1000;
+// An approval that PayPal never completed is treated as abandoned after a day.
+const ABANDONED_PENDING_MS = 24 * 60 * 60 * 1000;
+
 async function reservePayPalCheckout(
   users: any,
   userId: string,
   claimId: string,
-  verifiedTerminalClaimKeys: Set<string>,
+  releasedClaimKeys: Set<string>,
 ): Promise<boolean> {
   const current = await users.get(userId);
   if (!current) return false;
   const previousClaim = typeof current.paypal_checkout_claim_id === 'string'
     ? current.paypal_checkout_claim_id : '';
-  if (previousClaim) {
-    // Never recycle an uncertain provider request. Reuse is permitted only
-    // when a matching saved agreement was just verified CANCELLED/EXPIRED at
-    // PayPal, and only on a later UTC day to avoid provider idempotency reuse.
-    const previousDate = String(current.paypal_checkout_claimed_at || '').slice(0, 10);
-    if (!verifiedTerminalClaimKeys.has(previousClaim) ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(previousDate) ||
-        previousDate >= new Date().toISOString().slice(0, 10)) return false;
+  if (previousClaim && previousClaim !== claimId) {
+    const claimedAt = Date.parse(String(current.paypal_checkout_claimed_at || ''));
+    const claimIsStale = !Number.isFinite(claimedAt) || Date.now() - claimedAt > CHECKOUT_CLAIM_LEASE_MS;
+    if (!releasedClaimKeys.has(previousClaim) && !claimIsStale) return false;
   }
   await users.update(userId, {
     paypal_checkout_claim_id: claimId,
@@ -109,11 +112,11 @@ Deno.serve(async (req) => {
     // Block duplicate checkout if the user already has active paid access.
     checkoutStage = 'load_subscriptions';
     const allSubsResult = await base44.asServiceRole.entities.Subscription.filter(
-      { user_id: user.id }, '-created_date', 100,
+      { user_id: user.id }, '-created_date', 500,
     );
     const allSubs = Array.isArray(allSubsResult) ? allSubsResult : allSubsResult?.data;
     if (!Array.isArray(allSubs)) throw new Error('Subscription query returned an invalid result');
-    if (allSubs.length >= 100) return Response.json({ error: 'Subscription history requires review before starting another checkout' }, { status: 409 });
+    if (allSubs.length >= 500) return Response.json({ error: 'Subscription history requires review before starting another checkout' }, { status: 409 });
     const now = new Date().toISOString();
     const alreadyPaid = allSubs.some((sub: any) => {
       const plan = normalizePlan(sub.plan);
@@ -134,43 +137,76 @@ Deno.serve(async (req) => {
     // a locally pending row actually represents an open recurring agreement.
     // Fail closed on stale local statuses: check every other recorded PayPal
     // agreement with PayPal before creating a new recurring billing agreement.
-    const verifiedTerminalClaimKeys = new Set<string>();
-    for (const prior of allSubs.filter((sub: any) => sub.provider === 'paypal' && sub.subscription_id)) {
-      if (prior.paypal_environment !== (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase() || !prior.paypal_plan_id) {
-        return Response.json({ error: 'Previous PayPal billing requires account review' }, { status: 409 });
+    const environment = (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase();
+    const releasedClaimKeys = new Set<string>();
+    const releaseAbandoned = async (prior: any) => {
+      if (typeof prior.checkout_request_key === 'string' && prior.checkout_request_key) {
+        releasedClaimKeys.add(prior.checkout_request_key);
+      }
+      // A pending row PayPal no longer holds is cleared so it stops showing as
+      // an unfinished checkout. Paid access is never affected.
+      if (prior.status !== 'pending' || typeof prior.id !== 'string') return;
+      try {
+        await base44.asServiceRole.entities.Subscription.update(prior.id, { status: 'ended' });
+      } catch {
+        console.warn('Could not clear stale pending PayPal record', { subscriptionRecordId: prior.id });
+      }
+    };
+    // Only locally open rows can represent a live agreement worth blocking on.
+    // Historic canceled/ended rows are left alone instead of being re-verified.
+    const openLocalStatuses = new Set(['pending', 'active', 'trialing', 'unpaid', 'incomplete', 'trial']);
+    for (const prior of allSubs.filter((sub: any) =>
+      sub.provider === 'paypal' && sub.subscription_id &&
+      openLocalStatuses.has(String(sub.status || '')))) {
+      // An agreement recorded under another PayPal environment cannot be the
+      // open agreement this checkout would duplicate.
+      if (prior.paypal_environment !== environment || !prior.paypal_plan_id) {
+        await releaseAbandoned(prior);
+        continue;
       }
       const lookup = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(prior.subscription_id), {
         headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
       });
+      // PayPal holds no such agreement under these credentials, so it cannot
+      // be billed again and must not block a fresh checkout.
+      if (lookup.status === 404 || lookup.status === 400) {
+        await releaseAbandoned(prior);
+        continue;
+      }
       if (!lookup.ok) return Response.json({ error: 'Unable to verify previous PayPal billing' }, { status: 503 });
       const remote = await lookup.json();
       // A canceled agreement must belong to this exact customer and SKU.
-      // Without custom_id validation, a foreign agreement could be accepted
-      // as evidence that the account is safe to bill again.
       if (remote?.id !== prior.subscription_id || remote?.plan_id !== prior.paypal_plan_id ||
           !prior.sku || remote?.custom_id !== user.id + ':' + prior.sku) {
         return Response.json({ error: 'Previous PayPal billing identity needs review before another subscription' }, { status: 409 });
       }
       const providerStatus = String(remote?.status || '').toUpperCase();
-      // Only a verified terminal agreement permits a new checkout. A stale
-      // local "pending" row can be ignored if PayPal has truly ended it.
-      // APPROVED, ACTIVE, APPROVAL_PENDING, SUSPENDED and unknown remain blocked.
-      if (!['CANCELLED', 'EXPIRED'].includes(providerStatus)) {
-        return Response.json({
-          error: providerStatus === 'APPROVAL_PENDING'
-            ? 'Your previous PayPal approval is still pending. Continue that approval in Settings rather than starting another.'
-            : 'Previous PayPal billing needs review before another subscription',
-          code: 'PAYPAL_AGREEMENT_RECONCILIATION_REQUIRED',
-        }, { status: 409 });
+      if (['CANCELLED', 'EXPIRED'].includes(providerStatus)) {
+        await releaseAbandoned(prior);
+        continue;
       }
-      if (typeof prior.checkout_request_key === 'string' && prior.checkout_request_key) {
-        verifiedTerminalClaimKeys.add(prior.checkout_request_key);
+      // An approval PayPal never activated for a day is abandoned. Let the
+      // customer start over instead of staying blocked indefinitely.
+      const createdAt = Date.parse(String(prior.created_date || ''));
+      const abandoned = prior.status === 'pending' &&
+        ['APPROVAL_PENDING', 'APPROVED', 'CREATED'].includes(providerStatus) &&
+        Number.isFinite(createdAt) && Date.now() - createdAt > ABANDONED_PENDING_MS;
+      if (abandoned) {
+        console.warn('Releasing abandoned PayPal approval', { subscriptionRecordId: prior.id });
+        await releaseAbandoned(prior);
+        continue;
       }
+      return Response.json({
+        error: providerStatus === 'APPROVAL_PENDING'
+          ? 'Your previous PayPal approval is still pending. Continue that approval in Settings rather than starting another.'
+          : 'Previous PayPal billing needs review before another subscription',
+        code: 'PAYPAL_AGREEMENT_RECONCILIATION_REQUIRED',
+      }, { status: 409 });
     }
-    // Acquire a durable per-account compare-and-set claim immediately before
-    // the first PayPal subscription creation request.
+    // Acquire a durable per-account claim immediately before the first PayPal
+    // subscription creation request.
     checkoutStage = 'reserve_checkout';
-    const reserved = await reservePayPalCheckout(base44.asServiceRole.entities.User, user.id, idempotencyKey, verifiedTerminalClaimKeys);
+    const reserved = await reservePayPalCheckout(base44.asServiceRole.entities.User, user.id, idempotencyKey, releasedClaimKeys);
     if (!reserved) {
       return Response.json({ error: 'A PayPal checkout has already been started. Check billing before starting another.' }, { status: 409 });
     }

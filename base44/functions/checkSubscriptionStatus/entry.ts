@@ -19,6 +19,10 @@ interface SubscriptionRecord extends Record<string, unknown> {
   status?: unknown;
   billing_period?: string | null;
   provider?: string | null;
+  paypal_environment?: string | null;
+  sku?: string | null;
+  paypal_plan_id?: string | null;
+  created_date?: string | null;
   current_period_end?: string | null;
   cancel_at_period_end?: boolean | null;
   trial_started_at?: string | null;
@@ -267,12 +271,18 @@ Deno.serve(async (req) => {
       trialEndDate: selected?.trial_end_date || null,
       now,
     });
-    // Only a pending PayPal agreement blocks a fresh PayPal checkout.
-    // Historical incomplete Stripe attempts and providerless test records
-    // must not disable the PayPal upgrade buttons.
-    const hasPending = subs.some((subscription) => (
-      subscription.provider === 'paypal' && subscription.status === 'pending'
-    ));
+    // Only an actually open PayPal approval blocks a fresh checkout. Historic
+    // sandbox rows, environment mismatches and abandoned attempts must not
+    // disable the upgrade path indefinitely.
+    const paypalEnvironment = (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase();
+    const pendingCutoff = Date.now() - 24 * 60 * 60 * 1000;
+    const hasPending = subs.some((subscription) => {
+      if (subscription.provider !== 'paypal' || subscription.status !== 'pending') return false;
+      if (subscription.paypal_environment !== paypalEnvironment) return false;
+      if (typeof subscription.subscription_id !== 'string' || !subscription.subscription_id) return false;
+      const created = Date.parse(String(subscription.created_date || ''));
+      return Number.isFinite(created) && created > pendingCutoff;
+    });
     const eligibility = trialEligibility(user.trial_used_at, subs);
 
     return Response.json({

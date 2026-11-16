@@ -9,7 +9,7 @@ describe('PayPal checkout stale pending recovery', () => {
     expect(src).toContain("providerStatus === 'APPROVAL_PENDING'");
     expect(src).toContain("remote?.custom_id !== user.id + ':' + prior.sku");
     expect(src).toContain("remote?.plan_id !== prior.paypal_plan_id");
-    expect(src).toContain("verifiedTerminalClaimKeys.add(prior.checkout_request_key)");
+    expect(src).toContain("releasedClaimKeys.add(prior.checkout_request_key)");
     expect(src).not.toContain("allSubs.some((sub: any) => sub.provider === 'paypal' && sub.status === 'pending')");
     expect(src.indexOf("const providerStatus = String(remote?.status || '').toUpperCase()"))
       .toBeLessThan(src.indexOf('const reserved = await reservePayPalCheckout('));

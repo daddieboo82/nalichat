@@ -225,8 +225,11 @@ Deno.serve(async (req) => {
       success: true,
       action: 'check_subscription_status',
       userId: user.id,
+      // Signed-in account's verified selected subscription record. Used only
+      // to deduplicate return-page analytics; never authorizes paid access.
+      subscriptionRecordId: hasPaidAccess && typeof selected?.id === 'string' ? selected.id : null,
       plan,
-      status,
+      status:
       billingPeriod: selected?.billing_period || null,
       provider: selected?.provider || null,
       currentPeriodEnd,

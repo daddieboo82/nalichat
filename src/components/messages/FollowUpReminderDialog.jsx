@@ -183,18 +183,27 @@ export default function FollowUpReminderDialog({
             <LockKeyhole className="mx-auto h-8 w-8 text-primary" aria-hidden="true" />
             <h3 className="mt-3 font-heading text-lg font-bold">Premium Plus feature</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Premium Plus adds automatic no-reply follow-ups so important conversations do not slip through.
+              {subscription.isError
+                ? "We could not verify your subscription. Premium access stays locked until verification succeeds."
+                : "Premium Plus adds automatic no-reply follow-ups so important conversations do not slip through."}
             </p>
-            <Button asChild className="mt-5">
-              <Link
-                to="/pricing?source=follow_up_reminder&feature=reminders.follow_up"
-                onClick={() => trackFollowUpEvent("follow_up_prompt_convert", {
-                  source: sourceMessage ? "message_action" : "conversation_menu",
-                })}
-              >
-                Unlock follow-up reminders
-              </Link>
-            </Button>
+            {subscription.isError ? (
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <Button type="button" variant="outline" onClick={() => subscription.refetch()}>Retry subscription check</Button>
+                <Button asChild variant="outline"><Link to="/settings">Review billing</Link></Button>
+              </div>
+            ) : (
+              <Button asChild className="mt-5">
+                <Link
+                  to="/pricing?source=follow_up_reminder&feature=reminders.follow_up"
+                  onClick={() => trackFollowUpEvent("follow_up_prompt_convert", {
+                    source: sourceMessage ? "message_action" : "conversation_menu",
+                  })}
+                >
+                  Unlock follow-up reminders
+                </Link>
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-5">

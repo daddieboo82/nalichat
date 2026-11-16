@@ -7,7 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { useSubscription } from "@/hooks/useSubscription";
 import { pollForSubscriptionConfirmation } from "@/lib/subscriptionConfirmation";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
-import { CHECKOUT_ATTRIBUTION_KEY, CHECKOUT_RETURN_KEY } from "@/lib/subscriptionBilling";
+import { CHECKOUT_ATTRIBUTION_KEY, CHECKOUT_RETURN_KEY, CHECKOUT_SUBSCRIPTION_ID_KEY } from "@/lib/subscriptionBilling";
 import { getMarketingAttribution } from "@/lib/adAttribution";
 
 export default function ThankYou() {
@@ -57,12 +57,21 @@ export default function ThankYou() {
         checkoutAttribution = raw ? JSON.parse(raw) : null;
         try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}
       } catch {}
+      let expectedPayPalAgreementId = null;
+      try { expectedPayPalAgreementId = sessionStorage.getItem(CHECKOUT_SUBSCRIPTION_ID_KEY); } catch {}
       setSubscriptionConfirmation("processing");
       const result = await pollForSubscriptionConfirmation({
         fetchStatus: async () => {
           const queryResult = await refetchSubscription();
           if (queryResult.error) throw queryResult.error;
-          return queryResult.data;
+          const subscription = queryResult.data;
+          // A different existing Premium agreement must not confirm this
+          // returned checkout. The backend still owns actual paid access.
+          if (expectedPayPalAgreementId && subscription?.hasPaidAccess === true &&
+              subscription?.verifiedPayPalAgreementId !== expectedPayPalAgreementId) {
+            return { ...subscription, hasPaidAccess: false };
+          }
+          return subscription;
         },
       });
       if (!active) return;
@@ -72,7 +81,10 @@ export default function ThankYou() {
         const verifiedSubscriptionRecordId = result.subscription.subscriptionRecordId;
         // Provider returns may contain only ?subscription=1. Never reuse an
         // "unknown" key across distinct, verified paid subscription records.
-        const verifiedTransactionKey = verifiedSubscriptionRecordId || null;
+        const verifiedTransactionKey =
+          expectedPayPalAgreementId &&
+          expectedPayPalAgreementId === result.subscription.verifiedPayPalAgreementId
+            ? verifiedSubscriptionRecordId || null : null;
         if (verifiedTransactionKey) trackVerifiedPurchaseConversion(checkoutId || subscriptionId || verifiedTransactionKey);
         const analyticsKey = verifiedTransactionKey
           ? `nalichat_subscription_confirmation:${verifiedTransactionKey}`
@@ -104,7 +116,7 @@ export default function ThankYou() {
             },
           );
         }
-        try { sessionStorage.removeItem(CHECKOUT_ATTRIBUTION_KEY); } catch {}
+        try { sessionStorage.removeItem(CHECKOUT_ATTRIBUTION_KEY); sessionStorage.removeItem(CHECKOUT_SUBSCRIPTION_ID_KEY); } catch {}
       } else if (result.outcome === "failed" || result.outcome === "timeout") {
         const attribution = getMarketingAttribution();
         trackPaywallEvent("purchase_failed", {

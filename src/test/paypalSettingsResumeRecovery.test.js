@@ -51,4 +51,14 @@ describe('PayPal pending approval recovery in Settings', () => {
     expect(backend).not.toContain("subscriptions.create(");
   });
 
+  it('has one success return and rate-limits expensive provider recovery', async () => {
+    const backend = await readFile('base44/functions/reconcileTerminalPayPal/entry.ts', 'utf8');
+    expect((backend.match(/success: true, action: 'reconcile_terminal_paypal', userId: user.id, resolved,/g) || []).length).toBe(1);
+    expect(backend).toContain("consumeHourlyLimit(");
+    expect(backend).toContain("'terminal_paypal_recovery', 6");
+    expect(backend).toContain("if (!rate.allowed)");
+    expect(backend).toContain("{ status: 429 }");
+    expect(backend).toContain("const { resolved, complete } = await applyVerifiedTerminalPayPalRows(");
+  });
+
 });

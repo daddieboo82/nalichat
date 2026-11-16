@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 
 
@@ -7,6 +7,12 @@ export default function PageNotFound({}) {
     const pageName = location.pathname.substring(1);
 
     const { user, isAuthenticated, authChecked } = useAuth();
+
+    // Preserve previously shared admin dashboard links while retaining the
+    // destination's existing authentication and admin-role checks.
+    if (location.pathname.toLowerCase() === '/admin-dashboard') {
+        return <Navigate to={'/admin' + location.search + location.hash} replace />;
+    }
     
     return (
         <div className="min-h-screen flex items-center justify-center p-6 bg-background">

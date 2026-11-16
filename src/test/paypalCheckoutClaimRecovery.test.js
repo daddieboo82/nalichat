@@ -6,12 +6,12 @@ describe('PayPal checkout claim recycling', () => {
     const source = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(source).toContain('verifiedTerminalClaimKeys.has(previousClaim)');
     expect(source).toContain('verifiedTerminalClaimKeys.add(prior.checkout_request_key)');
-    expect(source).toContain("['CANCELLED', 'EXPIRED'].includes(remote?.status)");
+    expect(source).toContain("['CANCELLED', 'EXPIRED'].includes(providerStatus)");
     expect(source).toContain('remote?.custom_id !== user.id');
     expect(source).toContain('remote?.plan_id !== prior.paypal_plan_id');
     expect(source).toContain('previousDate >= new Date().toISOString().slice(0, 10)');
     expect(source.indexOf('verifiedTerminalClaimKeys.add(prior.checkout_request_key)'))
-      .toBeGreaterThan(source.indexOf("['CANCELLED', 'EXPIRED'].includes(remote?.status)"));
+      .toBeGreaterThan(source.indexOf("['CANCELLED', 'EXPIRED'].includes(providerStatus)"));
     expect(source.indexOf('const reserved = await reservePayPalCheckout('))
       .toBeGreaterThan(source.indexOf('verifiedTerminalClaimKeys.add(prior.checkout_request_key)'));
   });

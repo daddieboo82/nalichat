@@ -68,11 +68,15 @@ export function paypalPeriodEndForStatus(
   nextBillingTime: unknown,
   nowMs = Date.now(),
 ): string | null | undefined {
-  if (typeof nextBillingTime !== 'string') return undefined;
+  // This helper is called only after an authenticated, identity-checked
+  // PayPal status read. For an explicitly ACTIVE agreement, no usable next
+  // billing date must clear a stale local expiry rather than preserve it.
+  // Other states keep their existing boundary until the provider supplies one.
+  if (typeof nextBillingTime !== 'string') return status === 'active' ? null : undefined;
   const value = nextBillingTime.trim();
-  if (!value) return undefined;
+  if (!value) return status === 'active' ? null : undefined;
   const parsed = Date.parse(value);
-  if (!Number.isFinite(parsed)) return undefined;
+  if (!Number.isFinite(parsed)) return status === 'active' ? null : undefined;
   if (status === 'active' && parsed <= nowMs) return null;
   return value;
 }

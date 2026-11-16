@@ -111,6 +111,21 @@ describe('ThankYou purchase verification', () => {
     );
   });
 
+  it('shows an accurate processing state for delayed donations without claiming payment', async () => {
+    base44.functions.invoke.mockResolvedValue({
+      data: {
+        success: true,
+        checkoutId: 'cs_test_123',
+        status: 'pending',
+        items: [{ type: 'donation', name: 'Donation to NaliBase' }],
+      },
+    });
+    renderPage('/ThankYou?checkout_id=cs_test_123&purchase_token=secret-token');
+    expect(await screen.findByText('Donation payment processing')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Check payment status again' })).toBeTruthy();
+    expect(screen.queryByText('Purchase Complete!')).toBeNull();
+  });
+
   it('shows success only after the backend confirms paid status', async () => {
     base44.functions.invoke.mockResolvedValue({
       data: {

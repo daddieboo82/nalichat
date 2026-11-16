@@ -41,7 +41,8 @@ const STEPS = [
 
 export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange, redirectAfter, mixOptions, canPublish = true }) {
   const navigate = useNavigate();
-  const { hasEntitlement, isLoading: subscriptionLoading } = useSubscription();
+  const { hasEntitlement, isLoading: subscriptionLoading, isError: subscriptionError, subscription } = useSubscription();
+  const billingReviewNeeded = subscriptionError || subscription.hasPending;
   const { user } = useAuth();
   const canUseAi = hasEntitlement("ai.standard");
   const [internalOpen, setInternalOpen] = useState(false);
@@ -59,6 +60,18 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [autoMaster, setAutoMaster] = useState(canUseAi);
+  const masteringChoiceRef = useRef(false);
+  useEffect(() => {
+    // When entitlement resolves after first render, default AI mastering on
+    // once, without overriding a user-selected setting.
+    if (open && canUseAi && !subscriptionLoading && !masteringChoiceRef.current) {
+      setAutoMaster(true);
+      masteringChoiceRef.current = true;
+    }
+  }, [open, canUseAi, subscriptionLoading]);
+  useEffect(() => {
+    if (!open) masteringChoiceRef.current = false;
+  }, [open]);
   const [showManualParams, setShowManualParams] = useState(false);
   const [params, setParams] = useState(FLAT_PARAMS);
   const [savedParams, setSavedParams] = useState(null);
@@ -105,6 +118,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
       // 1. AI mastering engineer decides the processing chain (skip when disabled)
       setStep(1);
       let masterParams = params;
+      const usedAiMastering = canUseAi && autoMaster;
       if (canUseAi && autoMaster && !showManualParams) {
         const res = await base44.functions.invoke("aiMasterSession", {
           project_title: bounceTitle,
@@ -133,7 +147,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
       const published = await base44.functions.invoke("publishStudioBounce", {
         projectId: project?.id || null,
         title: bounceTitle,
-        description: autoMaster
+        description: usedAiMastering
           ? `AI-mastered, industry-ready song produced from ${validTracks.length} stacked stems.`
           : `Song produced from ${validTracks.length} stacked stems.`,
         file_url,
@@ -284,11 +298,19 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
                   <p className="text-xs text-muted-foreground">
                     {canUseAi
                       ? "Industry-standard EQ, compression & limiting for a pro-finished sound."
-                      : "Premium unlocks AI mastering for a more polished, release-ready bounce."}
+                      : billingReviewNeeded
+                        ? "Your existing subscription needs verification or billing review before AI mastering can be enabled."
+                        : "Premium unlocks AI mastering for a more polished, release-ready bounce."}
                   </p>
                 </div>
                 {canUseAi ? (
-                  <Switch aria-label="AI Auto-Mastering" checked={autoMaster} onCheckedChange={setAutoMaster} />
+                  <Switch aria-label="AI Auto-Mastering" checked={autoMaster} onCheckedChange={(value) => { masteringChoiceRef.current = true; setAutoMaster(value); }} />
+                ) : !subscriptionLoading && billingReviewNeeded ? (
+                  <Button variant="outline" size="sm" className="shrink-0" asChild>
+                    <Link to="/settings" target="_blank" rel="noopener noreferrer">
+                      Review billing <span className="sr-only">(opens in a new tab)</span>
+                    </Link>
+                  </Button>
                 ) : !subscriptionLoading && PAYWALL_CONFIG.enabled ? (
                   <Button variant="outline" size="sm" className="shrink-0" asChild>
                     <Link

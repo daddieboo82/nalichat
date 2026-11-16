@@ -20,7 +20,9 @@ function apiBase() {
 async function accessToken() {
   const id = secrets.get('PAYPAL_CLIENT_ID');
   const secret = secrets.get('PAYPAL_CLIENT_SECRET');
-  if (!id || !secret) throw new Error('PayPal credentials are not configured');
+  if (!id || !secret || id.startsWith('REPLACE_') || secret.startsWith('REPLACE_')) {
+    throw new Error('PayPal credentials are not configured');
+  }
   const res = await fetch(apiBase() + '/v1/oauth2/token', {
     method: 'POST',
     headers: {
@@ -94,7 +96,15 @@ Deno.serve(async (req) => {
     const item = CATALOG[sku];
     if (!item) return Response.json({ error: 'Unknown subscription plan' }, { status: 400 });
     const planId = secrets.get(item.secret);
-    if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
+    // Reject placeholder or malformed plan IDs before obtaining an agreement
+    // reservation. A failed provider request can otherwise leave an uncertain
+    // checkout claim that blocks legitimate upgrades.
+    if (typeof planId !== 'string' || !/^P-[A-Z0-9]{10,}$/.test(planId.trim())) {
+      return Response.json({
+        error: 'This subscription plan is temporarily unavailable. Please contact NaliChat support.',
+        code: 'PAYPAL_PLAN_CONFIGURATION_REQUIRED',
+      }, { status: 503 });
+    }
 
     // Block duplicate checkout if the user already has active paid access.
     checkoutStage = 'load_subscriptions';

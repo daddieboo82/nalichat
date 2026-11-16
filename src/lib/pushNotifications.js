@@ -55,14 +55,14 @@ export async function showPushNotification({ title, body, url = '/' }) {
   if (reg) {
     reg.showNotification(title, {
       body,
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
+      icon: '/nalichat-icon.svg',
+      badge: '/nalichat-icon.svg',
       tag: 'nali-notification',
       data: { url },
     });
   } else {
     // Fallback: direct Notification API
-    new Notification(title, { body, icon: '/favicon.ico' });
+    new Notification(title, { body, icon: '/nalichat-icon.svg' });
   }
 }
 

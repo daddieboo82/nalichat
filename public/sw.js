@@ -166,8 +166,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'NaliBase', {
       body: data.body || 'You have a new notification',
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
+      icon: '/nalichat-icon.svg',
+      badge: '/nalichat-icon.svg',
       tag: data.tag || 'nali-remote-notification',
       data: { url: data.url || '/' },
     })

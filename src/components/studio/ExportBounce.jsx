@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
@@ -18,7 +19,8 @@ const LOUDNESS_STANDARDS = {
 };
 
 export default function ExportBounce({ postId, title, disabled }) {
-  const { hasEntitlement } = useSubscription();
+  const { hasEntitlement, isLoading: subscriptionLoading, isError: subscriptionError, subscription, refetch } = useSubscription();
+  const billingReviewNeeded = subscriptionError || subscription.hasPending;
   const canMaster = hasEntitlement("ai.standard");
   const [open, setOpen] = useState(false);
   const [loudnessStandard, setLoudnessStandard] = useState("streaming");
@@ -28,7 +30,7 @@ export default function ExportBounce({ postId, title, disabled }) {
 
   const handleExport = async () => {
     if (!canMaster) {
-      toast.error("Mastering export is a Premium feature built for polished, release-ready Studio output.");
+      toast.error(subscriptionLoading ? "Checking your subscription. Please retry shortly." : billingReviewNeeded ? "We could not verify your existing Premium billing. Check Settings before another checkout." : "Mastering export is a Premium feature built for polished, release-ready Studio output.");
       return;
     }
     if (!postId) return;
@@ -81,13 +83,20 @@ export default function ExportBounce({ postId, title, disabled }) {
         <Button
           variant="outline"
           className="rounded-xl"
-          disabled={disabled || !postId || !canMaster}
-          title={canMaster ? "Analyze mastering loudness and dynamics" : "Mastering analysis is available with Premium"}
+          disabled={disabled || !postId || !canMaster || subscriptionLoading}
+          title={subscriptionLoading ? "Checking your subscription" : billingReviewNeeded ? "Check billing in Settings to restore Premium" : canMaster ? "Analyze mastering loudness and dynamics" : "Mastering analysis is available with Premium"}
         >
           <Award className="w-4 h-4 mr-2" />
-          {canMaster ? "Mastering Analysis" : "Premium Analysis"}
+          {subscriptionLoading ? "Checking access..." : canMaster ? "Mastering Analysis" : billingReviewNeeded ? "Verify Premium" : "Premium Analysis"}
         </Button>
       </DialogTrigger>
+      {!canMaster && !subscriptionLoading && billingReviewNeeded && (
+        <div className="mt-2 flex flex-wrap items-center gap-2" role="status">
+          <span className="text-xs text-muted-foreground">Subscription verification needs attention.</span>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>Retry verification</Button>
+          <Button size="sm" variant="outline" asChild><Link to="/settings">Review billing</Link></Button>
+        </div>
+      )}
       <DialogContent className="bg-card border-border shadow-2xl max-w-md">
         <DialogHeader>
           <DialogTitle className="font-heading text-lg">Mastering Analysis</DialogTitle>

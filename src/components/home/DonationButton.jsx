@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,43 +14,66 @@ export default function DonationButton({ variant = "hero" }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(10);
   const [loading, setLoading] = useState(false);
+  const handledReturn = useRef(false);
+  const [donationPending, setDonationPending] = useState(false);
+
+  useEffect(() => {
+    if (handledReturn.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("paypal_donation_cancel") === "1") {
+      handledReturn.current = true;
+      toast.info("PayPal donation canceled. No donation was charged by NaliChat.");
+      params.delete("paypal_donation_cancel");
+      window.history.replaceState(window.history.state, "", window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash);
+      return;
+    }
+    if (params.get("paypal_donation") !== "1") return;
+    const orderId = params.get("token");
+    const verifier = params.get("donation_verifier");
+    if (!/^[A-Za-z0-9_-]{8,64}$/.test(orderId || "") || !/^[0-9a-f]{64}$/.test(verifier || "")) {
+      handledReturn.current = true;
+      toast.error("PayPal donation verification information is incomplete. Contact support before donating again.");
+      return;
+    }
+    handledReturn.current = true;
+    setDonationPending(true);
+    base44.functions.invoke("capturePayPalDonation", { orderId, verifier }).then(res => {
+      const data = res?.data ?? res;
+      if (data?.success === true && data?.action === "capture_paypal_donation" && data?.status === "paid") {
+        toast.success("Thank you! PayPal has confirmed your donation.");
+        params.delete("paypal_donation");
+        params.delete("donation_verifier");
+        params.delete("token");
+        params.delete("PayerID");
+        window.history.replaceState(window.history.state, "", window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash);
+      } else {
+        toast.info("Your PayPal donation is not confirmed yet. Reload this page to check the same order; do not pay again.");
+      }
+    }).catch(() => toast.error("Unable to confirm your PayPal donation. Reload this page to recheck; do not pay again.")).finally(() => setDonationPending(false));
+  }, []);
 
   const handleDonate = async () => {
-    if (loading || !PRESETS.includes(amount)) return;
+    if (loading || donationPending || !PRESETS.includes(amount)) return;
     setLoading(true);
     try {
-      // Only the canonical HTTPS origin is allowlisted by the checkout backend.
-      // Do not use the visitor's current host (Base44 previews may differ).
-      const appUrl = "https://nalichat.org";
-      const response = await base44.functions.invoke("createCheckout", {
-        items: [{ type: "donation", amount, quantity: 1 }],
-        callbackUrls: {
-          postFlowUrl: appUrl,
-          thankYouPageUrl: appUrl + "/ThankYou",
-        },
-      });
-      const payload = response?.data ?? response;
-      if (payload?.error) throw new Error(payload.error);
-      const checkoutId = payload?.checkoutId;
-      const checkoutUrl = payload?.checkoutUrl;
-      if (typeof checkoutId !== "string" || !/^cs_(?:test_|live_)?[A-Za-z0-9_]{8,255}$/.test(checkoutId)) {
-        throw new Error("Donation checkout was not confirmed");
+      const response = await base44.functions.invoke("createPayPalDonation", { amount });
+      const data = response?.data ?? response;
+      if (data?.error) throw new Error(data.error);
+      if (data?.success !== true || data?.action !== "create_paypal_donation" ||
+          !/^[A-Za-z0-9_-]{8,64}$/.test(data?.orderId || "")) {
+        throw new Error("PayPal donation checkout was not confirmed");
       }
-      let destination;
-      try { destination = new URL(checkoutUrl); } catch {
-        throw new Error("Donation checkout URL is invalid");
+      let url;
+      try { url = new URL(data.checkoutUrl); } catch {
+        throw new Error("Invalid PayPal approval address");
       }
-      if (destination.protocol !== "https:" ||
-          !["checkout.stripe.com", "checkout.stripe.dev"].includes(destination.hostname)) {
-        throw new Error("Donation checkout URL was not trusted");
-      }
-      // No conversion is recorded before an authenticated paid confirmation.
-      try { localStorage.setItem(`gads_purchase_value:${checkoutId}`, String(amount)); } catch {}
-      window.location.assign(destination.toString());
+      const trustedHost = ["www.paypal.com", "www.sandbox.paypal.com"].includes(url.hostname);
+      if (url.protocol !== "https:" || !trustedHost) throw new Error("Untrusted PayPal approval address");
+      window.location.assign(url.toString());
     } catch (error) {
       const message = error?.response?.data?.error || error?.data?.error || error?.message;
-      toast.error(typeof message === "string" && /callback|checkout|payment|donation|rate limit|too many/i.test(message)
-        ? message : "Unable to open secure donation checkout. Please try again.");
+      toast.error(typeof message === "string" && /paypal|donation|checkout|attempt/i.test(message)
+        ? message : "PayPal donation checkout is unavailable. Please try again later.");
       setLoading(false);
     }
   };
@@ -102,7 +125,7 @@ export default function DonationButton({ variant = "hero" }) {
           </div>
 
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button className="ui-hover min-h-11 rounded-xl" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+            <Button className="ui-hover min-h-11 rounded-xl" variant="outline" onClick={() => setOpen(false)} disabled={loading || donationPending}>
               Cancel
             </Button>
             <Button
@@ -113,7 +136,7 @@ export default function DonationButton({ variant = "hero" }) {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Redirecting...
+                  Opening PayPal...
                 </>
               ) : (
                 <>

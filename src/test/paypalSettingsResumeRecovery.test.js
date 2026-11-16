@@ -30,6 +30,12 @@ describe('PayPal pending approval recovery in Settings', () => {
     expect(backend).toContain("user_id: user.id, provider: 'paypal', status: 'pending'");
     expect(backend).toContain("['CANCELLED', 'EXPIRED'].includes");
     expect(backend).toContain("remote?.custom_id !== user.id + ':' + row.sku");
+    expect(backend).toContain("const current = await subscriptions.get(row.id)");
+    expect(backend).toContain("current.status !== 'pending'");
+    expect(backend).toContain("current.subscription_id !== row.subscription_id");
+    expect(backend.indexOf("const current = await subscriptions.get(row.id)")).toBeLessThan(
+      backend.indexOf("await subscriptions.update(row.id, { status: 'canceled'")
+    );
     expect(backend).toContain("await subscriptions.update(row.id, { status: 'canceled'");
     expect(backend).not.toContain("'/activate'");
     expect(backend).not.toContain("'/cancel'");

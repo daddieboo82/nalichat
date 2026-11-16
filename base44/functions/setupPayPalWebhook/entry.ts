@@ -42,9 +42,11 @@ Deno.serve(async (req) => {
     if (!user || user.role !== 'admin') return Response.json({ error: 'Admin required' }, { status: 403 });
     const existing = secrets.get('PAYPAL_WEBHOOK_ID');
     const accessToken = await token();
-    const appId = secrets.get('BASE44_APP_ID') || '6a1f5ee134147461560c2b37';
+    // PayPal must post to the app's public function endpoint. The internal
+    // dispatcher URL rejects unauthenticated provider calls, so deliveries sent
+    // there never reach this function.
     const webhookUrl = secrets.get('PAYPAL_WEBHOOK_URL') ||
-      `https://base44-dispatcher-production.base44.workers.dev/api/apps/${appId}/functions/paypalWebhook`;
+      'https://nalichat.base44.app/functions/paypalWebhook';
     if (existing && !existing.startsWith('REPLACE_')) {
       const remoteResponse = await fetch(apiBase() + '/v1/notifications/webhooks/' + encodeURIComponent(existing), {
         headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json' },

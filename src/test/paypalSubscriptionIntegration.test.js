@@ -73,7 +73,12 @@ describe('PayPal subscription integration contracts', () => {
     expect(ui).toContain('{subscription.hasPending && !subscription.hasPaidAccess && (');
     expect(ui).not.toContain('!checkoutCanceled && (');
     expect(ui).toContain('Continue existing PayPal approval');
-    expect(ui).toContain('isCheckoutPaused={false}');
+    // Pending billing must stay blocked until on-demand provider verification
+    // clears a terminal agreement. Never disable the fraud/duplicate guard.
+    expect(ui).toContain('isCheckoutPaused={isAuthenticated && (isError || subscription.hasPending)}');
+    const statusCheck = await read('base44/functions/checkSubscriptionStatus/entry.ts');
+    expect(statusCheck).toContain('await reconcilePendingPayPal(subscriptionEntity, subs)');
+    expect(statusCheck).toContain("subscription.provider === 'paypal' && subscription.status === 'pending'");
   });
 
   it('returns PayPal buyers to the canonical domain instead of the request host', async () => {

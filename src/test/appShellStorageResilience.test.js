@@ -18,8 +18,11 @@ describe('app shell storage resilience', () => {
   it('keeps Ask Nali hint working without sessionStorage', async () => {
     const source = await readText('src/components/AskNaliHint.jsx');
     expect(source).toContain('function sessionGet(key)');
-    expect(source).toContain('sessionGet("nali_hint_dismissed")');
-    expect(source).toContain('sessionSet("nali_hint_dismissed", "1")');
+    // The dismissal key is scoped per account so one user's dismissal never
+    // hides the hint for another account on the same browser.
+    expect(source).toContain('const dismissalKey = `nali_hint_dismissed:${user?.id || "anonymous"}`');
+    expect(source).toContain('if (sessionGet(dismissalKey))');
+    expect(source).toContain('sessionSet(dismissalKey, "1")');
   });
 
   it('keeps daily recommendation dismissal working without sessionStorage', async () => {

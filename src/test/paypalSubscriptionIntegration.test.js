@@ -36,8 +36,9 @@ describe('PayPal subscription integration contracts', () => {
     expect(createSource).toContain('await users.get(userId)');
     expect(createSource).not.toContain('users.updateMany(');
     expect(createSource).toContain('persisted?.paypal_checkout_claim_id === claimId');
-    expect(createSource).toContain("sub.status === 'pending'");
-    expect(createSource).toContain("['CANCELLED', 'EXPIRED'].includes(remote?.status)");
+    expect(createSource).toContain("const providerStatus = String(remote?.status || '').toUpperCase()");
+    expect(createSource).toContain("['CANCELLED', 'EXPIRED'].includes(providerStatus)");
+    expect(createSource).toContain("providerStatus === 'APPROVAL_PENDING'");
     expect(createSource.indexOf('const reserved = await reservePayPalCheckout('))
       .toBeLessThan(createSource.indexOf("const res = await fetch(apiBase() + '/v1/billing/subscriptions', {"));
     expect(createSource).toContain('checkout_request_key: idempotencyKey');

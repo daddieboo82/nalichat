@@ -228,6 +228,7 @@ Deno.serve(async (req) => {
       // Signed-in account's verified selected subscription record. Used only
       // to deduplicate return-page analytics; never authorizes paid access.
       subscriptionRecordId: hasPaidAccess && typeof selected?.id === 'string' ? selected.id : null,
+      verifiedPayPalAgreementId: hasPaidAccess && selected?.provider === 'paypal' && typeof selected?.subscription_id === 'string' ? selected.subscription_id : null,
       plan,
       status,
       billingPeriod: selected?.billing_period || null,

@@ -94,7 +94,13 @@ Deno.serve(async (req) => {
     // Authenticate every incoming event before acknowledging it, including
     // event types this handler does not currently process.
     const token = await accessToken();
-    if (!(await verify(req, event, token))) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const verified = await verify(req, event, token);
+    if (!verified) {
+      // Authentication failures happen before the durable ledger. Log only
+      // the rejection category: never log payloads, signatures, IDs, or tokens.
+      console.warn('PayPal webhook signature verification rejected');
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     if (!HANDLED.has(event.event_type)) return Response.json({ received: true, ignored: true });
 
     const base44 = createClientFromRequest(req);

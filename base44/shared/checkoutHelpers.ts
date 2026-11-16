@@ -1,4 +1,4 @@
-import { APP_ORIGIN } from './appConfig.ts';
+import { APP_ORIGIN, APP_PLATFORM_ORIGIN } from './appConfig.ts';
 
 export function checkoutErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Failed to create checkout session';
@@ -35,7 +35,7 @@ export async function anonymousCheckoutScope(req: Request, prefix: string = 'ano
 }
 
 export function allowedCheckoutOrigins(): Set<string> {
-  return new Set([APP_ORIGIN]);
+  return new Set([APP_ORIGIN, APP_PLATFORM_ORIGIN]);
 }
 
 export function validateCallbackUrl(raw: unknown, allowedOrigins: Set<string>): string {

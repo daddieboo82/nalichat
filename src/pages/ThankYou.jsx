@@ -10,9 +10,13 @@ import { trackPaywallEvent } from "@/lib/paywallAnalytics";
 import { CHECKOUT_ATTRIBUTION_KEY, CHECKOUT_RETURN_KEY, CHECKOUT_SUBSCRIPTION_ID_KEY } from "@/lib/subscriptionBilling";
 import { getMarketingAttribution } from "@/lib/adAttribution";
 
+// Stripe purchases this page confirms: one-time donations and artist tips.
+const SUPPORTED_PURCHASE_TYPES = new Set(["donation", "tip"]);
+
 export default function ThankYou() {
   const [processing, setProcessing] = useState(true);
   const [purchaseVerification, setPurchaseVerification] = useState("processing");
+  const [purchaseKind, setPurchaseKind] = useState("donation");
   const [subscriptionConfirmation, setSubscriptionConfirmation] = useState("processing");
   const { refetch: refetchSubscription } = useSubscription();
 
@@ -171,12 +175,13 @@ export default function ThankYou() {
           verified?.checkoutId !== checkoutId ||
           !Array.isArray(verified?.items) ||
           verified.items.length === 0 ||
-          verified.items.some((item) => item?.type !== "donation")
+          verified.items.some((item) => !SUPPORTED_PURCHASE_TYPES.has(item?.type))
         ) {
           setPurchaseVerification("failed");
           setProcessing(false);
           return;
         }
+        setPurchaseKind(verified.items[0]?.type === "tip" ? "tip" : "donation");
         if (verified.status === "pending") {
           setPurchaseVerification("pending");
           setProcessing(false);
@@ -283,9 +288,11 @@ export default function ThankYou() {
       <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8 sm:px-6">
         <div className="ui-surface w-full max-w-2xl rounded-3xl border border-amber-500/20 bg-card/30 p-6 text-center sm:p-8" aria-live="polite">
           <CircleAlert className="mx-auto mb-6 h-16 w-16 text-amber-500" aria-hidden="true" />
-          <h1 className="mb-4 font-heading text-3xl font-black">Donation payment processing</h1>
+          <h1 className="mb-4 font-heading text-3xl font-black">
+            {purchaseKind === "tip" ? "Tip payment processing" : "Donation payment processing"}
+          </h1>
           <p className="mb-6 text-base text-muted-foreground">
-            Stripe has not confirmed that your donation was paid yet. This may happen with delayed payment methods. Please check again later rather than starting another donation.
+            Stripe has not confirmed that your {purchaseKind === "tip" ? "tip" : "donation"} was paid yet. This may happen with delayed payment methods. Please check again later rather than paying again.
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Button size="lg" onClick={() => window.location.reload()}>Check payment status again</Button>
@@ -338,16 +345,20 @@ export default function ThankYou() {
         </motion.div>
 
         <h1 className="mb-4 font-heading text-3xl font-black tracking-tight sm:text-5xl">
-          {processing ? "Confirming Purchase..." : "Purchase Complete!"}
+          {processing
+            ? "Confirming Purchase..."
+            : purchaseKind === "tip" ? "Tip Sent!" : "Purchase Complete!"}
         </h1>
 
         <p className="mb-8 text-base leading-relaxed text-muted-foreground sm:text-xl">
           {processing
             ? "Confirming your payment. This takes just a moment..."
-            : "Thank you for supporting NaliBase — your donation helps fund ongoing app development."}
+            : purchaseKind === "tip"
+              ? "Your tip was confirmed. Thank you for supporting this artist."
+              : "Thank you for supporting NaliBase — your donation helps fund ongoing app development."}
         </p>
 
-        {!processing && (
+        {!processing && purchaseKind !== "tip" && (
           <div className="ui-surface mb-8 rounded-2xl border border-primary/30 bg-card p-5 sm:p-8">
             <h2 className="font-heading font-bold text-2xl mb-4 flex items-center justify-center gap-2">
               <Music className="w-6 h-6 text-primary" />

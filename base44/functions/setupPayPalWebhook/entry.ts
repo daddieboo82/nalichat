@@ -56,9 +56,11 @@ Deno.serve(async (req) => {
       // PayPal's '*' subscription covers every event type. Do not flag a
       // wildcard registration as incomplete.
       const missingEvents = EVENTS.filter((name) => !subscribed.has('*') && !subscribed.has(name));
-      const enabled = remote.status === 'ENABLED';
+      // The PayPal webhook schema exposes URL and event subscriptions but does not
+      // define a top-level enabled flag. Do not mistake an absent field for DISABLED.
+      const enabled = typeof remote.status === 'string' ? remote.status === 'ENABLED' : null;
       const urlMatches = remote.url === webhookUrl;
-      const verified = enabled && urlMatches && missingEvents.length === 0;
+      const verified = enabled !== false && urlMatches && missingEvents.length === 0;
       return Response.json({
         success: verified,
         verified: verified,
@@ -68,6 +70,8 @@ Deno.serve(async (req) => {
         expectedWebhookUrl: webhookUrl,
         urlMatches,
         enabled,
+        enabledStatusSource: enabled === null ? 'not_exposed_by_paypal' : 'provider_explicit',
+        deliveryVerified: false,
         missingEvents,
         message: verified ? 'PayPal webhook configuration verified' : 'PayPal webhook configuration requires correction',
       }, { status: verified ? 200 : 409 });

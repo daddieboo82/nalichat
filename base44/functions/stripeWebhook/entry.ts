@@ -13,6 +13,7 @@ import { stripeRequest, verifyStripeSignature } from '../../shared/stripe.ts';
 
 const HANDLED_EVENTS = new Set([
   'checkout.session.completed',
+  'checkout.session.async_payment_succeeded',
   'customer.subscription.updated',
   'customer.subscription.deleted',
   'invoice.paid',
@@ -410,6 +411,7 @@ async function processEvent(
 
   switch (event.type) {
     case 'checkout.session.completed':
+    case 'checkout.session.async_payment_succeeded':
       await processCheckout(entities, object, event, catalog, environment);
       break;
     case 'customer.subscription.updated':

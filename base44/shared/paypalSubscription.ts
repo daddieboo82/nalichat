@@ -11,7 +11,7 @@ export async function resolvePayPalSubscriptionStatus(
   let remoteStatus = String(remote?.status || '').toUpperCase();
   if (remoteStatus !== 'APPROVED') return remoteStatus;
 
-  let activated = false;
+
   try {
     const actRes = await fetch(
       apiBase + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId) + '/activate',
@@ -24,14 +24,16 @@ export async function resolvePayPalSubscriptionStatus(
         body: JSON.stringify({ reason: 'Activating subscription after customer approval' }),
       },
     );
-    activated = actRes.ok || actRes.status === 204;
+    if (!actRes.ok && actRes.status !== 204) {
+      console.error('PayPal subscription activation not accepted', { httpStatus: actRes.status });
+    }
   } catch {
-    activated = false;
+    // Continue to the authoritative status check; PayPal might have activated concurrently.
   }
-  if (activated) remoteStatus = 'ACTIVE';
-
-  // Activation can lose a race with PayPal auto-activation, and the APPROVED
-  // payload often has no usable billing window. Re-read before deciding access.
+  // PayPal accepting an activation request is not proof that the agreement
+  // is ACTIVE. Confirm the provider's current status before granting access.
+  // An unavailable/invalid re-read leaves the agreement APPROVED (unpaid here)
+  // so the next reconciliation can safely try again.
   try {
     const again = await fetch(
       apiBase + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId),
@@ -39,14 +41,20 @@ export async function resolvePayPalSubscriptionStatus(
     );
     if (again.ok) {
       const fresh = await again.json();
-      if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
-      const freshStatus = String(fresh?.status || '').toUpperCase();
-      if (freshStatus && (!activated || freshStatus === 'ACTIVE')) {
-        remoteStatus = freshStatus;
+      if (fresh?.id === subscriptionId) {
+        if (fresh?.billing_info) remote.billing_info = fresh.billing_info;
+        const freshStatus = String(fresh?.status || '').toUpperCase();
+        // A positive status must come from the remote GET, not the activation
+        // POST response. APPROVED, SUSPENDED and other states remain unpaid.
+        if (freshStatus === 'ACTIVE') {
+          remoteStatus = 'ACTIVE';
+        } else if (freshStatus) {
+          remoteStatus = freshStatus;
+        }
       }
     }
   } catch {
-    // Keep the status already resolved from the approval response.
+    // Do not infer ACTIVE from an activation attempt if the GET failed.
   }
 
   return remoteStatus;

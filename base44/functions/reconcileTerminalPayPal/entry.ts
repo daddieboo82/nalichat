@@ -22,7 +22,7 @@ Deno.serve(async (req: Request) => {
     if (!pending.length) return Response.json({ success: true, action: 'reconcile_terminal_paypal', userId: user.id, resolved: 0 });
 
     // This customer-triggered path can make one merchant PayPal API request
-    // per old agreement. Limit repeated requests without using billing credits.
+    // per old agreement. Bound how often this expensive operation can run.
     const rate = await consumeHourlyLimit(
       base44.asServiceRole.entities, user.id, 'terminal_paypal_recovery', 6,
     );

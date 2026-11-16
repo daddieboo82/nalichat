@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/useSubscription";
-import { openBillingPortal } from "@/lib/subscriptionBilling";
+import { openBillingPortal, resumePendingPayPalApproval } from "@/lib/subscriptionBilling";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
@@ -33,6 +33,7 @@ export default function SubscriptionSettings() {
   const { user } = useAuth();
   const [openingPortal, setOpeningPortal] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(false);
+  const [resumingApproval, setResumingApproval] = useState(false);
   const [paypalReceipt, setPaypalReceipt] = useState(null);
   const checkPayment = async () => {
     if (checkingPayment) return;
@@ -46,6 +47,20 @@ export default function SubscriptionSettings() {
     } catch (err) { toast.error(err?.response?.data?.error || err?.message || "Could not check PayPal billing."); }
     finally { setCheckingPayment(false); }
   };
+  const resumeApproval = async () => {
+    if (resumingApproval || !user?.id || subscription.hasPaidAccess || !subscription.hasPending) return;
+    setResumingApproval(true);
+    try {
+      // This backend checks every earlier agreement and redirects ONLY to
+      // one still-valid, customer-owned PayPal approval. No new billing created.
+      await resumePendingPayPalApproval({ expectedUserId: user.id });
+    } catch (err) {
+      toast.error(err?.response?.data?.error || err?.message ||
+        "The earlier PayPal approval could not be verified. Contact billing support before starting another subscription.");
+      setResumingApproval(false);
+    }
+  };
+
   const [upgrading, setUpgrading] = useState(false);
   const [verifyingUpgrade, setVerifyingUpgrade] = useState(false);
   const returnedFromUpgrade = new URLSearchParams(window.location.search).get("paypal_upgrade") === "returned";
@@ -146,6 +161,16 @@ export default function SubscriptionSettings() {
 
   return (
     <div className="ui-surface rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:p-6">
+      {subscription.hasPending && !subscription.hasPaidAccess && (
+        <div className="mb-5 space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4" role="status">
+          <p className="font-semibold">Earlier PayPal subscription needs review</p>
+          <p className="text-sm text-muted-foreground">You may have an unfinished PayPal approval. Continue only the existing agreement; no new subscription will be created.</p>
+          <Button onClick={resumeApproval} disabled={resumingApproval} className="min-h-11 w-full sm:w-auto">
+            {resumingApproval ? "Checking earlier approval..." : "Continue existing PayPal approval"}
+          </Button>
+          <p className="text-sm text-muted-foreground">If PayPal cannot verify your earlier agreement, <a href="mailto:nalichat@nalichat.org?subject=NaliChat%20PayPal%20billing%20review" className="underline underline-offset-2">contact billing support</a> before trying another checkout.</p>
+        </div>
+      )}
       {returnedFromUpgrade && subscription.provider === "paypal" && (
         <div className="mb-5 rounded-xl border border-border p-4">
           <p className="mb-3 text-sm">Returned from PayPal? Verify your approved plan change to activate Premium Plus.</p>

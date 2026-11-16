@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       });
     });
     if (alreadyPaid) {
-      return Response.json({ error: 'This account already has a paid subscription; use the billing portal' }, { status: 409 });
+      return Response.json({ error: 'This account already has a paid subscription. Manage your existing subscription in Settings before starting another checkout.' }, { status: 409 });
     }
 
     checkoutStage = 'paypal_authentication';

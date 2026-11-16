@@ -119,6 +119,16 @@ const BattleLobby = lazyWithReloadRecovery(() => import('@/pages/BattleLobby'), 
 const MusicVideoGenerator = lazyWithReloadRecovery(() => import('@/pages/MusicVideoGenerator'), 'music-video-generator');
 const ArtistCareerOS = lazyWithReloadRecovery(() => import('@/pages/ArtistCareerOS'), 'artist-career-os');
 const ArtistReleaseCenter = lazyWithReloadRecovery(() => import('@/pages/ArtistReleaseCenter'), 'artist-release-center');
+const ArtistBackstage = lazyWithReloadRecovery(() => import('@/pages/ArtistBackstage'), 'artist-backstage');
+const ArtistCreativeDirector = lazyWithReloadRecovery(() => import('@/pages/ArtistCreativeDirector'), 'artist-creative-director');
+const ArtistMarketplace = lazyWithReloadRecovery(() => import('@/pages/ArtistMarketplace'), 'artist-marketplace');
+const ArtistWorld = lazyWithReloadRecovery(() => import('@/pages/ArtistWorld'), 'artist-world');
+const CollaborationRooms = lazyWithReloadRecovery(() => import('@/pages/CollaborationRooms'), 'collaboration-rooms');
+const LiveStudioSessions = lazyWithReloadRecovery(() => import('@/pages/LiveStudioSessions'), 'live-studio-sessions');
+const ReleaseWarRoom = lazyWithReloadRecovery(() => import('@/pages/ReleaseWarRoom'), 'release-war-room');
+const SongFeedbackLab = lazyWithReloadRecovery(() => import('@/pages/SongFeedbackLab'), 'song-feedback-lab');
+const StudioEditor = lazyWithReloadRecovery(() => import('@/pages/StudioEditor'), 'studio-editor');
+const Download = lazyWithReloadRecovery(() => import('@/pages/Download'), 'download');
 
 function safeLocalStorageGet(key) {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -441,6 +451,15 @@ const AuthenticatedApp = () => {
           <Route path="/music-video-generator" element={<MusicVideoGenerator />} />
           <Route path="/artist-career-os" element={<ArtistCareerOS />} />
           <Route path="/artist-release-center" element={<ArtistReleaseCenter />} />
+          <Route path="/artist-backstage" element={<ArtistBackstage />} />
+          <Route path="/artist-creative-director" element={<ArtistCreativeDirector />} />
+          <Route path="/artist-marketplace" element={<ArtistMarketplace />} />
+          <Route path="/artist-world" element={<ArtistWorld />} />
+          <Route path="/collaboration-rooms" element={<CollaborationRooms />} />
+          <Route path="/live-studio-sessions" element={<LiveStudioSessions />} />
+          <Route path="/release-war-room" element={<ReleaseWarRoom />} />
+          <Route path="/song-feedback-lab" element={<SongFeedbackLab />} />
+          <Route path="/studio-editor" element={<StudioEditor />} />
           <Route path="/files" element={<Files />} />
 
           <Route path="/settings" element={<Settings />} />
@@ -460,6 +479,8 @@ const AuthenticatedApp = () => {
           <Route path="/business" element={<Navigate to="/admin" replace />} />
         </Route>
       </Route>
+      <Route path="/download" element={<Download />} />
+      <Route path="/Download" element={<Navigate to="/download" replace />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/encryption-documentation" element={<EncryptionDocumentation />} />

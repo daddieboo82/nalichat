@@ -45,6 +45,7 @@ const TITLES = {
   "/release-war-room": "War Room",
   "/song-feedback-lab": "Feedback Lab",
   "/studio-editor": "Studio Editor",
+  "/live-tv": "Live TV",
 };
 
 const ROOT_PATHS = new Set(Object.keys(TITLES));

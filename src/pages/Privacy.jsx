@@ -49,7 +49,7 @@ export default function Privacy() {
 
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-2">6. Security</h2>
-          <p>We use industry-standard security measures to protect your data. However, no method of transmission over the internet is 100% secure.</p>
+          <p>We use industry-standard security measures to protect your data. However, no method of transmission over the internet is 100% secure. See our <a href="/encryption-documentation" className="text-primary underline">encryption documentation</a> for technical details.</p>
         </div>
 
         <div>

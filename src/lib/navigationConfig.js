@@ -1,4 +1,4 @@
-import { Home, MessageSquare, Music, Compass, Mic, Image, Video, FolderOpen, FolderKanban, Users, ListMusic, Trophy, BarChart3, Swords, UsersRound, Tv, Rocket, Globe, Star, Sparkles, Store, Radio, FlaskConical, SlidersHorizontal } from "lucide-react";
+import { Home, MessageSquare, Music, Compass, Mic, Image, Video, FolderOpen, FolderKanban, Users, ListMusic, Trophy, BarChart3, Swords, UsersRound, Tv, Rocket, Globe, Star, Sparkles, Store, Radio, FlaskConical, SlidersHorizontal, MonitorPlay } from "lucide-react";
 
 // Primary tabs shown in the mobile bottom bar — the 4 most-used destinations.
 export const PRIMARY_TABS = [
@@ -50,6 +50,7 @@ export const NAV_GROUPS = [
       { icon: ListMusic, label: "Playlists", path: "/playlists", desc: "Your saved playlists" },
       { icon: Trophy, label: "Leaderboard", path: "/leaderboard", desc: "Top creators and tracks" },
       { icon: BarChart3, label: "Analytics", path: "/analytics", desc: "Your stats and insights" },
+      { icon: MonitorPlay, label: "Live TV", path: "/live-tv", desc: "Watch live music channels" },
     ],
   },
   {

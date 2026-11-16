@@ -71,6 +71,7 @@ export default function NaliMaintenancePanel() {
       setPaypalReconciliationResult({ checked: data.checked, updated: data.updated,
         reviewRequired: Array.isArray(data.results) ? data.results.filter((item) => item.result === "identity_review_required").length : 0,
         lookupFailed: Array.isArray(data.results) ? data.results.filter((item) => item.result === "paypal_lookup_failed").length : 0,
+        agreementFailures: Array.isArray(data.results) ? data.results.filter((item) => item.result === "agreement_check_failed").length : 0,
       });
       toast.success("PayPal status check completed.");
     } catch (error) {
@@ -174,6 +175,7 @@ export default function NaliMaintenancePanel() {
               Checked {paypalReconciliationResult.checked} pending agreement(s), updated {paypalReconciliationResult.updated}.
               {paypalReconciliationResult.reviewRequired > 0 ? ` ${paypalReconciliationResult.reviewRequired} need identity review.` : ""}
               {paypalReconciliationResult.lookupFailed > 0 ? ` ${paypalReconciliationResult.lookupFailed} provider lookups failed.` : ""}
+              {paypalReconciliationResult.agreementFailures > 0 ? ` ${paypalReconciliationResult.agreementFailures} agreement checks failed; review before retrying.` : ""}
             </p>
           )}
         </div>

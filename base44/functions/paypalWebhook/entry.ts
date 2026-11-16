@@ -86,11 +86,22 @@ async function fetchSubscriptionBillingInfo(token: string, subscriptionId: strin
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  // Receipt diagnostics are intentionally metadata-free. A receipt is NOT
+  // proof of a valid PayPal event, signature, payment, or subscription.
+  console.info('PayPal webhook POST received');
   let ledger: any = null;
   let event: any;
   try {
-    event = await req.json();
-    if (!event?.id || !event?.event_type) return Response.json({ error: 'Invalid PayPal event' }, { status: 400 });
+    try {
+      event = await req.json();
+    } catch {
+      console.warn('PayPal webhook invalid JSON rejected');
+      return Response.json({ error: 'Invalid PayPal event' }, { status: 400 });
+    }
+    if (!event?.id || !event?.event_type) {
+      console.warn('PayPal webhook missing event envelope rejected');
+      return Response.json({ error: 'Invalid PayPal event' }, { status: 400 });
+    }
     // Authenticate every incoming event before acknowledging it, including
     // event types this handler does not currently process.
     const token = await accessToken();

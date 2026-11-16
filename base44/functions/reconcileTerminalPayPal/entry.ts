@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
+import { applyVerifiedTerminalPayPalRows } from '../../shared/terminalPayPalRecovery.ts';
 
 // Customer-triggered recovery only. Verify every pending agreement is terminal
 // at PayPal before changing any local subscription. Never activate, cancel,
@@ -80,26 +81,16 @@ Deno.serve(async (req: Request) => {
         }, { status: 409 });
       }
     }
-    // Each row transition is conditional and atomic at the entity update.
-    // A concurrent webhook that already marked an agreement ACTIVE cannot
-    // have that state overwritten by a stale terminal recovery attempt.
-    let resolved = 0;
-    for (const row of pending) {
-      const outcome = await subscriptions.updateMany(
-        {
-          id: row.id,
-          user_id: user.id,
-          provider: 'paypal',
-          status: 'pending',
-          subscription_id: row.subscription_id,
-          paypal_plan_id: row.paypal_plan_id,
-          sku: row.sku,
-          paypal_environment: env,
-        },
-        { $set: { status: 'canceled', cancel_at_period_end: false } },
-      );
-      if (Number(outcome?.updated || 0) !== 1) {
-        return Response.json({
+    const { resolved, complete } = await applyVerifiedTerminalPayPalRows(
+      subscriptions, user.id, env, pending,
+    );
+    if (!complete) {
+      return Response.json({
+        error: 'Subscription changed during recovery; refresh billing status',
+        resolved,
+      }, { status: 409 });
+    }
+    return Response.json({
           error: 'Subscription changed during recovery; refresh billing status',
           resolved,
         }, { status: 409 });

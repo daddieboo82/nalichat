@@ -83,21 +83,21 @@ export default function ExportBounce({ postId, title, disabled }) {
         <Button
           variant="outline"
           className="rounded-xl"
-          disabled={disabled || !postId || !canMaster || subscriptionLoading}
+          disabled={disabled || !postId || subscriptionLoading || (!canMaster && !billingReviewNeeded)}
           title={subscriptionLoading ? "Checking your subscription" : billingReviewNeeded ? "Check billing in Settings to restore Premium" : canMaster ? "Analyze mastering loudness and dynamics" : "Mastering analysis is available with Premium"}
         >
           <Award className="w-4 h-4 mr-2" />
           {subscriptionLoading ? "Checking access..." : canMaster ? "Mastering Analysis" : billingReviewNeeded ? "Verify Premium" : "Premium Analysis"}
         </Button>
       </DialogTrigger>
-      {!canMaster && !subscriptionLoading && billingReviewNeeded && (
-        <div className="mt-2 flex flex-wrap items-center gap-2" role="status">
-          <span className="text-xs text-muted-foreground">Subscription verification needs attention.</span>
-          <Button size="sm" variant="outline" onClick={() => refetch()}>Retry verification</Button>
-          <Button size="sm" variant="outline" asChild><Link to="/settings">Review billing</Link></Button>
-        </div>
-      )}
       <DialogContent className="bg-card border-border shadow-2xl max-w-md">
+        {!canMaster && !subscriptionLoading && billingReviewNeeded && (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3" role="status">
+            <span className="w-full text-sm text-muted-foreground">Premium verification needs attention. Paid access remains locked until confirmation.</span>
+            <Button size="sm" variant="outline" onClick={() => refetch()}>Retry verification</Button>
+            <Button size="sm" variant="outline" asChild><Link to="/settings">Review billing</Link></Button>
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle className="font-heading text-lg">Mastering Analysis</DialogTitle>
           <DialogDescription>

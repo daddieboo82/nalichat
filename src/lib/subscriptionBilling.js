@@ -54,6 +54,8 @@ export async function startSubscriptionCheckout({
     payload?.action !== "create_paypal_subscription" ||
     (expectedUserId && payload?.userId !== expectedUserId) ||
     payload?.sku !== sku ||
+    typeof payload?.subscriptionId !== "string" ||
+    !/^I-[A-Za-z0-9-]+$/.test(payload.subscriptionId) ||
     typeof payload?.checkoutUrl !== "string" ||
     !payload.checkoutUrl.trim()
   ) {
@@ -71,9 +73,7 @@ export async function startSubscriptionCheckout({
   // Store only the server-created PayPal agreement for return-page attribution.
   // Never use this browser value as proof of payment or grant entitlements.
   try {
-    if (typeof payload.subscriptionId === "string" && payload.subscriptionId) {
-      sessionStorage.setItem(CHECKOUT_SUBSCRIPTION_ID_KEY, payload.subscriptionId);
-    }
+    sessionStorage.setItem(CHECKOUT_SUBSCRIPTION_ID_KEY, payload.subscriptionId);
   } catch { /* Storage may be unavailable on restricted browsers. */ }
   redirect(checkoutUrl.toString());
   return payload;

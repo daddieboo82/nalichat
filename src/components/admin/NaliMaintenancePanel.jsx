@@ -16,11 +16,13 @@ export default function NaliMaintenancePanel() {
   const [paypalReconciliationResult, setPaypalReconciliationResult] = useState(null);
   const [paypalAuditLoading, setPaypalAuditLoading] = useState(false);
   const [paypalAudit, setPaypalAudit] = useState(null);
+  const [paypalSupportReport, setPaypalSupportReport] = useState("");
 
   const auditPayPal = async () => {
     if (paypalAuditLoading || mode !== null || user?.role !== "admin") return;
     setPaypalAuditLoading(true);
     setPaypalAudit(null);
+    setPaypalSupportReport("");
     try {
       const response = await base44.functions.invoke("getPendingPayPalAudit", {});
       const data = response?.data;
@@ -37,6 +39,29 @@ export default function NaliMaintenancePanel() {
       const planProblems = Array.isArray(data.planChecks)
         ? data.planChecks.filter((plan) => plan.status !== "ACTIVE" || plan.matchesCatalog !== true).length
         : null;
+      // Build an admin-only report from provider lookup evidence. This is never
+      // sent automatically or persisted in a customer-visible entity.
+      const unresolved = (Array.isArray(data.results) ? data.results : [])
+        .filter((record) => record.status === "not_found");
+      const lines = [
+        "NaliChat PayPal merchant investigation — read-only evidence",
+        "PayPal environment: " + String(data.environment || "unknown"),
+        "Pending agreement lookups: " + data.checked,
+        "HTTP 404 (not found under current credentials): " + unresolved.length,
+        "Affected NaliChat accounts: " + (data.uniqueAccounts ?? "unknown"),
+        "Please locate these PayPal subscription agreements and identify their owning REST application/merchant account and any associated payment history.",
+        "Do not create or restart subscriptions based on this report alone.",
+        "",
+        "Agreement ID | HTTP status | PayPal debug ID | Local plan | Local creation date",
+        ...unresolved.map((record) => [
+          record.subscriptionId || "(missing)",
+          record.httpStatus || "unknown",
+          record.paypalDebugId || "unavailable",
+          record.plan || "unknown",
+          record.createdDate || "unknown",
+        ].join(" | ")),
+      ];
+      setPaypalSupportReport(lines.join("\n"));
       setPaypalAudit({
         checked: data.checked,
         uniqueAccounts: data.uniqueAccounts,
@@ -186,6 +211,19 @@ export default function NaliMaintenancePanel() {
               <p>Pending agreements with provider-reported last payment: {paypalAudit.confirmedPayments ?? "unknown"}. Active records with provider-reported last payment: {paypalAudit.activePaymentChecks ?? "unknown"}. A missing payment field means unknown, not unpaid.</p>
               <p>Active agreement checks: {paypalAudit.activeChecks.length ? Object.entries(paypalAudit.activeChecks.reduce((counts, record) => { const key = record.status || "unknown"; counts[key] = (counts[key] || 0) + 1; return counts; }, {})).map(([status, count]) => status + ": " + count).join(", ") : "none available"}.</p>
               <p>Provider agreement statuses: {Object.entries(paypalAudit.providerStatuses).map(([key, count]) => `${key}: ${count}`).join(", ") || "none available"}.</p>
+              {paypalSupportReport && (
+                <Button type="button" variant="outline" className="min-h-11 whitespace-normal text-left"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(paypalSupportReport);
+                      toast.success("Merchant support report copied.");
+                    } catch {
+                      toast.error("Could not copy automatically. Open this page in a secure browser and retry.");
+                    }
+                  }}>
+                  Copy PayPal merchant investigation report
+                </Button>
+              )}
               <p className="text-muted-foreground">This audit only reads PayPal and local records. No payments or subscription statuses are changed.</p>
             </div>
           )}

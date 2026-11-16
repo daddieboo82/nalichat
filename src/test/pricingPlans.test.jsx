@@ -126,7 +126,7 @@ describe("pricing plans", () => {
 
     renderPricing({}, "/pricing?checkout=paypal_canceled");
 
-    expect(screen.getByText(/returned from PayPal without completing/i)).toBeTruthy();
+    expect(screen.getByText(/returned without completing PayPal approval/i)).toBeTruthy();
     expect(mockTrack).toHaveBeenCalledWith("checkout_canceled", {
       source: "studio_bounce",
       upgrade_feature: "studio.ai_mastering",
@@ -139,7 +139,8 @@ describe("pricing plans", () => {
     renderPricing({ variantOverride: "A" }, "/pricing?source=studio_bounce&feature=studio.ai_mastering");
 
     expect(screen.getByText(/AI Auto-Mastering applies EQ, compression, and limiting/)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
+    // Paid plan cards share the PayPal CTA label; the first card is Premium.
+    fireEvent.click(screen.getAllByRole("button", { name: "Continue to PayPal" })[0]);
 
     await waitFor(() => expect(mockStartCheckout).toHaveBeenCalledWith(expect.objectContaining({
       sku: "premium_monthly",
@@ -169,15 +170,16 @@ describe("pricing plans", () => {
     expect(screen.getByRole("heading", { name: "Unlock the creator tools beyond free messaging and Studio." })).toBeTruthy();
     expect(screen.getByText("Best value to get started")).toBeTruthy();
     expect(screen.queryByText("Try Premium free")).toBeNull();
-    expect(screen.getByRole("button", { name: "Upgrade to Premium" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Go Premium Plus" })).toBeTruthy();
+    // Premium and Premium Plus both route through PayPal checkout.
+    expect(screen.getAllByRole("button", { name: "Continue to PayPal" }).length).toBe(2);
   });
 
   it("sends the approved plan and period SKU to checkout once", async () => {
     renderPricing({ variantOverride: "A" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
+    const premiumCta = screen.getAllByRole("button", { name: "Continue to PayPal" })[0];
+    fireEvent.click(premiumCta);
+    fireEvent.click(premiumCta);
 
     await waitFor(() => expect(mockStartCheckout).toHaveBeenCalledTimes(1));
     expect(mockStartCheckout).toHaveBeenCalledWith({

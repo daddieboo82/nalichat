@@ -2102,7 +2102,7 @@ describe('release configuration', () => {
     expect(hook).toContain("document.addEventListener('visibilitychange', checkForUpdate)");
     expect(hook).toContain("window.addEventListener('pageshow', checkForUpdate)");
     expect(hook).toContain('15 * 60 * 1000');
-    expect(sw).toContain("const CACHE_NAME = 'nalichat-v4';");
+    expect(sw).toContain("const CACHE_NAME = 'nalichat-v5-paypal-checkout';");
     expect(sw).toContain("url.pathname.startsWith('/assets/')");
     expect(sw).toContain("if (!isStaticAsset) return;");
     expect(sw).toContain('.then(() => self.skipWaiting())');
@@ -2128,7 +2128,7 @@ describe('release configuration', () => {
 
     const signedWebhooks = new Set(['stripeWebhook', 'paypalWebhook', 'wixPaymentsWebhook']);
     const capabilityEndpoints = new Set(['getSharedFileByToken', 'verifyCheckoutPayment']);
-    const publicReadEndpoints = new Set(['getChallengeLeaderboard', 'getPushConfig', 'battleStreamingStatus', 'testBattleStreaming', 'verifyBattleStreaming']);
+    const publicReadEndpoints = new Set(['getChallengeLeaderboard', 'getPushConfig', 'battleStreamingStatus', 'testBattleStreaming']);
     const internalWorkflowHandlers = new Set([
       'notifyOnFileUpload',
       'notifyOnMessage',
@@ -2563,9 +2563,9 @@ describe('checkout payment verification response contract', () => {
   it('clears the cart only after the exact checkout is explicitly confirmed paid', async () => {
     const page = await readText('src/pages/ThankYou.jsx');
     const backend = await readText('base44/functions/verifyCheckoutPayment/entry.ts');
-    expect(page).toContain('res?.data?.success !== true');
-    expect(page).toContain('res?.data?.checkoutId !== checkoutId');
-    expect(page).toContain('!Array.isArray(res?.data?.items)');
+    expect(page).toContain('verified?.success !== true');
+    expect(page).toContain('verified?.checkoutId !== checkoutId');
+    expect(page).toContain('!Array.isArray(verified?.items)');
     expect(backend).toContain('success: true');
     expect(backend).toContain('checkoutId: normalizedCheckoutId');
   });

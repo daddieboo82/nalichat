@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { trackProductEvent } from "@/lib/productAnalytics";
 
 export const CHECKOUT_RETURN_KEY = "nalichat_subscription_checkout_started";
 export const CHECKOUT_ATTRIBUTION_KEY = "nalichat_subscription_checkout_attribution";
@@ -39,6 +40,36 @@ async function invokeBillingFunction(invoke, functionName, args) {
   }
 }
 
+// Record only a fixed, non-sensitive failure class. Never send provider payloads,
+// PayPal agreement IDs, customer messages or credentials to conversion analytics.
+const CHECKOUT_FAILURE_CODES = new Set([
+  "PAYPAL_PLAN_CONFIGURATION_REQUIRED",
+  "PAYPAL_AGREEMENT_RECONCILIATION_REQUIRED",
+  "PAYPAL_CHECKOUT_UNCERTAIN",
+  "CHECKOUT_DEPENDENCY_ERROR",
+]);
+export function checkoutFailureCategory(error) {
+  if (CHECKOUT_FAILURE_CODES.has(error?.code)) return error.code;
+  const status = Number(error?.response?.status || error?.status);
+  if (status === 409) return "EXISTING_BILLING_REVIEW";
+  if (status === 401 || status === 403) return "AUTH_REQUIRED";
+  if (status === 429) return "RATE_LIMIT";
+  if (status >= 500 && status < 600) return "SERVICE_UNAVAILABLE";
+  return "UNCLASSIFIED_CHECKOUT_ERROR";
+}
+
+function recordCheckoutFailure(error, sku) {
+  try {
+    trackProductEvent("checkout_error_diagnostic", {
+      source: "paypal_checkout",
+      sku: typeof sku === "string" ? sku : "unknown",
+      reason: checkoutFailureCategory(error),
+    });
+  } catch {
+    // Error instrumentation never blocks checkout recovery.
+  }
+}
+
 export async function startSubscriptionCheckout({
   sku,
   idempotencyKey,
@@ -47,7 +78,13 @@ export async function startSubscriptionCheckout({
   invoke = base44.functions.invoke,
   redirect = (url) => window.location.assign(url),
 }) {
-  const response = await invokeBillingFunction(invoke, "createPayPalSubscription", { sku, idempotencyKey });
+  let response;
+  try {
+    response = await invokeBillingFunction(invoke, "createPayPalSubscription", { sku, idempotencyKey });
+  } catch (error) {
+    recordCheckoutFailure(error, sku);
+    throw error;
+  }
   const payload = responsePayload(response);
   if (
     payload?.success !== true ||

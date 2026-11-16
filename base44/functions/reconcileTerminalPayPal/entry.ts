@@ -52,18 +52,37 @@ Deno.serve(async (req: Request) => {
         return Response.json({ error: 'An earlier PayPal agreement still requires review' }, { status: 409 });
       }
     }
+    // Check the entire pending set again before updating anything. A new
+    // checkout may have been created during the provider checks, so a snapshot
+    // of the original rows alone is not sufficient.
+    const latest = await subscriptions.filter(
+      { user_id: user.id, provider: 'paypal', status: 'pending' }, '-created_date', 26,
+    );
+    const originalIds = new Set(pending.map((row: any) => row.id));
+    if (!Array.isArray(latest) || latest.length !== pending.length ||
+        latest.some((row: any) => !originalIds.has(row.id))) {
+      return Response.json({
+        error: 'Subscription history changed during review; refresh billing status',
+      }, { status: 409 });
+    }
+
+    // Validate ALL local records before making the first write. This avoids
+    // predictable partial updates when a webhook has already changed a row.
     for (const row of pending) {
-      // A webhook or another status check may have updated the local record
-      // during provider verification. Never overwrite a non-pending status.
       const current = await subscriptions.get(row.id);
       if (!current || current.user_id !== user.id ||
           current.provider !== 'paypal' || current.status !== 'pending' ||
-          current.subscription_id !== row.subscription_id) {
+          current.subscription_id !== row.subscription_id ||
+          current.paypal_plan_id !== row.paypal_plan_id ||
+          current.sku !== row.sku || current.paypal_environment !== env) {
         return Response.json({
           error: 'Subscription changed during review; refresh billing status',
         }, { status: 409 });
       }
-      // Updating a terminal local state does not touch the PayPal agreement.
+    }
+    // This is not a database transaction: webhook changes during the final
+    // writes still require provider reconciliation. No PayPal-side mutation.
+    for (const row of pending) {
       await subscriptions.update(row.id, { status: 'canceled', cancel_at_period_end: false });
     }
     return Response.json({

@@ -39,6 +39,8 @@ describe('PayPal pending approval recovery in Settings', () => {
       backend.indexOf("await subscriptions.update(row.id, { status: 'canceled'")
     );
     expect(backend).toContain("const current = await subscriptions.get(row.id)");
+    expect((backend.match(/const current = await subscriptions.get\(row.id\)/g) || []).length).toBe(2);
+    expect(backend).toContain("Subscription changed during recovery; refresh billing status");
     expect(backend).toContain("current.status !== 'pending'");
     expect(backend).toContain("current.subscription_id !== row.subscription_id");
     expect(backend.indexOf("const current = await subscriptions.get(row.id)")).toBeLessThan(

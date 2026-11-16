@@ -102,8 +102,18 @@ Deno.serve(async (req) => {
     }
 
     const session = await stripeRequest(`/checkout/sessions/${encodeURIComponent(normalizedCheckoutId)}`, {}, 'GET');
-    if (!session) {
-      return Response.json({ error: 'Checkout session not found' }, { status: 404 });
+    if (!session || session.id !== normalizedCheckoutId || session.mode !== 'payment') {
+      return Response.json({ error: 'Checkout session could not be verified' }, { status: 404 });
+    }
+    // Stripe is authoritative even if a local row was previously labeled paid.
+    // Do not display a donation as paid on an unpaid or mismatched Stripe session.
+    if (session.payment_status !== 'paid') {
+      return Response.json({
+        success: true,
+        checkoutId: normalizedCheckoutId,
+        status: 'unpaid',
+        items: Array.isArray(purchase.items) ? purchase.items : [],
+      }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     // 3. If Stripe says paid but our record is still pending, fulfill it now
@@ -122,7 +132,7 @@ Deno.serve(async (req) => {
     return Response.json({
       success: true,
       checkoutId: normalizedCheckoutId,
-      status: purchase.status === 'paid' ? 'paid' : session.payment_status,
+      status: 'paid', // Only reached after Stripe explicitly returned paid.
       items: Array.isArray(purchase.items) ? purchase.items : [],
     }, {
       headers: { 'Cache-Control': 'no-store' },

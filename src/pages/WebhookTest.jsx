@@ -40,7 +40,7 @@ export default function WebhookTest() {
         </div>
         <div>
           <h1 className="text-3xl font-heading font-bold">Backend Diagnostics</h1>
-          <p className="text-muted-foreground">Read-only subscription and Stripe webhook diagnostics</p>
+          <p className="text-muted-foreground">Read-only subscription and PayPal webhook diagnostics</p>
         </div>
       </div>
 
@@ -94,7 +94,7 @@ export default function WebhookTest() {
                     )}
                     {sub.subscription_id && (
                       <div className="text-xs text-muted-foreground mt-1">
-                        Stripe Sub: {sub.subscription_id}
+                        Provider Sub: {sub.subscription_id}
                       </div>
                     )}
                   </div>
@@ -106,28 +106,28 @@ export default function WebhookTest() {
 
         <Card className="border-border/50">
           <CardHeader>
-            <CardTitle className="text-lg">Stripe Webhook Setup</CardTitle>
+            <CardTitle className="text-lg">PayPal Webhook Setup</CardTitle>
             <CardDescription>
-              Configure real webhook events in Stripe. This page does not create, modify, or delete subscription records.
+              Configure real webhook events in PayPal. This page does not create, modify, or delete subscription records.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-sm text-muted-foreground">
               <div className="flex items-start gap-2">
                 <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">1</span>
-                <p>Go to <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary inline-flex items-center gap-1 hover:underline">Stripe Dashboard → Webhooks <ExternalLink className="w-3 h-3" /></a></p>
+                <p>Go to <a href="https://developer.paypal.com/dashboard/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary inline-flex items-center gap-1 hover:underline">PayPal Developer Dashboard → Webhooks <ExternalLink className="w-3 h-3" /></a></p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">2</span>
-                <p>Add endpoint: <code className="text-primary bg-secondary px-1.5 py-0.5 rounded text-xs">https://base44-dispatcher-production.base44.workers.dev/api/apps/cbef744a8545c389ef439ea6/functions/stripeWebhook</code></p>
+                <p>Add endpoint: <code className="text-primary bg-secondary px-1.5 py-0.5 rounded text-xs break-all">https://nalichat.base44.app/functions/paypalWebhook</code></p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">3</span>
-                <p>Subscribe to events: <code className="text-xs">checkout.session.completed</code>, <code className="text-xs">customer.subscription.updated</code>, <code className="text-xs">customer.subscription.deleted</code>, <code className="text-xs">invoice.paid</code>, <code className="text-xs">invoice.payment_failed</code></p>
+                <p>Subscribe to events: <code className="text-xs">BILLING.SUBSCRIPTION.CREATED</code>, <code className="text-xs">BILLING.SUBSCRIPTION.ACTIVATED</code>, <code className="text-xs">BILLING.SUBSCRIPTION.UPDATED</code>, <code className="text-xs">BILLING.SUBSCRIPTION.CANCELLED</code>, <code className="text-xs">BILLING.SUBSCRIPTION.SUSPENDED</code>, <code className="text-xs">BILLING.SUBSCRIPTION.EXPIRED</code>, <code className="text-xs">BILLING.SUBSCRIPTION.PAYMENT.FAILED</code>, <code className="text-xs">CHECKOUT.ORDER.APPROVED</code></p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">4</span>
-                <p>Set the Stripe signing secret as the <code className="text-xs">STRIPE_WEBHOOK_SECRET</code> app secret.</p>
+                <p>Set the webhook ID as the <code className="text-xs">PAYPAL_WEBHOOK_ID</code> app secret so signatures can be verified.</p>
               </div>
             </div>
           </CardContent>

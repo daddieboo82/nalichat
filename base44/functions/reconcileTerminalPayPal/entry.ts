@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
 import { applyVerifiedTerminalPayPalRows } from '../../shared/terminalPayPalRecovery.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 // Customer-triggered recovery only. Verify every pending agreement is terminal
 // at PayPal before changing any local subscription. Never activate, cancel,
@@ -19,6 +20,15 @@ Deno.serve(async (req: Request) => {
     );
     if (!Array.isArray(pending) || pending.length > 25) return Response.json({ error: 'Billing history requires support review' }, { status: 409 });
     if (!pending.length) return Response.json({ success: true, action: 'reconcile_terminal_paypal', userId: user.id, resolved: 0 });
+
+    // This customer-triggered path can make one merchant PayPal API request
+    // per old agreement. Limit repeated requests without using billing credits.
+    const rate = await consumeHourlyLimit(
+      base44.asServiceRole.entities, user.id, 'terminal_paypal_recovery', 6,
+    );
+    if (!rate.allowed) return Response.json({
+      error: 'Too many billing reviews. Please try again later.',
+    }, { status: 429 });
 
     const clientId = secrets.get('PAYPAL_CLIENT_ID');
     const clientSecret = secrets.get('PAYPAL_CLIENT_SECRET');

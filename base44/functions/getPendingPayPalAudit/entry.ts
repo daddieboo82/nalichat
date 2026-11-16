@@ -236,7 +236,16 @@ Deno.serve(async (req) => {
           { headers },
         );
         if (!response.ok) {
-          results.push({ subscriptionId: record.subscription_id, plan: record.sku || record.plan, createdDate: record.created_date || null, status: response.status === 404 ? 'not_found' : 'lookup_failed', httpStatus: response.status });
+          // PayPal request-trace IDs help merchant support investigate historical
+          // agreement 404s without exposing credentials, customer IDs or payloads.
+          // Use only a constrained provider-generated diagnostic token.
+          let debugId = response.headers.get('paypal-debug-id') || '';
+          if (!debugId) {
+            const failure = await response.json().catch(() => null);
+            debugId = typeof failure?.debug_id === 'string' ? failure.debug_id : '';
+          }
+          const safeDebugId = /^[a-zA-Z0-9_-]{1,96}$/.test(debugId) ? debugId : null;
+          results.push({ subscriptionId: record.subscription_id, plan: record.sku || record.plan, createdDate: record.created_date || null, status: response.status === 404 ? 'not_found' : 'lookup_failed', httpStatus: response.status, paypalDebugId: safeDebugId });
           continue;
         }
         const remote = await response.json();

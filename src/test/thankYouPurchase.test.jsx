@@ -26,6 +26,7 @@ vi.mock('@/lib/subscriptionClient', () => ({ SUBSCRIPTION_QUERY_KEY: 'subscripti
 vi.mock('@/lib/subscriptionBilling', () => ({
   CHECKOUT_RETURN_KEY: 'nalichat_subscription_checkout_started',
   CHECKOUT_ATTRIBUTION_KEY: 'test-checkout-attribution',
+  CHECKOUT_SUBSCRIPTION_ID_KEY: 'test-paypal-agreement-id',
 }));
 vi.mock('framer-motion', () => ({
   motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),

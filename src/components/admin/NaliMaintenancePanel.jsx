@@ -173,6 +173,10 @@ export default function NaliMaintenancePanel() {
               <p>Pending agreements checked: {paypalAudit.checked}. Affected accounts: {paypalAudit.uniqueAccounts ?? "unknown"}.</p>
               <p>Accounts with multiple pending agreements: {paypalAudit.multipleAccounts ?? "unknown"}. Legacy records without checkout keys: {paypalAudit.missingKeys ?? "unknown"}.</p>
               <p>PayPal webhook: {paypalAudit.webhook?.status || "unverified"}; enabled: {paypalAudit.webhook?.enabled === true ? "yes" : "not verified"}; expected URL: {paypalAudit.webhook?.urlMatchesExpected === true ? "matches" : "not confirmed"}.</p>
+              <p>Registered callback route: {paypalAudit.webhook?.registeredRoute === "dispatcher" ? "Base44 dispatcher" : paypalAudit.webhook?.registeredRoute === "public_domain" ? "NaliChat public domain" : paypalAudit.webhook?.registeredRoute === "other" ? "different URL — review in PayPal" : "not verified"}. This classification does not confirm that PayPal can deliver events.</p>
+              {paypalAudit.webhook?.status === "registered" && (paypalAudit.webhook.enabled !== true || paypalAudit.webhook.urlIsHttps !== true || paypalAudit.webhook.urlMatchesExpected !== true || (paypalAudit.webhook.missingEvents?.length || 0) > 0) && (
+                <p role="alert" className="text-amber-600">Webhook configuration needs review: check enabled status, HTTPS callback, URL matching and required event subscriptions in PayPal before trusting automatic payment activation.</p>
+              )}
               <p>Webhook ledger entries: {paypalAudit.webhookLedgerCount ?? "unavailable"}. Paid plan configuration issues: {paypalAudit.planProblems ?? "unavailable"}.</p>
               {paypalAudit.webhookLedgerCount === 0 && (
                 <p role="alert" className="text-amber-600">No PayPal webhook events have been recorded. This does not prove delivery failed. Verify the webhook is enabled, uses the expected URL, includes the required events, and check PayPal delivery history before assuming payment activation is working.</p>

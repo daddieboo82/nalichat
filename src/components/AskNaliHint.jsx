@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowDown } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/lib/AuthContext";
 
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/onboarding", "/studio"];
 
@@ -19,6 +20,8 @@ function sessionSet(key, value) {
 }
 
 export default function AskNaliHint() {
+  const { user } = useAuth();
+  const dismissalKey = `nali_hint_dismissed:${user?.id || "anonymous"}`;
   const { hasEntitlement, isLoading } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
   const [show, setShow] = useState(false);
@@ -32,12 +35,12 @@ export default function AskNaliHint() {
       if (timerRef.current) clearTimeout(timerRef.current);
       return;
     }
-    const dismissedForever = sessionGet("nali_hint_dismissed");
+    const dismissedForever = sessionGet(dismissalKey);
 
     const reset = () => {
       setShow(false);
       if (timerRef.current) clearTimeout(timerRef.current);
-      if (sessionGet("nali_hint_dismissed")) return;
+      if (sessionGet(dismissalKey)) return;
       timerRef.current = setTimeout(() => setShow(true), IDLE_MS);
     };
 
@@ -54,11 +57,11 @@ export default function AskNaliHint() {
         window.removeEventListener(e, reset)
       );
     };
-  }, [onAuthPage, isLoading, canUseAi]);
+  }, [onAuthPage, isLoading, canUseAi, dismissalKey]);
 
   const askNali = () => {
     setShow(false);
-    sessionSet("nali_hint_dismissed", "1");
+    sessionSet(dismissalKey, "1");
     window.dispatchEvent(new Event("open-ai-assistant"));
   };
 

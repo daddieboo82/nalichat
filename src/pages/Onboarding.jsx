@@ -22,6 +22,7 @@ export default function Onboarding() {
   });
   const [formOwnerId, setFormOwnerId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [validationRecovery, setValidationRecovery] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [onboardingInteractionTracked, setOnboardingInteractionTracked] = useState(false);
 
@@ -55,7 +56,9 @@ export default function Onboarding() {
     }
   }, [user, isAuthenticated]);
 
-  const handleSave = async () => {
+  const handleSave = async (displayNameOnly = false) => {
+    if (loading) return;
+    setValidationRecovery(false);
     const submittingUserId = user?.id;
     if (!submittingUserId || formOwnerId !== submittingUserId) {
       toast.error("Your account changed. Please wait for setup to reload.");
@@ -86,9 +89,9 @@ export default function Onboarding() {
     try {
       const res = await base44.functions.invoke("completeOnboarding", {
         display_name: displayName,
-        birthdate: form.birthdate,
-        bio: form.bio,
-        location: form.location,
+        birthdate: displayNameOnly ? "" : form.birthdate,
+        bio: displayNameOnly ? "" : form.bio,
+        location: displayNameOnly ? "" : form.location,
       });
       if (res?.data?.error) throw new Error(res.data.error);
       if (
@@ -117,6 +120,8 @@ export default function Onboarding() {
       // would just re-download JS and re-run the auth probe for nothing.
       navigate("/", { replace: true });
     } catch (error) {
+      const httpStatus = Number(error?.response?.status ?? error?.status ?? 0);
+      const isBadRequest = httpStatus === 400 || /status code 400/.test(String(error?.message || ""));
       const errorDetail = error?.response?.data?.error || error?.data?.error || error?.message || "Failed to complete setup";
       const message = typeof errorDetail === "string" ? errorDetail : "Failed to complete setup";
       trackProductEvent("onboarding_save_failed", {
@@ -124,6 +129,7 @@ export default function Onboarding() {
         reason: message.slice(0, 160),
       });
       toast.error(message);
+      setValidationRecovery(isBadRequest && !displayNameOnly);
       setLoading(false);
     }
   };
@@ -187,7 +193,12 @@ export default function Onboarding() {
               placeholder="City, Country"
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
-          <p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Only your display name is required. Birthdate, bio, and location are optional and can be added later in Settings.</p><Button onClick={handleSave} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
+          <p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Only your display name is required. Birthdate, bio, and location are optional and can be added later in Settings.</p>{validationRecovery && (
+            <div role="alert" className="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+              <p>Profile details were not accepted. You can try again with only your required display name. Optional information will not be saved in that attempt.</p>
+              <Button type="button" variant="outline" disabled={loading} className="min-h-11 w-full" onClick={() => handleSave(true)}>Finish with display name only</Button>
+            </div>
+          )}<Button onClick={() => handleSave(false)} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
             {loading ? "Saving..." : "Enter NaliBase"}
           </Button>

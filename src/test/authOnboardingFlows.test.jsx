@@ -301,6 +301,30 @@ describe('auth and onboarding flows', () => {
     });
   });
 
+  it('offers a display-name-only retry after an onboarding HTTP 400', async () => {
+    const userId = '507f1f77bcf86cd799439099';
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: userId, display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
+      isAuthenticated: true,
+      checkUserAuth: vi.fn().mockResolvedValue({ id: userId, onboarding_completed: true }),
+    };
+    mockBase44.functions.invoke
+      .mockRejectedValueOnce({ response: { status: 400, data: { error: 'Invalid profile' } } })
+      .mockResolvedValueOnce({ data: {
+        success: true, action: 'complete_onboarding', userId, onboardingCompleted: true,
+      } });
+    const { container } = renderInRouter(<Onboarding />);
+    fireEvent.change(screen.getByPlaceholderText('What should we call you?'), { target: { value: 'Artist One' } });
+    fireEvent.change(screen.getByPlaceholderText('A short bio about your music (optional)'), { target: { value: 'Unsaved optional bio' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+    await screen.findByRole('button', { name: 'Finish with display name only' });
+    fireEvent.click(screen.getByRole('button', { name: 'Finish with display name only' }));
+    await waitFor(() => expect(mockBase44.functions.invoke).toHaveBeenLastCalledWith('completeOnboarding', {
+      display_name: 'Artist One', birthdate: '', bio: '', location: '',
+    }));
+  });
+
   it('shows generic success state for forgot password even when request fails', async () => {
     mockBase44.auth.resetPasswordRequest.mockRejectedValueOnce(new Error('hidden'));
 

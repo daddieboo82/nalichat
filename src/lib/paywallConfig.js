@@ -1,18 +1,18 @@
 const VARIANTS = Object.freeze({
   A: Object.freeze({
     id: "A",
-    headline: "Finish more music with everything in one place.",
-    subhead: "Upgrade when you’re ready for more NALI.ai, bigger creative transfers, advanced Studio workflows, and premium creator tools.",
+    headline: "More AI tools. More creative control. One NaliChat subscription.",
+    subhead: "Premium unlocks up to 200 NALI.ai requests per day, AI-assisted Studio mastering, scheduling, advanced search, and transcription. Pay through PayPal.",
     trialCta: "Choose Premium",
     badges: Object.freeze({
       premium: "Most popular",
-      premium_plus: "Best value",
+      premium_plus: "More AI power",
     }),
   }),
   B: Object.freeze({
     id: "B",
-    headline: "Turn ideas into finished releases faster.",
-    subhead: "Keep your conversations, sessions, files, and AI-assisted creator workflow together—then unlock more power when you need it.",
+    headline: "Unlock the creator tools beyond free messaging and Studio.",
+    subhead: "Go Premium for AI-assisted mastering, advanced messages, and NALI.ai. Choose Premium Plus for up to 1,000 daily AI requests, locked chats, and creator productivity tools.",
     trialCta: "Choose Premium",
     badges: Object.freeze({
       premium: "Best for everyday",

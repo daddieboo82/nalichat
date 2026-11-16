@@ -39,6 +39,7 @@ function PlanCard({
   isStarting,
   isCheckoutPaused,
   onSelect,
+  onBillingReview,
   onContinueFree,
 }) {
   const price = plan.prices[period];
@@ -82,8 +83,8 @@ function PlanCard({
       {paid ? (
         <Button
           className="ui-hover min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10"
-          disabled={isStarting || isCurrent || isPaidSubscriber || isCheckoutPaused}
-          onClick={() => onSelect(plan.id)}
+          disabled={isStarting || isCurrent || isPaidSubscriber}
+          onClick={() => isCheckoutPaused ? onBillingReview() : onSelect(plan.id)}
         >
           {isStarting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
           {isCurrent ? "Current plan" : isPaidSubscriber ? "Manage in Settings" : isCheckoutPaused ? "Review existing billing" : cta}
@@ -483,6 +484,7 @@ export default function PricingPlans({
               isCheckoutPaused={isAuthenticated && (isError || subscription.hasPending)}
               isStarting={startingPlan === planId || (isAuthenticated && (isLoading || appleIAP.purchasingProductId === subscriptionSku(planId, period)))}
               onSelect={startCheckout}
+              onBillingReview={() => navigate("/settings")}
               onContinueFree={continueFree}
             />
           ))}

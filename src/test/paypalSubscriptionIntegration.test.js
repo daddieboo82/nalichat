@@ -81,6 +81,18 @@ describe('PayPal subscription integration contracts', () => {
     expect(statusCheck).toContain("subscription.provider === 'paypal' && subscription.status === 'pending'");
   });
 
+  it('keeps billing review reachable without initiating another PayPal checkout', async () => {
+    const ui = await read('src/components/pricing/PricingPlans.jsx');
+    expect(ui).toContain('isCheckoutPaused ? onBillingReview() : onSelect(plan.id)');
+    expect(ui).toContain('onBillingReview={() => navigate("/settings")}');
+    expect(ui).toContain('disabled={isStarting || isCurrent || isPaidSubscriber}');
+    expect(ui).not.toContain('disabled={isStarting || isCurrent || isPaidSubscriber || isCheckoutPaused}');
+    expect(ui).toContain('isCheckoutPaused={isAuthenticated && (isError || subscription.hasPending)}');
+    expect(ui).toContain('if (subscription.hasPending) {');
+    expect(ui).toContain('setCheckoutRecoveryNeeded(true)');
+    expect(ui).toContain('await startSubscriptionCheckout({');
+  });
+
   it('returns PayPal buyers to the canonical domain instead of the request host', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
     expect(createSource).toContain("new URL('/ThankYou?subscription=1', APP_BASE_URL)");

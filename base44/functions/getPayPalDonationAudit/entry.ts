@@ -21,6 +21,40 @@ async function accessToken(): Promise<string> {
   return data.access_token as string;
 }
 
+// Read-only configuration check: a valid REST token alone does not establish
+// that the registered webhook will deliver one-time donation approvals.
+async function checkDonationWebhook(accessToken: string | null) {
+  const webhookId = String(secrets.get('PAYPAL_WEBHOOK_ID') || '').trim();
+  if (!accessToken) return { status: 'provider_unavailable', approvalEventSubscribed: false, urlMatches: false };
+  if (!webhookId || webhookId.startsWith('REPLACE_')) {
+    return { status: 'webhook_id_missing', approvalEventSubscribed: false, urlMatches: false };
+  }
+  const appId = secrets.get('BASE44_APP_ID') || '6a1f5ee134147461560c2b37';
+  const expectedUrl = secrets.get('PAYPAL_WEBHOOK_URL') ||
+    'https://base44-dispatcher-production.base44.workers.dev/api/apps/' + appId + '/functions/paypalWebhook';
+  try {
+    const response = await fetch(baseUrl() + '/v1/notifications/webhooks/' + encodeURIComponent(webhookId), {
+      headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json' },
+    });
+    if (!response.ok) return { status: 'webhook_lookup_unavailable', approvalEventSubscribed: false, urlMatches: false };
+    const remote = await response.json().catch(() => null);
+    const subscribed = new Set((Array.isArray(remote?.event_types) ? remote.event_types : []).map((event: any) => event?.name));
+    const approvalEventSubscribed = subscribed.has('*') || subscribed.has('CHECKOUT.ORDER.APPROVED');
+    const urlMatches = remote?.url === expectedUrl;
+    const explicitlyDisabled = typeof remote?.status === 'string' && remote.status !== 'ENABLED';
+    return {
+      status: !urlMatches ? 'webhook_url_mismatch'
+        : explicitlyDisabled ? 'webhook_disabled'
+        : !approvalEventSubscribed ? 'approval_event_missing'
+        : 'configured_not_delivery_verified',
+      approvalEventSubscribed,
+      urlMatches,
+    };
+  } catch {
+    return { status: 'webhook_lookup_unavailable', approvalEventSubscribed: false, urlMatches: false };
+  }
+}
+
 function remoteStatus(order: any, amountUsd: number) {
   const expected = Number(amountUsd).toFixed(2);
   if (!order || order?.purchase_units?.length !== 1) return 'review_required';
@@ -67,6 +101,7 @@ Deno.serve(async (req) => {
       try { await accessToken(); providerCheck = 'authenticated'; }
       catch { providerCheck = 'unavailable'; }
     }
+    const webhook = await checkDonationWebhook(token);
     const records = [];
     for (const record of pageRows) {
       let status = 'provider_unavailable';
@@ -110,6 +145,7 @@ Deno.serve(async (req) => {
       adminUserId: admin.id,
       environment: environment(),
       providerCheck,
+      webhook,
       page,
       hasMore: rows.length > PAGE_SIZE,
       records,

@@ -35,6 +35,16 @@ const TITLES = {
   "/projects-summary": "Projects",
   "/pricing": "Pricing",
   "/admin": "Admin",
+  "/artist-career-os": "Artist Career OS",
+  "/artist-world": "Artist World",
+  "/artist-backstage": "Backstage",
+  "/artist-creative-director": "Creative Director",
+  "/artist-marketplace": "Marketplace",
+  "/collaboration-rooms": "Collab Rooms",
+  "/live-studio-sessions": "Live Sessions",
+  "/release-war-room": "War Room",
+  "/song-feedback-lab": "Feedback Lab",
+  "/studio-editor": "Studio Editor",
 };
 
 const ROOT_PATHS = new Set(Object.keys(TITLES));

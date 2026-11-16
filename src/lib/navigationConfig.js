@@ -1,4 +1,4 @@
-import { Home, MessageSquare, Music, Compass, Mic, Image, Video, FolderOpen, FolderKanban, Users, ListMusic, Trophy, BarChart3, Swords, UsersRound, Tv } from "lucide-react";
+import { Home, MessageSquare, Music, Compass, Mic, Image, Video, FolderOpen, FolderKanban, Users, ListMusic, Trophy, BarChart3, Swords, UsersRound, Tv, Rocket, Globe, Star, Sparkles, Store, Radio, FlaskConical, SlidersHorizontal } from "lucide-react";
 
 // Primary tabs shown in the mobile bottom bar — the 4 most-used destinations.
 export const PRIMARY_TABS = [
@@ -17,6 +17,21 @@ export const NAV_GROUPS = [
       { icon: Mic, label: "Quick Record", path: "/record", desc: "Capture ideas on the go" },
       { icon: Image, label: "Cover Art", path: "/cover-art", desc: "Generate AI cover artwork" },
       { icon: Video, label: "Video Lab", path: "/music-video-generator", desc: "Create music videos with AI" },
+    ],
+  },
+  {
+    label: "Artist",
+    items: [
+      { icon: Rocket, label: "Artist Career OS", path: "/artist-career-os", desc: "Your whole artist journey in one place" },
+      { icon: Globe, label: "Artist World", path: "/artist-world", desc: "Your explorable Nali destination" },
+      { icon: Star, label: "Backstage", path: "/artist-backstage", desc: "A closer connection with supporters" },
+      { icon: Sparkles, label: "Creative Director", path: "/artist-creative-director", desc: "Turn a release into a creative direction" },
+      { icon: Store, label: "Marketplace", path: "/artist-marketplace", desc: "Services, collaborators and opportunities" },
+      { icon: Users, label: "Collaboration Rooms", path: "/collaboration-rooms", desc: "Keep every collaborator moving together" },
+      { icon: Radio, label: "Live Studio Sessions", path: "/live-studio-sessions", desc: "Create with others in real time" },
+      { icon: Swords, label: "Release War Room", path: "/release-war-room", desc: "Coordinate the final release push" },
+      { icon: FlaskConical, label: "Song Feedback Lab", path: "/song-feedback-lab", desc: "Collect feedback before you release" },
+      { icon: SlidersHorizontal, label: "Studio Editor", path: "/studio-editor", desc: "Quick AI mastering and publishing" },
     ],
   },
   {

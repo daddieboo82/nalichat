@@ -43,6 +43,7 @@ export const FREE_SUBSCRIPTION = Object.freeze({
   billingPeriod: null,
   provider: null,
   subscriptionRecordId: null,
+  verifiedPayPalAgreementId: null,
   currentPeriodEnd: null,
   renewsAt: null,
   cancelAtPeriodEnd: false,

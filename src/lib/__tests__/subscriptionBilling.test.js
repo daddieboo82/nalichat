@@ -36,6 +36,27 @@ describe("subscription billing client", () => {
     expect(redirect).toHaveBeenCalledWith("https://www.paypal.com/webapps/billing/subscriptions?ba_token=test");
   });
 
+  it("shows the real PayPal checkout error instead of a generic HTTP failure", async () => {
+    const invoke = vi.fn().mockRejectedValue({
+      response: { status: 409, data: {
+        error: "A previous PayPal checkout is pending. Continue your existing approval.",
+        code: "PAYPAL_APPROVAL_PENDING",
+      } },
+    });
+    const redirect = vi.fn();
+    await expect(startSubscriptionCheckout({
+      sku: "premium_monthly",
+      idempotencyKey: "checkout_request_1234",
+      expectedUserId: "user-123",
+      invoke,
+      redirect,
+    })).rejects.toMatchObject({
+      message: "A previous PayPal checkout is pending. Continue your existing approval.",
+      code: "PAYPAL_APPROVAL_PENDING",
+    });
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
   it("rejects a checkout response for another account", async () => {
     const invoke = vi.fn().mockResolvedValue({
       data: {

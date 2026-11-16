@@ -88,11 +88,18 @@ function paypalStatus(status: unknown) {
 }
 
 async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, subscriptions: SubscriptionRecord[]) {
-  const pending = subscriptions.filter((subscription) =>
+  const allPending = subscriptions.filter((subscription) =>
     subscription.provider === 'paypal' && subscription.status === 'pending' &&
     typeof subscription.id === 'string' && typeof subscription.subscription_id === 'string'
-  ).slice(0, 10);
-  if (!pending.length) return;
+  );
+  if (!allPending.length) return;
+  // Poll at most 10 agreements per status request. Rotate the starting point
+  // once per minute so an unresolved newest agreement does not permanently
+  // starve older pending agreements for the same customer.
+  const limit = Math.min(10, allPending.length);
+  const offset = (Math.floor(Date.now() / 60_000) * limit) % allPending.length;
+  const pending = Array.from({ length: limit },
+    (_, index) => allPending[(offset + index) % allPending.length]);
   try {
     const token = await paypalAccessToken();
     if (!token) return;

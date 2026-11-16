@@ -76,6 +76,15 @@ export default function ThankYou() {
       });
       if (!active) return;
 
+      const matchesReturnedAgreement =
+        Boolean(expectedPayPalAgreementId) &&
+        expectedPayPalAgreementId === result.subscription?.verifiedPayPalAgreementId;
+      // A browser with no checkout agreement evidence may already have an
+      // active Premium account. Display access without claiming a new sale.
+      if (result.outcome === "confirmed" && !matchesReturnedAgreement) {
+        setSubscriptionConfirmation("account_active");
+        return;
+      }
       setSubscriptionConfirmation(result.outcome);
       if (result.outcome === "confirmed") {
         const verifiedSubscriptionRecordId = result.subscription.subscriptionRecordId;
@@ -185,6 +194,7 @@ export default function ThankYou() {
 
   if (isSubscriptionCheckout) {
     const confirmed = subscriptionConfirmation === "confirmed";
+    const accountActive = subscriptionConfirmation === "account_active";
     const timedOut = subscriptionConfirmation === "timeout";
     const failed = subscriptionConfirmation === "failed";
     return (
@@ -205,6 +215,8 @@ export default function ThankYou() {
               ? "Confirming subscription..."
               : confirmed
                 ? "You’re upgraded!"
+                : accountActive
+                  ? "Your paid plan is active"
                 : timedOut
                   ? "Still processing"
                   : "We could not verify your subscription"}
@@ -215,12 +227,14 @@ export default function ThankYou() {
               ? "We are checking the authoritative account status. This can take a moment."
               : confirmed
                 ? "Your plan is confirmed. NALI.ai, advanced creator tools, and your upgraded workflow are ready now."
+                : accountActive
+                  ? "Your account has paid access, but this browser could not link it to the checkout that just returned. No new purchase was recorded."
                 : timedOut
                   ? "Your payment provider returned successfully, but the subscription update has not arrived yet. No paid access is granted until confirmation completes."
                   : "Subscription status could not be checked. No paid access was granted."}
           </p>
 
-          {confirmed && (
+          {(confirmed || accountActive) && (
             <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
               <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-8 text-base font-bold hover:opacity-90 sm:w-auto sm:h-14 sm:text-lg" asChild>
                 <Link to="/studio">

@@ -1,0 +1,68 @@
+{
+  "name": "PayPalDonation",
+  "type": "object",
+  "properties": {
+    "order_id": {
+      "type": "string"
+    },
+    "verifier_hash": {
+      "type": "string"
+    },
+    "amount_usd": {
+      "type": "integer"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "payer_id": {
+      "type": "string"
+    },
+    "capture_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "paid_at": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "order_id",
+    "verifier_hash",
+    "amount_usd",
+    "status",
+    "environment"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

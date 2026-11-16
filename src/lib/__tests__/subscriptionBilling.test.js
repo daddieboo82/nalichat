@@ -14,6 +14,7 @@ describe("subscription billing client", () => {
       data: {
         success: true,
         action: "create_paypal_subscription",
+        subscriptionId: "I-VALID123456",
         userId: "user-123",
         sku: "premium_plus_yearly",
         checkoutUrl: "https://www.paypal.com/webapps/billing/subscriptions?ba_token=test",
@@ -34,6 +35,27 @@ describe("subscription billing client", () => {
       idempotencyKey: "checkout_request_1234",
     });
     expect(redirect).toHaveBeenCalledWith("https://www.paypal.com/webapps/billing/subscriptions?ba_token=test");
+  });
+
+  it("refuses a PayPal redirect without the newly created agreement ID", async () => {
+    const redirect = vi.fn();
+    const invoke = vi.fn().mockResolvedValue({
+      data: {
+        success: true,
+        action: "create_paypal_subscription",
+        userId: "user-123",
+        sku: "premium_monthly",
+        checkoutUrl: "https://www.paypal.com/webapps/billing/subscriptions?ba_token=test",
+      },
+    });
+    await expect(startSubscriptionCheckout({
+      sku: "premium_monthly",
+      idempotencyKey: "checkout_request_1234",
+      expectedUserId: "user-123",
+      invoke,
+      redirect,
+    })).rejects.toThrow("Subscription checkout response was not confirmed");
+    expect(redirect).not.toHaveBeenCalled();
   });
 
   it("shows the real PayPal checkout error instead of a generic HTTP failure", async () => {
@@ -62,6 +84,7 @@ describe("subscription billing client", () => {
       data: {
         success: true,
         action: "create_paypal_subscription",
+        subscriptionId: "I-VALID123456",
         userId: "other-user",
         sku: "premium_plus_yearly",
         checkoutUrl: "https://www.paypal.com/webapps/billing/subscriptions?ba_token=test",

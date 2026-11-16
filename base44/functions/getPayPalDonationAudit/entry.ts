@@ -93,7 +93,15 @@ Deno.serve(async (req) => {
         localStatus: record.status === 'paid' ? 'paid' : record.status === 'failed' ? 'failed' : 'pending',
         providerStatus: status,
         createdAt: record.created_at || record.created_date || null,
-        needsReview: (record.status === 'paid') !== (status === 'provider_paid'),
+        // An approved order that has not been captured is an unresolved
+        // donation, even though both sides are technically not yet paid.
+        // Never report missing provider evidence as a healthy match.
+        needsReview: status === 'approved_not_captured'
+          || status === 'review_required'
+          || status === 'provider_unavailable'
+          || status === 'order_not_found'
+          || status === 'environment_mismatch'
+          || (record.status === 'paid') !== (status === 'provider_paid'),
       });
     }
     return Response.json({

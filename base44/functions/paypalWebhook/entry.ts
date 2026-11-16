@@ -5,6 +5,7 @@ import { paypalWebhookLedgerAction, shouldApplyPayPalEvent } from '../../shared/
 
 const HANDLED = new Set([
   // CREATED is recorded for delivery diagnostics, never treated as payment.
+  'CHECKOUT.ORDER.APPROVED',
   'BILLING.SUBSCRIPTION.CREATED',
   'BILLING.SUBSCRIPTION.ACTIVATED',
   'BILLING.SUBSCRIPTION.UPDATED',
@@ -81,6 +82,65 @@ async function fetchSubscriptionBillingInfo(token: string, subscriptionId: strin
     return { nextBillingTime: typeof nextBilling === 'string' ? nextBilling : null };
   } catch {
     return null;
+  }
+}
+
+// Process only a PayPal-signed order-approval event belonging to a locally
+// persisted one-time donation. No subscription is created or changed.
+async function settleApprovedDonation(entities: any, accessToken: string, orderId: string) {
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(orderId)) throw new Error('Invalid PayPal donation order identifier');
+  const rows = await entities.PayPalDonation.filter({ order_id: orderId }, '-created_date', 2);
+  if (!Array.isArray(rows) || rows.length !== 1) throw new Error('Donation record not ready for PayPal retry');
+  const record = rows[0];
+  const env = (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase() === 'sandbox' ? 'sandbox' : 'live';
+  if (record.environment !== env || ![5, 10, 25, 50].includes(Number(record.amount_usd))) {
+    throw new Error('Donation environment or price mismatch');
+  }
+  const amount = Number(record.amount_usd).toFixed(2);
+  const url = apiBase() + '/v2/checkout/orders/' + encodeURIComponent(orderId);
+  const headers = { Authorization: 'Bearer ' + accessToken, Accept: 'application/json' };
+  const response = await fetch(url, { headers });
+  const order = await response.json().catch(() => null);
+  if (!response.ok || order?.id !== orderId) throw new Error('PayPal donation lookup unavailable');
+  if (!Array.isArray(order.purchase_units) || order.purchase_units.length !== 1 ||
+      order.purchase_units[0]?.amount?.currency_code !== 'USD' ||
+      order.purchase_units[0]?.amount?.value !== amount) throw new Error('Donation amount mismatch');
+
+  if (order.status === 'APPROVED') {
+    // Same idempotency key as the donor return flow: competing webhook and
+    // browser requests cannot intentionally create separate captures.
+    const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('capture:' + orderId));
+    const captureKey = Array.from(new Uint8Array(bytes)).map(byte => byte.toString(16).padStart(2, '0')).join('').slice(0, 36);
+    const captureResponse = await fetch(url + '/capture', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json', 'PayPal-Request-Id': captureKey },
+      body: '{}',
+    });
+    if (!captureResponse.ok && captureResponse.status !== 422) throw new Error('PayPal donation capture not confirmed');
+  } else if (order.status !== 'COMPLETED') {
+    throw new Error('PayPal donation not approved or completed');
+  }
+  // Capture API responses, webhook payloads, and local paid flags are not proof.
+  // Re-fetch the authenticated order and verify the completed provider capture.
+  const finalResponse = await fetch(url, { headers });
+  const completed = await finalResponse.json().catch(() => null);
+  const units = completed?.purchase_units;
+  const captures = units?.[0]?.payments?.captures;
+  const capture = Array.isArray(captures) && captures.length === 1 ? captures[0] : null;
+  if (!finalResponse.ok || completed?.id !== orderId || completed?.status !== 'COMPLETED' ||
+      !Array.isArray(units) || units.length !== 1 ||
+      units[0]?.amount?.currency_code !== 'USD' || units[0]?.amount?.value !== amount ||
+      capture?.status !== 'COMPLETED' || capture?.amount?.currency_code !== 'USD' ||
+      capture?.amount?.value !== amount || typeof capture?.id !== 'string') {
+    throw new Error('PayPal donation paid capture not yet verified');
+  }
+  if (record.status !== 'paid') {
+    await entities.PayPalDonation.update(record.id, {
+      status: 'paid',
+      paid_at: new Date().toISOString(),
+      capture_id: capture.id,
+      payer_id: typeof completed.payer?.payer_id === 'string' ? completed.payer.payer_id : '',
+    });
   }
 }
 
@@ -168,6 +228,18 @@ Deno.serve(async (req) => {
         }
         throw createError;
       }
+    }
+
+    if (event.event_type === 'CHECKOUT.ORDER.APPROVED') {
+      // Only a signature-verified PayPal webhook may settle an approved
+      // one-time donation. Ledger retries cover missing local records.
+      await settleApprovedDonation(entities, token, String(event.resource?.id || ''));
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'processed',
+        processed_at: new Date().toISOString(),
+        last_error: '',
+      });
+      return Response.json({ received: true, processed: true });
     }
 
     // ── Resolve subscription record ──

@@ -43,6 +43,22 @@ export default function PayPalDonationAudit() {
       {audit && (
         <div role="status" className="mt-3 space-y-3">
           <p className="text-sm">Environment: <strong>{audit.environment}</strong> · PayPal API authentication: <strong>{audit.providerCheck === "authenticated" ? "Confirmed" : "Unavailable"}</strong></p>
+          <div className="rounded-lg border border-border bg-card p-3 text-sm">
+            <p className="font-semibold">PayPal donation webhook readiness</p>
+            <p className="mt-1 text-muted-foreground">
+              {audit.webhook?.status === "configured_not_delivery_verified"
+                ? "Order approval event and webhook destination configured. Live event delivery is not yet verified."
+                : ({
+                  provider_unavailable: "PayPal API authentication unavailable.",
+                  webhook_id_missing: "PayPal webhook ID is missing.",
+                  webhook_lookup_unavailable: "Could not verify the registered PayPal webhook.",
+                  webhook_url_mismatch: "PayPal webhook points to a different address.",
+                  webhook_disabled: "The registered PayPal webhook is disabled.",
+                  approval_event_missing: "CHECKOUT.ORDER.APPROVED is missing from PayPal webhook subscriptions.",
+                })[audit.webhook?.status] || "Webhook configuration has not been verified."}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">This is a read-only configuration check, not a successful donation or proof of webhook delivery.</p>
+          </div>
           <p className="text-xs text-muted-foreground">{audit.records.length} donation record(s) on page {audit.page + 1}.{audit.records.some(item => item.needsReview) ? " Some records need review." : ""}</p>
           {audit.records.length === 0 && (
             <p className="text-sm text-muted-foreground">No PayPal donation orders have been recorded on this page. This does not establish that live checkout or settlement works.</p>

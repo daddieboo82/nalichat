@@ -16,6 +16,7 @@ export default function DonationButton({ variant = "hero" }) {
   const [loading, setLoading] = useState(false);
   const handledReturn = useRef(false);
   const [donationPending, setDonationPending] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState(null);
 
   useEffect(() => {
     if (handledReturn.current) return;
@@ -36,10 +37,12 @@ export default function DonationButton({ variant = "hero" }) {
       return;
     }
     handledReturn.current = true;
+    setPendingOrder({ orderId, verifier });
     setDonationPending(true);
     base44.functions.invoke("capturePayPalDonation", { orderId, verifier }).then(res => {
       const data = res?.data ?? res;
       if (data?.success === true && data?.action === "capture_paypal_donation" && data?.status === "paid") {
+        setPendingOrder(null);
         toast.success("Thank you! PayPal has confirmed your donation.");
         params.delete("paypal_donation");
         params.delete("donation_verifier");
@@ -47,13 +50,13 @@ export default function DonationButton({ variant = "hero" }) {
         params.delete("PayerID");
         window.history.replaceState(window.history.state, "", window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash);
       } else {
-        toast.info("Your PayPal donation is not confirmed yet. Reload this page to check the same order; do not pay again.");
+        toast.info("Your PayPal donation is not confirmed yet. Use Check payment again; do not pay twice.");
       }
-    }).catch(() => toast.error("Unable to confirm your PayPal donation. Reload this page to recheck; do not pay again.")).finally(() => setDonationPending(false));
+    }).catch(() => toast.error("Unable to confirm your PayPal donation. Use Check payment again; do not pay twice.")).finally(() => setDonationPending(false));
   }, []);
 
   const handleDonate = async () => {
-    if (loading || donationPending || !PRESETS.includes(amount)) return;
+    if (loading || donationPending || pendingOrder || !PRESETS.includes(amount)) return;
     setLoading(true);
     try {
       const response = await base44.functions.invoke("createPayPalDonation", { amount });
@@ -81,7 +84,7 @@ export default function DonationButton({ variant = "hero" }) {
   return (
     <>
       <Button
-        onClick={() => setOpen(true)}
+        onClick={() => { if (pendingOrder) return; setOpen(true); }}
         size="lg"
         className={
           variant === "hero"
@@ -93,6 +96,32 @@ export default function DonationButton({ variant = "hero" }) {
         Support NaliBase
       </Button>
 
+      {pendingOrder && (
+        <div role="status" className="mt-3 rounded-xl border border-amber-500/30 bg-card p-3 text-sm">
+          <p className="font-semibold">PayPal donation awaiting confirmation</p>
+          <p className="mt-1 text-muted-foreground">Do not start another donation. Check the existing PayPal order instead.</p>
+          <Button type="button" size="sm" variant="outline" className="mt-2" disabled={donationPending} onClick={async () => {
+            setDonationPending(true);
+            try {
+              const res = await base44.functions.invoke("capturePayPalDonation", pendingOrder);
+              const data = res?.data ?? res;
+              if (data?.success === true && data?.action === "capture_paypal_donation" && data?.status === "paid") {
+                setPendingOrder(null);
+                const params = new URLSearchParams(window.location.search);
+                for (const key of ["paypal_donation", "donation_verifier", "token", "PayerID"]) params.delete(key);
+                window.history.replaceState(window.history.state, "", window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash);
+                toast.success("PayPal has confirmed your donation. Thank you!");
+              } else {
+                toast.info("PayPal has not confirmed the donation yet. Check again later; do not pay twice.");
+              }
+            } catch {
+              toast.error("Payment verification is temporarily unavailable. Do not start another donation.");
+            } finally {
+              setDonationPending(false);
+            }
+          }}>{donationPending ? "Checking PayPal..." : "Check payment again"}</Button>
+        </div>
+      )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
           <DialogHeader>
@@ -130,7 +159,7 @@ export default function DonationButton({ variant = "hero" }) {
             </Button>
             <Button
               onClick={handleDonate}
-              disabled={loading}
+              disabled={loading || donationPending || !!pendingOrder}
               className="ui-hover min-h-11 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 font-semibold hover:opacity-90"
             >
               {loading ? (

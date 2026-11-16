@@ -259,19 +259,31 @@ Deno.serve(async (req) => {
     }
 
     checkoutStage = 'persist_pending_subscription';
-    await base44.asServiceRole.entities.Subscription.create({
-      user_id: user.id,
-      plan: item.plan,
-      status: 'pending',
-      provider: 'paypal',
-      billing_period: item.billingPeriod,
-      sku,
-      subscription_id: data.id,
-      paypal_plan_id: planId,
-      paypal_environment: (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase(),
-      checkout_url: verifiedApproval.toString(),
-      checkout_request_key: idempotencyKey,
-    });
+    try {
+      await base44.asServiceRole.entities.Subscription.create({
+        user_id: user.id,
+        plan: item.plan,
+        status: 'pending',
+        provider: 'paypal',
+        billing_period: item.billingPeriod,
+        sku,
+        subscription_id: data.id,
+        paypal_plan_id: planId,
+        paypal_environment: (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase(),
+        checkout_url: verifiedApproval.toString(),
+        checkout_request_key: idempotencyKey,
+      });
+    } catch (persistError) {
+      // The write can land even when its response is lost. Re-read before
+      // failing so the agreement is never left without its buyer record.
+      const existing = await base44.asServiceRole.entities.Subscription.filter(
+        { provider: 'paypal', subscription_id: data.id }, '-created_date', 2,
+      );
+      if (!Array.isArray(existing) || existing.length !== 1) {
+        console.error('Failed to persist pending PayPal subscription:', persistError);
+        throw new Error('Unable to persist subscription record');
+      }
+    }
 
     return Response.json({
       success: true,

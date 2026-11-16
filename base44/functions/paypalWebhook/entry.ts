@@ -85,6 +85,82 @@ async function fetchSubscriptionBillingInfo(token: string, subscriptionId: strin
   }
 }
 
+// The subscription plan IDs this merchant configured, so an agreement's
+// plan_id can be resolved back to the plan the buyer actually paid for.
+const AGREEMENT_PLANS = [
+  { secret: 'PAYPAL_PREMIUM_MONTHLY_PLAN_ID', plan: 'premium', billingPeriod: 'monthly', sku: 'premium_monthly' },
+  { secret: 'PAYPAL_PREMIUM_YEARLY_PLAN_ID', plan: 'premium', billingPeriod: 'annual', sku: 'premium_yearly' },
+  { secret: 'PAYPAL_PREMIUM_PLUS_MONTHLY_PLAN_ID', plan: 'premium_plus', billingPeriod: 'monthly', sku: 'premium_plus_monthly' },
+  { secret: 'PAYPAL_PREMIUM_PLUS_YEARLY_PLAN_ID', plan: 'premium_plus', billingPeriod: 'annual', sku: 'premium_plus_yearly' },
+];
+
+function agreementPlan(planId: unknown) {
+  if (typeof planId !== 'string' || !planId) return null;
+  return AGREEMENT_PLANS.find((entry) => (secrets.get(entry.secret) || '') === planId) || null;
+}
+
+function statusFromAgreement(status: unknown): string {
+  const normalized = String(status || '').toUpperCase();
+  if (normalized === 'ACTIVE') return 'active';
+  if (normalized === 'CANCELLED' || normalized === 'EXPIRED') return 'canceled';
+  if (normalized === 'SUSPENDED') return 'unpaid';
+  return 'pending';
+}
+
+// Rebuild the buyer's record from the provider's own agreement when the
+// checkout write never landed. Only the signature-verified agreement is
+// trusted: its id, a plan this merchant configured, and the custom_id our
+// checkout wrote (user id + SKU). Nothing is taken from the event body.
+async function claimAgreementForBuyer(entities: any, remote: any, subscriptionId: string) {
+  const plan = agreementPlan(remote?.plan_id);
+  if (!plan || remote?.id !== subscriptionId) return null;
+  const customId = typeof remote?.custom_id === 'string' ? remote.custom_id : '';
+  const separator = customId.lastIndexOf(':');
+  if (separator <= 0) return null;
+  const userId = customId.slice(0, separator);
+  const sku = customId.slice(separator + 1);
+  // The agreement must belong to the plan the buyer was charged for.
+  if (!userId || sku !== plan.sku) return null;
+
+  const environment = (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase();
+  const status = statusFromAgreement(remote?.status);
+  const periodEnd = paypalPeriodEndForStatus(status, remote?.billing_info?.next_billing_time);
+
+  const created = await entities.Subscription.create({
+    user_id: userId,
+    plan: plan.plan,
+    status,
+    provider: 'paypal',
+    billing_period: plan.billingPeriod,
+    sku: plan.sku,
+    subscription_id: subscriptionId,
+    paypal_plan_id: remote.plan_id,
+    paypal_environment: environment === 'sandbox' ? 'sandbox' : 'live',
+    ...(periodEnd === undefined || periodEnd === null ? {} : { current_period_end: periodEnd }),
+  });
+
+  // Two events can be delivered together for one agreement. Keep a single row
+  // so later deliveries are not blocked by a duplicate we just created.
+  const rows = await entities.Subscription.filter(
+    { provider: 'paypal', subscription_id: subscriptionId }, '-created_date', 5,
+  );
+  if (Array.isArray(rows) && rows.length > 1) {
+    const ordered = [...rows].sort((a: any, b: any) =>
+      String(a.created_date || '').localeCompare(String(b.created_date || '')));
+    const keep = ordered[0];
+    for (const row of ordered.slice(1)) {
+      if (row.id !== keep.id && row.id === created?.id) {
+        try {
+          await entities.Subscription.delete(row.id);
+        } catch (error) {
+          console.error('Could not remove duplicate claimed subscription row', error);
+        }
+      }
+    }
+  }
+  return created;
+}
+
 // Process only a PayPal-signed order-approval event belonging to a locally
 // persisted one-time donation. No subscription is created or changed.
 async function settleApprovedDonation(entities: any, accessToken: string, orderId: string) {
@@ -256,19 +332,7 @@ Deno.serve(async (req) => {
       return Response.json({ received: true, ignored: true });
     }
 
-    const records = await entities.Subscription.filter({ provider: 'paypal', subscription_id: subscriptionId }, '-created_date', 2);
-    if (records.length === 0) {
-      // The local row can land a moment after PayPal emits the event. A 200
-      // with ignored state would permanently drop the payment, so ask PayPal
-      // to retry until the subscription record exists.
-      console.warn('PayPal webhook: no subscription record yet for', subscriptionId);
-      await entities.PayPalWebhookEvent.update(ledger.id, {
-        processing_state: 'failed',
-        processed_at: new Date().toISOString(),
-        last_error: 'No subscription record found yet; PayPal should retry',
-      });
-      return Response.json({ error: 'Subscription record not ready' }, { status: 503 });
-    }
+    let records = await entities.Subscription.filter({ provider: 'paypal', subscription_id: subscriptionId }, '-created_date', 5);
     if (records.length > 1) {
       console.error('PayPal webhook: multiple subscription records for', subscriptionId, records.length);
       await entities.PayPalWebhookEvent.update(ledger.id, {
@@ -278,35 +342,62 @@ Deno.serve(async (req) => {
       });
       return Response.json({ error: 'Subscription reconciliation required' }, { status: 409 });
     }
-    const record = records[0];
-    let verifiedRemote: any = null;
 
     // A sale/refund event identifies a billing agreement, but does not itself
     // prove that the agreement belongs to this user or merchant. Verify the
     // provider-side subscription binding before changing paid access.
-    {
-      const lookup = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId), {
-        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+    const lookup = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscriptionId), {
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+    });
+    if (!lookup.ok) {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'Unable to verify PayPal subscription identity',
       });
-      if (!lookup.ok) {
+      return Response.json({ error: 'PayPal subscription verification unavailable' }, { status: 503 });
+    }
+    const verifiedRemote: any = await lookup.json();
+
+    // The checkout write and this event race: a billed agreement can arrive
+    // before its local row exists, or after that write failed. The verified
+    // agreement is the authoritative record of who bought what, so claim it
+    // rather than dropping a payment that already happened.
+    if (records.length === 0) {
+      console.warn('PayPal webhook: no local record; attempting to link agreement to its buyer', subscriptionId);
+      await claimAgreementForBuyer(entities, verifiedRemote, subscriptionId);
+      records = await entities.Subscription.filter({ provider: 'paypal', subscription_id: subscriptionId }, '-created_date', 5);
+      if (records.length === 0) {
+        // The row may be a moment away, or the agreement cannot be attributed.
+        // Keep the provider retrying instead of dropping the payment.
         await entities.PayPalWebhookEvent.update(ledger.id, {
           processing_state: 'failed',
           processed_at: new Date().toISOString(),
-          last_error: 'Unable to verify PayPal subscription identity',
+          last_error: 'Agreement could not be linked to a buyer yet; PayPal should retry',
         });
-        return Response.json({ error: 'PayPal subscription verification unavailable' }, { status: 503 });
+        return Response.json({ error: 'Subscription record not ready' }, { status: 503 });
       }
-      const remote = await lookup.json();
-      verifiedRemote = remote;
-      if (remote?.id !== subscriptionId || (!remote?.plan_id || ![record.paypal_plan_id, secrets.get('PAYPAL_PREMIUM_PLUS_MONTHLY_PLAN_ID'), secrets.get('PAYPAL_PREMIUM_PLUS_YEARLY_PLAN_ID')].includes(remote.plan_id)) ||
-          remote?.custom_id !== record.user_id + ':' + (record.paypal_original_sku || record.sku)) {
+      if (records.length > 1) {
+        console.error('PayPal webhook: linking produced multiple records for', subscriptionId, records.length);
         await entities.PayPalWebhookEvent.update(ledger.id, {
           processing_state: 'failed',
           processed_at: new Date().toISOString(),
-          last_error: 'PayPal subscription identity mismatch',
+          last_error: `Multiple subscription records (${records.length}) require operator reconciliation`,
         });
-        return Response.json({ error: 'PayPal subscription identity mismatch' }, { status: 409 });
+        return Response.json({ error: 'Subscription reconciliation required' }, { status: 409 });
       }
+      console.info('PayPal webhook: agreement linked to its buyer', subscriptionId);
+    }
+
+    const record = records[0];
+    if (verifiedRemote?.id !== subscriptionId || (!verifiedRemote?.plan_id || ![record.paypal_plan_id, secrets.get('PAYPAL_PREMIUM_PLUS_MONTHLY_PLAN_ID'), secrets.get('PAYPAL_PREMIUM_PLUS_YEARLY_PLAN_ID')].includes(verifiedRemote.plan_id)) ||
+        verifiedRemote?.custom_id !== record.user_id + ':' + (record.paypal_original_sku || record.sku)) {
+      await entities.PayPalWebhookEvent.update(ledger.id, {
+        processing_state: 'failed',
+        processed_at: new Date().toISOString(),
+        last_error: 'PayPal subscription identity mismatch',
+      });
+      return Response.json({ error: 'PayPal subscription identity mismatch' }, { status: 409 });
     }
 
     // ── Stale-event protection ──

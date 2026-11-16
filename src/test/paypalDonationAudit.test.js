@@ -12,6 +12,10 @@ describe("PayPal donation admin read-only audit", () => {
     expect(backend).not.toContain("PayPalDonation.create(");
     expect(backend).not.toContain("'/capture'");
     expect(backend).toContain("readOnly: true");
+    expect(backend).toContain("status === 'approved_not_captured'");
+    expect(backend).toContain("status === 'provider_unavailable'");
+    expect(backend).toContain("status === 'order_not_found'");
+    expect(backend).toContain("(record.status === 'paid') !== (status === 'provider_paid')");
   });
 
   it("shows admin-only donation audit with recorded and provider statuses", async () => {
@@ -21,6 +25,8 @@ describe("PayPal donation admin read-only audit", () => {
     expect(component).toContain('base44.functions.invoke("getPayPalDonationAudit"');
     expect(component).toContain("PayPal API authentication");
     expect(component).toContain("Provider capture");
+    expect(component).toContain("No PayPal donation orders have been recorded");
+    expect(component).toContain("approved by PayPal but have no confirmed capture");
     expect(panel).toContain("<PayPalDonationAudit />");
   });
 });

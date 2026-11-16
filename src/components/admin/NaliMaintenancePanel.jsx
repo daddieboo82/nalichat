@@ -14,6 +14,45 @@ export default function NaliMaintenancePanel() {
   const [showDetails, setShowDetails] = useState(false);
   const [paypalReconciliationRunning, setPaypalReconciliationRunning] = useState(false);
   const [paypalReconciliationResult, setPaypalReconciliationResult] = useState(null);
+  const [paypalAuditLoading, setPaypalAuditLoading] = useState(false);
+  const [paypalAudit, setPaypalAudit] = useState(null);
+
+  const auditPayPal = async () => {
+    if (paypalAuditLoading || mode !== null || user?.role !== "admin") return;
+    setPaypalAuditLoading(true);
+    setPaypalAudit(null);
+    try {
+      const response = await base44.functions.invoke("getPendingPayPalAudit", {});
+      const data = response?.data;
+      if (data?.error) throw new Error(data.error);
+      if (data?.success !== true || data?.action !== "pending_paypal_audit" ||
+          data?.adminUserId !== user.id || !Number.isSafeInteger(data.checked)) {
+        throw new Error("PayPal audit response could not be verified.");
+      }
+      const providerStatuses = {};
+      for (const record of Array.isArray(data.results) ? data.results : []) {
+        const status = typeof record.status === "string" ? record.status : "unknown";
+        providerStatuses[status] = (providerStatuses[status] || 0) + 1;
+      }
+      const planProblems = Array.isArray(data.planChecks)
+        ? data.planChecks.filter((plan) => plan.status !== "ACTIVE" || plan.matchesCatalog !== true).length
+        : null;
+      setPaypalAudit({
+        checked: data.checked,
+        uniqueAccounts: data.uniqueAccounts,
+        multipleAccounts: data.accountsWithMultiplePending,
+        missingKeys: data.missingRequestKeys,
+        providerStatuses,
+        webhook: data.webhookCheck,
+        webhookLedgerCount: data.webhookLedgerCount,
+        planProblems,
+      });
+    } catch (error) {
+      toast.error("PayPal audit failed: " + (error?.response?.data?.error || error?.message || "Unknown error"));
+    } finally {
+      setPaypalAuditLoading(false);
+    }
+  };
 
   const reconcilePayPal = async () => {
     if (paypalReconciliationRunning || mode !== null || user?.role !== "admin") return;
@@ -112,6 +151,20 @@ export default function NaliMaintenancePanel() {
             Only PayPal-verified subscriptions are updated; customer-approved agreements may be activated.
             This does not start a new subscription checkout.
           </p>
+          <Button variant="outline" className="mb-3 mr-3 gap-2" disabled={mode !== null || paypalAuditLoading || paypalReconciliationRunning} onClick={auditPayPal}>
+            {paypalAuditLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Stethoscope className="w-4 h-4" />}
+            {paypalAuditLoading ? "Checking PayPal configuration..." : "Audit PayPal (read-only)"}
+          </Button>
+          {paypalAudit && (
+            <div role="status" className="mb-3 space-y-2 rounded-lg border border-border p-3 text-sm">
+              <p>Pending agreements checked: {paypalAudit.checked}. Affected accounts: {paypalAudit.uniqueAccounts ?? "unknown"}.</p>
+              <p>Accounts with multiple pending agreements: {paypalAudit.multipleAccounts ?? "unknown"}. Legacy records without checkout keys: {paypalAudit.missingKeys ?? "unknown"}.</p>
+              <p>PayPal webhook: {paypalAudit.webhook?.status || "unverified"}; enabled: {paypalAudit.webhook?.enabled === true ? "yes" : "not verified"}; expected URL: {paypalAudit.webhook?.urlMatchesExpected === true ? "matches" : "not confirmed"}.</p>
+              <p>Webhook ledger entries: {paypalAudit.webhookLedgerCount ?? "unavailable"}. Paid plan configuration issues: {paypalAudit.planProblems ?? "unavailable"}.</p>
+              <p>Provider agreement statuses: {Object.entries(paypalAudit.providerStatuses).map(([key, count]) => `${key}: ${count}`).join(", ") || "none available"}.</p>
+              <p className="text-muted-foreground">This audit only reads PayPal and local records. No payments or subscription statuses are changed.</p>
+            </div>
+          )}
           <Button variant="outline" className="gap-2" disabled={mode !== null || paypalReconciliationRunning} onClick={reconcilePayPal}>
             {paypalReconciliationRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Stethoscope className="w-4 h-4" />}
             {paypalReconciliationRunning ? "Checking PayPal..." : "Reconcile pending PayPal"}

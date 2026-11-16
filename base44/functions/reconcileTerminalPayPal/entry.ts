@@ -91,13 +91,6 @@ Deno.serve(async (req: Request) => {
       }, { status: 409 });
     }
     return Response.json({
-          error: 'Subscription changed during recovery; refresh billing status',
-          resolved,
-        }, { status: 409 });
-      }
-      resolved++;
-    }
-    return Response.json({
       success: true, action: 'reconcile_terminal_paypal', userId: user.id, resolved,
     });
   } catch (error) {

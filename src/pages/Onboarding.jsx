@@ -72,7 +72,7 @@ export default function Onboarding() {
     // The backend accepts only a real YYYY-MM-DD birthdate that is not in
     // the future. Validate locally so mobile users receive a useful message
     // instead of an opaque HTTP 400 during onboarding.
-    if (form.birthdate) {
+    if (!displayNameOnly && form.birthdate) {
       const parsed = new Date(form.birthdate + "T00:00:00Z");
       const today = new Date();
       const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());

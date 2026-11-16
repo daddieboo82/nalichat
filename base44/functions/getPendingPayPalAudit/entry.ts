@@ -71,7 +71,10 @@ Deno.serve(async (req) => {
             : webhookUrl === publicDomainUrl ? 'public_domain' : 'other';
           webhookCheck = {
             status: 'registered',
-            enabled: match?.status === 'ENABLED',
+            // PayPal's webhook resource schema has no top-level enabled/status property.
+            // Missing status must be unknown, not interpreted as DISABLED.
+            enabled: typeof match?.status === 'string' ? match.status === 'ENABLED' : null,
+            enabledStatusSource: typeof match?.status === 'string' ? 'provider_explicit' : 'not_exposed_by_paypal',
             urlIsHttps: webhookUrl.startsWith('https://'),
             urlMatchesExpected: webhookUrl === expectedWebhookUrl,
             registeredRoute,

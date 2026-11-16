@@ -79,8 +79,8 @@ export default function ThankYou() {
           : null;
         let alreadyTracked = false;
         try {
-          alreadyTracked = localStorage.getItem(analyticsKey) === "1";
-          localStorage.setItem(analyticsKey, "1");
+          alreadyTracked = !analyticsKey || localStorage.getItem(analyticsKey) === "1";
+          if (analyticsKey) localStorage.setItem(analyticsKey, "1");
         } catch {
           // Analytics dedupe is best-effort; never block a confirmed purchase.
         }

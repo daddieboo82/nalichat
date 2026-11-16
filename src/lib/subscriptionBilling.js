@@ -2,6 +2,7 @@ import { base44 } from "@/api/base44Client";
 
 export const CHECKOUT_RETURN_KEY = "nalichat_subscription_checkout_started";
 export const CHECKOUT_ATTRIBUTION_KEY = "nalichat_subscription_checkout_attribution";
+export const CHECKOUT_SUBSCRIPTION_ID_KEY = "nalichat_subscription_checkout_agreement_id";
 
 export function createCheckoutRequestKey() {
   const uuid = globalThis.crypto?.randomUUID?.();
@@ -67,6 +68,13 @@ export async function startSubscriptionCheckout({
   if (checkoutUrl.protocol !== "https:" || !["www.paypal.com", "www.sandbox.paypal.com"].includes(checkoutUrl.hostname)) {
     throw new Error("PayPal checkout URL was not trusted");
   }
+  // Store only the server-created PayPal agreement for return-page attribution.
+  // Never use this browser value as proof of payment or grant entitlements.
+  try {
+    if (typeof payload.subscriptionId === "string" && payload.subscriptionId) {
+      sessionStorage.setItem(CHECKOUT_SUBSCRIPTION_ID_KEY, payload.subscriptionId);
+    }
+  } catch { /* Storage may be unavailable on restricted browsers. */ }
   redirect(checkoutUrl.toString());
   return payload;
 }

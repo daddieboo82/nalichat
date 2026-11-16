@@ -321,6 +321,19 @@ export default function Register() {
         <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
           Codes expire. If your code has expired, use Resend code above when the countdown ends. If you requested more than one code, enter only the newest one.
         </p>
+        <button
+          type="button"
+          onClick={() => {
+            setShowOtp(false);
+            setOtpCode("");
+            setError("");
+            setResendCooldown(0);
+          }}
+          disabled={loading}
+          className="mt-3 flex min-h-11 w-full items-center justify-center rounded-xl px-3 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50"
+        >
+          Change email address
+        </button>
       </AuthLayout>
     );
   }

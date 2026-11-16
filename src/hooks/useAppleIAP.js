@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import {
   initializeAppleIAP,
   isAppleIAPAvailable,
@@ -20,14 +21,17 @@ import { trackPaywallEvent } from "@/lib/paywallAnalytics";
  */
 export function useAppleIAP() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [available] = useState(isAppleIAPAvailable());
   const [purchasingProductId, setPurchasingProductId] = useState(null);
   const [restoring, setRestoring] = useState(false);
   const initializedRef = useRef(false);
 
   const refreshSubscription = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: subscriptionQueryKey() });
-  }, [queryClient]);
+    // The subscription cache is scoped to the authenticated user.
+    // Invalidating the anonymous key does not refresh a verified purchase.
+    queryClient.invalidateQueries({ queryKey: subscriptionQueryKey(user?.id) });
+  }, [queryClient, user?.id]);
 
   // Send a verified transaction to the backend for validation + entitlement grant.
   const handleVerified = useCallback(

@@ -53,6 +53,16 @@ Deno.serve(async (req: Request) => {
       }
     }
     for (const row of pending) {
+      // A webhook or another status check may have updated the local record
+      // during provider verification. Never overwrite a non-pending status.
+      const current = await subscriptions.get(row.id);
+      if (!current || current.user_id !== user.id ||
+          current.provider !== 'paypal' || current.status !== 'pending' ||
+          current.subscription_id !== row.subscription_id) {
+        return Response.json({
+          error: 'Subscription changed during review; refresh billing status',
+        }, { status: 409 });
+      }
       // Updating a terminal local state does not touch the PayPal agreement.
       await subscriptions.update(row.id, { status: 'canceled', cancel_at_period_end: false });
     }

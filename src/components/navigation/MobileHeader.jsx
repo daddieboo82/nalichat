@@ -43,7 +43,8 @@ export default function MobileHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
-  const { hasPaidAccess, isLoading: subscriptionLoading } = useSubscription();
+  const { subscription, hasPaidAccess, isLoading: subscriptionLoading, isError: subscriptionError } = useSubscription();
+  const billingReviewNeeded = subscriptionError || subscription.hasPending;
   const [menuOpen, setMenuOpen] = useState(false);
   const lastUserIdRef = useRef(user?.id || null);
 
@@ -134,13 +135,18 @@ export default function MobileHeader() {
             {isAuthenticated && !subscriptionLoading && !hasPaidAccess && (
               <button
                 onClick={() => {
-                  trackProductEvent("upgrade_click", { source: "mobile_header_upgrade", cta: "upgrade_premium" });
-                  navigate("/pricing?source=mobile_header_upgrade");
+                  if (billingReviewNeeded) {
+                    trackProductEvent("billing_review_click", { source: "mobile_header", cta: "review_existing_billing" });
+                    navigate("/settings");
+                  } else {
+                    trackProductEvent("upgrade_click", { source: "mobile_header_upgrade", cta: "upgrade_premium" });
+                    navigate("/pricing?source=mobile_header_upgrade");
+                  }
                 }}
                 className="inline-flex h-10 items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 px-2.5 text-[11px] font-black text-black shadow-md shadow-orange-500/20 active:scale-95"
-                aria-label="Upgrade to Premium"
+                aria-label={billingReviewNeeded ? "Review existing billing" : "Upgrade to Premium"}
               >
-                <Gem className="h-3.5 w-3.5" /> Upgrade
+                <Gem className="h-3.5 w-3.5" /> {billingReviewNeeded ? "Billing" : "Upgrade"}
               </button>
             )}
             {!isAuthenticated && (

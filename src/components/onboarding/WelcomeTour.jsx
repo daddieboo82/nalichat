@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,18 @@ import { Sparkles, UserCircle, Trophy, ArrowRight, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
+import { trackPaywallEvent } from "@/lib/paywallAnalytics";
 import { toast } from "sonner";
 
 const STEPS = [
+  {
+    icon: Sparkles,
+    title: "Create free. Unlock more with Premium.",
+    description: "NaliChat Premium is $7.99/month and adds NALI.ai, AI-assisted Studio mastering, advanced messaging, and transcription. Keep using core messaging and Studio free if you prefer.",
+    primary: { label: "Explore Premium plans", action: "navigate", path: "/pricing" },
+    secondary: { label: "Continue free", action: "next" },
+    color: "from-primary to-violet-500",
+  },
   {
     icon: Sparkles,
     title: "Welcome to NaliBase!",
@@ -41,6 +50,13 @@ export default function WelcomeTour({ open, onClose }) {
   const current = STEPS[step];
   const Icon = current.icon;
 
+  useEffect(() => {
+    if (!open || step !== 0 || !user?.id) return;
+    trackPaywallEvent("entitlement_prompt_view", {
+      source: "first_login_welcome_tour", plan: "premium",
+    }, user.id);
+  }, [open, step, user?.id]);
+
   const complete = async () => {
     try {
       const res = await base44.functions.invoke("updateMyProfile", { welcome_tour_completed: true });
@@ -61,9 +77,15 @@ export default function WelcomeTour({ open, onClose }) {
   const handleAction = async (action, path) => {
     sounds.click();
     if (action === "next") {
+      if (step === 0 && user?.id) trackPaywallEvent("paywall_dismissed", {
+        source: "first_login_welcome_tour", plan: "free",
+      }, user.id);
       setStep((s) => Math.min(s + 1, STEPS.length - 1));
     } else if (action === "navigate") {
       if (!await complete()) return;
+      if (step === 0 && path === "/pricing" && user?.id) trackPaywallEvent("entitlement_prompt_convert", {
+        source: "first_login_welcome_tour", plan: "premium",
+      }, user.id);
       onClose();
       navigate(path);
     } else if (action === "complete") {
@@ -74,6 +96,9 @@ export default function WelcomeTour({ open, onClose }) {
 
   const handleDismiss = async () => {
     if (!await complete()) return;
+    if (step === 0 && user?.id) trackPaywallEvent("paywall_dismissed", {
+      source: "first_login_welcome_tour", plan: "free",
+    }, user.id);
     onClose();
   };
 

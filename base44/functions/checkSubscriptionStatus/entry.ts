@@ -103,9 +103,19 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       if (!response.ok) continue;
       const remote = await response.json();
       // Never assign renewal dates or paid status to a different merchant agreement.
-      if (remote?.id !== subscription.subscription_id ||
-          remote?.plan_id !== subscription.paypal_plan_id ||
-          remote?.custom_id !== subscription.user_id + ':' + subscription.sku) continue;
+      const expectedEnvironment = (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase();
+      if (
+        subscription.paypal_environment !== expectedEnvironment ||
+        !subscription.user_id ||
+        !subscription.sku ||
+        !subscription.paypal_plan_id ||
+        remote?.id !== subscription.subscription_id ||
+        remote?.plan_id !== subscription.paypal_plan_id ||
+        remote?.custom_id !== subscription.user_id + ':' + subscription.sku
+      ) {
+        console.error('PayPal status check identity mismatch', { subscriptionRecordId: subscription.id });
+        continue;
+      }
       const remoteStatus = await resolvePayPalSubscriptionStatus(
         paypalApiBase(),
         token,

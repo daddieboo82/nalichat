@@ -150,6 +150,59 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
   }
 }
 
+// When webhooks have not yet reconciled an existing active PayPal agreement,
+// verify its current state before returning entitlements. This is a read-only
+// provider lookup; it never creates or activates a recurring agreement.
+async function reconcileActivePayPal(subscriptionEntity: SubscriptionEntity, subscriptions: SubscriptionRecord[]) {
+  const active = subscriptions.filter((subscription) =>
+    subscription.provider === 'paypal' && subscription.status === 'active' &&
+    typeof subscription.id === 'string' && typeof subscription.subscription_id === 'string'
+  );
+  if (!active.length) return;
+  try {
+    const token = await paypalAccessToken();
+    if (!token) return;
+    for (const subscription of active) {
+      try {
+        const response = await fetch(paypalApiBase() + '/v1/billing/subscriptions/' +
+          encodeURIComponent(subscription.subscription_id as string), {
+          headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+        });
+        if (!response.ok) continue;
+        const remote = await response.json();
+        const expectedEnvironment = (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase();
+        if (subscription.paypal_environment !== expectedEnvironment ||
+          !subscription.user_id || !subscription.sku || !subscription.paypal_plan_id ||
+          remote?.id !== subscription.subscription_id ||
+          remote?.plan_id !== subscription.paypal_plan_id ||
+          remote?.custom_id !== subscription.user_id + ':' + subscription.sku) {
+          console.warn('Active PayPal agreement identity requires review');
+          continue;
+        }
+        // No activation request here: active subscription verification only.
+        const verifiedStatus = paypalStatus(remote?.status);
+        if (!verifiedStatus) continue;
+        const update: Record<string, unknown> = {};
+        if (verifiedStatus !== subscription.status) update.status = verifiedStatus;
+        const periodEnd = paypalPeriodEndForStatus(verifiedStatus, remote?.billing_info?.next_billing_time);
+        if (periodEnd !== undefined && periodEnd !== subscription.current_period_end) {
+          update.current_period_end = periodEnd;
+        }
+        if (verifiedStatus === 'canceled') update.cancel_at_period_end = false;
+        if (Object.keys(update).length) {
+          await subscriptionEntity.update(subscription.id as string, update);
+          Object.assign(subscription, update);
+        }
+      } catch {
+        // An unavailable PayPal lookup is not proof a customer lost paid access.
+        console.warn('Active PayPal agreement status lookup unavailable');
+      }
+    }
+  } catch {
+    console.warn('Active PayPal agreement verification unavailable');
+  }
+}
+
 function subscriptionPriority(subscription: SubscriptionRecord, now: string): number {
   const plan = normalizePlan(subscription.plan);
   const status = normalizeStatus(subscription.status);
@@ -195,6 +248,7 @@ Deno.serve(async (req) => {
       user.id,
     );
     await reconcilePendingPayPal(subscriptionEntity, subs);
+    await reconcileActivePayPal(subscriptionEntity, subs);
     const now = new Date().toISOString();
     const ranked = [...subs].sort(
       (left, right) => subscriptionPriority(right, now) - subscriptionPriority(left, now),

@@ -49,4 +49,22 @@ describe('terminal PayPal conditional reconciliation', () => {
     );
     expect(result).toEqual({ resolved: 0, complete: false });
   });
+  it('rejects an unexpected multi-row update count', async () => {
+    const updateMany = vi.fn(async () => ({ updated: 2 }));
+    const result = await applyVerifiedTerminalPayPalRows(
+      { updateMany }, 'customer-a', 'live', [record('one')],
+    );
+    expect(result).toEqual({ resolved: 0, complete: false });
+    expect(updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not update anything when no pending records were passed', async () => {
+    const updateMany = vi.fn();
+    const result = await applyVerifiedTerminalPayPalRows(
+      { updateMany }, 'customer-a', 'live', [],
+    );
+    expect(result).toEqual({ resolved: 0, complete: true });
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+
 });

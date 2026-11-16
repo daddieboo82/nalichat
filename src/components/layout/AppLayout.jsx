@@ -28,7 +28,8 @@ export default function AppLayout() {
   const [showInvite, setShowInvite] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
   const { user } = useAuth();
-  const { hasPaidAccess, isLoading: subscriptionLoading } = useSubscription();
+  const { subscription, hasPaidAccess, isLoading: subscriptionLoading, isError: subscriptionError } = useSubscription();
+  const billingReviewNeeded = subscriptionError || subscription.hasPending;
   const lastUserIdRef = useRef(user?.id || null);
   const audioPlayer = useAudioPlayer();
   const hasAudioPlayer = !!audioPlayer?.currentTrack;
@@ -66,16 +67,16 @@ export default function AppLayout() {
             <div className="flex min-w-0 items-center gap-2">
               <Sparkles className="h-4 w-4 shrink-0 text-amber-400" />
               <p className="truncate text-xs text-foreground/80">
-                <strong className="text-foreground"><span className="sm:hidden">Premium from $7.99/mo</span><span className="hidden sm:inline">Unlock NALI.ai + Studio AI from $7.99/mo.</span></strong>
-                <span className="hidden sm:inline"> Premium also adds advanced messaging and larger creative transfers.</span>
+                <strong className="text-foreground">{billingReviewNeeded ? "Review your existing Premium billing" : <><span className="sm:hidden">Premium from $7.99/mo</span><span className="hidden sm:inline">Unlock NALI.ai + Studio AI from $7.99/mo.</span></>}</strong>
+                {!billingReviewNeeded && <span className="hidden sm:inline"> Premium also adds advanced messaging and larger creative transfers.</span>}
               </p>
             </div>
             <Link
-              to="/pricing?source=app_upgrade_banner"
-              onClick={() => trackProductEvent("upgrade_click", { source: "app_upgrade_banner", cta: "see_premium" })}
+              to={billingReviewNeeded ? "/settings" : "/pricing?source=app_upgrade_banner"}
+              onClick={() => trackProductEvent(billingReviewNeeded ? "billing_review_click" : "upgrade_click", { source: "app_upgrade_banner", cta: billingReviewNeeded ? "review_billing" : "see_premium" })}
               className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-black text-black shadow-sm transition hover:bg-amber-300"
             >
-              <Gem className="h-3.5 w-3.5" /> Compare plans
+              <Gem className="h-3.5 w-3.5" /> {billingReviewNeeded ? "Review billing" : "Compare plans"}
             </Link>
           </div>
         </div>

@@ -67,6 +67,23 @@ Deno.serve(async (req) => {
         continue;
       }
       const remote = await response.json();
+      // Verify the exact customer and plan before activating an APPROVED
+      // agreement or applying any status to a NaliChat entitlement.
+      const expectedEnvironment = (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase();
+      const expectedCustomer = subscription.user_id && subscription.sku
+        ? subscription.user_id + ':' + subscription.sku : '';
+      if (
+        remote?.id !== subscriptionId ||
+        !expectedCustomer ||
+        remote?.custom_id !== expectedCustomer ||
+        !subscription.paypal_plan_id ||
+        remote?.plan_id !== subscription.paypal_plan_id ||
+        subscription.paypal_environment !== expectedEnvironment
+      ) {
+        console.error('PayPal reconciliation binding mismatch', { subscriptionRecordId: subscription.id });
+        results.push({ subscriptionId, result: 'identity_review_required' });
+        continue;
+      }
       const remoteStatus = await resolvePayPalSubscriptionStatus(apiBase(), token, subscriptionId, remote);
       const status = localStatus(remoteStatus);
       if (!status) {

@@ -90,7 +90,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                 <span className="hidden 2xl:inline">More</span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-64 rounded-2xl border-border/50 bg-card/95 p-1.5 backdrop-blur-xl">
+            <DropdownMenuContent align="center" className="w-64 max-h-[min(70vh,var(--radix-dropdown-menu-content-available-height))] overflow-y-auto overscroll-contain rounded-2xl border-border/50 bg-card/95 p-1.5 backdrop-blur-xl">
               {DESKTOP_MORE_LINKS.map(({ icon: Icon, label, path }, idx) => (
                 <DropdownMenuItem key={path} asChild>
                   <Link

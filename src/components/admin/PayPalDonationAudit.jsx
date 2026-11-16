@@ -44,6 +44,12 @@ export default function PayPalDonationAudit() {
         <div role="status" className="mt-3 space-y-3">
           <p className="text-sm">Environment: <strong>{audit.environment}</strong> · PayPal API authentication: <strong>{audit.providerCheck === "authenticated" ? "Confirmed" : "Unavailable"}</strong></p>
           <p className="text-xs text-muted-foreground">{audit.records.length} donation record(s) on page {audit.page + 1}.{audit.records.some(item => item.needsReview) ? " Some records need review." : ""}</p>
+          {audit.records.length === 0 && (
+            <p className="text-sm text-muted-foreground">No PayPal donation orders have been recorded on this page. This does not establish that live checkout or settlement works.</p>
+          )}
+          {audit.records.some(item => item.providerStatus === "approved_not_captured") && (
+            <p role="alert" className="text-sm text-amber-500">One or more donations were approved by PayPal but have no confirmed capture. Investigate before asking a donor to pay again.</p>
+          )}
           {audit.records.length > 0 && (
             <div className="max-h-80 space-y-2 overflow-y-auto">
               {audit.records.map((item, index) => (

@@ -174,6 +174,9 @@ export default function NaliMaintenancePanel() {
               <p>Accounts with multiple pending agreements: {paypalAudit.multipleAccounts ?? "unknown"}. Legacy records without checkout keys: {paypalAudit.missingKeys ?? "unknown"}.</p>
               <p>PayPal webhook: {paypalAudit.webhook?.status || "unverified"}; enabled: {paypalAudit.webhook?.enabled === true ? "yes" : "not verified"}; expected URL: {paypalAudit.webhook?.urlMatchesExpected === true ? "matches" : "not confirmed"}.</p>
               <p>Webhook ledger entries: {paypalAudit.webhookLedgerCount ?? "unavailable"}. Paid plan configuration issues: {paypalAudit.planProblems ?? "unavailable"}.</p>
+              {paypalAudit.webhookLedgerCount === 0 && (
+                <p role="alert" className="text-amber-600">No PayPal webhook events have been recorded. This does not prove delivery failed. Verify the webhook is enabled, uses the expected URL, includes the required events, and check PayPal delivery history before assuming payment activation is working.</p>
+              )}
               <p>Checkout claims on affected accounts: {paypalAudit.accountsWithCheckoutClaims ?? "unknown"}; matched: {paypalAudit.accountsWithMatchedCheckoutClaims ?? "unknown"}; unmatched: {paypalAudit.accountsWithUnmatchedCheckoutClaims ?? "unknown"}; unreadable account claims: {paypalAudit.accountsWithUnknownClaimState ?? "unknown"}.</p>
               <p>Accounts with both active and pending PayPal records: {paypalAudit.pendingAccountsWithActiveRecord ?? "unknown"}. Oldest pending attempt: {paypalAudit.oldestAttempt || "unknown"}.</p>
               <p>Pending agreements with provider-reported last payment: {paypalAudit.confirmedPayments ?? "unknown"}. Active records with provider-reported last payment: {paypalAudit.activePaymentChecks ?? "unknown"}. A missing payment field means unknown, not unpaid.</p>

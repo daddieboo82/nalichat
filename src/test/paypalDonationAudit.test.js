@@ -12,6 +12,12 @@ describe("PayPal donation admin read-only audit", () => {
     expect(backend).not.toContain("PayPalDonation.create(");
     expect(backend).not.toContain("'/capture'");
     expect(backend).toContain("readOnly: true");
+    expect(backend).toContain("checkDonationWebhook(token)");
+    expect(backend).toContain("CHECKOUT.ORDER.APPROVED");
+    expect(backend).toContain("configured_not_delivery_verified");
+    expect(backend).toContain("webhook_url_mismatch");
+    expect(backend).toContain("approval_event_missing");
+    expect(backend).toContain("webhook,");
     expect(backend).toContain("status === 'approved_not_captured'");
     expect(backend).toContain("status === 'provider_unavailable'");
     expect(backend).toContain("status === 'order_not_found'");
@@ -25,6 +31,8 @@ describe("PayPal donation admin read-only audit", () => {
     expect(component).toContain('base44.functions.invoke("getPayPalDonationAudit"');
     expect(component).toContain("PayPal API authentication");
     expect(component).toContain("Provider capture");
+    expect(component).toContain("PayPal donation webhook readiness");
+    expect(component).toContain("Live event delivery is not yet verified");
     expect(component).toContain("No PayPal donation orders have been recorded");
     expect(component).toContain("approved by PayPal but have no confirmed capture");
     expect(panel).toContain("<PayPalDonationAudit />");

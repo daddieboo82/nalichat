@@ -7,7 +7,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
   free: Object.freeze({
     id: "free",
     name: "Free",
-    description: "Start creating with core messaging, Studio, and generous file uploads at no cost.",
+    description: "Free messaging, file sharing, and core Studio editing. Upgrade only when you need advanced creator tools.",
     prices: Object.freeze({
       monthly: Object.freeze({ amount: 0, label: "$0", suffix: "forever", sku: null }),
       annual: Object.freeze({ amount: 0, label: "$0", suffix: "forever", sku: null }),
@@ -21,7 +21,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
   premium: Object.freeze({
     id: "premium",
     name: "Premium",
-    description: "For active creators who want NALI.ai, larger file transfers, and advanced messaging tools.",
+    description: "Add up to 200 NALI.ai requests a day, AI-assisted Studio mastering, transcription, and scheduled messages.",
     prices: Object.freeze({
       monthly: Object.freeze({
         amount: 7.99,
@@ -51,7 +51,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
   premium_plus: Object.freeze({
     id: "premium_plus",
     name: "Premium Plus",
-    description: "For power creators who want the highest file limits, strongest AI access, privacy, and productivity tools.",
+    description: "Unlock up to 1,000 daily NALI.ai requests, locked chats, call summaries, and high-tier Studio AI support.",
     prices: Object.freeze({
       monthly: Object.freeze({
         amount: 14.99,

@@ -41,8 +41,10 @@ Deno.serve(async (req) => {
     // full webhook URLs; report only whether this app's configured ID exists.
     const configuredWebhookId = secrets.get('PAYPAL_WEBHOOK_ID');
     const appId = secrets.get('BASE44_APP_ID') || '6a1f5ee134147461560c2b37';
+    // Canonical callback is the published app function endpoint. The internal
+    // dispatcher URL is legacy: it rejects unauthenticated provider deliveries.
     const expectedWebhookUrl = secrets.get('PAYPAL_WEBHOOK_URL') ||
-      `https://base44-dispatcher-production.base44.workers.dev/api/apps/${appId}/functions/paypalWebhook`;
+      'https://nalichat.base44.app/functions/paypalWebhook';
     let webhookCheck: Record<string, unknown> = { status: configuredWebhookId ? 'unverified' : 'missing_webhook_id' };
     if (configuredWebhookId) {
       try {
@@ -67,7 +69,8 @@ Deno.serve(async (req) => {
           const publicDomainUrl = 'https://nalichat.org/functions/paypalWebhook';
           // Classify the configured route without publishing the actual callback
           // address or claiming an unverified route is reachable.
-          const registeredRoute = webhookUrl === dispatcherUrl ? 'dispatcher'
+          const registeredRoute = webhookUrl === expectedWebhookUrl ? 'public_app'
+            : webhookUrl === dispatcherUrl ? 'dispatcher'
             : webhookUrl === publicDomainUrl ? 'public_domain' : 'other';
           webhookCheck = {
             status: 'registered',

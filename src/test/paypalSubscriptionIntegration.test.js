@@ -121,10 +121,14 @@ describe('PayPal subscription integration contracts', () => {
     expect(webhookSetupSource).toContain("!existing.startsWith('REPLACE_')");
   });
 
-  it('uses dynamic or active app ID for PayPal webhook registration URL', async () => {
+  it('registers the PayPal webhook on the app public function endpoint', async () => {
     const webhookSetupSource = await read('base44/functions/setupPayPalWebhook/entry.ts');
     const appParams = await read('src/lib/app-params.js');
-    expect(webhookSetupSource).toContain("secrets.get('BASE44_APP_ID') || '6a1f5ee134147461560c2b37'");
+    // PayPal deliveries must land on the public function URL. The internal
+    // dispatcher endpoint rejects unauthenticated provider calls, so every event
+    // registered there was dropped before it reached the handler.
+    expect(webhookSetupSource).toContain('https://nalichat.base44.app/functions/paypalWebhook');
+    expect(webhookSetupSource).not.toContain('base44-dispatcher-production');
     expect(appParams).toContain("VITE_BASE44_APP_ID || '6a1f5ee134147461560c2b37'");
     expect(appParams).not.toContain('cbef744a8545c389ef439ea6');
   });

@@ -29,9 +29,10 @@ async function checkDonationWebhook(accessToken: string | null) {
   if (!webhookId || webhookId.startsWith('REPLACE_')) {
     return { status: 'webhook_id_missing', approvalEventSubscribed: false, urlMatches: false };
   }
-  const appId = secrets.get('BASE44_APP_ID') || '6a1f5ee134147461560c2b37';
+  // The published app function endpoint is the only callback that actually
+  // reaches the handler; the legacy dispatcher URL rejects provider calls.
   const expectedUrl = secrets.get('PAYPAL_WEBHOOK_URL') ||
-    'https://base44-dispatcher-production.base44.workers.dev/api/apps/' + appId + '/functions/paypalWebhook';
+    'https://nalichat.base44.app/functions/paypalWebhook';
   try {
     const response = await fetch(baseUrl() + '/v1/notifications/webhooks/' + encodeURIComponent(webhookId), {
       headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json' },

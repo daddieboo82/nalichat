@@ -10,7 +10,7 @@ describe('home marketing claims', () => {
     expect(home).toContain('Connect. Create. Grow.');
     expect(home).toContain('Start Creating Free');
     expect(home).toContain('Start creating free');
-    expect(home).toContain('No card · Google or email');
+    expect(home).toContain('No card · Sign up with email');
     expect(home).toContain('home_mobile_sticky');
     expect(home).toContain('Start creating, move between NaliBase worlds, and unlock Premium power');
     expect(home).toContain('Creator Messaging & Collaboration');

@@ -12,8 +12,9 @@ describe('conversation and contact lookup hardening', () => {
   it('validates contact add/delete identifiers before privileged reads', async () => {
     const source = await readFile('base44/functions/mutateContact/entry.ts', 'utf8');
     expect(source).toContain('isBase44EntityId(targetUserId)');
-    expect(source).toContain('/^contact_[0-9a-f]{64}$/');
+    // Accepts the deterministic contact_<sha256> id and legacy 24-hex ids.
+    expect(source).toContain('/^(?:contact_[0-9a-f]{64}|[0-9a-f]{24})$/');
     expect(source.indexOf('isBase44EntityId(targetUserId)')).toBeLessThan(source.indexOf('entities.User.get(targetUserId)'));
-    expect(source.indexOf('/^contact_[0-9a-f]{64}$/')).toBeLessThan(source.indexOf('entities.Contact.get(contactId)'));
+    expect(source.indexOf('/^(?:contact_[0-9a-f]{64}|[0-9a-f]{24})$/')).toBeLessThan(source.indexOf('entities.Contact.get(contactId)'));
   });
 });

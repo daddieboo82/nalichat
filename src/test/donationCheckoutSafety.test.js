@@ -4,12 +4,13 @@ import { readFile } from "node:fs/promises";
 describe("Donation checkout integrity", () => {
   it("uses the canonical permitted callback origin and never counts conversions before payment", async () => {
     const button = await readFile("src/components/home/DonationButton.jsx", "utf8");
-    expect(button).toContain('const appUrl = "https://nalichat.org"');
-    expect(button).toContain('thankYouPageUrl: appUrl + "/ThankYou"');
-    expect(button).toContain('["checkout.stripe.com", "checkout.stripe.dev"]');
-    expect(button).toContain('window.location.assign(destination.toString())');
+    // Donations now run on PayPal: only a server-issued approval URL on a
+    // trusted PayPal host may receive the donor.
+    expect(button).toContain('["www.paypal.com", "www.sandbox.paypal.com"].includes(url.hostname)');
+    expect(button).toContain('if (url.protocol !== "https:" || !trustedHost)');
+    expect(button).toContain("window.location.assign(url.toString())");
     expect(button).not.toContain("window.gtag('event', 'conversion'");
-    expect(button).toContain("PRESETS.includes(amount)");
+    expect(button).toContain("!PRESETS.includes(amount)");
   });
 
   it("requires authoritative Stripe payment status and exact checkout identity on return", async () => {

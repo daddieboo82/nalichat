@@ -10,7 +10,11 @@ describe('auth registration return-to handoff', () => {
     expect(login).toContain('encodeURIComponent(safeReturnTo())');
     expect(register).toContain('/login?returnTo=');
     expect(register).toContain('encodeURIComponent(safeReturnTo())');
-    expect(pricing).toContain('navigate(`/register?returnTo=${encodeURIComponent(location.pathname + location.search)}`)');
+    // Pricing forwards the buyer's chosen tier and billing period through signup
+    // instead of a bare path, so registration returns to the right plan.
+    expect(pricing).toContain('destination.searchParams.set("plan", planId)');
+    expect(pricing).toContain('destination.searchParams.set("billing", period)');
+    expect(pricing).toContain('navigate(`/register?returnTo=${encodeURIComponent(destination.pathname + destination.search)}`)');
     expect(pricing).not.toContain('navigate("/register", { state: { from: "/pricing" } })');
   });
 });

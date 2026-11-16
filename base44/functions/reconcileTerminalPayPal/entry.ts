@@ -80,9 +80,20 @@ Deno.serve(async (req: Request) => {
         }, { status: 409 });
       }
     }
-    // This is not a database transaction: webhook changes during the final
-    // writes still require provider reconciliation. No PayPal-side mutation.
+    // This is not an atomic database transaction. Recheck each row as close
+    // to its write as the SDK permits, so an independently reconciled ACTIVE
+    // or otherwise changed agreement is not knowingly overwritten.
     for (const row of pending) {
+      const current = await subscriptions.get(row.id);
+      if (!current || current.user_id !== user.id ||
+          current.provider !== 'paypal' || current.status !== 'pending' ||
+          current.subscription_id !== row.subscription_id ||
+          current.paypal_plan_id !== row.paypal_plan_id ||
+          current.sku !== row.sku || current.paypal_environment !== env) {
+        return Response.json({
+          error: 'Subscription changed during recovery; refresh billing status',
+        }, { status: 409 });
+      }
       await subscriptions.update(row.id, { status: 'canceled', cancel_at_period_end: false });
     }
     return Response.json({

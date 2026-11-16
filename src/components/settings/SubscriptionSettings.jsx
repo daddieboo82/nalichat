@@ -34,6 +34,8 @@ export default function SubscriptionSettings() {
   const [openingPortal, setOpeningPortal] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [resumingApproval, setResumingApproval] = useState(false);
+  const [checkingPending, setCheckingPending] = useState(false);
+  const [pendingReview, setPendingReview] = useState(null);
   const [paypalReceipt, setPaypalReceipt] = useState(null);
   const checkPayment = async () => {
     if (checkingPayment) return;
@@ -47,6 +49,25 @@ export default function SubscriptionSettings() {
     } catch (err) { toast.error(err?.response?.data?.error || err?.message || "Could not check PayPal billing."); }
     finally { setCheckingPayment(false); }
   };
+  const reviewPendingPayPal = async () => {
+    if (checkingPending || !user?.id || !subscription.hasPending) return;
+    setCheckingPending(true);
+    setPendingReview(null);
+    try {
+      const response = await base44.functions.invoke("getMyPendingPayPalStatus", {});
+      const payload = response?.data ?? response;
+      if (payload?.success !== true || payload.action !== "get_my_pending_paypal_status" ||
+          payload.userId !== user.id || !Array.isArray(payload.results)) {
+        throw new Error(payload?.error || "PayPal status review could not be completed");
+      }
+      setPendingReview(payload);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || err?.message || "PayPal status review is unavailable.");
+    } finally {
+      setCheckingPending(false);
+    }
+  };
+
   const resumeApproval = async () => {
     if (resumingApproval || !user?.id || subscription.hasPaidAccess || !subscription.hasPending) return;
     setResumingApproval(true);
@@ -165,9 +186,21 @@ export default function SubscriptionSettings() {
         <div className="mb-5 space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4" role="status">
           <p className="font-semibold">Earlier PayPal subscription needs review</p>
           <p className="text-sm text-muted-foreground">You may have an unfinished PayPal approval. Continue only the existing agreement; no new subscription will be created.</p>
-          <Button onClick={resumeApproval} disabled={resumingApproval} className="min-h-11 w-full sm:w-auto">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={reviewPendingPayPal} disabled={checkingPending} variant="outline" className="min-h-11">
+              {checkingPending ? "Checking PayPal..." : "Check existing PayPal agreements"}
+            </Button>
+            <Button onClick={resumeApproval} disabled={resumingApproval} className="min-h-11 w-full sm:w-auto">
             {resumingApproval ? "Checking earlier approval..." : "Continue existing PayPal approval"}
-          </Button>
+            </Button>
+          </div>
+          {pendingReview && (
+            <div className="space-y-1 text-sm" aria-live="polite">
+              <p>Earlier agreements checked: {pendingReview.total}</p>
+              <p>PayPal reported: {pendingReview.results.map((result) => String(result.status).replaceAll("_", " ")).join(", ") || "none"}.</p>
+              <p className="text-muted-foreground">This check does not confirm payment or change billing. Approved or active agreements still require subscription verification.</p>
+            </div>
+          )}
           <p className="text-sm text-muted-foreground">If PayPal cannot verify your earlier agreement, <a href="mailto:nalichat@nalichat.org?subject=NaliChat%20PayPal%20billing%20review" className="underline underline-offset-2">contact billing support</a> before trying another checkout.</p>
         </div>
       )}

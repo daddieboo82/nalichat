@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import PremiumConversionScorecard from "@/components/admin/PremiumConversionScorecard";
 import { Wrench, Stethoscope, Loader2, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 
 // Nali Maintenance Panel — lets the app owner run Nali's diagnostic scan
@@ -160,6 +161,8 @@ export default function NaliMaintenancePanel() {
       <p className="text-sm text-muted-foreground mb-4">
         Nali can scan the entire app for data issues — broken records, stale statuses, out-of-sync counts — and automatically repair safe, non-destructive problems across every entity.
       </p>
+
+      <PremiumConversionScorecard />
 
       <div className="flex flex-wrap gap-3 mb-4">
         <Button

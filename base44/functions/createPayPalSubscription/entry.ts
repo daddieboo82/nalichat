@@ -54,7 +54,7 @@ async function reservePayPalCheckout(
     // PayPal, and only on a later UTC day to avoid provider idempotency reuse.
     const previousDate = String(current.paypal_checkout_claimed_at || '').slice(0, 10);
     if (!verifiedTerminalClaimKeys.has(previousClaim) ||
-        !/^\\d{4}-\\d{2}-\\d{2}$/.test(previousDate) ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(previousDate) ||
         previousDate >= new Date().toISOString().slice(0, 10)) return false;
   }
   await users.update(userId, {

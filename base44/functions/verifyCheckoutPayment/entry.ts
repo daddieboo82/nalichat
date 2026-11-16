@@ -111,7 +111,9 @@ Deno.serve(async (req) => {
       return Response.json({
         success: true,
         checkoutId: normalizedCheckoutId,
-        status: 'unpaid',
+        // A completed Checkout with delayed settlement is still processing,
+        // not a failed donation. Never mark it paid before Stripe confirms.
+        status: session.status === 'complete' ? 'pending' : 'unpaid',
         items: Array.isArray(purchase.items) ? purchase.items : [],
       }, { headers: { 'Cache-Control': 'no-store' } });
     }

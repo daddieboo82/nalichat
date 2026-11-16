@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import PremiumConversionScorecard from "@/components/admin/PremiumConversionScorecard";
 import RegisteredUserDirectory from "@/components/admin/RegisteredUserDirectory";
+import PayPalDonationAudit from "@/components/admin/PayPalDonationAudit";
 import { Wrench, Stethoscope, Loader2, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 
 // Nali Maintenance Panel — lets the app owner run Nali's diagnostic scan
@@ -164,6 +165,7 @@ export default function NaliMaintenancePanel() {
       </p>
 
       <RegisteredUserDirectory />
+      <PayPalDonationAudit />
       <PremiumConversionScorecard />
 
       <div className="flex flex-wrap gap-3 mb-4">

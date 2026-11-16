@@ -19,7 +19,8 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
-  const { hasPaidAccess, isLoading: subscriptionLoading } = useSubscription();
+  const { subscription, hasPaidAccess, isLoading: subscriptionLoading, isError: subscriptionError } = useSubscription();
+  const billingReviewNeeded = subscriptionError || subscription.hasPending;
 
   const handleLogout = async () => {
     await logout();
@@ -132,12 +133,12 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
 
           {isAuthenticated && !subscriptionLoading && !hasPaidAccess && (
             <Link
-              to="/pricing?source=desktop_nav_upgrade"
-              onClick={() => trackProductEvent("upgrade_click", { source: "desktop_nav_upgrade", cta: "upgrade_premium" })}
+              to={billingReviewNeeded ? "/settings" : "/pricing?source=desktop_nav_upgrade"}
+              onClick={() => trackProductEvent(billingReviewNeeded ? "billing_review_click" : "upgrade_click", { source: "desktop_nav_upgrade", cta: billingReviewNeeded ? "review_billing" : "upgrade_premium" })}
               className="ui-hover mr-1 inline-flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 px-3 py-2 text-xs font-black text-black shadow-lg shadow-orange-500/20 transition hover:scale-[1.03]"
             >
               <Gem className="h-4 w-4" />
-              Upgrade
+              {billingReviewNeeded ? "Billing" : "Upgrade"}
             </Link>
           )}
 

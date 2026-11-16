@@ -19,6 +19,14 @@ describe('PayPal pending reconciliation identity guards', () => {
       expect(source).toContain("await validWorkflowKey(body?.workflow_key, WORKFLOW_KEY_SHA256)");
     });
   }
+  it('verifies provider environment on the signed-in user status check', async () => {
+    const source = await readFile('base44/functions/checkSubscriptionStatus/entry.ts', 'utf8');
+    expect(source).toContain('subscription.paypal_environment !== expectedEnvironment');
+    expect(source).toContain('remote?.id !== subscription.subscription_id');
+    expect(source).toContain('remote?.custom_id !== subscription.user_id');
+    expect(source.indexOf('subscription.paypal_environment !== expectedEnvironment'))
+      .toBeLessThan(source.indexOf('await resolvePayPalSubscriptionStatus('));
+  });
   it('requires deliberate admin confirmation before manually reconciling', async () => {
     const ui = await readFile('src/components/admin/NaliMaintenancePanel.jsx', 'utf8');
     expect(ui).toContain('user?.role !== "admin"');

@@ -38,9 +38,25 @@ async function accessToken() {
 // supported per-user update and verify the persisted claim. This is not an
 // atomic compare-and-set, so PayPal request idempotency is additionally
 // scoped to the account and UTC day to protect concurrent creation requests.
-async function reservePayPalCheckout(users: any, userId: string, claimId: string): Promise<boolean> {
+async function reservePayPalCheckout(
+  users: any,
+  userId: string,
+  claimId: string,
+  verifiedTerminalClaimKeys: Set<string>,
+): Promise<boolean> {
   const current = await users.get(userId);
-  if (!current || current.paypal_checkout_claim_id) return false;
+  if (!current) return false;
+  const previousClaim = typeof current.paypal_checkout_claim_id === 'string'
+    ? current.paypal_checkout_claim_id : '';
+  if (previousClaim) {
+    // Never recycle an uncertain provider request. Reuse is permitted only
+    // when a matching saved agreement was just verified CANCELLED/EXPIRED at
+    // PayPal, and only on a later UTC day to avoid provider idempotency reuse.
+    const previousDate = String(current.paypal_checkout_claimed_at || '').slice(0, 10);
+    if (!verifiedTerminalClaimKeys.has(previousClaim) ||
+        !/^\\d{4}-\\d{2}-\\d{2}$/.test(previousDate) ||
+        previousDate >= new Date().toISOString().slice(0, 10)) return false;
+  }
   await users.update(userId, {
     paypal_checkout_claim_id: claimId,
     paypal_checkout_claimed_at: new Date().toISOString(),
@@ -111,6 +127,7 @@ Deno.serve(async (req) => {
     }
     // Fail closed on stale local statuses: check every other recorded PayPal
     // agreement with PayPal before creating a new recurring billing agreement.
+    const verifiedTerminalClaimKeys = new Set<string>();
     for (const prior of allSubs.filter((sub: any) => sub.provider === 'paypal' && sub.subscription_id)) {
       if (prior.paypal_environment !== (secrets.get('PAYPAL_ENVIRONMENT') || 'live').toLowerCase() || !prior.paypal_plan_id) {
         return Response.json({ error: 'Previous PayPal billing requires account review' }, { status: 409 });
@@ -128,11 +145,14 @@ Deno.serve(async (req) => {
           !['CANCELLED', 'EXPIRED'].includes(remote?.status)) {
         return Response.json({ error: 'Previous PayPal billing needs review before another subscription' }, { status: 409 });
       }
+      if (typeof prior.checkout_request_key === 'string' && prior.checkout_request_key) {
+        verifiedTerminalClaimKeys.add(prior.checkout_request_key);
+      }
     }
     // Acquire a durable per-account compare-and-set claim immediately before
     // the first PayPal subscription creation request.
     checkoutStage = 'reserve_checkout';
-    const reserved = await reservePayPalCheckout(base44.asServiceRole.entities.User, user.id, idempotencyKey);
+    const reserved = await reservePayPalCheckout(base44.asServiceRole.entities.User, user.id, idempotencyKey, verifiedTerminalClaimKeys);
     if (!reserved) {
       return Response.json({ error: 'A PayPal checkout has already been started. Check billing before starting another.' }, { status: 409 });
     }

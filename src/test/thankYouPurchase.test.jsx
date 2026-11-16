@@ -73,6 +73,17 @@ describe('ThankYou purchase verification', () => {
     expect(trackPaywallEvent).not.toHaveBeenCalledWith('purchase_completed', expect.anything());
   });
 
+  it('routes uncertain PayPal returns to billing review instead of encouraging another checkout', async () => {
+    pollForSubscriptionConfirmation.mockResolvedValue({ outcome: 'timeout' });
+    renderPage('/ThankYou?subscription=1');
+
+    expect(await screen.findByText('Still processing')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Review billing in Settings' }).getAttribute('href')).toBe('/settings');
+    expect(screen.queryByRole('link', { name: 'Back to plans' })).toBeNull();
+    expect(screen.getByText(/avoid a duplicate charge/)).toBeTruthy();
+    expect(trackPaywallEvent).not.toHaveBeenCalledWith('purchase_completed', expect.anything());
+  });
+
   it('does not claim a new sale when the account is paid but checkout agreement evidence is missing', async () => {
     pollForSubscriptionConfirmation.mockResolvedValue({
       outcome: 'confirmed',

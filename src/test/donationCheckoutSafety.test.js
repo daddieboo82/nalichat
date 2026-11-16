@@ -17,7 +17,7 @@ describe("Donation checkout integrity", () => {
     expect(verifier).toContain("session.id !== normalizedCheckoutId");
     expect(verifier).toContain("session.mode !== 'payment'");
     expect(verifier).toContain("session.payment_status !== 'paid'");
-    expect(verifier).toContain("status: 'unpaid'");
+    expect(verifier).toContain("status: session.status === 'complete' ? 'pending' : 'unpaid'");
     expect(verifier).not.toContain("purchase.status === 'paid' ? 'paid' : session.payment_status");
     expect(verifier).toContain("purchase.purchase_verifier_hash");
   });

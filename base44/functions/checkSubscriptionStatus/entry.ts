@@ -97,6 +97,7 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
     const token = await paypalAccessToken();
     if (!token) return;
     for (const subscription of pending) {
+      try {
       const response = await fetch(paypalApiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(subscription.subscription_id as string), {
         headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
       });
@@ -131,6 +132,11 @@ async function reconcilePendingPayPal(subscriptionEntity: SubscriptionEntity, su
       if (status === 'canceled') update.cancel_at_period_end = false;
       await subscriptionEntity.update(subscription.id as string, update);
       Object.assign(subscription, update);
+      } catch (error) {
+        // One provider lookup or record update must not prevent checking other
+        // agreements belonging to this signed-in account.
+        console.error('Individual pending PayPal reconciliation failed', { subscriptionRecordId: subscription.id, error });
+      }
     }
   } catch (error) {
     console.error('PayPal status reconciliation failed', error);

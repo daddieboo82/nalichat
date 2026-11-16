@@ -80,24 +80,34 @@ Deno.serve(async (req: Request) => {
         }, { status: 409 });
       }
     }
-    // This is not an atomic database transaction. Recheck each row as close
-    // to its write as the SDK permits, so an independently reconciled ACTIVE
-    // or otherwise changed agreement is not knowingly overwritten.
+    // Each row transition is conditional and atomic at the entity update.
+    // A concurrent webhook that already marked an agreement ACTIVE cannot
+    // have that state overwritten by a stale terminal recovery attempt.
+    let resolved = 0;
     for (const row of pending) {
-      const current = await subscriptions.get(row.id);
-      if (!current || current.user_id !== user.id ||
-          current.provider !== 'paypal' || current.status !== 'pending' ||
-          current.subscription_id !== row.subscription_id ||
-          current.paypal_plan_id !== row.paypal_plan_id ||
-          current.sku !== row.sku || current.paypal_environment !== env) {
+      const outcome = await subscriptions.updateMany(
+        {
+          id: row.id,
+          user_id: user.id,
+          provider: 'paypal',
+          status: 'pending',
+          subscription_id: row.subscription_id,
+          paypal_plan_id: row.paypal_plan_id,
+          sku: row.sku,
+          paypal_environment: env,
+        },
+        { $set: { status: 'canceled', cancel_at_period_end: false } },
+      );
+      if (Number(outcome?.updated || 0) !== 1) {
         return Response.json({
           error: 'Subscription changed during recovery; refresh billing status',
+          resolved,
         }, { status: 409 });
       }
-      await subscriptions.update(row.id, { status: 'canceled', cancel_at_period_end: false });
+      resolved++;
     }
     return Response.json({
-      success: true, action: 'reconcile_terminal_paypal', userId: user.id, resolved: pending.length,
+      success: true, action: 'reconcile_terminal_paypal', userId: user.id, resolved,
     });
   } catch (error) {
     console.error('Terminal PayPal reconciliation unavailable', error);

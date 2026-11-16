@@ -230,8 +230,8 @@ export default function ThankYou() {
                 : accountActive
                   ? "Your account has paid access, but this browser could not link it to the checkout that just returned. No new purchase was recorded."
                 : timedOut
-                  ? "Your payment provider returned successfully, but the subscription update has not arrived yet. No paid access is granted until confirmation completes."
-                  : "Subscription status could not be checked. No paid access was granted."}
+                  ? "PayPal returned to NaliChat, but subscription confirmation is still pending. Check billing before trying another checkout to avoid a duplicate charge. Paid access stays locked until verified."
+                  : "Subscription status could not be checked. Review existing billing before retrying checkout. No paid access was granted."}
           </p>
 
           {(confirmed || accountActive) && (
@@ -255,7 +255,7 @@ export default function ThankYou() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link to="/pricing">Back to plans</Link>
+                <Link to="/settings">Review billing in Settings</Link>
               </Button>
               <Button size="lg" variant="ghost" asChild>
                 <Link to="/messages">Return to NaliBase</Link>

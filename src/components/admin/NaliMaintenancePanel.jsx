@@ -12,6 +12,34 @@ export default function NaliMaintenancePanel() {
   const [mode, setMode] = useState(null); // 'diagnose' | 'repair'
   const [result, setResult] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [paypalReconciliationRunning, setPaypalReconciliationRunning] = useState(false);
+  const [paypalReconciliationResult, setPaypalReconciliationResult] = useState(null);
+
+  const reconcilePayPal = async () => {
+    if (paypalReconciliationRunning || mode !== null || user?.role !== "admin") return;
+    if (!window.confirm("Check pending PayPal subscriptions against PayPal now? This may activate customer-approved agreements and update verified subscription statuses. It will not create new checkout agreements.")) return;
+    setPaypalReconciliationRunning(true);
+    setPaypalReconciliationResult(null);
+    try {
+      const response = await base44.functions.invoke("reconcilePendingPayPal", {});
+      const data = response?.data;
+      if (data?.error) throw new Error(data.error);
+      if (data?.success !== true || data?.action !== "reconcile_pending_paypal" ||
+          !Number.isSafeInteger(data.checked) || !Number.isSafeInteger(data.updated) ||
+          data.checked < 0 || data.updated < 0 || data.updated > data.checked) {
+        throw new Error("PayPal reconciliation response could not be verified.");
+      }
+      setPaypalReconciliationResult({ checked: data.checked, updated: data.updated,
+        reviewRequired: Array.isArray(data.results) ? data.results.filter((item) => item.result === "identity_review_required").length : 0,
+        lookupFailed: Array.isArray(data.results) ? data.results.filter((item) => item.result === "paypal_lookup_failed").length : 0,
+      });
+      toast.success("PayPal status check completed.");
+    } catch (error) {
+      toast.error("PayPal status check failed: " + (error?.response?.data?.error || error?.message || "Unknown error"));
+    } finally {
+      setPaypalReconciliationRunning(false);
+    }
+  };
 
   const run = async (repairMode) => {
     if (mode) return;
@@ -75,6 +103,28 @@ export default function NaliMaintenancePanel() {
           Diagnose & Repair
         </Button>
       </div>
+
+      {user?.role === "admin" && (
+        <div className="mb-5 border-t border-border pt-4">
+          <h3 className="mb-2 text-base font-semibold">PayPal subscription recovery</h3>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Manually check pending PayPal agreements when scheduled reconciliation is unavailable.
+            Only PayPal-verified subscriptions are updated; customer-approved agreements may be activated.
+            This does not start a new subscription checkout.
+          </p>
+          <Button variant="outline" className="gap-2" disabled={mode !== null || paypalReconciliationRunning} onClick={reconcilePayPal}>
+            {paypalReconciliationRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Stethoscope className="w-4 h-4" />}
+            {paypalReconciliationRunning ? "Checking PayPal..." : "Reconcile pending PayPal"}
+          </Button>
+          {paypalReconciliationResult && (
+            <p role="status" className="mt-3 text-sm text-muted-foreground">
+              Checked {paypalReconciliationResult.checked} pending agreement(s), updated {paypalReconciliationResult.updated}.
+              {paypalReconciliationResult.reviewRequired > 0 ? ` ${paypalReconciliationResult.reviewRequired} need identity review.` : ""}
+              {paypalReconciliationResult.lookupFailed > 0 ? ` ${paypalReconciliationResult.lookupFailed} provider lookups failed.` : ""}
+            </p>
+          )}
+        </div>
+      )}
 
       {result && (
         <div className="space-y-4">

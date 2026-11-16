@@ -73,6 +73,7 @@ export function normalizeSubscription(value) {
     billingPeriod: VALID_PERIODS.has(source.billingPeriod) ? source.billingPeriod : null,
     provider: typeof source.provider === "string" ? source.provider : null,
     subscriptionRecordId: typeof source.subscriptionRecordId === "string" ? source.subscriptionRecordId : null,
+    verifiedPayPalAgreementId: typeof source.verifiedPayPalAgreementId === "string" ? source.verifiedPayPalAgreementId : null,
     currentPeriodEnd: typeof source.currentPeriodEnd === "string" ? source.currentPeriodEnd : null,
     renewsAt: typeof source.renewsAt === "string" ? source.renewsAt : null,
     cancelAtPeriodEnd: source.cancelAtPeriodEnd === true,

@@ -455,6 +455,27 @@ export default function Register() {
           )}
         </Button>
       </form>
+      <button
+        type="button"
+        onClick={() => {
+          const normalizedEmail = email.trim().toLowerCase();
+          if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+            setError("Enter the email address where your verification code was sent.");
+            return;
+          }
+          setEmail(normalizedEmail);
+          setOtpCode("");
+          setError("");
+          // No new registration request is made. PayPal billing is not involved.
+          // The code still must pass Base44's standard OTP verification.
+          setResendCooldown(0);
+          setShowOtp(true);
+        }}
+        disabled={loading || googleLoading}
+        className="mt-3 flex min-h-11 w-full items-center justify-center rounded-xl px-3 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50"
+      >
+        I already have a verification code
+      </button>
     </AuthLayout>
   );
 }

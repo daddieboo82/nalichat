@@ -73,16 +73,23 @@ export default function SubscriptionSettings() {
     if (refreshingPending || !user?.id || !subscription.hasPending) return;
     setRefreshingPending(true);
     try {
-      // A signed-in status refresh uses the existing identity-checked PayPal
-      // reconciliation. It never starts a new subscription checkout.
+      // Terminal-only backend: checks each agreement with PayPal and changes
+      // local pending rows only when ALL are confirmed cancelled/expired.
+      // It cannot activate or create a recurring PayPal agreement.
+      const response = await base44.functions.invoke("reconcileTerminalPayPal", {});
+      const result = response?.data ?? response;
+      if (result?.success !== true || result.action !== "reconcile_terminal_paypal" ||
+          result.userId !== user.id || !Number.isInteger(result.resolved)) {
+        throw new Error(result?.error || "PayPal agreement reconciliation could not be verified.");
+      }
       const refresh = await refetch();
       if (refresh.isError || refresh.error || !refresh.data) {
-        throw new Error("PayPal subscription status could not be verified. Please try again or contact billing support.");
+        throw new Error("Billing records were reviewed, but the latest subscription status could not be loaded.");
       }
       setPendingReview(null);
       toast.success(refresh.data.hasPending
-        ? "Subscription status checked. Earlier billing still needs review before checkout."
-        : "Subscription status refreshed. Review your current plan before trying checkout.");
+        ? "Earlier billing still needs review. Please contact support before another checkout."
+        : "Ended PayPal agreements verified. Review your current plan before trying checkout.");
     } catch (err) {
       toast.error(err?.message || "Subscription status refresh is unavailable.");
     } finally {

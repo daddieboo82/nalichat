@@ -216,6 +216,23 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.auth.resendOtp).not.toHaveBeenCalled();
   });
 
+  it('lets a user correct their email address without verifying a wrong inbox', async () => {
+    mockBase44.auth.register.mockResolvedValueOnce(undefined);
+    renderInRouter(<Register />);
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'typo@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'pass12345' } });
+    fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'pass12345' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+    await screen.findByText('Verify your email');
+    fireEvent.click(screen.getByRole('button', { name: 'Change email address' }));
+    expect(screen.getByLabelText('Email').value).toBe('typo@example.com');
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy();
+    expect(mockBase44.auth.verifyOtp).not.toHaveBeenCalled();
+    expect(mockBase44.auth.resendOtp).not.toHaveBeenCalled();
+  });
+
   it('requires display name before onboarding can complete', async () => {
     mockAuthState.current = {
       ...mockAuthState.current,

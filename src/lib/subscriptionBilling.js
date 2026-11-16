@@ -21,6 +21,23 @@ function responsePayload(response) {
   return payload;
 }
 
+// Base44 HTTP errors reject the invocation before responsePayload runs.
+// Preserve the backend's safe, user-facing billing explanation and error code
+// rather than replacing it with "Request failed with status code 409".
+async function invokeBillingFunction(invoke, functionName, args) {
+  try {
+    return await invoke(functionName, args);
+  } catch (cause) {
+    const payload = cause?.response?.data ?? cause?.data;
+    if (typeof payload?.error === "string" && payload.error.trim()) {
+      const error = new Error(payload.error);
+      if (typeof payload.code === "string") error.code = payload.code;
+      throw error;
+    }
+    throw cause;
+  }
+}
+
 export async function startSubscriptionCheckout({
   sku,
   idempotencyKey,
@@ -29,7 +46,7 @@ export async function startSubscriptionCheckout({
   invoke = base44.functions.invoke,
   redirect = (url) => window.location.assign(url),
 }) {
-  const response = await invoke("createPayPalSubscription", { sku, idempotencyKey });
+  const response = await invokeBillingFunction(invoke, "createPayPalSubscription", { sku, idempotencyKey });
   const payload = responsePayload(response);
   if (
     payload?.success !== true ||
@@ -62,7 +79,7 @@ export async function resumePendingPayPalApproval({
   invoke = base44.functions.invoke,
   redirect = (url) => window.location.assign(url),
 } = {}) {
-  const response = await invoke("resumePendingPayPal", {});
+  const response = await invokeBillingFunction(invoke, "resumePendingPayPal", {});
   const payload = responsePayload(response);
   if (payload?.success !== true || payload?.action !== "resume_pending_paypal" ||
     (expectedUserId && payload?.userId !== expectedUserId) ||
@@ -88,7 +105,7 @@ export async function openBillingPortal({
   invoke = base44.functions.invoke,
   redirect = (url) => window.location.assign(url),
 } = {}) {
-  const response = await invoke("createBillingPortal", { returnDestination });
+  const response = await invokeBillingFunction(invoke, "createBillingPortal", { returnDestination });
   const payload = responsePayload(response);
   if (
     payload?.success !== true ||

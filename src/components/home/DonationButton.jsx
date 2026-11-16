@@ -16,33 +16,41 @@ export default function DonationButton({ variant = "hero" }) {
   const [loading, setLoading] = useState(false);
 
   const handleDonate = async () => {
+    if (loading || !PRESETS.includes(amount)) return;
     setLoading(true);
     try {
-      const appUrl = window.location.origin;
-      if (typeof window !== 'undefined' && window.gtag) {
-        window.gtag('event', 'conversion', {
-          send_to: 'AW-18416125487/OnfzCI7a5OkcEK-Mv81E',
-          value: amount,
-          currency: 'USD',
-        });
-      }
+      // Only the canonical HTTPS origin is allowlisted by the checkout backend.
+      // Do not use the visitor's current host (Base44 previews may differ).
+      const appUrl = "https://nalichat.org";
       const response = await base44.functions.invoke("createCheckout", {
-        items: [{ type: "donation", amount: amount, quantity: 1 }],
+        items: [{ type: "donation", amount, quantity: 1 }],
         callbackUrls: {
           postFlowUrl: appUrl,
-          thankYouPageUrl: `${appUrl}/ThankYou`,
+          thankYouPageUrl: appUrl + "/ThankYou",
         },
       });
-      const checkoutUrl = response?.data?.checkoutUrl || response?.checkoutUrl;
-      const checkoutId = response?.data?.checkoutId || response?.checkoutId;
-      if (checkoutUrl && checkoutId) {
-        try { localStorage.setItem(`gads_purchase_value:${checkoutId}`, String(amount)); } catch {}
-        window.location.href = checkoutUrl;
-      } else {
-        throw new Error("No checkout URL returned");
+      const payload = response?.data ?? response;
+      if (payload?.error) throw new Error(payload.error);
+      const checkoutId = payload?.checkoutId;
+      const checkoutUrl = payload?.checkoutUrl;
+      if (typeof checkoutId !== "string" || !/^cs_(?:test_|live_)?[A-Za-z0-9_]{8,255}$/.test(checkoutId)) {
+        throw new Error("Donation checkout was not confirmed");
       }
+      let destination;
+      try { destination = new URL(checkoutUrl); } catch {
+        throw new Error("Donation checkout URL is invalid");
+      }
+      if (destination.protocol !== "https:" ||
+          !["checkout.stripe.com", "checkout.stripe.dev"].includes(destination.hostname)) {
+        throw new Error("Donation checkout URL was not trusted");
+      }
+      // No conversion is recorded before an authenticated paid confirmation.
+      try { localStorage.setItem(`gads_purchase_value:${checkoutId}`, String(amount)); } catch {}
+      window.location.assign(destination.toString());
     } catch (error) {
-      toast.error("Failed to start donation. Please try again.");
+      const message = error?.response?.data?.error || error?.data?.error || error?.message;
+      toast.error(typeof message === "string" && /callback|checkout|payment|donation|rate limit|too many/i.test(message)
+        ? message : "Unable to open secure donation checkout. Please try again.");
       setLoading(false);
     }
   };

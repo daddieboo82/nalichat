@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ThankYou from '@/pages/ThankYou';
@@ -49,6 +49,12 @@ describe('ThankYou purchase verification', () => {
     vi.clearAllMocks();
     sessionStorage.clear();
     window.scrollTo = vi.fn();
+  });
+
+  // Each case mounts a fresh page; unmount it so a previous render's links and
+  // headings cannot be matched by the next case's queries.
+  afterEach(() => {
+    cleanup();
   });
 
   it('records a verification timeout separately from a confirmed purchase', async () => {

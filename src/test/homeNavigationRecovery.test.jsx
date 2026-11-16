@@ -243,6 +243,8 @@ describe('home, navigation, and recovery flows', () => {
       </Routes>
     );
 
+    // The tour now opens with the premium prompt, then the welcome step.
+    fireEvent.click(screen.getByRole('button', { name: /Continue free/i }));
     fireEvent.click(screen.getByRole('button', { name: /Let's Go/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     fireEvent.click(screen.getByRole('button', { name: /Browse Challenges/i }));

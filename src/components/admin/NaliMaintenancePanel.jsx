@@ -45,7 +45,19 @@ export default function NaliMaintenancePanel() {
         providerStatuses,
         webhook: data.webhookCheck,
         webhookLedgerCount: data.webhookLedgerCount,
+        webhookLedgerStates: data.webhookLedgerRecentStates,
         planProblems,
+        activeChecks: Array.isArray(data.activeChecks) ? data.activeChecks : [],
+        confirmedPayments: Array.isArray(data.results)
+          ? data.results.filter((record) => record.identityMatches === true && record.paymentRecorded === true).length : null,
+        activePaymentChecks: Array.isArray(data.activeChecks)
+          ? data.activeChecks.filter((record) => record.identityMatches === true && record.paymentRecorded === true).length : null,
+        accountsWithCheckoutClaims: data.accountsWithCheckoutClaims,
+        accountsWithMatchedCheckoutClaims: data.accountsWithMatchedCheckoutClaims,
+        accountsWithUnmatchedCheckoutClaims: data.accountsWithUnmatchedCheckoutClaims,
+        accountsWithUnknownClaimState: data.accountsWithUnknownClaimState,
+        pendingAccountsWithActiveRecord: data.pendingAccountsWithActiveRecord,
+        oldestAttempt: data.oldestAttempt,
       });
     } catch (error) {
       toast.error("PayPal audit failed: " + (error?.response?.data?.error || error?.message || "Unknown error"));
@@ -162,6 +174,10 @@ export default function NaliMaintenancePanel() {
               <p>Accounts with multiple pending agreements: {paypalAudit.multipleAccounts ?? "unknown"}. Legacy records without checkout keys: {paypalAudit.missingKeys ?? "unknown"}.</p>
               <p>PayPal webhook: {paypalAudit.webhook?.status || "unverified"}; enabled: {paypalAudit.webhook?.enabled === true ? "yes" : "not verified"}; expected URL: {paypalAudit.webhook?.urlMatchesExpected === true ? "matches" : "not confirmed"}.</p>
               <p>Webhook ledger entries: {paypalAudit.webhookLedgerCount ?? "unavailable"}. Paid plan configuration issues: {paypalAudit.planProblems ?? "unavailable"}.</p>
+              <p>Checkout claims on affected accounts: {paypalAudit.accountsWithCheckoutClaims ?? "unknown"}; matched: {paypalAudit.accountsWithMatchedCheckoutClaims ?? "unknown"}; unmatched: {paypalAudit.accountsWithUnmatchedCheckoutClaims ?? "unknown"}; unreadable account claims: {paypalAudit.accountsWithUnknownClaimState ?? "unknown"}.</p>
+              <p>Accounts with both active and pending PayPal records: {paypalAudit.pendingAccountsWithActiveRecord ?? "unknown"}. Oldest pending attempt: {paypalAudit.oldestAttempt || "unknown"}.</p>
+              <p>Pending agreements with provider-reported last payment: {paypalAudit.confirmedPayments ?? "unknown"}. Active records with provider-reported last payment: {paypalAudit.activePaymentChecks ?? "unknown"}. A missing payment field means unknown, not unpaid.</p>
+              <p>Active agreement checks: {paypalAudit.activeChecks.length ? paypalAudit.activeChecks.reduce((counts, record) => { const key = record.status || "unknown"; counts[key] = (counts[key] || 0) + 1; return counts; }, {}) && Object.entries(paypalAudit.activeChecks.reduce((counts, record) => { const key = record.status || "unknown"; counts[key] = (counts[key] || 0) + 1; return counts; }, {})).map(([status, count]) => status + ": " + count).join(", ") : "none available"}.</p>
               <p>Provider agreement statuses: {Object.entries(paypalAudit.providerStatuses).map(([key, count]) => `${key}: ${count}`).join(", ") || "none available"}.</p>
               <p className="text-muted-foreground">This audit only reads PayPal and local records. No payments or subscription statuses are changed.</p>
             </div>

@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
@@ -35,6 +35,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
@@ -318,7 +319,7 @@ export default function Register() {
           </button>
         </p>
         <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
-          If you requested more than one code, enter only the newest one.
+          Codes expire. If your code has expired, use Resend code above when the countdown ends. If you requested more than one code, enter only the newest one.
         </p>
       </AuthLayout>
     );
@@ -399,7 +400,7 @@ export default function Register() {
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               placeholder="••••••••"
               value={password}
@@ -408,7 +409,11 @@ export default function Register() {
               required
             />
           </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">Choose a unique password. If it is rejected, try a longer one with a mix of letters, numbers, and symbols.</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">Use a strong, unique password with a mix of letters, numbers, and symbols. The sign-up provider checks its security requirements; if rejected, try a longer password.</p>
+          <button type="button" onClick={() => setShowPassword((value) => !value)} className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-primary focus-visible:ring-2 focus-visible:ring-primary/40" aria-pressed={showPassword}>
+            {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+            {showPassword ? "Hide passwords" : "Show passwords"}
+          </button>
         </div>
         <div className="space-y-2">
           <Label htmlFor="confirm">Confirm Password</Label>
@@ -416,7 +421,7 @@ export default function Register() {
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               id="confirm"
-              type="password"
+              type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               placeholder="••••••••"
               value={confirmPassword}

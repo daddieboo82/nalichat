@@ -7,7 +7,8 @@ describe("PayPal donation admin read-only audit", () => {
     expect(backend).toContain("admin.role !== 'admin'");
     expect(backend).toContain("consumeHourlyLimit");
     expect(backend).toContain("PayPalDonation.filter");
-    expect(backend).toContain("'GET'");
+    // Provider evidence comes from a plain read of the order; nothing is captured.
+    expect(backend).toContain("'/v2/checkout/orders/'");
     expect(backend).not.toContain("PayPalDonation.update(");
     expect(backend).not.toContain("PayPalDonation.create(");
     expect(backend).not.toContain("'/capture'");
@@ -30,7 +31,8 @@ describe("PayPal donation admin read-only audit", () => {
     expect(component).toContain('user?.role !== "admin"');
     expect(component).toContain('base44.functions.invoke("getPayPalDonationAudit"');
     expect(component).toContain("PayPal API authentication");
-    expect(component).toContain("Provider capture");
+    expect(component).toContain("NaliChat: {item.localStatus}");
+    expect(component).toContain("PayPal: {item.providerStatus");
     expect(component).toContain("PayPal donation webhook readiness");
     expect(component).toContain("Live event delivery is not yet verified");
     expect(component).toContain("No PayPal donation orders have been recorded");

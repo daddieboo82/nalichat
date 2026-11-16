@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
 import { eventIdentity, summarizePremiumEvents, recoveredCheckoutCustomers } from "@/components/admin/PremiumConversionScorecard";

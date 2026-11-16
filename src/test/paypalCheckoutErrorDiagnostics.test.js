@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { readFile } from "node:fs/promises";
 import { checkoutFailureCategory } from "@/lib/subscriptionBilling";

@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
       // to deduplicate return-page analytics; never authorizes paid access.
       subscriptionRecordId: hasPaidAccess && typeof selected?.id === 'string' ? selected.id : null,
       plan,
-      status:
+      status,
       billingPeriod: selected?.billing_period || null,
       provider: selected?.provider || null,
       currentPeriodEnd,

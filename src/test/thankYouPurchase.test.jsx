@@ -73,6 +73,22 @@ describe('ThankYou purchase verification', () => {
     expect(trackPaywallEvent).not.toHaveBeenCalledWith('purchase_completed', expect.anything());
   });
 
+  it('does not claim a new sale when the account is paid but checkout agreement evidence is missing', async () => {
+    pollForSubscriptionConfirmation.mockResolvedValue({
+      outcome: 'confirmed',
+      subscription: {
+        hasPaidAccess: true,
+        plan: 'premium',
+        subscriptionRecordId: 'record-old',
+        verifiedPayPalAgreementId: 'I-OLDER-PAID',
+      },
+    });
+    renderPage('/ThankYou?subscription=1');
+    expect(await screen.findByText('Your paid plan is active')).toBeTruthy();
+    expect(screen.queryByText('You’re upgraded!')).toBeNull();
+    expect(trackPaywallEvent).not.toHaveBeenCalledWith('purchase_completed', expect.anything());
+  });
+
   it('does not show purchase complete when the return verifier is missing', async () => {
     renderPage('/ThankYou?checkout_id=cs_test_123');
 

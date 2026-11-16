@@ -120,11 +120,8 @@ Deno.serve(async (req) => {
 
     checkoutStage = 'paypal_authentication';
     const token = await accessToken();
-    // Never create a second agreement while any earlier PayPal approval is
-    // pending. The separate resumePendingPayPal route handles these customers.
-    if (allSubs.some((sub: any) => sub.provider === 'paypal' && sub.status === 'pending')) {
-      return Response.json({ error: 'A previous PayPal checkout is pending. Continue your existing PayPal approval or review Settings.' }, { status: 409 });
-    }
+    // Verify all prior PayPal agreements with PayPal before deciding whether
+    // a locally pending row actually represents an open recurring agreement.
     // Fail closed on stale local statuses: check every other recorded PayPal
     // agreement with PayPal before creating a new recurring billing agreement.
     const verifiedTerminalClaimKeys = new Set<string>();
@@ -141,9 +138,20 @@ Deno.serve(async (req) => {
       // Without custom_id validation, a foreign agreement could be accepted
       // as evidence that the account is safe to bill again.
       if (remote?.id !== prior.subscription_id || remote?.plan_id !== prior.paypal_plan_id ||
-          !prior.sku || remote?.custom_id !== user.id + ':' + prior.sku ||
-          !['CANCELLED', 'EXPIRED'].includes(remote?.status)) {
-        return Response.json({ error: 'Previous PayPal billing needs review before another subscription' }, { status: 409 });
+          !prior.sku || remote?.custom_id !== user.id + ':' + prior.sku) {
+        return Response.json({ error: 'Previous PayPal billing identity needs review before another subscription' }, { status: 409 });
+      }
+      const providerStatus = String(remote?.status || '').toUpperCase();
+      // Only a verified terminal agreement permits a new checkout. A stale
+      // local "pending" row can be ignored if PayPal has truly ended it.
+      // APPROVED, ACTIVE, APPROVAL_PENDING, SUSPENDED and unknown remain blocked.
+      if (!['CANCELLED', 'EXPIRED'].includes(providerStatus)) {
+        return Response.json({
+          error: providerStatus === 'APPROVAL_PENDING'
+            ? 'Your previous PayPal approval is still pending. Continue that approval in Settings rather than starting another.'
+            : 'Previous PayPal billing needs review before another subscription',
+          code: 'PAYPAL_AGREEMENT_RECONCILIATION_REQUIRED',
+        }, { status: 409 });
       }
       if (typeof prior.checkout_request_key === 'string' && prior.checkout_request_key) {
         verifiedTerminalClaimKeys.add(prior.checkout_request_key);

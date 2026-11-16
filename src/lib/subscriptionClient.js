@@ -42,6 +42,7 @@ export const FREE_SUBSCRIPTION = Object.freeze({
   status: "active",
   billingPeriod: null,
   provider: null,
+  subscriptionRecordId: null,
   currentPeriodEnd: null,
   renewsAt: null,
   cancelAtPeriodEnd: false,

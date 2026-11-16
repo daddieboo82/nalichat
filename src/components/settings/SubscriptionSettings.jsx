@@ -75,9 +75,14 @@ export default function SubscriptionSettings() {
     try {
       // A signed-in status refresh uses the existing identity-checked PayPal
       // reconciliation. It never starts a new subscription checkout.
-      await refetch();
+      const refresh = await refetch();
+      if (refresh.isError || refresh.error || !refresh.data) {
+        throw new Error("PayPal subscription status could not be verified. Please try again or contact billing support.");
+      }
       setPendingReview(null);
-      toast.success("Subscription status refreshed. Review your current plan before trying checkout.");
+      toast.success(refresh.data.hasPending
+        ? "Subscription status checked. Earlier billing still needs review before checkout."
+        : "Subscription status refreshed. Review your current plan before trying checkout.");
     } catch (err) {
       toast.error(err?.message || "Subscription status refresh is unavailable.");
     } finally {

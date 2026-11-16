@@ -13,13 +13,17 @@ describe('PayPal subscription access', () => {
 
   it('does not expire an active plan when PayPal has not published a future billing time', () => {
     expect(paypalPeriodEndForStatus('active', '2026-10-30T11:00:00.000Z', NOW)).toBeNull();
-    expect(paypalPeriodEndForStatus('active', 'not-a-date', NOW)).toBeUndefined();
+    expect(paypalPeriodEndForStatus('active', 'not-a-date', NOW)).toBeNull();
+    expect(paypalPeriodEndForStatus('active', undefined, NOW)).toBeNull();
+    expect(paypalPeriodEndForStatus('active', '', NOW)).toBeNull();
     expect(paypalPeriodEndForStatus('active', '2026-11-30T12:00:00.000Z', NOW)).toBe('2026-11-30T12:00:00.000Z');
   });
 
   it('keeps a canceled period boundary so access can end on time', () => {
     expect(paypalPeriodEndForStatus('canceled', '2026-11-30T12:00:00.000Z', NOW)).toBe('2026-11-30T12:00:00.000Z');
     expect(paypalPeriodEndForStatus('canceled', '2026-10-01T12:00:00.000Z', NOW)).toBe('2026-10-01T12:00:00.000Z');
+    expect(paypalPeriodEndForStatus('canceled', undefined, NOW)).toBeUndefined();
+    expect(paypalPeriodEndForStatus('pending', undefined, NOW)).toBeUndefined();
   });
 
   it('leaves an unapproved subscription pending without calling PayPal activation', async () => {
@@ -41,11 +45,11 @@ describe('PayPal subscription access', () => {
     const remote = { status: 'APPROVED', billing_info: { next_billing_time: '2020-01-01T00:00:00.000Z' } };
     vi.stubGlobal('fetch', vi.fn(async (url) => {
       if (String(url).endsWith('/activate')) return new Response(null, { status: 204 });
-      return Response.json({ status: 'APPROVED' });
+      return Response.json({ id: 'I-APPROVED', status: 'APPROVED' });
     }));
 
     const status = await resolvePayPalSubscriptionStatus('https://api-m.paypal.com', 'token', 'I-APPROVED', remote);
-    expect(status).toBe('ACTIVE');
+    expect(status).toBe('APPROVED');
   });
 
   it('grants access when activation loses a race but PayPal is already active', async () => {
@@ -53,6 +57,7 @@ describe('PayPal subscription access', () => {
     vi.stubGlobal('fetch', vi.fn(async (url) => {
       if (String(url).endsWith('/activate')) return new Response('{}', { status: 422 });
       return Response.json({
+        id: 'I-RACE',
         status: 'ACTIVE',
         billing_info: { next_billing_time: '2026-11-30T12:00:00.000Z' },
       });

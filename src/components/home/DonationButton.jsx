@@ -10,6 +10,19 @@ import { toast } from "sonner";
 
 const PRESETS = [5, 10, 25, 50];
 
+// The homepage can render multiple Support buttons. Share an in-flight
+// confirmation so the same PayPal order is never captured twice in parallel.
+const pendingCaptureRequests = new Map();
+function verifyExistingDonation(orderId, verifier) {
+  const key = orderId + ":" + verifier;
+  if (pendingCaptureRequests.has(key)) return pendingCaptureRequests.get(key);
+  const promise = Promise.resolve()
+    .then(() => base44.functions.invoke("capturePayPalDonation", { orderId, verifier }))
+    .finally(() => pendingCaptureRequests.delete(key));
+  pendingCaptureRequests.set(key, promise);
+  return promise;
+}
+
 export default function DonationButton({ variant = "hero" }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(10);
@@ -39,7 +52,7 @@ export default function DonationButton({ variant = "hero" }) {
     handledReturn.current = true;
     setPendingOrder({ orderId, verifier });
     setDonationPending(true);
-    base44.functions.invoke("capturePayPalDonation", { orderId, verifier }).then(res => {
+    verifyExistingDonation(orderId, verifier).then(res => {
       const data = res?.data ?? res;
       if (data?.success === true && data?.action === "capture_paypal_donation" && data?.status === "paid") {
         setPendingOrder(null);
@@ -103,7 +116,7 @@ export default function DonationButton({ variant = "hero" }) {
           <Button type="button" size="sm" variant="outline" className="mt-2" disabled={donationPending} onClick={async () => {
             setDonationPending(true);
             try {
-              const res = await base44.functions.invoke("capturePayPalDonation", pendingOrder);
+              const res = await verifyExistingDonation(pendingOrder.orderId, pendingOrder.verifier);
               const data = res?.data ?? res;
               if (data?.success === true && data?.action === "capture_paypal_donation" && data?.status === "paid") {
                 setPendingOrder(null);

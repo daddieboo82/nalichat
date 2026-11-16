@@ -155,7 +155,7 @@ describe("pricing plans", () => {
   it("renders variant A, defaults monthly, and toggles to yearly prices", () => {
     renderPricing({ variantOverride: "A" });
 
-    expect(screen.getByRole("heading", { name: "Finish more music with everything in one place." })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "More AI tools. More creative control. One NaliChat subscription." })).toBeTruthy();
     expect(screen.getByText("Best value to get started")).toBeTruthy();
     expect(screen.getByText("$7.99")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Yearly" }));
@@ -166,7 +166,7 @@ describe("pricing plans", () => {
     mockSubscription.current.subscription.trialEligible = false;
     renderPricing({ variantOverride: "B" });
 
-    expect(screen.getByRole("heading", { name: "Turn ideas into finished releases faster." })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Unlock the creator tools beyond free messaging and Studio." })).toBeTruthy();
     expect(screen.getByText("Best value to get started")).toBeTruthy();
     expect(screen.queryByText("Try Premium free")).toBeNull();
     expect(screen.getByRole("button", { name: "Upgrade to Premium" })).toBeTruthy();

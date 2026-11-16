@@ -168,7 +168,15 @@ Deno.serve(async (req) => {
     );
     const results = [];
     // Aggregate historical checkout metadata without exposing customer identities.
-    const uniqueAccounts = new Set(pending.map((record: any) => record.user_id).filter(Boolean)).size;
+    const pendingByAccount = new Map<string, number>();
+    for (const record of pending) {
+      const accountId = typeof record.user_id === 'string' ? record.user_id : '';
+      if (!accountId) continue;
+      pendingByAccount.set(accountId, (pendingByAccount.get(accountId) || 0) + 1);
+    }
+    const uniqueAccounts = pendingByAccount.size;
+    const accountsWithMultiplePending = [...pendingByAccount.values()].filter((count) => count > 1).length;
+    const largestPendingCountForAccount = Math.max(0, ...pendingByAccount.values());
     const missingRequestKeys = pending.filter((record: any) => !record.checkout_request_key).length;
     // Count durable checkout claims on affected accounts without exposing user IDs.
     // These claims can block fresh checkout even after an old agreement is reconciled.
@@ -243,7 +251,7 @@ Deno.serve(async (req) => {
       }
     }
     return Response.json({ success: true, action: 'pending_paypal_audit', adminUserId: user.id,
-      environment, webhookCheck, webhookLedgerCount, webhookLedgerRecentStates, referenceCheck, activeChecks, planChecks, checked: results.length, uniqueAccounts, missingRequestKeys, accountsWithCheckoutClaims, accountsWithMatchedCheckoutClaims, accountsWithUnmatchedCheckoutClaims, accountsWithUnknownClaimState, pendingAccountsWithActiveRecord, oldestAttempt, results });
+      environment, webhookCheck, webhookLedgerCount, webhookLedgerRecentStates, referenceCheck, activeChecks, planChecks, checked: results.length, uniqueAccounts, accountsWithMultiplePending, largestPendingCountForAccount, missingRequestKeys, accountsWithCheckoutClaims, accountsWithMatchedCheckoutClaims, accountsWithUnmatchedCheckoutClaims, accountsWithUnknownClaimState, pendingAccountsWithActiveRecord, oldestAttempt, results });
   } catch (error) {
     console.error('Pending PayPal audit failed', error);
     return Response.json({ error: 'Unable to audit pending PayPal subscriptions' }, { status: 500 });

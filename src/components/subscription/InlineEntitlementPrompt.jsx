@@ -41,7 +41,7 @@ export default function InlineEntitlementPrompt({
           >
             <Link to={`/pricing?source=${encodeURIComponent(source)}&feature=${encodeURIComponent(entitlement)}`}>Unlock with Premium</Link>
           </Button>
-        )
+        )}
       </div>
     </div>
   );

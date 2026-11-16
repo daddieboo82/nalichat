@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 export default function StudioEditor() {
-  const { hasEntitlement } = useSubscription();
+  const { hasEntitlement, isLoading: subscriptionLoading, isError: subscriptionError, subscription } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export default function StudioEditor() {
 
   const handleProcessAudio = async () => {
     if (!canUseAi) {
-      setError("AI mastering is available with Premium. You can keep editing and export without AI mastering.");
+      setError(subscriptionLoading ? "Checking your subscription. Please try again shortly." : subscriptionError || subscription.hasPending ? "Your existing subscription needs billing review or verification. Check Settings before starting another checkout." : "AI mastering is available with Premium. You can keep editing and export without AI mastering.");
       return;
     }
     if (!audioUrl) return;

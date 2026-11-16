@@ -11,6 +11,7 @@ const STAGES = [
   ["checkout_started", "PayPal checkout started"],
   ["purchase_completed", "Purchase confirmed in app"],
   ["purchase_failed", "Checkout error recorded"],
+  ["checkout_error_diagnostic", "Classified checkout failures"],
 ];
 
 // A single customer may retry checkout many times. Do not present retries
@@ -28,6 +29,28 @@ export function summarizePremiumEvents(events, name) {
   const identities = new Set(matching.map(eventIdentity));
   const knownCustomers = new Set(matching.map(event => event.user_id || event.metadata?.user_id).filter(Boolean));
   return { attempts: matching.length, identities: identities.size, knownCustomers: knownCustomers.size };
+}
+
+export function checkoutErrorBreakdown(events) {
+  const allowed = new Set([
+    "PAYPAL_PLAN_CONFIGURATION_REQUIRED",
+    "PAYPAL_AGREEMENT_RECONCILIATION_REQUIRED",
+    "PAYPAL_CHECKOUT_UNCERTAIN",
+    "CHECKOUT_DEPENDENCY_ERROR",
+    "EXISTING_BILLING_REVIEW",
+    "AUTH_REQUIRED",
+    "RATE_LIMIT",
+    "SERVICE_UNAVAILABLE",
+    "UNCLASSIFIED_CHECKOUT_ERROR",
+  ]);
+  const counts = {};
+  for (const event of events) {
+    if (event.event_name !== "checkout_error_diagnostic") continue;
+    const value = event.metadata?.reason;
+    const reason = allowed.has(value) ? value : "UNCLASSIFIED_CHECKOUT_ERROR";
+    counts[reason] = (counts[reason] || 0) + 1;
+  }
+  return counts;
 }
 
 export function recoveredCheckoutCustomers(events) {
@@ -74,7 +97,7 @@ export default function PremiumConversionScorecard() {
       }
       const rows = STAGES.map(([key, label]) => ({ key, label, ...summarizePremiumEvents(events, key) }));
       const recovered = recoveredCheckoutCustomers(events);
-      setReport({ rows, recovered, capped, readAt: new Date().toLocaleString() });
+      setReport({ rows, recovered, errorReasons: checkoutErrorBreakdown(events), capped, readAt: new Date().toLocaleString() });
     } catch {
       setError("Could not load funnel data. No subscription or billing records were changed.");
     } finally {
@@ -104,6 +127,7 @@ export default function PremiumConversionScorecard() {
               </div>
             ))}
           </div>
+          {Object.keys(report.errorReasons).length > 0 && <p className="mt-3 text-xs text-muted-foreground">Checkout errors by safe backend category: {Object.entries(report.errorReasons).map(([reason, count]) => `${reason.replaceAll("_", " ")}: ${count}`).join(" · ")}</p>}
           <p className="mt-3 text-xs text-muted-foreground">Customers with a checkout-error event followed by a purchase event within this window: <strong>{report.recovered}</strong>. This is not proof of payment settlement.</p>
           <p className="mt-2 text-xs text-muted-foreground">Updated: {report.readAt}{report.capped ? " · Latest 2,000 records only; counts may be incomplete" : ""}</p>
         </div>

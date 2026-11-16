@@ -27,6 +27,7 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import Mfa from '@/pages/Mfa';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Home from '@/pages/Home';
@@ -328,7 +329,7 @@ const AuthenticatedApp = () => {
   // A slow or unavailable auth endpoint should never hide login, registration,
   // password recovery, shared-file downloads, or the production 404 page.
   const PUBLIC_PATHS = new Set([
-    '/login', '/register', '/forgot-password', '/reset-password', '/oauth-consent',
+    '/login', '/register', '/forgot-password', '/reset-password', '/mfa', '/oauth-consent',
     '/shared-file', '/privacy', '/terms', '/encryption-documentation',
     '/music-collaboration', '/creator-messaging', '/music-studio', '/pricing',
     '/pricingplans', '/thankyou', '/subscription_thank_you',
@@ -366,7 +367,7 @@ const AuthenticatedApp = () => {
   // these, an authenticated user who hasn't finished onboarding is bounced away
   // from Terms/Privacy and cannot complete a password reset.
   const ONBOARDING_EXEMPT_PATHS = new Set([
-    '/onboarding', '/login', '/register', '/forgot-password', '/reset-password',
+    '/onboarding', '/login', '/register', '/forgot-password', '/reset-password', '/mfa',
     '/privacy', '/terms', '/thankyou', '/subscription_thank_you', '/oauth-consent', '/shared-file',
   ]);
   const currentPath = location.pathname.toLowerCase();
@@ -406,6 +407,7 @@ const AuthenticatedApp = () => {
       <Route path="/music-studio" element={<MusicStudioLanding />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/mfa" element={<Mfa />} />
       <Route path="/oauth-consent" element={<OAuthConsent />} />
       <Route path="/shared-file" element={<SharedFileDownload />} />
       <Route path="/onboarding" element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />}><Onboarding /></ProtectedRoute>} />
@@ -464,7 +466,7 @@ const AuthenticatedApp = () => {
       <Route path="*" element={<PageNotFound />} />
       </Routes>
       </Suspense>
-      {!['/login', '/register', '/onboarding', '/forgot-password', '/reset-password', '/oauth-consent', '/shared-file'].includes(location.pathname) && <AskNaliHint />}
+      {!['/login', '/register', '/onboarding', '/forgot-password', '/reset-password', '/mfa', '/oauth-consent', '/shared-file'].includes(location.pathname) && <AskNaliHint />}
     </>
   );
 };

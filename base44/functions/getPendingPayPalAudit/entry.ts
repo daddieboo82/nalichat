@@ -63,11 +63,19 @@ Deno.serve(async (req) => {
           const eventNames = new Set((match?.event_types || []).map((entry: any) => entry.name));
           const missingEvents = requiredEvents.filter((name) => !eventNames.has(name) && !eventNames.has('*'));
           const webhookUrl = typeof match?.url === 'string' ? match.url : '';
+          const dispatcherUrl = `https://base44-dispatcher-production.base44.workers.dev/api/apps/${appId}/functions/paypalWebhook`;
+          const publicDomainUrl = 'https://nalichat.org/functions/paypalWebhook';
+          // Classify the configured route without publishing the actual callback
+          // address or claiming an unverified route is reachable.
+          const registeredRoute = webhookUrl === dispatcherUrl ? 'dispatcher'
+            : webhookUrl === publicDomainUrl ? 'public_domain' : 'other';
           webhookCheck = {
             status: 'registered',
             enabled: match?.status === 'ENABLED',
             urlIsHttps: webhookUrl.startsWith('https://'),
             urlMatchesExpected: webhookUrl === expectedWebhookUrl,
+            registeredRoute,
+            publicDomainMatch: webhookUrl === publicDomainUrl,
             missingEvents,
           };
         }

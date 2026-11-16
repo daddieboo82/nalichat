@@ -53,7 +53,9 @@ Deno.serve(async (req) => {
       }
       const remote = await remoteResponse.json();
       const subscribed = new Set((Array.isArray(remote.event_types) ? remote.event_types : []).map((item: any) => item?.name));
-      const missingEvents = EVENTS.filter((name) => !subscribed.has(name));
+      // PayPal's '*' subscription covers every event type. Do not flag a
+      // wildcard registration as incomplete.
+      const missingEvents = EVENTS.filter((name) => !subscribed.has('*') && !subscribed.has(name));
       const enabled = remote.status === 'ENABLED';
       const urlMatches = remote.url === webhookUrl;
       const verified = enabled && urlMatches && missingEvents.length === 0;

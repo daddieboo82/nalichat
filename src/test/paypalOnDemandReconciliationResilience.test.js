@@ -15,6 +15,15 @@ describe('On-demand PayPal status resilience', () => {
       .toBeLessThan(src.indexOf('await subscriptionEntity.update('));
   });
 
+  it('rotates bounded pending-agreement checks instead of permanently taking the newest ten', async () => {
+    const src = await readFile('base44/functions/checkSubscriptionStatus/entry.ts', 'utf8');
+    expect(src).toContain('const allPending = subscriptions.filter(');
+    expect(src).toContain('Math.min(10, allPending.length)');
+    expect(src).toContain('Math.floor(Date.now() / 60_000)');
+    expect(src).toContain('allPending[(offset + index) % allPending.length]');
+    expect(src).not.toContain(').slice(0, 10)');
+  });
+
   it('gives existing PayPal subscribers a Settings instruction instead of a Stripe portal instruction', async () => {
     const src = await readFile('base44/functions/createPayPalSubscription/entry.ts', 'utf8');
     expect(src).toContain('Manage your existing subscription in Settings');

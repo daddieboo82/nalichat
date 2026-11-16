@@ -51,9 +51,15 @@ export function EntitlementGate({
             Try again
           </Button>
         )}
-        <Button className="ui-hover min-h-11 rounded-xl font-semibold" asChild onClick={() => { trackPaywallEvent("entitlement_prompt_convert", { entitlement, source }); trackPaywallEvent("upgrade_click", { entitlement, source }); }}>
-          <Link to={`/pricing?source=${encodeURIComponent(source)}&feature=${encodeURIComponent(entitlement)}`}>Unlock with Premium</Link>
-        </Button>
+        {isError ? (
+          <Button className="ui-hover min-h-11 rounded-xl font-semibold" variant="outline" asChild>
+            <Link to="/settings">Review billing in Settings</Link>
+          </Button>
+        ) : (
+          <Button className="ui-hover min-h-11 rounded-xl font-semibold" asChild onClick={() => { trackPaywallEvent("entitlement_prompt_convert", { entitlement, source }); trackPaywallEvent("upgrade_click", { entitlement, source }); }}>
+            <Link to={`/pricing?source=${encodeURIComponent(source)}&feature=${encodeURIComponent(entitlement)}`}>Unlock with Premium</Link>
+          </Button>
+        )}
       </div>
     </div>
   );

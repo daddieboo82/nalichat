@@ -120,4 +120,35 @@ describe("subscription billing client", () => {
 
     expect(redirect).not.toHaveBeenCalled();
   });
+  it("retains the resumed PayPal agreement ID for return-page verification", async () => {
+    const { resumePendingPayPalApproval, CHECKOUT_SUBSCRIPTION_ID_KEY } = await import("@/lib/subscriptionBilling");
+    const previousStorage = globalThis.sessionStorage;
+    const setItem = vi.fn();
+    Object.defineProperty(globalThis, "sessionStorage", {
+      configurable: true,
+      value: { setItem },
+    });
+    try {
+      const invoke = vi.fn().mockResolvedValue({
+        data: {
+          success: true,
+          action: "resume_pending_paypal",
+          userId: "user-123",
+          subscriptionId: "I-EXISTING123",
+          sku: "premium_monthly",
+          checkoutUrl: "https://www.paypal.com/webapps/billing/subscriptions?ba_token=test",
+        },
+      });
+      const redirect = vi.fn();
+      await resumePendingPayPalApproval({ expectedUserId: "user-123", invoke, redirect });
+      expect(setItem).toHaveBeenCalledWith(CHECKOUT_SUBSCRIPTION_ID_KEY, "I-EXISTING123");
+      expect(redirect).toHaveBeenCalledTimes(1);
+    } finally {
+      Object.defineProperty(globalThis, "sessionStorage", {
+        configurable: true,
+        value: previousStorage,
+      });
+    }
+  });
+
 });

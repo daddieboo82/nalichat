@@ -1110,6 +1110,15 @@ export default function Studio() {
   };
 
   const togglePlay = () => {
+    // A user-initiated Play/Pause supersedes any queued record count-in or
+    // pre-roll. Otherwise its old punch-in marker can start recording later.
+    if (pendingRecordStartRef.current !== null || countInActive) {
+      preRollRequestRef.current += 1;
+      pendingRecordStartRef.current = null;
+      skipPreRollRef.current = false;
+      skipCountInRef.current = false;
+      setCountInActive(false);
+    }
     // Each Play/Pause action invalidates promises from earlier starts.
     const playbackAttempt = ++playbackAttemptRef.current;
     const playbackEpoch = historyEpochRef.current;

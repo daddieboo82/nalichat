@@ -62,7 +62,7 @@ import VcaTrackHeader from '@/components/studio/VcaTrackHeader';
 import FolderTrackHeader from '@/components/studio/FolderTrackHeader';
 import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
 import { cutStudioClipAtPointer } from '@/lib/studioClipCut';
-import { groupStudioClipLanes } from '@/lib/studioClipLanes';
+import { getStudioClipLaneId, groupStudioClipLanes } from '@/lib/studioClipLanes';
 
 const MAX_TRACKS = 999;
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
@@ -1564,14 +1564,27 @@ export default function Studio() {
 
   const toggleMute = (trackId) => {
     sounds.click();
-    // Mute and Solo are mutually exclusive — enabling mute clears solo.
-    setTracks(prev => prev.map(t => t.id === trackId ? { ...t, muted: !t.muted, solo: !t.muted ? false : t.solo } : t));
+    setTracks(prev => {
+      const target = prev.find(t => t.id === trackId);
+      if (!target) return prev;
+      const laneId = getStudioClipLaneId(target);
+      const muted = !target.muted;
+      // Muting a lane mutes every split piece, including after reload.
+      return prev.map(t => getStudioClipLaneId(t) === laneId
+        ? { ...t, muted, solo: muted ? false : t.solo } : t);
+    });
   };
 
   const toggleSolo = (trackId) => {
     sounds.click();
-    // Mute and Solo are mutually exclusive — enabling solo clears mute.
-    setTracks(prev => prev.map(t => t.id === trackId ? { ...t, solo: !t.solo, muted: !t.solo ? false : t.muted } : t));
+    setTracks(prev => {
+      const target = prev.find(t => t.id === trackId);
+      if (!target) return prev;
+      const laneId = getStudioClipLaneId(target);
+      const solo = !target.solo;
+      return prev.map(t => getStudioClipLaneId(t) === laneId
+        ? { ...t, solo, muted: solo ? false : t.muted } : t);
+    });
   };
 
   const toggleArm = (trackId) => {
@@ -1581,19 +1594,24 @@ export default function Studio() {
 
   const updateVolume = (trackId, val) => {
     const value = val[0];
-    setTracks(prev => prev.map(t => {
-      if (t.id !== trackId) return t;
+    setTracks(prev => {
+      const target = prev.find(t => t.id === trackId);
+      if (!target) return prev;
+      const laneId = getStudioClipLaneId(target);
+      return prev.map(t => {
+      if (getStudioClipLaneId(t) !== laneId) return t;
       const mode = t.automationWriteMode || 'read';
       if (!isPlaying || mode === 'read' || t.automationMode !== 'volume') return { ...t, volume: value };
       const time = currentTimeRef.current;
-      if (mode === 'latch') automationLatchRef.current.set(`${trackId}:volume`, value);
+      if (mode === 'latch') automationLatchRef.current.set(`${t.id}:volume`, value);
       const points = [...(t.automationPoints || [])];
       const windowSeconds = mode === 'write' ? 0.12 : 0.08;
       const filtered = points.filter(p => Math.abs(p.time - time) > windowSeconds);
       filtered.push({ time, value });
       filtered.sort((a, b) => a.time - b.time);
       return { ...t, volume: value, automationPoints: filtered };
-    }));
+      });
+    });
   };
 
   const updateAutomatableTrack = (trackId, data) => {
@@ -3430,7 +3448,7 @@ export default function Studio() {
                     "border-b border-border/20 relative group transition-none shrink-0",
                     String(track.id) === String(draggedTrackId) && "z-30 ring-2 ring-primary/50 shadow-xl opacity-90",
                     track.muted ? "opacity-30" : "",
-                    selectedTrackIds.includes(track.id) ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : "",
+                    laneClips.some(clip => selectedTrackIds.includes(clip.id)) ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : "",
                     tracks.some(t => t.solo) && !track.solo && "opacity-40 grayscale"
                   )}
                 >

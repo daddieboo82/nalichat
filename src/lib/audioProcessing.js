@@ -1,4 +1,5 @@
 // Real client-side audio processing helpers (Web Audio API).
+import { studioClipAudioRange } from './studioClipAudioRange.js';
 // These operate on actual audio data — no simulation.
 
 // Decode an audio URL into an AudioBuffer
@@ -467,21 +468,20 @@ export async function renderMixToBuffer(tracks, options = {}) {
   const active = audioTracks.filter(t => (hasSolo ? t.solo : !t.muted));
   if (active.length === 0) return null;
 
-  const decoded = await Promise.all(active.map(async (t) => ({
-    track: t,
-    buffer: await fetchAudioBuffer(t.audioUrl),
-  })));
+  const decoded = (await Promise.all(active.map(async (t) => {
+    const buffer = await fetchAudioBuffer(t.audioUrl);
+    return { track: t, buffer, range: studioClipAudioRange(t, buffer.duration) };
+  }))).filter(item => item.range);
+  if (decoded.length === 0) return null;
 
-  const totalSeconds = Math.max(
-    ...decoded.map(d => (d.track.startTime || 0) + d.buffer.duration)
-  );
+  const totalSeconds = Math.max(...decoded.map(d => d.range.endsAt));
   if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return null;
 
   const length = Math.ceil(totalSeconds * sampleRate);
   const offline = new OfflineAudioContext(2, length, sampleRate);
   const master = connectMasterChain(offline, { masterFx, masterVolume, destination: offline.destination });
 
-  decoded.forEach(({ track, buffer }) => {
+  decoded.forEach(({ track, buffer, range }) => {
     const src = offline.createBufferSource();
     src.buffer = buffer;
     connectTrackChain(offline, src, track, {
@@ -490,7 +490,8 @@ export async function renderMixToBuffer(tracks, options = {}) {
       delayBus: master.delayBus,
       cueBus: master.cueBus,
     });
-    src.start(Math.max(0, track.startTime || 0));
+    // A split or cut clip must render only its selected source region.
+    src.start(range.when, range.offset, range.duration);
   });
 
   return offline.startRendering();

@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import Onboarding from '@/pages/Onboarding';
@@ -299,6 +299,33 @@ describe('auth and onboarding flows', () => {
       });
       expect(checkUserAuth).toHaveBeenCalled();
     });
+  });
+
+  it.each([
+    ['/pricing?plan=premium&billing=monthly', '/pricing?plan=premium&billing=monthly'],
+    ['/pricing?plan=premium_plus&billing=annual', '/pricing?plan=premium_plus&billing=annual'],
+    ['https://evil.example/checkout', '/'],
+    ['/onboarding', '/'],
+  ])('returns to the safe selected destination after setup: %s', async (returnTo, expected) => {
+    window.history.replaceState({}, '', '/onboarding?returnTo=' + encodeURIComponent(returnTo));
+    const userId = '507f1f77bcf86cd799439012';
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: userId, full_name: 'New Customer' },
+      isAuthenticated: true,
+      checkUserAuth: vi.fn().mockResolvedValue({ id: userId, onboarding_completed: true }),
+    };
+    mockBase44.functions.invoke.mockResolvedValueOnce({ data: {
+      success: true, action: 'complete_onboarding', userId, onboardingCompleted: true,
+    } });
+    function Destination() {
+      const location = useLocation();
+      return <output data-testid="destination">{location.pathname + location.search}</output>;
+    }
+    renderInRouter(<><Onboarding /><Destination /></>, ['/onboarding']);
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+    await waitFor(() => expect(screen.getByTestId('destination').textContent).toBe(expected));
+    window.history.replaceState({}, '', '/');
   });
 
   it('offers a display-name-only retry after an onboarding HTTP 400', async () => {

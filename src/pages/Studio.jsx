@@ -1046,7 +1046,11 @@ export default function Studio() {
       // Cross-origin media without CORS headers can't be tapped by Web Audio —
       // retry once without the crossOrigin hint and run that track dry.
       audio.addEventListener('error', () => {
-        if (audio.crossOrigin !== 'anonymous') return;
+        // Ignore a late error from an audio element that has already been
+        // replaced or removed by a clip edit, restore, or source change.
+        if (audioElementsRef.current[track.id] !== audio ||
+            audio.dataset.srcUrl !== track.audioUrl ||
+            audio.crossOrigin !== 'anonymous') return;
         mixEngineRef.current?.detach(track.id);
         const plain = new Audio();
         plain.preload = 'auto';

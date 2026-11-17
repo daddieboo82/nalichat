@@ -110,6 +110,7 @@ export default function Timeline({ currentTime, duration, zoom, onClick }) {
         onClick={handleClick}
         onPointerMove={handleMove}
         onPointerLeave={handleLeave}
+        data-testid="studio-timeline-ruler"
         className="w-full block"
         style={{ display: 'block' }}
       />

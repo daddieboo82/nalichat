@@ -166,7 +166,7 @@ export default function TrackHeader({
           </TooltipTrigger><TooltipContent side="top" className="text-xs flex items-center gap-1">Solo Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+S</kbd></TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild>
             <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
-              <button onClick={() => { if (inputType === 'Internal Audio') { toast.error("Cannot arm a track set to Internal Audio"); return; } toggleArm(track.id); }} className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center border focus:outline-none", track.armed ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground", inputType === 'Internal Audio' && "opacity-30 cursor-not-allowed")}>
+              <button onClick={() => { if (inputType === 'Internal Audio') { toast.error("Cannot arm a track set to Internal Audio"); return; } toggleArm(track.id); }} aria-label={`Arm ${track.name} for recording`} aria-pressed={Boolean(track.armed)} className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center border focus:outline-none", track.armed ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground", inputType === 'Internal Audio' && "opacity-30 cursor-not-allowed")}>
                 <Circle className="w-3 h-3 fill-current" />
               </button>
             </div>

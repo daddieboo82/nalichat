@@ -2,18 +2,18 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { secrets } from 'base44:runtime';
 import { normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { verifyStoreKitTransaction } from '../../shared/appleStoreKit.ts';
 
 /**
  * validateApplePurchase
  *
- * Receives a StoreKit 2 transaction from the iOS app, optionally validates it
- * with Apple's App Store Server API, and creates or updates a Subscription
- * record with provider="apple".
+ * Receives a StoreKit 2 transaction from the iOS app, verifies Apple's signature
+ * on it, and creates or updates a Subscription record with provider="apple".
  *
- * If APPLE_ISSUER_ID / APPLE_KEY_ID / APPLE_PRIVATE_KEY / APPLE_BUNDLE_ID
- * secrets are configured, the function validates the transactionId server-side
- * via the App Store Server API v1. If they are absent, it trusts the transaction
- * data from the client (StoreKit 2 verifies the JWS signature on-device).
+ * The transaction is verified locally against Apple's certificate chain (the
+ * StoreKit 2 signed transaction), so no App Store Connect key is required.
+ * Client-supplied receipt fields are never trusted on their own.
+ * An optional APPLE_BUNDLE_ID secret adds a bundle ID to the accepted set.
  */
 
 interface AppleTransactionInput {
@@ -33,6 +33,17 @@ const PRODUCT_TO_PLAN: Record<string, { plan: string; billingPeriod: string }> =
   premium_plus_monthly: { plan: 'premium_plus', billingPeriod: 'monthly' },
   premium_plus_yearly: { plan: 'premium_plus', billingPeriod: 'annual' },
 };
+
+// Bundle IDs this app ships under. The signed transaction's bundleId is checked
+// against these, so a purchase from another app cannot unlock this one.
+const DEFAULT_BUNDLE_IDS = ['com.nalichat', 'com.base6a1f5ee134147461560c2b37.app'];
+
+function expectedBundleIds(): string[] {
+  const ids = new Set(DEFAULT_BUNDLE_IDS);
+  const configured = secrets.get('APPLE_BUNDLE_ID');
+  if (typeof configured === 'string' && configured.trim()) ids.add(configured.trim());
+  return [...ids];
+}
 
 const VALID_PLANS = new Set(['premium', 'premium_plus']);
 const VALID_PERIODS = new Set(['monthly', 'annual']);
@@ -71,109 +82,6 @@ function validateInput(body: unknown): AppleTransactionInput | null {
   };
 }
 
-/**
- * Create an ES256-signed JWT for the Apple App Store Server API.
- * Requires APPLE_ISSUER_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY, APPLE_BUNDLE_ID.
- */
-async function createAppleServerApiJwt(): Promise<string | null> {
-  const issuerId = secrets.get('APPLE_ISSUER_ID');
-  const keyId = secrets.get('APPLE_KEY_ID');
-  const privateKeyPem = secrets.get('APPLE_PRIVATE_KEY');
-  const bundleId = secrets.get('APPLE_BUNDLE_ID');
-
-  if (!issuerId || !keyId || !privateKeyPem || !bundleId) return null;
-
-  try {
-    // WebCrypto requires DER PKCS#8 bytes, not the PEM text itself.
-    const keyData = privateKeyPem.replace(/\\n/g, '\n');
-    const base64Key = keyData
-      .replace(/-----BEGIN PRIVATE KEY-----/g, '')
-      .replace(/-----END PRIVATE KEY-----/g, '')
-      .replace(/\s/g, '');
-    const der = Uint8Array.from(atob(base64Key), (char) => char.charCodeAt(0));
-    const key = await crypto.subtle.importKey(
-      'pkcs8',
-      der,
-      { name: 'ECDSA', namedCurve: 'P-256' },
-      false,
-      ['sign'],
-    );
-
-    const header = { alg: 'ES256', kid: keyId, typ: 'JWT' };
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-      iss: issuerId,
-      iat: now,
-      exp: now + 3600,
-      aud: 'appstoreconnect-v1',
-      bid: bundleId,
-    };
-
-    const base64Url = (obj: object) =>
-      btoa(JSON.stringify(obj))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-
-    const headerB64 = base64Url(header);
-    const payloadB64 = base64Url(payload);
-    const unsigned = `${headerB64}.${payloadB64}`;
-
-    const signature = await crypto.subtle.sign(
-      { name: 'ECDSA', hash: 'SHA-256' },
-      key,
-      new TextEncoder().encode(unsigned),
-    );
-
-    const sigB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-
-    return `${unsigned}.${sigB64}`;
-  } catch (error) {
-    console.error('Apple JWT creation failed', error);
-    return null;
-  }
-}
-
-/**
- * Validate a transaction with Apple's App Store Server API v1.
- * Returns the decoded transaction info or null if validation fails.
- */
-async function validateWithAppleServerApi(transactionId: string): Promise<Record<string, unknown> | null> {
-  const jwt = await createAppleServerApiJwt();
-  if (!jwt) return null;
-
-  const endpoints = [
-    'https://api.storekit.itunes.apple.com',
-    'https://api-storekit-sandbox.itunes.apple.com',
-  ];
-
-  for (const base of endpoints) {
-    try {
-      const response = await fetch(
-        `${base}/inApps/v1/transactions/${encodeURIComponent(transactionId)}`,
-        { headers: { Authorization: `Bearer ${jwt}` } },
-      );
-      if (!response.ok) continue;
-      const data = await response.json();
-      // The response contains a signedTransactionInfo JWS.
-      const signedInfo = data?.signedTransactionInfo;
-      if (!signedInfo || typeof signedInfo !== 'string') continue;
-
-      // Decode the JWS payload (middle segment) to get transaction details.
-      const parts = signedInfo.split('.');
-      if (parts.length < 2) continue;
-      const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
-      return JSON.parse(payloadJson);
-    } catch (error) {
-      console.error('Apple Server API validation failed for', base, error);
-    }
-  }
-  return null;
-}
-
 Deno.serve(async (req) => {
   try {
     if (req.method !== 'POST') {
@@ -207,20 +115,25 @@ Deno.serve(async (req) => {
     if (!input) {
       return Response.json({ error: 'Invalid transaction data' }, { status: 400 });
     }
+    if (!input.jwsRepresentation) {
+      return Response.json({ error: 'A signed Apple transaction is required' }, { status: 400 });
+    }
 
     // Never grant entitlements from client-supplied receipt fields alone.
-    // A failed or unconfigured Apple server lookup is recoverable, not paid.
-    const appleResult = await validateWithAppleServerApi(input.transactionId);
-    if (!appleResult) {
-      return Response.json({ error: 'Apple purchase verification is temporarily unavailable. Restore purchases after verification is configured.' }, { status: 503 });
+    // Apple's signature on the transaction is verified locally against the
+    // pinned certificate chain, so an unverified request stays unpaid.
+    const verified = await verifyStoreKitTransaction(input.jwsRepresentation, {
+      bundleIds: expectedBundleIds(),
+    });
+    if (!verified.ok) {
+      console.error('Apple transaction rejected:', verified.reason);
+      return Response.json({ error: 'Apple transaction could not be verified' }, { status: 422 });
     }
-    const expectedBundleId = secrets.get('APPLE_BUNDLE_ID');
-    const serverProductId = appleResult.productId;
-    const serverTransactionId = appleResult.transactionId;
-    const serverOriginalId = appleResult.originalTransactionId;
-    const expiryMs = Number(appleResult.expiresDate);
-    if (!expectedBundleId || appleResult.bundleId !== expectedBundleId ||
-        serverTransactionId !== input.transactionId ||
+    const serverProductId = verified.transaction.productId;
+    const serverTransactionId = verified.transaction.transactionId;
+    const serverOriginalId = verified.transaction.originalTransactionId;
+    const expiryMs = verified.transaction.expiresDate;
+    if (serverTransactionId !== input.transactionId ||
         serverProductId !== input.productId ||
         !isNonEmpty(serverOriginalId) || !Number.isFinite(expiryMs) || expiryMs <= 0) {
       return Response.json({ error: 'Apple transaction details could not be verified' }, { status: 422 });

@@ -67,6 +67,7 @@ import { isStudioArmedLane } from '@/lib/studioRecordingLanes';
 import { applyStudioRecordedTake, studioNewRecordingLaneCount } from '@/lib/studioRecordingTake';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
+import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
 const MAX_TRACKS = 999;
@@ -1406,8 +1407,9 @@ export default function Studio() {
         }
         const audioUrl = URL.createObjectURL(blob);
         
-        let realWaveform = generateWaveform(WAVEFORM_POINTS);
+        let realWaveform = [];
         let recordedDuration = null;
+        let waveformUnavailable = false;
         let waveformAudioCtx = null;
         try {
           const arrayBuffer = await blob.arrayBuffer();
@@ -1416,32 +1418,10 @@ export default function Studio() {
           waveformAudioCtx = new AudioContextClass();
           const audioBuffer = await waveformAudioCtx.decodeAudioData(arrayBuffer);
           recordedDuration = audioBuffer.duration;
-          const channelData = audioBuffer.getChannelData(0);
-          
-          // Max efficiency waveform generation using Float32Array and striding
-          const numPoints = WAVEFORM_POINTS;
-          const blockSize = Math.max(1, Math.floor(channelData.length / numPoints));
-          const stride = Math.max(1, Math.floor(blockSize / 64)); // Sample max 64 points per block to prevent blocking main thread
-          
-          const waveform = new Float32Array(numPoints);
-          let maxVal = 0;
-          
-          // Use peak (max) amplitude per block, not the average — an average smooths away
-          // the real transients/peaks, making the waveform look nothing like the actual recording.
-          for (let i = 0; i < numPoints; i++) {
-            let start = i * blockSize;
-            let peak = 0;
-            for (let j = 0; j < blockSize; j += stride) {
-              const abs = Math.abs(channelData[start + j] || 0);
-              if (abs > peak) peak = abs;
-            }
-            waveform[i] = peak;
-            if (peak > maxVal) maxVal = peak;
-          }
-          
-          realWaveform = maxVal > 0 ? Array.from(waveform).map(v => v / maxVal) : Array.from(waveform).map(() => 0.05);
+          realWaveform = studioRecordedWaveform(audioBuffer, WAVEFORM_POINTS);
         } catch (e) {
-          console.error("Failed to parse waveform", e);
+          waveformUnavailable = true;
+          console.error("Unable to decode recorded waveform; keeping original captured audio", e);
         } finally {
           if (waveformAudioCtx && waveformAudioCtx.state !== 'closed') {
             void waveformAudioCtx.close().catch(() => {});
@@ -1484,7 +1464,11 @@ export default function Studio() {
         });
         if (historyEpochRef.current === stoppedSessionEpoch) {
           setRecordingStartTime(null);
-          toast.success("Recording saved!");
+          if (waveformUnavailable) {
+            toast.warning("Recording captured, but its waveform could not be decoded. The original audio was kept.");
+          } else {
+            toast.success("Recording saved!");
+          }
         }
         } catch (error) {
           console.error("Studio recording finalization failed", error);

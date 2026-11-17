@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { secrets } from 'base44:runtime';
 import { normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { verifyStoreKitTransaction } from '../../shared/appleStoreKit.ts';
@@ -13,7 +12,6 @@ import { verifyStoreKitTransaction } from '../../shared/appleStoreKit.ts';
  * The transaction is verified locally against Apple's certificate chain (the
  * StoreKit 2 signed transaction), so no App Store Connect key is required.
  * Client-supplied receipt fields are never trusted on their own.
- * An optional APPLE_BUNDLE_ID secret adds a bundle ID to the accepted set.
  */
 
 interface AppleTransactionInput {
@@ -37,13 +35,6 @@ const PRODUCT_TO_PLAN: Record<string, { plan: string; billingPeriod: string }> =
 // Bundle IDs this app ships under. The signed transaction's bundleId is checked
 // against these, so a purchase from another app cannot unlock this one.
 const DEFAULT_BUNDLE_IDS = ['com.nalichat', 'com.base6a1f5ee134147461560c2b37.app'];
-
-function expectedBundleIds(): string[] {
-  const ids = new Set(DEFAULT_BUNDLE_IDS);
-  const configured = secrets.get('APPLE_BUNDLE_ID');
-  if (typeof configured === 'string' && configured.trim()) ids.add(configured.trim());
-  return [...ids];
-}
 
 const VALID_PLANS = new Set(['premium', 'premium_plus']);
 const VALID_PERIODS = new Set(['monthly', 'annual']);
@@ -123,7 +114,7 @@ Deno.serve(async (req) => {
     // Apple's signature on the transaction is verified locally against the
     // pinned certificate chain, so an unverified request stays unpaid.
     const verified = await verifyStoreKitTransaction(input.jwsRepresentation, {
-      bundleIds: expectedBundleIds(),
+      bundleIds: DEFAULT_BUNDLE_IDS,
     });
     if (!verified.ok) {
       console.error('Apple transaction rejected:', verified.reason);

@@ -26,7 +26,8 @@ describe('Studio record arm and existing split clips', () => {
   it('does not erase an existing waveform if recording has no captured audio or is cancelled', async () => {
     const code = await readFile('src/pages/Studio.jsx', 'utf8');
     const block = code.slice(code.indexOf('const stopRecordingProcess ='), code.indexOf('const toggleRecord ='));
-    expect(block).toContain('stoppedArmedIds.has(String(t.id)) ? { ...t, armed: false } : t');
+    expect(block).toContain('if (!stoppedArmedIds.has(String(t.id))) return t;');
+    expect(block).toContain('midiNotes: [...(t.midiNotes || []), ...finalized]');
     expect(block).toContain('return { ...t, armed: false };');
     expect(block).not.toContain('waveform: [], armed: false');
   });

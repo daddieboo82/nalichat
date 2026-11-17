@@ -1564,6 +1564,7 @@ export default function Studio() {
       setActivity(`Pre-roll ${preRollWindow.duration.toFixed(2)}s → recording 🎙️`);
       // Start playback of existing (non-armed) tracks for context.
       const preRollPlayPromises = [];
+      const preRollAudio = [];
       tracks.forEach(track => {
         const position = studioPlaybackPosition(track, currentTimeRef.current);
         if (!isStudioArmedLane(track, tracks) && track.audioUrl && !track.muted &&
@@ -1571,6 +1572,7 @@ export default function Studio() {
           const audio = getTrackAudio(track);
           if (!audio) return;
           audio.currentTime = position.sourceTime;
+          preRollAudio.push(audio);
           preRollPlayPromises.push(
             audio.play().then(() => true).catch((error) => {
               console.error("Pre-roll playback error:", error);
@@ -1583,9 +1585,18 @@ export default function Studio() {
         const started = await Promise.all(preRollPlayPromises);
         if (preRollRequestRef.current !== preRollRequest ||
             historyEpochRef.current !== preRollEpoch ||
-            pendingRecordStartRef.current !== recordStartPos) return;
+            pendingRecordStartRef.current !== recordStartPos) {
+          // Playback can resolve AFTER Stop. Pause only media still attached
+          // to this pre-roll, not players from a replacement project.
+          preRollAudio.forEach(audio => {
+            if (Object.values(audioElementsRef.current).includes(audio)) audio.pause();
+          });
+          return;
+        }
         if (!started.some(Boolean)) {
           pendingRecordStartRef.current = null;
+          preRollAudio.forEach(audio => audio.pause());
+          updateCurrentTime(recordStartPos);
           toast.error("Pre-roll audio couldn't start. Click Record again to retry.");
           return;
         }

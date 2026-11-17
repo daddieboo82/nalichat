@@ -20,7 +20,7 @@ describe('Studio sustain release respects MIDI channel boundaries', () => {
   });
   it('records the MIDI input channel on each active note before sustain handling', async () => {
     const s = await readFile('src/pages/Studio.jsx','utf8');
-    expect(s).toContain('{ trackId: track.id, channel, note, velocity }, beatNow');
-    expect(s).toContain('releasedStudioMidiSustainNotes(midiActiveNotesRef.current, track.id, channel)');
+    expect(s).toContain('{ trackId: track.id, channel, note, velocity, inputId }, beatNow');
+    expect(s).toContain('releasedStudioMidiSustainNotes(midiActiveNotesRef.current, track.id, channel, inputId)');
   });
 });

@@ -71,6 +71,7 @@ import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
 import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
 import { retriggerStudioMidiNote, finalizeStudioMidiNote } from '@/lib/studioMidiRetrigger';
+import { studioMidiNoteKey, studioMidiSustainKey } from '@/lib/studioMidiInputKeys';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
 const MAX_TRACKS = 999;
@@ -1261,13 +1262,14 @@ export default function Studio() {
                 if (!armedMidi.length) return;
                 const beatNow = currentTimeRef.current * (bpmRef.current / 60);
                 armedMidi.forEach(track => {
-                  const key = `${track.id}:${channel}:${note}`;
+                  const inputId = input.id ?? '';
+                  const key = studioMidiNoteKey(track.id, channel, note, inputId);
                   const appendEvent = (eventKey, eventData) =>
                     updateMidiTrack(track.id, t => ({ ...t, [eventKey]: [...(t[eventKey] || []), eventData] }));
                   if (command === 0x90 && velocity > 0) {
                     const retriggered = retriggerStudioMidiNote(
                       midiActiveNotesRef.current, key,
-                      { trackId: track.id, channel, note, velocity }, beatNow,
+                      { trackId: track.id, channel, note, velocity, inputId }, beatNow,
                     );
                     if (retriggered) {
                       const recorded = finalizeStudioMidiNote(retriggered, beatNow, () => crypto.randomUUID());
@@ -1278,7 +1280,7 @@ export default function Studio() {
                   } else if (command === 0x80 || (command === 0x90 && velocity === 0)) {
                     const active = midiActiveNotesRef.current.get(key);
                     if (!active) return;
-                    if (midiSustainRef.current.get(`${track.id}:${channel}`)) {
+                    if (midiSustainRef.current.get(studioMidiSustainKey(track.id, channel, inputId))) {
                       midiActiveNotesRef.current.set(key, { ...active, released: true });
                       return;
                     }
@@ -1293,11 +1295,11 @@ export default function Studio() {
                     const value = velocity;
                     appendEvent('midiCC', { id: crypto.randomUUID(), beat: Math.round(beatNow * 1000) / 1000, controller, value, channel });
                     if (controller === 64) {
-                      const sustainKey = `${track.id}:${channel}`;
+                      const sustainKey = studioMidiSustainKey(track.id, channel, inputId);
                       const down = value >= 64;
                       midiSustainRef.current.set(sustainKey, down);
                       if (!down) {
-                        const released = releasedStudioMidiSustainNotes(midiActiveNotesRef.current, track.id, channel);
+                        const released = releasedStudioMidiSustainNotes(midiActiveNotesRef.current, track.id, channel, inputId);
                         released.forEach(([activeKey, active]) => {
                           midiActiveNotesRef.current.delete(activeKey);
                           const durationBeats = Math.max(.25, Math.round((beatNow - active.startBeat) * 4) / 4);

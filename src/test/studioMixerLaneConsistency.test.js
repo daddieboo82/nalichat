@@ -5,7 +5,7 @@ import { groupStudioClipLanes } from '../lib/studioClipLanes';
 describe('Studio mixer treats split clips as one lane', () => {
   it('passes one mixer strip per visible timeline lane, with clips for VU metering', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
-    const mixer = source.slice(source.indexOf('<MixerPanel'), source.indexOf('</MixerPanel>') + 13);
+    const mixer = source.slice(source.indexOf('<MixerPanel'), source.indexOf('</Suspense>', source.indexOf('<MixerPanel')));
     expect(mixer).toContain('tracks={groupStudioClipLanes(tracks).map(lane => ({');
     expect(mixer).toContain('...lane.primary, laneClips: lane.clips');
     const lanes = groupStudioClipLanes([

@@ -1353,20 +1353,29 @@ export default function Studio() {
   const stopRecordingProcess = (keepPlaying = false) => {
     if (midiRecordingRef.current && (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive')) {
       midiRecordingRef.current = false;
+      const stoppedMidiEpoch = historyEpochRef.current;
+      const stoppedMidiArmedIds = new Set(tracksRef.current
+        .filter(t => t.armed && ['midi', 'instrument'].includes(t.type))
+        .map(t => String(t.id)));
       const stopBeat = currentTimeRef.current * (bpmRef.current / 60);
       const heldNotes = [...midiActiveNotesRef.current.values()];
       midiActiveNotesRef.current.clear();
-      setTracksWithHistory(prev => prev.map(t => {
-        if (!t.armed || !['midi', 'instrument'].includes(t.type)) return t;
-        const finalized = heldNotes.filter(note => note.trackId === t.id).map(note => ({
-          id: crypto.randomUUID(),
-          note: note.note,
-          startBeat: Math.round(note.startBeat * 4) / 4,
-          durationBeats: Math.max(.25, Math.round((stopBeat - note.startBeat) * 4) / 4),
-          velocity: note.velocity,
-        }));
-        return { ...t, armed: false, midiNotes: [...(t.midiNotes || []), ...finalized].sort((a, b) => a.startBeat - b.startBeat) };
-      }));
+      setTracksWithHistory(prev => {
+        // A queued MIDI-only stop must not mutate a different project,
+        // even if new tracks reuse the same IDs.
+        if (historyEpochRef.current !== stoppedMidiEpoch) return prev;
+        return prev.map(t => {
+          if (!stoppedMidiArmedIds.has(String(t.id)) || !['midi', 'instrument'].includes(t.type)) return t;
+          const finalized = heldNotes.filter(note => String(note.trackId) === String(t.id)).map(note => ({
+            id: crypto.randomUUID(),
+            note: note.note,
+            startBeat: Math.round(note.startBeat * 4) / 4,
+            durationBeats: Math.max(.25, Math.round((stopBeat - note.startBeat) * 4) / 4),
+            velocity: note.velocity,
+          }));
+          return { ...t, armed: false, midiNotes: [...(t.midiNotes || []), ...finalized].sort((a, b) => a.startBeat - b.startBeat) };
+        });
+      });
       setRecordingStartTime(null);
       if (!keepPlaying) Object.values(audioElementsRef.current).forEach(audio => audio.pause());
       sounds.recStop();
@@ -1464,7 +1473,7 @@ export default function Studio() {
           }
           const midiFinalized = prev.map(t => {
             if (!stoppedArmedIds.has(String(t.id)) || !['midi', 'instrument'].includes(t.type)) return t;
-            const finalized = heldMidiNotes.filter(note => note.trackId === t.id).map(note => ({
+            const finalized = heldMidiNotes.filter(note => String(note.trackId) === String(t.id)).map(note => ({
               id: crypto.randomUUID(), note: note.note,
               startBeat: Math.round(note.startBeat * 4) / 4,
               durationBeats: Math.max(.25, Math.round((stopBeat - note.startBeat) * 4) / 4),

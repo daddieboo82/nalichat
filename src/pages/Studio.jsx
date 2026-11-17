@@ -70,6 +70,7 @@ import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
 import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
+import { retriggerStudioMidiNote, finalizeStudioMidiNote } from '@/lib/studioMidiRetrigger';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
 const MAX_TRACKS = 999;
@@ -1264,7 +1265,16 @@ export default function Studio() {
                   const appendEvent = (eventKey, eventData) =>
                     updateMidiTrack(track.id, t => ({ ...t, [eventKey]: [...(t[eventKey] || []), eventData] }));
                   if (command === 0x90 && velocity > 0) {
-                    midiActiveNotesRef.current.set(key, { trackId: track.id, channel, note, startBeat: beatNow, velocity, released: false });
+                    const retriggered = retriggerStudioMidiNote(
+                      midiActiveNotesRef.current, key,
+                      { trackId: track.id, channel, note, velocity }, beatNow,
+                    );
+                    if (retriggered) {
+                      const recorded = finalizeStudioMidiNote(retriggered, beatNow, () => crypto.randomUUID());
+                      updateMidiTrack(retriggered.trackId, t => ({
+                        ...t, midiNotes: [...(t.midiNotes || []), recorded].sort((a, b) => a.startBeat - b.startBeat),
+                      }));
+                    }
                   } else if (command === 0x80 || (command === 0x90 && velocity === 0)) {
                     const active = midiActiveNotesRef.current.get(key);
                     if (!active) return;

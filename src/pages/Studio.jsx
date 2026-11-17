@@ -1093,24 +1093,19 @@ export default function Studio() {
       sounds.nav();
       setActivity("Playing the mix ▶️");
       const playPromises = [];
+      const hasSolo = tracks.some(track => track.solo);
       tracks.forEach(track => {
-        if (track.audioUrl && (!track.muted || track.solo)) {
+        const position = studioPlaybackPosition(track, currentTimeRef.current);
+        const audible = !track.muted && (!hasSolo || track.solo);
+        if (track.audioUrl && audible && position.active) {
           const audio = getTrackAudio(track);
           if (!audio) return;
-          
-          // Calculate if playhead is within track bounds
-          const trackStart = track.startTime || 0;
-          const trackEnd = trackStart + (track.duration || 40);
-          const clipStartOffset = track.clipStart || 0;
-          
-          if (currentTimeRef.current >= trackStart && currentTimeRef.current < trackEnd) {
-            audio.currentTime = clipStartOffset + (currentTimeRef.current - trackStart);
-            playPromises.push(
-              audio.play().catch(e => { console.error("Audio playback error:", e); return { failed: true }; })
-            );
-          } else {
-            audio.pause();
-          }
+          audio.currentTime = position.sourceTime;
+          playPromises.push(
+            audio.play().catch(e => { console.error("Audio playback error:", e); return { failed: true }; })
+          );
+        } else {
+          audioElementsRef.current[track.id]?.pause();
         }
       });
       // Surface a visible error if playback couldn't start at all (e.g. browser blocked it) —

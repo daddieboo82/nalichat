@@ -1611,8 +1611,11 @@ export default function Studio() {
     pendingRecordStartRef.current = null;
     pendingStopAfterRef.current = null;
     if (isRecording) { setIsRecording(false); stopRecordingProcess(); } else { sounds.recStop(); }
-    Object.values(audioElementsRef.current).forEach(a => { a.pause(); a.currentTime = 0; });
-    setTimeout(() => updateCurrentTime(0), 10);
+    Object.values(audioElementsRef.current).forEach(a => a.pause());
+    // Stop must reset the playhead immediately: a delayed reset can fire
+    // after a rapid Stop -> Play and unexpectedly seek the new playback.
+    updateCurrentTime(0);
+    playbackFailedRef.current.clear();
   };
 
   // Called when the count-in overlay finishes its 1-bar count → start actual recording

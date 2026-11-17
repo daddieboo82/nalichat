@@ -1816,9 +1816,14 @@ export default function Studio() {
     const track = tracks.find(t => t.id === trackId);
     if (audioElementsRef.current[trackId]) {
       audioElementsRef.current[trackId].pause();
-      audioElementsRef.current[trackId].src = '';
+      audioElementsRef.current[trackId].removeAttribute('src');
+      audioElementsRef.current[trackId].load();
       delete audioElementsRef.current[trackId];
+      // Undo must create and route a fresh player for the restored clip.
+      mixEngineRef.current?.detach(trackId);
     }
+    playbackStartingRef.current.delete(trackId);
+    playbackFailedRef.current.delete(trackId);
     // Do not revoke track.audioUrl here: split siblings and Undo history
     // may still reference the same temporary source.
     setTracksWithHistory(prev => prev.filter(t => t.id !== trackId));

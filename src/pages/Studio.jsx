@@ -22,7 +22,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useSubscription } from '@/hooks/useSubscription';
 import StudioStatusBanners from '@/components/studio/StudioStatusBanners';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
+import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderMixToMp3, renderTunedVocal, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -2868,6 +2868,46 @@ export default function Studio() {
     }
   };
 
+  const pitchCorrectionRef = useRef(false);
+  const [isTuningVocal, setIsTuningVocal] = useState(false);
+
+  const handleTuneVocal = async () => {
+    const take = selectedPluginTrack;
+    if (!take?.audioUrl || pitchCorrectionRef.current || isPlaying || isRecording) return;
+    const epoch = historyEpochRef.current;
+    pitchCorrectionRef.current = true;
+    setIsTuningVocal(true);
+    try {
+      const tuned = await renderTunedVocal(take, songKey);
+      if (epoch !== historyEpochRef.current) return;
+      if (!tuned) {
+        toast.info("No clear notes needed correction. Try an isolated lead vocal.");
+        return;
+      }
+      const latest = tracksRef.current;
+      if (!latest.some(track => track === take) || latest.length >= maxTracks) {
+        toast.error("The clip changed or the track limit was reached. Try again.");
+        return;
+      }
+      const id = nextTrackId(latest);
+      const audioUrl = URL.createObjectURL(tuned.blob);
+      setTracksWithHistory(prev => [...prev, {
+        id, name: `${take.name} (Tuned)`, color: "bg-violet-500",
+        volume: 75, pan: 50, muted: false, solo: false, armed: false,
+        startTime: take.startTime ?? 0, clipStart: 0, fullDuration: tuned.duration,
+        duration: tuned.duration, waveform: tuned.waveform, audioUrl,
+      }]);
+      setSelectedTrackIds([id]);
+      setFxTarget(id);
+      toast.success("Tuned take added. Solo it to audition the result.");
+    } catch (error) {
+      if (epoch === historyEpochRef.current) toast.error(error.message || "Could not tune the vocal.");
+    } finally {
+      pitchCorrectionRef.current = false;
+      setIsTuningVocal(false);
+    }
+  };
+
   const handleImportClick = () => {
     setShowImportDialog(true);
   };
@@ -4539,6 +4579,10 @@ export default function Studio() {
         plugins={fxTarget === 'master' ? masterFx : selectedPluginTrack && getTrackEffects(selectedPluginTrack)}
         onPluginsChange={handlePluginsChange}
         onTargetChange={(target) => setFxTarget(target)}
+        onTuneVocal={selectedPluginTrack?.audioUrl ? handleTuneVocal : undefined}
+        isTuningVocal={isTuningVocal}
+        tuningDisabled={isPlaying || isRecording}
+        songKey={songKey}
       />
       </Suspense>
 

@@ -32,7 +32,7 @@ const PLUGINS = [
   ]},
 ];
 
-export default function PluginRack({ open, onToggle, trackName, tracks, plugins, onPluginsChange, isMaster = false, onTargetChange }) {
+export default function PluginRack({ open, onToggle, trackName, tracks, plugins, onPluginsChange, isMaster = false, onTargetChange, onTuneVocal, isTuningVocal, tuningDisabled, songKey }) {
   const [activePlugins, setActivePlugins] = useState({});
 
   useEffect(() => {
@@ -154,6 +154,20 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                   <X className="w-4 h-4" />
                 </button>
               </div>
+
+              {onTuneVocal && !isMaster && (
+                <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-white/10">
+                  <button
+                    type="button"
+                    onClick={onTuneVocal}
+                    disabled={isTuningVocal || tuningDisabled}
+                    className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50"
+                  >
+                    {isTuningVocal ? 'Tuning vocal…' : 'Tune Vocal to New Track'}
+                  </button>
+                  <span className="text-xs text-muted-foreground">Project key {songKey} · Isolated vocal</span>
+                </div>
+              )}
 
               {/* Plugin Slots */}
               <div className={cn("flex overflow-x-auto custom-scrollbar gap-0 shrink-0", !hasTarget && "opacity-50 pointer-events-none")}>

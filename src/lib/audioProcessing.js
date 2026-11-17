@@ -442,6 +442,25 @@ async function applyFilter(buffer, type, frequency, Q = 1) {
   return await offline.startRendering();
 }
 
+export async function renderTunedVocal(track, key) {
+  const buffer = await fetchAudioBuffer(track.audioUrl);
+  const range = studioClipAudioRange(track, buffer.duration);
+  if (!range || range.duration < 0.35 || range.duration > 60) {
+    throw new Error('Choose a vocal clip between 0.35 and 60 seconds.');
+  }
+  const length = Math.round(range.duration * buffer.sampleRate);
+  const context = new OfflineAudioContext(buffer.numberOfChannels, length, buffer.sampleRate);
+  const input = context.createBuffer(buffer.numberOfChannels, length, buffer.sampleRate);
+  const output = context.createBuffer(buffer.numberOfChannels, length, buffer.sampleRate);
+  const start = Math.round(range.offset * buffer.sampleRate);
+  for (let channel = 0; channel < input.numberOfChannels; channel++) {
+    input.copyToChannel(buffer.getChannelData(channel).subarray(start, start + length), channel);
+  }
+  const { correctVocalPitch } = await import('./voxPitchCorrection.js');
+  if (!await correctVocalPitch(input, output, key)) return null;
+  return { blob: audioBufferToWav(output), waveform: bufferToWaveform(output), duration: output.duration };
+}
+
 // Real stem separation by frequency split:
 //   "vocals/highs"  -> high-pass (keeps vocals, hats, presence)
 //   "instrumental"  -> low-pass (keeps bass, body, drums)

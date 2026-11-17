@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 describe('Studio live MIDI event callbacks are session-scoped', () => {
   it('prevents a permission response from attaching handlers after unmount', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
-    const from = source.indexOf('midiAccess = await navigator.requestMIDIAccess');
+    const from = source.indexOf('midiAccess = await midiAccessRequest;');
     const to = source.indexOf('midiAccess.onstatechange', from);
     expect(source.slice(from, to)).toContain('if (!mounted) return;');
   });

@@ -1386,6 +1386,12 @@ export default function Studio() {
       const stoppedStartTime = recordingStartTime !== null ? recordingStartTime : currentTimeRef.current;
       const stoppedEndTime = currentTimeRef.current;
       const stoppedSessionEpoch = historyEpochRef.current;
+      const stoppedMidiEnabled = midiRecordingRef.current;
+      const stoppedMidiNotes = stoppedMidiEnabled ? [...midiActiveNotesRef.current.values()] : [];
+      const stoppedBpm = bpmRef.current;
+      // Freeze the MIDI take at Stop, not after asynchronous audio decoding.
+      midiRecordingRef.current = false;
+      midiActiveNotesRef.current.clear();
       stoppedRecorder.onstop = async () => {
         let transientRecordedUrl = null;
         let recordedUrlTransferred = false;
@@ -1397,12 +1403,24 @@ export default function Studio() {
           'audio/webm';
         const blob = new Blob(stoppedChunks, { type: recordingMimeType });
         if (blob.size === 0) {
-          // Empty captures must never erase a previously recorded clip.
+          // Empty microphone captures preserve the independently captured MIDI
+          // notes, but must not erase any previously recorded audio clip.
           setTracksWithHistory(prev => {
             if (historyEpochRef.current !== stoppedSessionEpoch) return prev;
-            return prev.map(t => (
-              stoppedArmedIds.has(String(t.id)) ? { ...t, armed: false } : t
-            ));
+            const stopBeat = stoppedEndTime * (stoppedBpm / 60);
+            return prev.map(t => {
+              if (!stoppedArmedIds.has(String(t.id))) return t;
+              if (!['midi', 'instrument'].includes(t.type) || !stoppedMidiEnabled) {
+                return { ...t, armed: false };
+              }
+              const finalized = stoppedMidiNotes.filter(note => String(note.trackId) === String(t.id)).map(note => ({
+                id: crypto.randomUUID(), note: note.note,
+                startBeat: Math.round(note.startBeat * 4) / 4,
+                durationBeats: Math.max(.25, Math.round((stopBeat - note.startBeat) * 4) / 4),
+                velocity: note.velocity,
+              }));
+              return { ...t, armed: false, midiNotes: [...(t.midiNotes || []), ...finalized].sort((a, b) => a.startBeat - b.startBeat) };
+            });
           });
           if (historyEpochRef.current === stoppedSessionEpoch) {
             setRecordingStartTime(null);
@@ -1435,10 +1453,8 @@ export default function Studio() {
         }
         
         if (historyEpochRef.current !== stoppedSessionEpoch) return;
-        const stopBeat = stoppedEndTime * (bpmRef.current / 60);
-        const heldMidiNotes = midiRecordingRef.current ? [...midiActiveNotesRef.current.values()] : [];
-        midiRecordingRef.current = false;
-        midiActiveNotesRef.current.clear();
+        const stopBeat = stoppedEndTime * (stoppedBpm / 60);
+        const heldMidiNotes = stoppedMidiNotes;
         // Once a take is queued for track ownership, its blob URL is kept
         // until the editor's normal track/Undo cleanup no longer retains it.
         setTracksWithHistory(prev => {

@@ -64,6 +64,7 @@ import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
 import { cutStudioClipAtPointer } from '@/lib/studioClipCut';
 import { getStudioClipLaneId, groupStudioClipLanes, visibleStudioClipLanes, reorderVisibleStudioClipLanes } from '@/lib/studioClipLanes';
 import { isStudioArmedLane } from '@/lib/studioRecordingLanes';
+import { applyStudioRecordedTake, studioNewRecordingLaneCount } from '@/lib/studioRecordingTake';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
@@ -1403,9 +1404,9 @@ export default function Studio() {
         const heldMidiNotes = midiRecordingRef.current ? [...midiActiveNotesRef.current.values()] : [];
         midiRecordingRef.current = false;
         midiActiveNotesRef.current.clear();
-        setTracksWithHistory(prev => prev.map(t => {
-          if (!t.armed) return t;
-          if (['midi', 'instrument'].includes(t.type)) {
+        setTracksWithHistory(prev => {
+          const midiFinalized = prev.map(t => {
+            if (!t.armed || !['midi', 'instrument'].includes(t.type)) return t;
             const finalized = heldMidiNotes.filter(note => note.trackId === t.id).map(note => ({
               id: crypto.randomUUID(), note: note.note,
               startBeat: Math.round(note.startBeat * 4) / 4,
@@ -1413,13 +1414,17 @@ export default function Studio() {
               velocity: note.velocity,
             }));
             return { ...t, armed: false, midiNotes: [...(t.midiNotes || []), ...finalized].sort((a, b) => a.startBeat - b.startBeat) };
-          }
-          return {
-            ...t, waveform: realWaveform, armed: false, audioUrl,
-            startTime: recordingStartTime !== null ? recordingStartTime : currentTimeRef.current,
-            duration: recordedDuration || (recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10)
-          };
-        }));
+          });
+          return applyStudioRecordedTake(
+            midiFinalized.map((t, index) => ({ ...t, armed: prev[index].armed && !['midi', 'instrument'].includes(t.type) })),
+            {
+              audioUrl, waveform: realWaveform,
+              startTime: recordingStartTime !== null ? recordingStartTime : currentTimeRef.current,
+              duration: recordedDuration || (recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10),
+              nextId: nextTrackId(prev),
+            },
+          );
+        });
         setRecordingStartTime(null);
         toast.success("Recording saved!");
       };
@@ -1454,6 +1459,10 @@ export default function Studio() {
   const toggleRecord = async () => {
     if (!isRecording && !tracks.some(t => t.armed)) {
       toast.error("Please arm at least one track to record (click the circle icon on a track)");
+      return;
+    }
+    if (!isRecording && tracks.length + studioNewRecordingLaneCount(tracks) > maxTracks) {
+      toast.error("Not enough room for a new take. Free up a track before recording.");
       return;
     }
     // Pro Tools count-in: if metronome is on and starting a fresh recording,

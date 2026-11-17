@@ -3391,7 +3391,7 @@ export default function Studio() {
       // Keep the URL alive while the browser's download manager accepts it.
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
       sounds.success();
-      toast.success(`${audioTracks.length} stems packaged into one ZIP download.`);
+      toast.success(`${audioLanes.length} stems packaged into one ZIP download.`);
     } catch (e) {
       console.error("Stem export failed", e);
       toast.error("Failed to export all stems. No complete archive was created.");

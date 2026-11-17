@@ -910,7 +910,8 @@ export default function Studio() {
             if (audio && !audio.paused) audio.pause();
             continue;
           }
-          const candidate = audio || getTrackAudioRef.current?.(track);
+          const candidate = audio?.dataset?.srcUrl === track.audioUrl
+            ? audio : getTrackAudioRef.current?.(track);
           if (!candidate || !candidate.paused ||
               playbackStartingRef.current.has(track.id) ||
               playbackFailedRef.current.has(track.id)) continue;
@@ -1165,6 +1166,22 @@ export default function Studio() {
       mixEngineRef.current?.dispose();
     };
   }, []);
+
+  // Reconcile media elements after edits, Undo/Redo and whole-project restore.
+  // Otherwise removed clips can keep sounding, or old players can survive a
+  // source replacement until the next user interaction.
+  useEffect(() => {
+    const byId = new Map(tracks.map(track => [String(track.id), track]));
+    for (const [id, audio] of Object.entries(audioElementsRef.current)) {
+      const track = byId.get(id);
+      if (track && track.audioUrl && audio.dataset?.srcUrl === track.audioUrl) continue;
+      try { audio.pause(); } catch { /* player may already be disposed */ }
+      mixEngineRef.current?.detach(id);
+      delete audioElementsRef.current[id];
+      playbackStartingRef.current.delete(id);
+      playbackFailedRef.current.delete(id);
+    }
+  }, [tracks]);
 
   // Sync mixer state (fader, mute/solo, pan, inserts, sends, master FX) into the live graph
   useEffect(() => {

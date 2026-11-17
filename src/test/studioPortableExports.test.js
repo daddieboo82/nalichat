@@ -299,15 +299,15 @@ describe("NaliStudio portable exports", () => {
     expect(handler).not.toContain('blob.type || "audio/wav"');
   });
 
-  it("exports all rendered stems as one ZIP rather than individual browser downloads", async () => {
+  it("exports one mixed stem per visible lane as one ZIP rather than individual downloads", async () => {
     const studio = await source();
     const start = studio.indexOf("const handleExportStems = async () => {");
     const end = studio.indexOf("if (roomId && projectLoading)", start);
     const handler = studio.slice(start, end);
     expect(start).toBeGreaterThan(0);
-    expect(handler).toContain("await renderMixToWav([{ ...track, audioUrl: track.audioUrl || track.file_url }])");
+    expect(handler).toContain("renderMixToWav(lane.clips.map(clip => ({");
     expect(handler).toContain("zip.file(filename, blob)");
-    expect(handler).toContain("Object.keys(zip.files).length !== audioTracks.length");
+    expect(handler).toContain("Object.keys(zip.files).length !== audioLanes.length");
     expect(handler).toContain('a.download = "NaliStudio_stems.zip"');
     expect((handler.match(/a\.click\(\)/g) || []).length).toBe(1);
     expect(handler).toContain("if (!(blob instanceof Blob) || blob.size === 0)");

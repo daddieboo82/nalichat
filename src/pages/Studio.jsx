@@ -72,6 +72,7 @@ import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
 import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
 import { retriggerStudioMidiNote, finalizeStudioMidiNote } from '@/lib/studioMidiRetrigger';
 import { studioMidiNoteKey, studioMidiSustainKey } from '@/lib/studioMidiInputKeys';
+import { drainStudioDisconnectedMidiNotes } from '@/lib/studioMidiDisconnect';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
 const MAX_TRACKS = 999;
@@ -1361,6 +1362,40 @@ export default function Studio() {
               midiAccessRef.current = midiAccess;
               midiAccess.onstatechange = (e) => {
                 if (!mounted) return;
+                if (e.port?.type === 'input' && e.port.state === 'disconnected') {
+                  const disconnectedId = e.port.id ?? '';
+                  const inputEpoch = historyEpochRef.current;
+                  const stopBeat = currentTimeRef.current * (bpmRef.current / 60);
+                  const strandedNotes = drainStudioDisconnectedMidiNotes(
+                    midiActiveNotesRef.current, midiSustainRef.current, disconnectedId,
+                  );
+                  if (midiInputsBound.has(e.port)) {
+                    e.port.onmidimessage = null;
+                    midiInputsBound.delete(e.port);
+                  }
+                  if (midiRecordingRef.current && strandedNotes.length) {
+                    // Preserve the notes up to disconnect; never apply them to
+                    // a newer project or a subsequent recording session.
+                    const stoppedMidiTracks = new Set(tracksRef.current
+                      .filter(t => t.armed && ['midi', 'instrument'].includes(t.type))
+                      .map(t => String(t.id)));
+                    const finalized = strandedNotes.map(note => ({
+                      trackId: String(note.trackId),
+                      recorded: finalizeStudioMidiNote(note, stopBeat, () => crypto.randomUUID()),
+                    }));
+                    setTracks(prev => {
+                      if (!mounted || historyEpochRef.current !== inputEpoch) return prev;
+                      return prev.map(track => {
+                        if (!stoppedMidiTracks.has(String(track.id))) return track;
+                        const additions = finalized.filter(item => item.trackId === String(track.id))
+                          .map(item => item.recorded);
+                        if (!additions.length) return track;
+                        return { ...track, midiNotes: [...(track.midiNotes || []), ...additions]
+                          .sort((a, b) => a.startBeat - b.startBeat) };
+                      });
+                    });
+                  }
+                }
                 bindMidiInputs();
                 setHardware(prev => ({ ...prev, midi: e.currentTarget.inputs.size > 0 }));
               };

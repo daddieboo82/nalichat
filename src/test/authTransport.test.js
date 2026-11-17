@@ -21,6 +21,6 @@ describe('authentication transport invariants', () => {
     const auth = await readText('src/lib/AuthContext.jsx');
 
     expect(auth).toContain('if (status === 401) return false;');
-    expect(auth).toContain('retryCount < 3 && shouldRetryAuthError(error)');
+    expect(auth).toContain('const shouldRetry = shouldRetryAuthError(error)');
   });
 });

@@ -7,12 +7,17 @@ async function readText(path) {
 }
 
 describe('app shell storage resilience', () => {
-  it('uses safe localStorage helpers for app-shell activity and signup tracking', async () => {
+  it('uses safe localStorage helpers for signup tracking', async () => {
     const source = await readText('src/App.jsx');
     expect(source).toContain('function safeLocalStorageGet(key)');
-    expect(source).toContain("const lastActive = safeLocalStorageGet('last_activity')");
-    expect(source).toContain("safeLocalStorageSet('last_activity', Date.now().toString())");
     expect(source).not.toContain("localStorage.getItem('last_activity')");
+  });
+
+  it('never signs a user out for being away', async () => {
+    const source = await readText('src/App.jsx');
+    // Sessions end only on an explicit logout.
+    expect(source).not.toContain("Date.now() - parsedLastActive > 24 * 60 * 60 * 1000");
+    expect(source).not.toContain("localStorage.removeItem('last_activity')");
   });
 
   it('keeps Ask Nali hint working without sessionStorage', async () => {

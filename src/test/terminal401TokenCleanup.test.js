@@ -7,7 +7,7 @@ describe('terminal 401 token cleanup', () => {
     const terminal = s.indexOf('if (getAuthErrorStatus(error) === 401)');
     const purge = s.indexOf('purgeOutboundQueueForUser(departingUserId)', terminal);
     const clear = s.indexOf('clearPersistedAuthTokens();', terminal);
-    const retry = s.indexOf('if (retryCount < 3 && shouldRetryAuthError(error))');
+    const retry = s.indexOf('const shouldRetry = shouldRetryAuthError(error)');
 
     expect(retry).toBeGreaterThan(-1);
     expect(terminal).toBeGreaterThan(retry);

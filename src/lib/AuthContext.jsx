@@ -146,7 +146,14 @@ export const AuthProvider = ({ children }) => {
       // retrying it only leaves users staring at a spinner before they are
       // returned to the logged-out state. Fresh OAuth user propagation can
       // still surface as 403/404 briefly, so those remain retryable.
-      if (retryCount < 3 && shouldRetryAuthError(error)) {
+      // A slow first request on a returning device is not a sign-out. When this
+      // browser still holds a session token, give the probe one more chance
+      // before showing the login screen.
+      const isSignedInProbeTimeout = authStatus === 408 && Boolean(appParams.token);
+      const shouldRetry = shouldRetryAuthError(error)
+        ? retryCount < 3
+        : (isSignedInProbeTimeout && retryCount < 1);
+      if (shouldRetry) {
         const delay = retryCount === 0 ? 750 : retryCount === 1 ? 1500 : 3000;
         await new Promise((resolve) => setTimeout(resolve, delay));
         if (generation !== authCheckGenerationRef.current) return null;

@@ -139,7 +139,7 @@ function safeLocalStorageSet(key, value) {
 }
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated, logout } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isInitialMount = useRef(true);
@@ -305,35 +305,9 @@ const AuthenticatedApp = () => {
     fire();
   }, [user]);
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const lastActive = safeLocalStorageGet('last_activity');
-    const parsedLastActive = lastActive ? Number.parseInt(lastActive, 10) : NaN;
-    if (
-      Number.isFinite(parsedLastActive)
-      && Date.now() - parsedLastActive > 24 * 60 * 60 * 1000
-    ) {
-      logout();
-      return;
-    }
-
-    const updateActivity = () => safeLocalStorageSet('last_activity', Date.now().toString());
-    // Initialize activity only when there is no valid prior timestamp. Existing
-    // timestamps must survive reloads so the 24-hour inactivity policy works.
-    if (!Number.isFinite(parsedLastActive)) updateActivity();
-
-    window.addEventListener('mousemove', updateActivity, { passive: true });
-    window.addEventListener('keydown', updateActivity, { passive: true });
-    window.addEventListener('touchstart', updateActivity, { passive: true });
-    window.addEventListener('play', updateActivity, { passive: true, capture: true });
-    return () => {
-      window.removeEventListener('mousemove', updateActivity);
-      window.removeEventListener('keydown', updateActivity);
-      window.removeEventListener('touchstart', updateActivity);
-      window.removeEventListener('play', updateActivity, true);
-    };
-  }, [isAuthenticated, logout]);
+  // Sessions stay signed in until the user logs out on purpose. There is no
+  // inactivity timeout: closing the tab, backgrounding the app, or coming back
+  // days later must never drop the session.
 
   // Public routes must not be blocked by the remote auth/public-settings probe.
   // A slow or unavailable auth endpoint should never hide login, registration,

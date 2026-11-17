@@ -36,6 +36,6 @@ describe('Google login session recovery', () => {
     expect(auth).toContain("reason === 'user_not_registered'");
     expect(auth).toContain('if (!appParams.token) {');
     expect(auth).toContain("setAuthError({ type: 'user_not_registered'");
-    expect(auth).toContain('if (retryCount < 3 && shouldRetryAuthError(error))');
+    expect(auth).toContain('const shouldRetry = shouldRetryAuthError(error)');
   });
 });

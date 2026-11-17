@@ -69,6 +69,7 @@ import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
+import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
 const MAX_TRACKS = 999;
@@ -1263,7 +1264,7 @@ export default function Studio() {
                   const appendEvent = (eventKey, eventData) =>
                     updateMidiTrack(track.id, t => ({ ...t, [eventKey]: [...(t[eventKey] || []), eventData] }));
                   if (command === 0x90 && velocity > 0) {
-                    midiActiveNotesRef.current.set(key, { trackId: track.id, note, startBeat: beatNow, velocity, released: false });
+                    midiActiveNotesRef.current.set(key, { trackId: track.id, channel, note, startBeat: beatNow, velocity, released: false });
                   } else if (command === 0x80 || (command === 0x90 && velocity === 0)) {
                     const active = midiActiveNotesRef.current.get(key);
                     if (!active) return;
@@ -1286,7 +1287,7 @@ export default function Studio() {
                       const down = value >= 64;
                       midiSustainRef.current.set(sustainKey, down);
                       if (!down) {
-                        const released = [...midiActiveNotesRef.current.entries()].filter(([, active]) => active.trackId === track.id && active.released);
+                        const released = releasedStudioMidiSustainNotes(midiActiveNotesRef.current, track.id, channel);
                         released.forEach(([activeKey, active]) => {
                           midiActiveNotesRef.current.delete(activeKey);
                           const durationBeats = Math.max(.25, Math.round((beatNow - active.startBeat) * 4) / 4);

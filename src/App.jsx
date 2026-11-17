@@ -363,7 +363,7 @@ const AuthenticatedApp = () => {
     !isAdminUser &&
     !ONBOARDING_EXEMPT_PATHS.has(currentPath)
   ) {
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to={`/onboarding?returnTo=${encodeURIComponent(location.pathname + location.search + location.hash)}`} replace />;
   }
 
   // Core app routes require authentication, while individual paid capabilities

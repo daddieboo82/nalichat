@@ -63,6 +63,7 @@ import FolderTrackHeader from '@/components/studio/FolderTrackHeader';
 import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
 import { cutStudioClipAtPointer } from '@/lib/studioClipCut';
 import { getStudioClipLaneId, groupStudioClipLanes } from '@/lib/studioClipLanes';
+import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 
 const MAX_TRACKS = 999;
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
@@ -202,6 +203,9 @@ export default function Studio() {
   // its first route-triggered hydration so edits made during upload survive.
   const newlyCreatedProjectHandoffRef = useRef(null);
   const audioElementsRef = useRef({});
+  const getTrackAudioRef = useRef(null);
+  const playbackStartingRef = useRef(new Set());
+  const playbackFailedRef = useRef(new Set());
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
   if (!mixEngineRef.current) mixEngineRef.current = createMixEngine();
@@ -873,6 +877,31 @@ export default function Studio() {
 
       // Drive the full automation frame in one pass for responsive large sessions.
       mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
+
+      // Transport crossing: an adjacent split clip needs its own audio element
+      // started at the source offset when the playhead enters its range.
+      // Do not reissue play() every frame while a start promise is pending.
+      if (isPlaying) {
+        for (const track of tracksRef.current) {
+          const position = studioPlaybackPosition(track, newTime);
+          const audio = audioElementsRef.current[track.id];
+          const audible = !track.muted && (!tracksRef.current.some(t => t.solo) || track.solo);
+          if (!position.active || !audible || !(track.audioUrl || track.file_url)) {
+            if (audio && !audio.paused) audio.pause();
+            continue;
+          }
+          const candidate = audio || getTrackAudioRef.current?.(track);
+          if (!candidate || !candidate.paused ||
+              playbackStartingRef.current.has(track.id) ||
+              playbackFailedRef.current.has(track.id)) continue;
+          candidate.currentTime = position.sourceTime;
+          playbackStartingRef.current.add(track.id);
+          Promise.resolve(candidate.play()).catch((error) => {
+            console.error("Studio clip boundary playback error:", error);
+            playbackFailedRef.current.add(track.id);
+          }).finally(() => playbackStartingRef.current.delete(track.id));
+        }
+      }
       
       if (isRecording && recordingStartTime !== null) {
         // Use real elapsed time (performance.now) for accurate sync with the actual audio recording
@@ -1029,13 +1058,24 @@ export default function Studio() {
     }
     return audio;
   };
+  getTrackAudioRef.current = getTrackAudio;
 
   const updateCurrentTime = (newTime) => {
     currentTimeRef.current = newTime;
     if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
     if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
     if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
-    Object.values(audioElementsRef.current).forEach(audio => { audio.currentTime = newTime; });
+    // Seeking must use source offsets, not the raw song timeline position.
+    // Pause clips outside the new playhead position; the transport restarts
+    // whichever clip covers the seek destination on its next frame.
+    tracksRef.current.forEach(track => {
+      const audio = audioElementsRef.current[track.id];
+      if (!audio) return;
+      const position = studioPlaybackPosition(track, newTime);
+      if (position.active) audio.currentTime = position.sourceTime;
+      else audio.pause();
+    });
+    playbackFailedRef.current.clear();
     // Scrubbing/seeking must immediately audition the automation state at the destination.
     mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
   };
@@ -1047,6 +1087,7 @@ export default function Studio() {
     }
     
     if (!isPlaying) {
+      playbackFailedRef.current.clear();
       sounds.nav();
       setActivity("Playing the mix ▶️");
       const playPromises = [];

@@ -194,6 +194,7 @@ export default function Studio() {
   const audioContextRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const recordingFinalizeInFlightRef = useRef(false);
   const midiActiveNotesRef = useRef(new Map());
   const midiRecordingRef = useRef(false);
   const midiSustainRef = useRef(new Map()), midiAccessRef = useRef(null);
@@ -1341,6 +1342,10 @@ export default function Studio() {
       return;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      // Keep one unfinished capture per editor. A second Stop must not
+      // overwrite the first callback while its bytes are being finalized.
+      if (recordingFinalizeInFlightRef.current) return;
+      recordingFinalizeInFlightRef.current = true;
       // Capture this take's source and destination before any asynchronous
       // browser callback. A later take must not replace its chunks or targets.
       const stoppedRecorder = mediaRecorderRef.current;
@@ -1350,6 +1355,7 @@ export default function Studio() {
       const stoppedEndTime = currentTimeRef.current;
       const stoppedSessionEpoch = historyEpochRef.current;
       stoppedRecorder.onstop = async () => {
+        try {
         if (historyEpochRef.current !== stoppedSessionEpoch) return;
         const recordingMimeType =
           stoppedRecorder.mimeType ||
@@ -1445,8 +1451,19 @@ export default function Studio() {
         });
         setRecordingStartTime(null);
         toast.success("Recording saved!");
+        } catch (error) {
+          console.error("Studio recording finalization failed", error);
+          toast.error("Recording could not be finalized. Your existing tracks were preserved.");
+        } finally {
+          recordingFinalizeInFlightRef.current = false;
+        }
       };
-      stoppedRecorder.stop();
+      try {
+        stoppedRecorder.stop();
+      } catch (error) {
+        recordingFinalizeInFlightRef.current = false;
+        throw error;
+      }
     } else {
       setTracksWithHistory(prev => prev.map(t => {
         if (t.armed) {
@@ -1475,6 +1492,10 @@ export default function Studio() {
   };
 
   const toggleRecord = async () => {
+    if (!isRecording && recordingFinalizeInFlightRef.current) {
+      toast.error("The previous recording is still being saved. Finish that take before recording again.");
+      return;
+    }
     if (!isRecording && !tracks.some(t => t.armed)) {
       toast.error("Please arm at least one track to record (click the circle icon on a track)");
       return;
@@ -1591,9 +1612,10 @@ export default function Studio() {
         const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? { mimeType: 'audio/webm;codecs=opus' } : {};
         const mediaRecorder = new MediaRecorder(stream, options);
         mediaRecorderRef.current = mediaRecorder;
-        audioChunksRef.current = [];
+        const captureChunks = [];
+        audioChunksRef.current = captureChunks;
         mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+          if (e.data.size > 0) captureChunks.push(e.data);
         };
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
 

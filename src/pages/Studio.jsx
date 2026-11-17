@@ -1466,14 +1466,29 @@ export default function Studio() {
             toast.error("Recording could not be finalized. Your existing tracks were preserved.");
           }
         } finally {
+          // Drop only this finished recorder. A later capture must not be
+          // disconnected by an older callback.
+          if (mediaRecorderRef.current === stoppedRecorder) {
+            mediaRecorderRef.current = null;
+          }
           recordingFinalizeInFlightRef.current = false;
         }
       };
       try {
         stoppedRecorder.stop();
       } catch (error) {
+        console.error("Studio MediaRecorder stop failed", error);
+        stoppedRecorder.onstop = null;
+        if (mediaRecorderRef.current === stoppedRecorder) {
+          mediaRecorderRef.current = null;
+        }
         recordingFinalizeInFlightRef.current = false;
-        throw error;
+        if (historyEpochRef.current === stoppedSessionEpoch) {
+          setTracksWithHistory(prev => prev.map(track =>
+            stoppedArmedIds.has(String(track.id)) ? { ...track, armed: false } : track));
+          setRecordingStartTime(null);
+          toast.error("Recording could not stop safely. Your existing tracks were preserved.");
+        }
       }
     } else {
       setTracksWithHistory(prev => prev.map(t => {

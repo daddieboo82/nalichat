@@ -1367,8 +1367,10 @@ export default function Studio() {
           setTracksWithHistory(prev => prev.map(t => (
             stoppedArmedIds.has(String(t.id)) ? { ...t, armed: false } : t
           )));
-          setRecordingStartTime(null);
-          toast.error("No audio was captured. Please check your microphone and try again.");
+          if (historyEpochRef.current === stoppedSessionEpoch) {
+            setRecordingStartTime(null);
+            toast.error("No audio was captured. Please check your microphone and try again.");
+          }
           return;
         }
         const audioUrl = URL.createObjectURL(blob);
@@ -1449,11 +1451,20 @@ export default function Studio() {
             },
           );
         });
-        setRecordingStartTime(null);
-        toast.success("Recording saved!");
+        if (historyEpochRef.current === stoppedSessionEpoch) {
+          setRecordingStartTime(null);
+          toast.success("Recording saved!");
+        }
         } catch (error) {
           console.error("Studio recording finalization failed", error);
-          toast.error("Recording could not be finalized. Your existing tracks were preserved.");
+          // A failed take must not leave stale record-arm indicators, but
+          // must never clear audio or controls belonging to a newer session.
+          if (historyEpochRef.current === stoppedSessionEpoch) {
+            setTracksWithHistory(prev => prev.map(track =>
+              stoppedArmedIds.has(String(track.id)) ? { ...track, armed: false } : track));
+            setRecordingStartTime(null);
+            toast.error("Recording could not be finalized. Your existing tracks were preserved.");
+          }
         } finally {
           recordingFinalizeInFlightRef.current = false;
         }

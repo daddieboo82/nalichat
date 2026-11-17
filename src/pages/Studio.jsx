@@ -1302,15 +1302,18 @@ export default function Studio() {
     };
 
     const checkDevices = async () => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
-      
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        
-        let hasMic = false;
-        let hasInterface = false;
-        let hasOutput = false;
+      if (!mounted) return;
+      let hasMic = false;
+      let hasInterface = false;
+      let hasOutput = false;
 
+      // Web MIDI is independent from microphone enumeration. Browsers that
+      // cannot enumerate audio hardware can still support MIDI controllers.
+      try {
+        const devices = navigator.mediaDevices?.enumerateDevices
+          ? await navigator.mediaDevices.enumerateDevices()
+          : [];
+        if (!mounted) return;
         for (const device of devices) {
           if (device.kind === 'audioinput') {
             hasMic = true;
@@ -1324,8 +1327,12 @@ export default function Studio() {
           }
         }
 
-        let hasMidi = false;
-        if (navigator.requestMIDIAccess) {
+      } catch (err) {
+        console.warn("Audio hardware enumeration failed; MIDI detection will still run", err);
+      }
+
+      let hasMidi = false;
+      if (navigator.requestMIDIAccess) {
           try {
             if (!midiAccess) {
               midiAccessRequest ||= navigator.requestMIDIAccess({ sysex: false });
@@ -1341,20 +1348,19 @@ export default function Studio() {
             hasMidi = midiAccess.inputs.size > 0;
             bindMidiInputs();
           } catch (e) {
-            console.warn("MIDI access denied or unsupported");
+            // A failed permission request must not poison later retries.
+            midiAccessRequest = null;
+            console.warn("MIDI access denied or unsupported", e);
           }
-        }
+      }
 
-        if (mounted) {
-          setHardware({
-            mic: hasMic,
-            interface: hasInterface,
-            output: hasOutput,
-            midi: hasMidi
-          });
-        }
-      } catch (err) {
-        console.error("Hardware detection error:", err);
+      if (mounted) {
+        setHardware({
+          mic: hasMic,
+          interface: hasInterface,
+          output: hasOutput,
+          midi: hasMidi
+        });
       }
     };
 

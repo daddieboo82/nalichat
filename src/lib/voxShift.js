@@ -1,6 +1,7 @@
 // Preset pitch ratios and tone settings from VoxShift Calls.
 export const VOX_SHIFT_PRESETS = {
   natural: { name: 'Natural', pitch: 100 },
+  polished: { name: 'Polished Vocal', pitch: 100 },
   deep: { name: 'Deep Bass', pitch: 72, filter: { type: 'lowpass', frequency: 3800, Q: 0.7 } },
   high: { name: 'High Pitch', pitch: 138, filter: { type: 'highshelf', frequency: 1100, gain: 3 } },
   robot: { name: 'Cyber Robot', pitch: 100 },
@@ -59,6 +60,44 @@ function connectPitchShifter(context, input, ratio, nodes) {
   return output;
 }
 
+// Keep the original performance and pitch while smoothing level and tone.
+function connectVocalPolish(context, input, nodes) {
+  const rumble = context.createBiquadFilter();
+  rumble.type = 'highpass';
+  rumble.frequency.value = 75;
+  rumble.Q.value = 0.707;
+
+  const mud = context.createBiquadFilter();
+  mud.type = 'peaking';
+  mud.frequency.value = 280;
+  mud.Q.value = 0.9;
+  mud.gain.value = -2.5;
+
+  const compressor = context.createDynamicsCompressor();
+  compressor.threshold.value = -21;
+  compressor.knee.value = 20;
+  compressor.ratio.value = 3;
+  compressor.attack.value = 0.008;
+  compressor.release.value = 0.13;
+
+  const presence = context.createBiquadFilter();
+  presence.type = 'peaking';
+  presence.frequency.value = 3200;
+  presence.Q.value = 0.8;
+  presence.gain.value = 2;
+
+  const makeup = context.createGain();
+  makeup.gain.value = 1.2;
+
+  input.connect(rumble);
+  rumble.connect(mud);
+  mud.connect(compressor);
+  compressor.connect(presence);
+  presence.connect(makeup);
+  nodes.push(rumble, mud, compressor, presence, makeup);
+  return makeup;
+}
+
 export function connectVoxShift(context, input, params, nodes) {
   const presetId = params?.Preset;
   const preset = Object.hasOwn(VOX_SHIFT_PRESETS, presetId)
@@ -68,6 +107,8 @@ export function connectVoxShift(context, input, params, nodes) {
   const ratio = Math.max(60, Math.min(160, pitch)) / 100;
   const level = Number.isFinite(params?.Output) ? params.Output : 100;
   let signal = ratio === 1 ? input : connectPitchShifter(context, input, ratio, nodes);
+
+  if (presetId === 'polished') signal = connectVocalPolish(context, signal, nodes);
 
   if (preset.filter) {
     const filter = context.createBiquadFilter();

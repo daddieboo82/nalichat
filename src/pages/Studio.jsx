@@ -195,6 +195,7 @@ export default function Studio() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const recordingFinalizeInFlightRef = useRef(false);
+  const microphoneStartupRef = useRef({ token: 0, pending: false });
   const midiActiveNotesRef = useRef(new Map());
   const midiRecordingRef = useRef(false);
   const midiSustainRef = useRef(new Map()), midiAccessRef = useRef(null);
@@ -1522,6 +1523,10 @@ export default function Studio() {
       toast.error("The previous recording is still being saved. Finish that take before recording again.");
       return;
     }
+    if (!isRecording && microphoneStartupRef.current.pending) {
+      toast.error("Microphone access is already being requested. Press Stop to cancel.");
+      return;
+    }
     if (!isRecording && !tracks.some(t => t.armed)) {
       toast.error("Please arm at least one track to record (click the circle icon on a track)");
       return;
@@ -1593,6 +1598,9 @@ export default function Studio() {
         sounds.recStart();
         return;
       }
+      const startupToken = ++microphoneStartupRef.current.token;
+      const startupEpoch = historyEpochRef.current;
+      microphoneStartupRef.current.pending = true;
       let startupStream = null;
       let startupContext = null;
       let startupRecorder = null;
@@ -1606,6 +1614,13 @@ export default function Studio() {
           } 
         });
         startupStream = stream;
+        // Stop, project restore or a newer attempt may have happened while
+        // the browser permission prompt was open. Never start a stale capture.
+        if (microphoneStartupRef.current.token !== startupToken ||
+            historyEpochRef.current !== startupEpoch) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
         mediaStreamRef.current = stream;
 
         // Overdub: play back existing (non-armed) tracks while recording
@@ -1657,6 +1672,7 @@ export default function Studio() {
           midiRecordingRef.current = true;
         }
         
+        microphoneStartupRef.current.pending = false;
         setIsRecording(true);
         setRecordingStartTime(currentTimeRef.current);
         setActivity(hasArmedMidi && midiRecordingRef.current ? "Recording Audio + MIDI 🎙️🎹" : "Recording 🎙️");
@@ -1683,16 +1699,24 @@ export default function Studio() {
           startupStream.getTracks().forEach(track => track.stop());
           if (mediaStreamRef.current === startupStream) mediaStreamRef.current = null;
         }
-        Object.values(audioElementsRef.current).forEach(audio => audio.pause());
-        analyserRef.current = null;
-        dataArrayRef.current = null;
-        recordingStartRealRef.current = null;
-        setIsRecording(false);
-        setRecordingStartTime(null);
-        console.error("Studio recording startup failed", err);
-        toast.error(startupStream
-          ? "Recording couldn't start. Your microphone was released; please try again."
-          : "Microphone access was denied or unavailable. Check your browser permissions.");
+        // An old permission response cannot reset a newer project's UI.
+        if (microphoneStartupRef.current.token === startupToken &&
+            historyEpochRef.current === startupEpoch) {
+          Object.values(audioElementsRef.current).forEach(audio => audio.pause());
+          analyserRef.current = null;
+          dataArrayRef.current = null;
+          recordingStartRealRef.current = null;
+          setIsRecording(false);
+          setRecordingStartTime(null);
+          console.error("Studio recording startup failed", err);
+          toast.error(startupStream
+            ? "Recording couldn't start. Your microphone was released; please try again."
+            : "Microphone access was denied or unavailable. Check your browser permissions.");
+        }
+      } finally {
+        if (microphoneStartupRef.current.token === startupToken) {
+          microphoneStartupRef.current.pending = false;
+        }
       }
     } else {
       setIsRecording(false);
@@ -1710,6 +1734,9 @@ export default function Studio() {
   toggleRecordRef.current = toggleRecord;
 
   const stop = () => {
+    // Invalidate an in-flight permission request before it resolves.
+    microphoneStartupRef.current.token += 1;
+    microphoneStartupRef.current.pending = false;
     setIsPlaying(false);
     setCountInActive(false);
     skipCountInRef.current = false;

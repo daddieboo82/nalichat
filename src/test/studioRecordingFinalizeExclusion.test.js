@@ -17,7 +17,7 @@ describe('Studio recording finalization exclusion', () => {
     const end = source.indexOf('    } else {', source.indexOf('stoppedRecorder.stop();', start));
     const handler = source.slice(start,end);
     expect(handler).toContain('try {');
-    expect(handler).toContain('} finally {\n          // Drop only this finished recorder.');
+    expect(handler).toContain('} finally {\n          // If finalization failed before ownership passed to a track');
     expect(handler).toContain('recordingFinalizeInFlightRef.current = false;');
     expect(handler).toContain('stoppedRecorder.stop();');
     expect(handler).toContain('catch (error) {\n        console.error("Studio MediaRecorder stop failed", error);');

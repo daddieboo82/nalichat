@@ -24,7 +24,7 @@ describe('Studio delayed MediaRecorder completion isolation', () => {
     const handler = source.slice(from,to);
     expect(handler).toContain('if (historyEpochRef.current !== stoppedSessionEpoch) return;');
     expect(handler).toContain('URL.revokeObjectURL(audioUrl)');
-    expect(handler).toContain('if (historyEpochRef.current !== stoppedSessionEpoch) return prev;');
+    expect(handler).toContain('if (historyEpochRef.current !== stoppedSessionEpoch) {\n            URL.revokeObjectURL(audioUrl);\n            return prev;');
   });
 
   it('uses captured track destinations and original recording start for every take', async () => {

@@ -22,7 +22,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useSubscription } from '@/hooks/useSubscription';
 import StudioStatusBanners from '@/components/studio/StudioStatusBanners';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
+import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -336,7 +336,7 @@ export default function Studio() {
     }
     const laneId = getStudioClipLaneId(selectedPluginTrack);
     setTracksWithHistory(prev => prev.map(t => (
-      getStudioClipLaneId(t) === laneId ? { ...t, plugins } : t
+      getStudioClipLaneId(t) === laneId ? { ...t, effects: undefined, plugins } : t
     )));
   };
 
@@ -4536,7 +4536,7 @@ export default function Studio() {
         trackName={fxTarget === 'master' ? 'Master Bus' : selectedPluginTrack?.name}
         isMaster={fxTarget === 'master'}
         tracks={tracks}
-        plugins={fxTarget === 'master' ? masterFx : selectedPluginTrack?.plugins}
+        plugins={fxTarget === 'master' ? masterFx : selectedPluginTrack && getTrackEffects(selectedPluginTrack)}
         onPluginsChange={handlePluginsChange}
         onTargetChange={(target) => setFxTarget(target)}
       />

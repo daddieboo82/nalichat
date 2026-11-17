@@ -1341,16 +1341,25 @@ export default function Studio() {
       return;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.onstop = async () => {
+      // Capture this take's source and destination before any asynchronous
+      // browser callback. A later take must not replace its chunks or targets.
+      const stoppedRecorder = mediaRecorderRef.current;
+      const stoppedChunks = audioChunksRef.current;
+      const stoppedArmedIds = new Set(tracksRef.current.filter(t => t.armed).map(t => String(t.id)));
+      const stoppedStartTime = recordingStartTime !== null ? recordingStartTime : currentTimeRef.current;
+      const stoppedEndTime = currentTimeRef.current;
+      const stoppedSessionEpoch = historyEpochRef.current;
+      stoppedRecorder.onstop = async () => {
+        if (historyEpochRef.current !== stoppedSessionEpoch) return;
         const recordingMimeType =
-          mediaRecorderRef.current?.mimeType ||
-          audioChunksRef.current.find((chunk) => chunk?.type)?.type ||
+          stoppedRecorder.mimeType ||
+          stoppedChunks.find((chunk) => chunk?.type)?.type ||
           'audio/webm';
-        const blob = new Blob(audioChunksRef.current, { type: recordingMimeType });
+        const blob = new Blob(stoppedChunks, { type: recordingMimeType });
         if (blob.size === 0) {
           // Empty captures must never erase a previously recorded clip.
           setTracksWithHistory(prev => prev.map(t => (
-            t.armed ? { ...t, armed: false } : t
+            stoppedArmedIds.has(String(t.id)) ? { ...t, armed: false } : t
           )));
           setRecordingStartTime(null);
           toast.error("No audio was captured. Please check your microphone and try again.");
@@ -1400,13 +1409,18 @@ export default function Studio() {
           }
         }
         
-        const stopBeat = currentTimeRef.current * (bpmRef.current / 60);
+        if (historyEpochRef.current !== stoppedSessionEpoch) {
+          URL.revokeObjectURL(audioUrl);
+          return;
+        }
+        const stopBeat = stoppedEndTime * (bpmRef.current / 60);
         const heldMidiNotes = midiRecordingRef.current ? [...midiActiveNotesRef.current.values()] : [];
         midiRecordingRef.current = false;
         midiActiveNotesRef.current.clear();
         setTracksWithHistory(prev => {
+          if (historyEpochRef.current !== stoppedSessionEpoch) return prev;
           const midiFinalized = prev.map(t => {
-            if (!t.armed || !['midi', 'instrument'].includes(t.type)) return t;
+            if (!stoppedArmedIds.has(String(t.id)) || !['midi', 'instrument'].includes(t.type)) return t;
             const finalized = heldMidiNotes.filter(note => note.trackId === t.id).map(note => ({
               id: crypto.randomUUID(), note: note.note,
               startBeat: Math.round(note.startBeat * 4) / 4,
@@ -1416,11 +1430,15 @@ export default function Studio() {
             return { ...t, armed: false, midiNotes: [...(t.midiNotes || []), ...finalized].sort((a, b) => a.startBeat - b.startBeat) };
           });
           return applyStudioRecordedTake(
-            midiFinalized.map((t, index) => ({ ...t, armed: prev[index].armed && !['midi', 'instrument'].includes(t.type) })),
+            midiFinalized.map((t, index) => ({
+              ...t,
+              armed: stoppedArmedIds.has(String(prev[index].id)) &&
+                !['midi', 'instrument'].includes(t.type),
+            })),
             {
               audioUrl, waveform: realWaveform,
-              startTime: recordingStartTime !== null ? recordingStartTime : currentTimeRef.current,
-              duration: recordedDuration || (recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10),
+              startTime: stoppedStartTime,
+              duration: recordedDuration || Math.max(1, stoppedEndTime - stoppedStartTime),
               nextId: nextTrackId(prev),
             },
           );
@@ -1428,7 +1446,7 @@ export default function Studio() {
         setRecordingStartTime(null);
         toast.success("Recording saved!");
       };
-      mediaRecorderRef.current.stop();
+      stoppedRecorder.stop();
     } else {
       setTracksWithHistory(prev => prev.map(t => {
         if (t.armed) {

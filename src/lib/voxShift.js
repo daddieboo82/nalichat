@@ -2,6 +2,8 @@
 export const VOX_SHIFT_PRESETS = {
   natural: { name: 'Natural', pitch: 100 },
   polished: { name: 'Polished Vocal', pitch: 100 },
+  doubled: { name: 'Vocal Doubler', pitch: 100 },
+  octave: { name: 'Lower Octave Harmony', pitch: 100 },
   deep: { name: 'Deep Bass', pitch: 72, filter: { type: 'lowpass', frequency: 3800, Q: 0.7 } },
   high: { name: 'High Pitch', pitch: 138, filter: { type: 'highshelf', frequency: 1100, gain: 3 } },
   robot: { name: 'Cyber Robot', pitch: 100 },
@@ -98,6 +100,37 @@ function connectVocalPolish(context, input, nodes) {
   return makeup;
 }
 
+// Parallel layers leave the lead audible and retain the original clip length.
+function connectVocalLayers(context, input, layers, nodes) {
+  const mix = context.createGain();
+  const lead = context.createGain();
+  lead.gain.value = 0.78;
+  input.connect(lead);
+  lead.connect(mix);
+  nodes.push(lead, mix);
+
+  for (const { ratio, delay, gain } of layers) {
+    const shifted = connectPitchShifter(context, input, ratio, nodes);
+    const offset = context.createDelay(0.05);
+    const level = context.createGain();
+    offset.delayTime.value = delay;
+    level.gain.value = gain;
+    shifted.connect(offset);
+    offset.connect(level);
+    level.connect(mix);
+    nodes.push(offset, level);
+  }
+  return mix;
+}
+
+const vocalLayers = {
+  doubled: [
+    { ratio: 0.994, delay: 0.009, gain: 0.11 },
+    { ratio: 1.007, delay: 0.019, gain: 0.11 },
+  ],
+  octave: [{ ratio: 0.5, delay: 0, gain: 0.22 }],
+};
+
 export function connectVoxShift(context, input, params, nodes) {
   const presetId = params?.Preset;
   const preset = Object.hasOwn(VOX_SHIFT_PRESETS, presetId)
@@ -109,6 +142,9 @@ export function connectVoxShift(context, input, params, nodes) {
   let signal = ratio === 1 ? input : connectPitchShifter(context, input, ratio, nodes);
 
   if (presetId === 'polished') signal = connectVocalPolish(context, signal, nodes);
+  if (Object.hasOwn(vocalLayers, presetId)) {
+    signal = connectVocalLayers(context, signal, vocalLayers[presetId], nodes);
+  }
 
   if (preset.filter) {
     const filter = context.createBiquadFilter();

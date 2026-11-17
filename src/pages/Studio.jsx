@@ -63,6 +63,7 @@ import FolderTrackHeader from '@/components/studio/FolderTrackHeader';
 import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
 import { cutStudioClipAtPointer } from '@/lib/studioClipCut';
 import { getStudioClipLaneId, groupStudioClipLanes, visibleStudioClipLanes, reorderVisibleStudioClipLanes } from '@/lib/studioClipLanes';
+import { isStudioArmedLane } from '@/lib/studioRecordingLanes';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
@@ -898,7 +899,7 @@ export default function Studio() {
         for (const track of sessionTracks) {
           const position = studioPlaybackPosition(track, newTime);
           const audio = audioElementsRef.current[track.id];
-          const audible = (!isRecording || !track.armed) && !track.muted && (!hasSolo || track.solo);
+          const audible = (!isRecording || !isStudioArmedLane(track, sessionTracks)) && !track.muted && (!hasSolo || track.solo);
           if (!position.active || !audible || !(track.audioUrl || track.file_url)) {
             if (audio && !audio.paused) audio.pause();
             continue;
@@ -1346,8 +1347,9 @@ export default function Studio() {
           'audio/webm';
         const blob = new Blob(audioChunksRef.current, { type: recordingMimeType });
         if (blob.size === 0) {
+          // Empty captures must never erase a previously recorded clip.
           setTracksWithHistory(prev => prev.map(t => (
-            t.armed ? { ...t, waveform: [], armed: false } : t
+            t.armed ? { ...t, armed: false } : t
           )));
           setRecordingStartTime(null);
           toast.error("No audio was captured. Please check your microphone and try again.");
@@ -1425,7 +1427,8 @@ export default function Studio() {
     } else {
       setTracksWithHistory(prev => prev.map(t => {
         if (t.armed) {
-          return { ...t, waveform: [], armed: false };
+          // Cancel recording without modifying an existing clip's waveform.
+          return { ...t, armed: false };
         }
         return t;
       }));
@@ -1472,7 +1475,7 @@ export default function Studio() {
       const preRollPlayPromises = [];
       tracks.forEach(track => {
         const position = studioPlaybackPosition(track, currentTimeRef.current);
-        if (!track.armed && track.audioUrl && !track.muted &&
+        if (!isStudioArmedLane(track, tracks) && track.audioUrl && !track.muted &&
             (!tracks.some(t => t.solo) || track.solo) && position.active) {
           const audio = getTrackAudio(track);
           if (!audio) return;
@@ -1530,7 +1533,7 @@ export default function Studio() {
         // Overdub: play back existing (non-armed) tracks while recording
         tracks.forEach(track => {
           const position = studioPlaybackPosition(track, currentTimeRef.current);
-          if (!track.armed && track.audioUrl && !track.muted &&
+          if (!isStudioArmedLane(track, tracks) && track.audioUrl && !track.muted &&
               (!tracks.some(t => t.solo) || track.solo) && position.active) {
             const audio = getTrackAudio(track);
             if (!audio) return;

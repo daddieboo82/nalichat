@@ -20,7 +20,8 @@ describe('Studio recording finalization exclusion', () => {
     expect(handler).toContain('} finally {\n          // Drop only this finished recorder.');
     expect(handler).toContain('recordingFinalizeInFlightRef.current = false;');
     expect(handler).toContain('stoppedRecorder.stop();');
-    expect(handler).toContain('catch (error) {\n        recordingFinalizeInFlightRef.current = false;');
+    expect(handler).toContain('catch (error) {\n        console.error("Studio MediaRecorder stop failed", error);');
+    expect(handler).toContain('stoppedRecorder.onstop = null;');
   });
 
   it('uses a dedicated chunk array in each recorder callback instead of mutable shared ref', async () => {

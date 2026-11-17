@@ -7,6 +7,7 @@ import { Play, Pause, Share2, Loader2, Wand2, Music, Zap, Radio } from "lucide-r
 import { motion } from "framer-motion";
 import ExportBounce from "@/components/studio/ExportBounce";
 import { useSubscription } from "@/hooks/useSubscription";
+import { analyzeAudioUrl } from "@/lib/audioAnalysis";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +21,7 @@ export default function StudioEditor() {
   const [publishedPostId, setPublishedPostId] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [masterAnalysis, setMasterAnalysis] = useState(null);
+  const [metrics, setMetrics] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [shareDialog, setShareDialog] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
@@ -36,8 +38,21 @@ export default function StudioEditor() {
     setProcessing(true);
     setError("");
     try {
+      // Measure the bounced mix first so the mastering settings respond to the
+      // actual audio rather than only the session title.
+      let audioAnalysis;
+      try {
+        audioAnalysis = await analyzeAudioUrl(audioUrl);
+      } catch (analysisError) {
+        setError(analysisError?.message || "Couldn't analyze that audio file.");
+        setProcessing(false);
+        return;
+      }
+      setMetrics(audioAnalysis);
+
       const result = await base44.functions.invoke('aiMasterSession', {
-        project_title: uploadTitle || 'Untitled Mix'
+        project_title: uploadTitle || 'Untitled Mix',
+        audio_analysis: audioAnalysis,
       });
       if (result?.data?.error) throw new Error(result.data.error);
       const analysis = result.data;
@@ -129,6 +144,8 @@ export default function StudioEditor() {
                   onChange={(e) => {
                     setAudioUrl(e.target.value);
                     setPublishedPostId(null);
+                    setMetrics(null);
+                    setMasterAnalysis(null);
                   }}
                   className="h-12 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
                 />
@@ -202,6 +219,22 @@ export default function StudioEditor() {
                  </div>
 
                 <div className="grid gap-4">
+                  {metrics && (
+                    <div className="bg-secondary/30 rounded-lg p-4">
+                      <p className="text-xs text-muted-foreground mb-1">Measured from your bounce</p>
+                      <p className="text-sm">
+                        {metrics.approx_lufs} LUFS · Peak {metrics.peak_dbfs} dBFS ·
+                        Crest {metrics.crest_factor_db} dB · {Math.round(metrics.duration_s)}s
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Low {metrics.band_energy_db.low_below_250hz} dB ·
+                        Low-mid {metrics.band_energy_db.low_mid_250_800hz} dB ·
+                        Mid {metrics.band_energy_db.mid_800_2500hz} dB ·
+                        High {metrics.band_energy_db.high_above_2500hz} dB
+                      </p>
+                    </div>
+                  )}
+
                   <div className="bg-secondary/30 rounded-lg p-4">
                     <p className="text-xs text-muted-foreground mb-1">EQ & Tone</p>
                     <p className="text-sm">

@@ -1230,8 +1230,13 @@ export default function Studio() {
   useEffect(() => {
     let mounted = true;
     let midiAccess = null;
+    let midiAccessRequest = null;
 
-    const checkDevices = async () => {
+    const bindMidiInputs = () => {
+      if (!mounted || !midiAccess) return;
+      midiAccess.inputs.forEach(input => {
+        if (input.onmidimessage) return;
+        input.onmidimessage = (event) => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
       
       try {
@@ -1258,78 +1263,18 @@ export default function Studio() {
         if (navigator.requestMIDIAccess) {
           try {
             if (!midiAccess) {
-              midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+              midiAccessRequest ||= navigator.requestMIDIAccess({ sysex: false });
+              midiAccess = await midiAccessRequest;
               if (!mounted) return;
               midiAccessRef.current = midiAccess;
               midiAccess.onstatechange = (e) => {
-                if (mounted) {
-                   setHardware(prev => ({ ...prev, midi: e.currentTarget.inputs.size > 0 }));
-                }
+                if (!mounted) return;
+                bindMidiInputs();
+                setHardware(prev => ({ ...prev, midi: e.currentTarget.inputs.size > 0 }));
               };
             }
             hasMidi = midiAccess.inputs.size > 0;
-            midiAccess.inputs.forEach(input => {
-              input.onmidimessage = (event) => {
-                if (!mounted || !midiRecordingRef.current) return;
-                const eventSessionEpoch = historyEpochRef.current;
-                // Events queued by a previous project must not write into
-                // newly loaded tracks, even when their IDs are reused.
-                const updateMidiTrack = (trackId, updater) => setTracks(prev => {
-                  if (!mounted || historyEpochRef.current !== eventSessionEpoch) return prev;
-                  return prev.map(t => String(t.id) === String(trackId) ? updater(t) : t);
-                });
-                const [status, note, velocity] = event.data || [];
-                const command = status & 0xf0;
-                const channel = (status & 0x0f) + 1;
-                const armedMidi = tracksRef.current.filter(t => t.armed && ['midi', 'instrument'].includes(t.type) && Number(t.midiChannel || 1) === channel);
-                if (!armedMidi.length) return;
-                const beatNow = currentTimeRef.current * (bpmRef.current / 60);
-                armedMidi.forEach(track => {
-                  const key = `${track.id}:${channel}:${note}`;
-                  const appendEvent = (eventKey, eventData) =>
-                    updateMidiTrack(track.id, t => ({ ...t, [eventKey]: [...(t[eventKey] || []), eventData] }));
-                  if (command === 0x90 && velocity > 0) {
-                    midiActiveNotesRef.current.set(key, { trackId: track.id, note, startBeat: beatNow, velocity, released: false });
-                  } else if (command === 0x80 || (command === 0x90 && velocity === 0)) {
-                    const active = midiActiveNotesRef.current.get(key);
-                    if (!active) return;
-                    if (midiSustainRef.current.get(`${track.id}:${channel}`)) {
-                      midiActiveNotesRef.current.set(key, { ...active, released: true });
-                      return;
-                    }
-                    midiActiveNotesRef.current.delete(key);
-                    const durationBeats = Math.max(.25, Math.round((beatNow - active.startBeat) * 4) / 4);
-                    const recorded = { id: crypto.randomUUID(), note: active.note, startBeat: Math.round(active.startBeat * 4) / 4, durationBeats, velocity: active.velocity };
-                    updateMidiTrack(active.trackId, t => ({
-                      ...t, midiNotes: [...(t.midiNotes || []), recorded].sort((a, b) => a.startBeat - b.startBeat),
-                    }));
-                  } else if (command === 0xb0) {
-                    const controller = note;
-                    const value = velocity;
-                    appendEvent('midiCC', { id: crypto.randomUUID(), beat: Math.round(beatNow * 1000) / 1000, controller, value, channel });
-                    if (controller === 64) {
-                      const sustainKey = `${track.id}:${channel}`;
-                      const down = value >= 64;
-                      midiSustainRef.current.set(sustainKey, down);
-                      if (!down) {
-                        const released = [...midiActiveNotesRef.current.entries()].filter(([, active]) => active.trackId === track.id && active.released);
-                        released.forEach(([activeKey, active]) => {
-                          midiActiveNotesRef.current.delete(activeKey);
-                          const durationBeats = Math.max(.25, Math.round((beatNow - active.startBeat) * 4) / 4);
-                          const recorded = { id: crypto.randomUUID(), note: active.note, startBeat: Math.round(active.startBeat * 4) / 4, durationBeats, velocity: active.velocity };
-                          updateMidiTrack(active.trackId, t => ({
-                      ...t, midiNotes: [...(t.midiNotes || []), recorded].sort((a, b) => a.startBeat - b.startBeat),
-                    }));
-                        });
-                      }
-                    }
-                  } else if (command === 0xe0) {
-                    const bend14 = (velocity << 7) | note;
-                    appendEvent('midiPitchBend', { id: crypto.randomUUID(), beat: Math.round(beatNow * 1000) / 1000, value: bend14 - 8192, channel });
-                  }
-                });
-              };
-            });
+            bindMidiInputs();
           } catch (e) {
             console.warn("MIDI access denied or unsupported");
           }

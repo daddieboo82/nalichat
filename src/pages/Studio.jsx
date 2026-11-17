@@ -881,11 +881,13 @@ export default function Studio() {
       // Transport crossing: an adjacent split clip needs its own audio element
       // started at the source offset when the playhead enters its range.
       // Do not reissue play() every frame while a start promise is pending.
-      if (isPlaying) {
-        for (const track of tracksRef.current) {
+      if (isPlaying || isRecording) {
+        const sessionTracks = tracksRef.current;
+        const hasSolo = sessionTracks.some(t => t.solo);
+        for (const track of sessionTracks) {
           const position = studioPlaybackPosition(track, newTime);
           const audio = audioElementsRef.current[track.id];
-          const audible = !track.muted && (!tracksRef.current.some(t => t.solo) || track.solo);
+          const audible = (!isRecording || !track.armed) && !track.muted && (!hasSolo || track.solo);
           if (!position.active || !audible || !(track.audioUrl || track.file_url)) {
             if (audio && !audio.paused) audio.pause();
             continue;
@@ -1442,10 +1444,12 @@ export default function Studio() {
       // Start playback of existing (non-armed) tracks for context.
       const preRollPlayPromises = [];
       tracks.forEach(track => {
-        if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
+        const position = studioPlaybackPosition(track, currentTimeRef.current);
+        if (!track.armed && track.audioUrl && !track.muted &&
+            (!tracks.some(t => t.solo) || track.solo) && position.active) {
           const audio = getTrackAudio(track);
           if (!audio) return;
-          audio.currentTime = Math.max(0, recordStartPos - preRoll - (track.startTime || 0));
+          audio.currentTime = position.sourceTime;
           preRollPlayPromises.push(
             audio.play().then(() => true).catch((error) => {
               console.error("Pre-roll playback error:", error);
@@ -1498,10 +1502,12 @@ export default function Studio() {
 
         // Overdub: play back existing (non-armed) tracks while recording
         tracks.forEach(track => {
-          if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
+          const position = studioPlaybackPosition(track, currentTimeRef.current);
+          if (!track.armed && track.audioUrl && !track.muted &&
+              (!tracks.some(t => t.solo) || track.solo) && position.active) {
             const audio = getTrackAudio(track);
             if (!audio) return;
-            audio.currentTime = currentTimeRef.current;
+            audio.currentTime = position.sourceTime;
             audio.play().catch(e => console.error("Overdub playback error:", e));
           }
         });

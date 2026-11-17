@@ -18,7 +18,7 @@ describe('Studio recording context uses split clip source offsets', () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
     const raf = source.slice(source.indexOf('// Transport crossing:'), source.indexOf('if (isRecording && recordingStartTime'));
     expect(raf).toContain('if (isPlaying || isRecording)');
-    expect(raf).toContain('(!isRecording || !track.armed)');
+    expect(raf).toContain('(!isRecording || !isStudioArmedLane(track, sessionTracks))');
     expect(raf).toContain('candidate.currentTime = position.sourceTime');
   });
   it('positions source audio correctly for an overdub starting midway through the right clip', () => {

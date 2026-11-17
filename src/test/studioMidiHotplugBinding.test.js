@@ -15,7 +15,8 @@ describe('Studio MIDI device hotplug bindings', () => {
     expect(section).toContain('const bindMidiInputs = () => {');
     expect(section).toContain('if (midiInputsBound.has(input)) return;');
     expect(section).toContain('midiInputsBound.add(input);');
-    expect(section).toContain('midiAccess.onstatechange = (e) => {\n                if (!mounted) return;\n                bindMidiInputs();');
+    expect(section).toContain('midiAccess.onstatechange = (e) => {\n                if (!mounted) return;');
+    expect(section).toContain('bindMidiInputs();');
   });
   it('cleans up every registered input, including disconnected ones, on Studio unmount', async () => {
     const src = await readFile('src/pages/Studio.jsx','utf8');

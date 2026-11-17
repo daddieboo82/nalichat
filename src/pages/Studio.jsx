@@ -1593,6 +1593,9 @@ export default function Studio() {
         sounds.recStart();
         return;
       }
+      let startupStream = null;
+      let startupContext = null;
+      let startupRecorder = null;
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           audio: { 
@@ -1602,6 +1605,7 @@ export default function Studio() {
             latency: 0
           } 
         });
+        startupStream = stream;
         mediaStreamRef.current = stream;
 
         // Overdub: play back existing (non-armed) tracks while recording
@@ -1617,6 +1621,7 @@ export default function Studio() {
         });
         
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+        startupContext = audioCtx;
         audioContextRef.current = audioCtx;
         const source = audioCtx.createMediaStreamSource(stream);
         
@@ -1637,6 +1642,7 @@ export default function Studio() {
         // Start actual recording with frequent chunks for memory efficiency
         const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? { mimeType: 'audio/webm;codecs=opus' } : {};
         const mediaRecorder = new MediaRecorder(stream, options);
+        startupRecorder = mediaRecorder;
         mediaRecorderRef.current = mediaRecorder;
         const captureChunks = [];
         audioChunksRef.current = captureChunks;
@@ -1657,8 +1663,36 @@ export default function Studio() {
         toast.success(hasArmedMidi && midiRecordingRef.current ? "Audio + MIDI recording started" : "Recording started (Mic active)");
         sounds.recStart();
       } catch (err) {
-        toast.error("Microphone access denied. Please allow mic permissions in your browser.");
-        console.error(err);
+        // Permission may have succeeded before MediaRecorder or Web Audio
+        // initialization failed. Release every resource acquired for THIS
+        // startup without touching a newer capture.
+        if (startupRecorder) {
+          startupRecorder.ondataavailable = null;
+          if (startupRecorder.state !== 'inactive') {
+            try { startupRecorder.stop(); } catch { /* invalid recorder state */ }
+          }
+          if (mediaRecorderRef.current === startupRecorder) mediaRecorderRef.current = null;
+        }
+        if (startupContext) {
+          if (audioContextRef.current === startupContext) audioContextRef.current = null;
+          if (startupContext.state !== 'closed') {
+            try { await startupContext.close(); } catch { /* already closed */ }
+          }
+        }
+        if (startupStream) {
+          startupStream.getTracks().forEach(track => track.stop());
+          if (mediaStreamRef.current === startupStream) mediaStreamRef.current = null;
+        }
+        Object.values(audioElementsRef.current).forEach(audio => audio.pause());
+        analyserRef.current = null;
+        dataArrayRef.current = null;
+        recordingStartRealRef.current = null;
+        setIsRecording(false);
+        setRecordingStartTime(null);
+        console.error("Studio recording startup failed", err);
+        toast.error(startupStream
+          ? "Recording couldn't start. Your microphone was released; please try again."
+          : "Microphone access was denied or unavailable. Check your browser permissions.");
       }
     } else {
       setIsRecording(false);

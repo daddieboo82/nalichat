@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
@@ -15,24 +15,43 @@ import { toast } from 'sonner';
 export default function MarkersBar({ projectId, currentTime, onSeek, zoom, duration }) {
   const { user } = useAuth();
   const [markers, setMarkers] = useState([]);
+  // Mirrors state so a burst of markers (Beat Detective) can each append
+  // without overwriting the ones queued before the next render.
+  const markersRef = useRef([]);
   const [showInput, setShowInput] = useState(false);
   const [markerName, setMarkerName] = useState('');
 
   const storageKey = user?.id ? `nalistudio_markers_${user.id}_${projectId || 'local'}` : null;
+  // The playhead lives in a ref, so read it at click time — a render-time value
+  // would place markers where the playhead used to be.
+  const readCurrentTime = () => {
+    const value = typeof currentTime === 'function' ? currentTime() : currentTime;
+    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  };
 
   useEffect(() => {
+    markersRef.current = [];
     setMarkers([]);
     if (!storageKey) return;
     try {
       const saved = localStorage.getItem(storageKey);
-      if (saved) setMarkers(JSON.parse(saved));
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        markersRef.current = Array.isArray(parsed) ? parsed : [];
+        setMarkers(markersRef.current);
+      }
     } catch (error) {
       console.error("Failed to restore Studio markers", error);
       toast.error("Couldn't restore saved markers on this device.");
     }
   }, [storageKey]);
 
+  useEffect(() => {
+    markersRef.current = markers;
+  }, [markers]);
+
   const saveMarkers = useCallback((next) => {
+    markersRef.current = next;
     setMarkers(next);
     if (!storageKey) return;
     try {
@@ -44,8 +63,9 @@ export default function MarkersBar({ projectId, currentTime, onSeek, zoom, durat
   }, [storageKey]);
 
   const addMarker = () => {
-    const name = markerName.trim() || `Marker ${markers.length + 1}`;
-    const next = [...markers, { id: Date.now(), time: currentTime, name }].sort((a, b) => a.time - b.time);
+    const current = markersRef.current;
+    const name = markerName.trim() || `Marker ${current.length + 1}`;
+    const next = [...current, { id: Date.now(), time: readCurrentTime(), name }].sort((a, b) => a.time - b.time);
     saveMarkers(next);
     setMarkerName('');
     setShowInput(false);
@@ -62,12 +82,25 @@ export default function MarkersBar({ projectId, currentTime, onSeek, zoom, durat
     sounds.nav();
   };
 
-  // Listen for the keyboard shortcut to add a marker at the playhead
+  // The M shortcut opens the name field at the playhead; a dispatched marker
+  // (Beat Detective) carries its own time and name and is placed directly.
   useEffect(() => {
-    const handler = () => setShowInput(true);
+    const handler = (event) => {
+      const detail = event?.detail;
+      if (detail && Number.isFinite(detail.time)) {
+        const next = [...markersRef.current, {
+          id: Date.now() + Math.random(),
+          time: Math.max(0, detail.time),
+          name: String(detail.name || 'Marker').slice(0, 60),
+        }].sort((a, b) => a.time - b.time);
+        saveMarkers(next);
+        return;
+      }
+      setShowInput(true);
+    };
     window.addEventListener('studio-add-marker', handler);
     return () => window.removeEventListener('studio-add-marker', handler);
-  }, []);
+  }, [saveMarkers]);
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/10 bg-white/[0.02] shrink-0 min-h-[2rem]">

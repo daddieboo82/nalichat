@@ -1965,7 +1965,7 @@ export default function Studio() {
       handleGenerateMelody, setShowBeatDetective, setTracksWithHistory,
       setShowBigCounter, showBigCounter, setShowAudioSuite,
       handleConsolidateClips, tabToClip, nudgeValue, zoom, currentTimeRef,
-      sounds,
+      sounds, requestSave: handleSave,
     });
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -3684,7 +3684,7 @@ export default function Studio() {
       {/* Markers Bar — Pro Tools-style memory locations */}
       <MarkersBar
         projectId={roomId || 'local_studio'}
-        currentTime={currentTimeRef.current}
+        currentTime={() => currentTimeRef.current}
         onSeek={updateCurrentTime}
         zoom={zoom}
       />

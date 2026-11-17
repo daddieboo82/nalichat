@@ -16,20 +16,24 @@ export function createStudioKeyHandler(deps) {
     handleGenerateMelody, setShowBeatDetective, setTracksWithHistory,
     setShowBigCounter, showBigCounter, setShowAudioSuite,
     handleConsolidateClips, tabToClip, nudgeValue, zoom, currentTimeRef,
-    sounds,
+    sounds, requestSave,
   } = deps;
 
   return (e) => {
-    if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
+    // Never hijack keys typed into a field, an open dropdown, or an IME composition.
+    const target = e.target;
+    if (target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)) return;
+    if (e.isComposing) return;
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); if (requestSave) requestSave(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
     else if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
     else if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
     else if (e.code === 'Numpad0') { e.preventDefault(); stop(); }
-    else if (!e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); toggleRecord(); }
+    else if (!e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); toggleRecord(); }
     else if (e.key === 'Backspace' || e.key === 'Delete') { if (selectedTrackIds.length > 0) { e.preventDefault(); deleteSelectedTracks(); } }
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); duplicateSelectedTracks(); }
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); splitSelectedTracks(); }
-    else if (e.key === 'l' || e.key === 'L') { e.preventDefault(); selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked')); }
+    else if (!e.ctrlKey && !e.metaKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked')); }
     else if (e.shiftKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); addTrack(); }
     else if (e.shiftKey && (e.altKey) && (e.key === 'v' || e.key === 'V')) { e.preventDefault(); addVcaTrack(); }
     else if (e.shiftKey && e.altKey && (e.key === 'b' || e.key === 'B')) { e.preventDefault(); addFolderTrack(); }
@@ -56,17 +60,17 @@ export function createStudioKeyHandler(deps) {
     else if (e.altKey && !e.shiftKey && e.key === '4') { e.preventDefault(); setEditMode('grid'); }
     else if (e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleSolo(id)); }
     else if (e.shiftKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleMute(id)); }
-    else if ((e.key === 'm' || e.key === 'M') && !e.shiftKey) { e.preventDefault(); window.dispatchEvent(new CustomEvent('studio-add-marker')); }
+    else if ((e.key === 'm' || e.key === 'M') && !e.shiftKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); window.dispatchEvent(new CustomEvent('studio-add-marker')); }
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F') && e.shiftKey) { e.preventDefault(); if (selectedTrackIds.length > 0) setShowFadePresets(true); }
     else if (!e.ctrlKey && !e.metaKey && (e.key === 't' || e.key === 'T')) setActiveTool('trim');
     else if (!e.ctrlKey && !e.metaKey && (e.key === 'c' || e.key === 'C')) setActiveTool('cut');
     else if (!e.ctrlKey && !e.metaKey && (e.key === 'g' || e.key === 'G')) setActiveTool('grab');
     else if (!e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 'f' || e.key === 'F')) setActiveTool('fade');
-    else if (!e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); setActiveTool('scrub'); }
+    else if (!e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); setActiveTool('scrub'); }
     else if (!e.ctrlKey && !e.metaKey && (e.key === 'e' || e.key === 'E')) setActiveTool('smart');
     else if (e.key === 'Home') { e.preventDefault(); updateCurrentTime(0); }
-    else if (e.key === 'i' || e.key === 'I') { e.preventDefault(); setSelectionStart(currentTimeRef.current); if (selectionEnd !== null && currentTimeRef.current >= selectionEnd) setSelectionEnd(null); }
-    else if (e.key === 'o' || e.key === 'O') { e.preventDefault(); setSelectionEnd(currentTimeRef.current); if (selectionStart !== null && currentTimeRef.current <= selectionStart) setSelectionStart(null); }
+    else if (!e.ctrlKey && !e.metaKey && (e.key === 'i' || e.key === 'I')) { e.preventDefault(); setSelectionStart(currentTimeRef.current); if (selectionEnd !== null && currentTimeRef.current >= selectionEnd) setSelectionEnd(null); }
+    else if (!e.ctrlKey && !e.metaKey && (e.key === 'o' || e.key === 'O')) { e.preventDefault(); setSelectionEnd(currentTimeRef.current); if (selectionStart !== null && currentTimeRef.current <= selectionStart) setSelectionStart(null); }
     else if (e.key === 'a' || e.key === 'A') { if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); const end = Math.max(...tracks.map(t => (t.startTime||0)+(t.duration||0)), 20); setSelectionStart(0); setSelectionEnd(end); } }
     else if (e.key === 'Escape') {
       e.preventDefault();
@@ -121,8 +125,8 @@ export function createStudioKeyHandler(deps) {
       }
     }
     else if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); setLoopActive(!loopActive); }
-    else if (e.key === '7') { e.preventDefault(); setMetronomeEnabled(!metronomeEnabled); }
-    else if (e.key === 'h' || e.key === 'H') { e.preventDefault(); const t = tracks.find(t => selectedTrackIds.includes(t.id)); if (t) handleHealSplit(t); }
+    else if (!e.ctrlKey && !e.metaKey && e.key === '7') { e.preventDefault(); setMetronomeEnabled(!metronomeEnabled); }
+    else if (!e.ctrlKey && !e.metaKey && (e.key === 'h' || e.key === 'H')) { e.preventDefault(); const t = tracks.find(t => selectedTrackIds.includes(t.id)); if (t) handleHealSplit(t); }
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); const t = tracks.find(t => selectedTrackIds.includes(t.id)); if (t) handleToggleGroup(t); }
     else if (e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); const t = tracks.find(t => selectedTrackIds.includes(t.id)); if (t) handleRepeatClip(t, 2); }
     else if (e.shiftKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); handleSeparateStems(); }

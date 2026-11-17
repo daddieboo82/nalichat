@@ -31,3 +31,33 @@ export function groupStudioClipLanes(tracks) {
   }
   return lanes;
 }
+
+// The header drag list and timeline must agree on precisely which lanes are
+// visible. Hidden lanes and collapsed folder children retain their positions
+// in saved project data even when their rows aren't displayed.
+export function visibleStudioClipLanes(tracks) {
+  const all = groupStudioClipLanes(tracks);
+  const collapsed = new Set();
+  for (const track of tracks || []) {
+    if (track?.trackType === 'folder' && track.collapsed) {
+      for (const id of track.folderMembers || []) collapsed.add(String(id));
+    }
+  }
+  return all.filter(lane =>
+    !lane.primary.hidden && !lane.clips.some(clip => collapsed.has(String(clip.id))));
+}
+
+export function reorderVisibleStudioClipLanes(tracks, fromIndex, toIndex) {
+  const all = groupStudioClipLanes(tracks);
+  const visible = visibleStudioClipLanes(tracks);
+  if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex) ||
+      fromIndex < 0 || toIndex < 0 ||
+      fromIndex >= visible.length || toIndex >= visible.length ||
+      fromIndex === toIndex) return tracks;
+  const moved = visible.splice(fromIndex, 1)[0];
+  visible.splice(toIndex, 0, moved);
+  const visibleKeys = new Set(visible.map(lane => lane.key));
+  let next = 0;
+  return all.map(lane => visibleKeys.has(lane.key) ? visible[next++] : lane)
+    .flatMap(lane => lane.clips);
+}

@@ -5,11 +5,11 @@ import { groupStudioClipLanes } from '../lib/studioClipLanes.js';
 describe('Studio split clips stay on one visible lane', () => {
   it('renders one track header and one timeline row per lane, with all clips inside', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
-    expect(source).toContain("groupStudioClipLanes(tracks).map(({ primary: track }, index)");
+    expect(source).toContain("visibleStudioClipLanes(tracks).map(({ primary: track }, index)");
     expect(source).toContain("map(({ primary: track, clips: laneClips })");
     expect(source).toContain("laneClips.map((clip) => {");
     expect(source).toContain("handleTrackClick(event, track.id)");
-    expect(source).toContain("lanes.flatMap(lane => lane.clips)");
+    expect(source).toContain("reorderVisibleStudioClipLanes(prev, result.source.index, result.destination.index)");
     expect(source).toContain("groupStudioClipLanes(tracks).length} Tracks");
   });
 

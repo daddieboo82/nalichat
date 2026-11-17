@@ -62,7 +62,7 @@ import VcaTrackHeader from '@/components/studio/VcaTrackHeader';
 import FolderTrackHeader from '@/components/studio/FolderTrackHeader';
 import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
 import { cutStudioClipAtPointer } from '@/lib/studioClipCut';
-import { getStudioClipLaneId, groupStudioClipLanes } from '@/lib/studioClipLanes';
+import { getStudioClipLaneId, groupStudioClipLanes, visibleStudioClipLanes, reorderVisibleStudioClipLanes } from '@/lib/studioClipLanes';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
@@ -818,16 +818,8 @@ export default function Studio() {
     setDraggedTrackId(null); Object.values(laneRefsRef.current).forEach((lane) => { if (lane) lane.style.transform = ''; });
     if (!result.destination || result.destination.index === result.source.index) return;
     sounds.click();
-    setTracksWithHistory(prev => {
-      // One visual lane may contain several flat clip records. Move its
-      // complete clip group so playback, automation, save and export remain
-      // associated with the original lane.
-      const lanes = groupStudioClipLanes(prev);
-      const [moved] = lanes.splice(result.source.index, 1);
-      if (!moved) return prev;
-      lanes.splice(result.destination.index, 0, moved);
-      return lanes.flatMap(lane => lane.clips);
-    });
+    setTracksWithHistory(prev =>
+      reorderVisibleStudioClipLanes(prev, result.source.index, result.destination.index));
   };
 
   // Smooth playback via RAF - Optimized to bypass React render cycle for award-winning performance
@@ -3395,10 +3387,7 @@ export default function Studio() {
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
                 <div ref={dropProvided.innerRef} {...dropProvided.droppableProps}>
-                  {groupStudioClipLanes(tracks).map(({ primary: track }, index) => {
-                    // Skip tracks hidden by a collapsed folder
-                    const parentFolder = tracks.find(t => t.trackType === 'folder' && (t.folderMembers || []).includes(track.id) && t.collapsed);
-                    if (parentFolder) return null;
+                  {visibleStudioClipLanes(tracks).map(({ primary: track }, index) => {
                     return (
                     <Draggable key={track.id} draggableId={String(track.id)} index={index} isDragDisabled={isRecording}>
                       {(dragProvided, dragSnapshot) => (
@@ -3538,7 +3527,7 @@ export default function Studio() {
             {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[1px] bg-red-500/30 border-r border-red-500/10 pointer-events-none z-0" style={{ left: `${projectEnd * 20 * zoom}px` }} />; })()}
             {/* Waveform Rows */}
             <div className="flex flex-col">
-              {groupStudioClipLanes(tracks).filter(({ primary: t }) => !t.hidden && !(tracks.find(f => f.trackType === 'folder' && (f.folderMembers || []).includes(t.id) && f.collapsed))).map(({ primary: track, clips: laneClips }) => (
+              {visibleStudioClipLanes(tracks).map(({ primary: track, clips: laneClips }) => (
                 <div
                   key={track.id}
                   onClick={(e) => handleTrackClick(e, track.id)}

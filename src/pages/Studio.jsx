@@ -62,6 +62,7 @@ import VcaTrackHeader from '@/components/studio/VcaTrackHeader';
 import FolderTrackHeader from '@/components/studio/FolderTrackHeader';
 import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
 import { cutStudioClipAtPointer } from '@/lib/studioClipCut';
+import { groupStudioClipLanes } from '@/lib/studioClipLanes';
 
 const MAX_TRACKS = 999;
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
@@ -815,10 +816,14 @@ export default function Studio() {
     if (!result.destination || result.destination.index === result.source.index) return;
     sounds.click();
     setTracksWithHistory(prev => {
-      const next = Array.from(prev);
-      const [moved] = next.splice(result.source.index, 1);
-      next.splice(result.destination.index, 0, moved);
-      return next;
+      // One visual lane may contain several flat clip records. Move its
+      // complete clip group so playback, automation, save and export remain
+      // associated with the original lane.
+      const lanes = groupStudioClipLanes(prev);
+      const [moved] = lanes.splice(result.source.index, 1);
+      if (!moved) return prev;
+      lanes.splice(result.destination.index, 0, moved);
+      return lanes.flatMap(lane => lane.clips);
     });
   };
 
@@ -3272,7 +3277,7 @@ export default function Studio() {
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
                 <div ref={dropProvided.innerRef} {...dropProvided.droppableProps}>
-                  {tracks.map((track, index) => {
+                  {groupStudioClipLanes(tracks).map(({ primary: track }, index) => {
                     // Skip tracks hidden by a collapsed folder
                     const parentFolder = tracks.find(t => t.trackType === 'folder' && (t.folderMembers || []).includes(track.id) && t.collapsed);
                     if (parentFolder) return null;
@@ -3415,7 +3420,7 @@ export default function Studio() {
             {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[1px] bg-red-500/30 border-r border-red-500/10 pointer-events-none z-0" style={{ left: `${projectEnd * 20 * zoom}px` }} />; })()}
             {/* Waveform Rows */}
             <div className="flex flex-col">
-              {tracks.filter(t => !t.hidden && !(tracks.find(f => f.trackType === 'folder' && (f.folderMembers || []).includes(t.id) && f.collapsed))).map((track) => (
+              {groupStudioClipLanes(tracks).filter(({ primary: t }) => !t.hidden && !(tracks.find(f => f.trackType === 'folder' && (f.folderMembers || []).includes(t.id) && f.collapsed))).map(({ primary: track, clips: laneClips }) => (
                 <div
                   key={track.id}
                   onClick={(e) => handleTrackClick(e, track.id)}
@@ -3547,9 +3552,14 @@ export default function Studio() {
                     </div>
                   )}
 
-                  {/* Audio Region (Clip) */}
-                  {track.waveform && track.waveform.length > 0 && (
-                    <div 
+                  {/* All split clips share a single visible track lane.
+                      Individual clip records still drive playback, save, and export. */}
+                  {laneClips.map((clip) => {
+                    const track = clip;
+                    return track.waveform && track.waveform.length > 0 ? (
+                    <div
+                      key={track.id}
+                      onClick={(event) => { event.stopPropagation(); handleTrackClick(event, track.id); }}
                       onPointerMove={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
@@ -4088,7 +4098,8 @@ export default function Studio() {
                         </div>
                       </div>
                     </div>
-                  )}
+                    ) : null;
+                  })}
                 </div>
               ))}
             </div>
@@ -4138,7 +4149,7 @@ export default function Studio() {
             />
             <span className="w-7 text-right font-mono text-[10px]">{masterVolume}%</span>
           </div>
-          <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
+          <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {groupStudioClipLanes(tracks).length} Tracks</span>
           <NudgeValueSelector nudgeValue={nudgeValue} setNudgeValue={setNudgeValue} bpm={bpm} sampleRate={audioSettings.sampleRate} />
         </div>
         <div className="flex items-center gap-4 shrink-0">

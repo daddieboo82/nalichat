@@ -30,7 +30,7 @@ describe('Studio destructive Cut tool', () => {
   });
   it('wires the tool to one-track history updates with no new track allocation', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
-    const start = source.indexOf("if (activeTool === 'cut') {", source.indexOf('onPointerDown={(e) => {'));
+    const start = source.indexOf("if (activeTool === 'cut') {", source.indexOf('const relativeX = e.clientX - rect.left'));
     const end = source.indexOf("if (activeTool === 'scrub') {", start);
     const block = source.slice(start,end);
     expect(block).toContain('cutStudioClipAtPointer(track, ratio)');

@@ -64,6 +64,7 @@ import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
 import { cutStudioClipAtPointer } from '@/lib/studioClipCut';
 import { getStudioClipLaneId, groupStudioClipLanes } from '@/lib/studioClipLanes';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
+import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
 const MAX_TRACKS = 999;
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
@@ -486,13 +487,10 @@ export default function Studio() {
         // An explicitly saved empty track list is authoritative. Fall back
         // to legacy Track rows only when no modern track list was saved.
         if (Array.isArray(savedState?.tracks)) {
-          const hydrated = savedState.tracks.map((track) => ({
-            ...track,
-            audioUrl: track.audioUrl || track.file_url || "",
-            waveform: Array.isArray(track.waveform) && track.waveform.length > 0
-              ? track.waveform
-              : generateWaveform(waveformPointsRef.current),
-          }));
+          const hydrated = hydrateStudioTracks(
+            savedState.tracks,
+            () => generateWaveform(waveformPointsRef.current),
+          );
           if (cancelled) return;
           historyEpochRef.current += 1;
           historyRef.current = [hydrated];

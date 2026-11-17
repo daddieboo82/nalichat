@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { secrets } from 'base44:runtime';
 import {
+  hasLiveSubscription,
   hasPaidTierAccess,
   normalizePlan,
   normalizeStatus,
@@ -210,7 +211,14 @@ async function reconcileActivePayPal(subscriptionEntity: SubscriptionEntity, sub
 function subscriptionPriority(subscription: SubscriptionRecord, now: string): number {
   const plan = normalizePlan(subscription.plan);
   const status = normalizeStatus(subscription.status);
-  const hasPaidAccess = plan !== 'free' && hasPaidTierAccess(status, {
+  if (plan === 'free') return 0;
+  const planScore = plan === 'premium_plus' ? 2 : plan === 'premium' ? 1 : 0;
+  // A live agreement is the account's current subscription and must outrank an
+  // older canceled plan that is only retaining access until its period ends.
+  if (hasLiveSubscription(status, subscription.cancel_at_period_end === true)) {
+    return 1000 + planScore;
+  }
+  const hasRetainedAccess = hasPaidTierAccess(status, {
     currentPeriodEnd: typeof subscription.current_period_end === 'string'
       ? subscription.current_period_end
       : null,
@@ -219,9 +227,9 @@ function subscriptionPriority(subscription: SubscriptionRecord, now: string): nu
       : null,
     now,
   });
-  const accessScore = hasPaidAccess ? 100 : status === 'pending' || status === 'incomplete' ? 10 : 0;
-  const planScore = plan === 'premium_plus' ? 2 : plan === 'premium' ? 1 : 0;
-  return accessScore + planScore;
+  if (hasRetainedAccess) return 100 + planScore;
+  if (status === 'pending' || status === 'incomplete') return 10;
+  return 0;
 }
 
 Deno.serve(async (req) => {
@@ -283,6 +291,16 @@ Deno.serve(async (req) => {
       const created = Date.parse(String(subscription.created_date || ''));
       return Number.isFinite(created) && created > pendingCutoff;
     });
+    // Access and billing are separate questions: a canceled plan keeps access
+    // until its period ends, but only a live, still-billing agreement may block
+    // starting a new subscription or upgrading.
+    const hasLiveSubscriptionNow = subs.some((subscription) => (
+      normalizePlan(subscription.plan) !== 'free'
+      && hasLiveSubscription(
+        normalizeStatus(subscription.status),
+        subscription.cancel_at_period_end === true,
+      )
+    ));
     const eligibility = trialEligibility(user.trial_used_at, subs);
 
     return Response.json({
@@ -310,6 +328,7 @@ Deno.serve(async (req) => {
       entitlements,
       hasPaidAccess,
       hasAccess: hasPaidAccess,
+      hasLiveSubscription: hasLiveSubscriptionNow,
       hasPending,
       isTrialing: status === 'trialing' && hasPaidAccess,
     });

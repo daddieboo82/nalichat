@@ -254,8 +254,8 @@ export default function PricingPlans({
       toast.error("We could not verify your current billing status. Try again before starting a subscription.");
       return;
     }
-    if (subscription.hasPaidAccess) {
-      toast.error("Your account already has paid access. Manage billing in Settings.");
+    if (subscription.hasLiveSubscription) {
+      toast.error("Your account already has an active subscription. Manage billing in Settings.");
       return;
     }
     if (subscription.hasPending) {
@@ -359,6 +359,13 @@ export default function PricingPlans({
   }
 
   const paidSubscriber = subscription.hasPaidAccess;
+  // A canceled plan keeps access until its period ends but never bills again, so
+  // it must not lock the customer out of buying a new plan or upgrading.
+  const liveSubscriber = subscription.hasLiveSubscription;
+  const canceledWithAccess = paidSubscriber && !liveSubscriber;
+  const accessUntilLabel = subscription.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+    : null;
 
   return (
     <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background">
@@ -397,6 +404,18 @@ export default function PricingPlans({
           </div>
           <div className="mx-auto mt-6 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-5">{[[MessageSquare,"Messages"],[Music2,"Studio"],[Files,"File sharing"],[Sparkles,"NALI.ai"],[ShieldCheck,"Privacy"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-card/60 px-3 py-2 text-xs font-semibold"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" />{label}</div>)}</div>
         </div>
+
+        {canceledWithAccess && (
+          <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-border bg-card p-4 text-center" role="status">
+            <p className="font-semibold">Your subscription is canceled.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {accessUntilLabel
+                ? `Your ${SUBSCRIPTION_CATALOG[subscription.plan]?.name || "current"} features stay available until ${accessUntilLabel}.`
+                : "You will not be billed again."}{" "}
+              You can start a new plan or upgrade right away below.
+            </p>
+          </div>
+        )}
 
         {subscription.hasPending && !subscription.hasPaidAccess && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-primary/40 bg-primary/5 p-4 text-center" role="status">
@@ -479,8 +498,8 @@ export default function PricingPlans({
               period={period}
               badge={period === "monthly" ? (planId === "premium" ? "Best value to get started" : "Maximum power") : copy.badges[planId]}
               cta={!isAuthenticated ? `Sign up for ${SUBSCRIPTION_CATALOG[planId].name}` : appleIAP.available ? "Continue with Apple" : "Continue to PayPal"}
-              isCurrent={paidSubscriber && subscription.plan === planId}
-              isPaidSubscriber={paidSubscriber}
+              isCurrent={liveSubscriber && subscription.plan === planId}
+              isPaidSubscriber={liveSubscriber}
               isCheckoutPaused={isAuthenticated && (isError || subscription.hasPending)}
               isStarting={startingPlan === planId || (isAuthenticated && (isLoading || appleIAP.purchasingProductId === subscriptionSku(planId, period)))}
               onSelect={startCheckout}
@@ -497,7 +516,7 @@ export default function PricingPlans({
           />
         </div>
 
-        {paidSubscriber && (
+        {liveSubscriber && (
           <div className="mt-8 text-center">
             <p className="mb-3 text-sm text-muted-foreground">Already subscribed? Change your plan without starting another subscription.</p>
             <Button className="min-h-12 rounded-xl" onClick={() => navigate("/settings")}>Manage or upgrade subscription</Button>

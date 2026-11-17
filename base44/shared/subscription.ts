@@ -155,6 +155,18 @@ export function hasPaidTierAccess(
   return Number.isFinite(periodEnd) && Number.isFinite(now) && periodEnd > now;
 }
 
+// A canceled or ended agreement keeps paid access until its period ends, but it
+// will never bill the customer again. Only a live, still-billing agreement may
+// block a new checkout; access alone must never trap a customer who wants to
+// come back or move to a different plan.
+export function hasLiveSubscription(
+  status: SubscriptionStatus,
+  cancelAtPeriodEnd = false,
+): boolean {
+  if (cancelAtPeriodEnd) return false;
+  return status === 'active' || status === 'trialing';
+}
+
 export function resolveEntitlements(
   plan: SubscriptionPlan,
   status: SubscriptionStatus,

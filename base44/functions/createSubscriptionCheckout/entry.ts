@@ -8,7 +8,7 @@ import {
   trialEligibility,
   validateCheckoutIdempotencyKey,
 } from '../../shared/stripeBilling.ts';
-import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
+import { hasLiveSubscription, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
@@ -176,18 +176,16 @@ Deno.serve(async (req) => {
     }
 
     const now = new Date().toISOString();
+    // Only a live agreement blocks a new checkout. A canceled subscription keeps
+    // its access until the period ends but will never bill again, so those
+    // customers must be able to buy a new plan or upgrade right away.
     const existingPaidSubscription = subscriptions.find(
       (subscription: Record<string, unknown>) => (
         normalizePlan(subscription.plan) !== 'free'
-        && hasPaidTierAccess(normalizeStatus(subscription.status), {
-          currentPeriodEnd: typeof subscription.current_period_end === 'string'
-            ? subscription.current_period_end
-            : null,
-          trialEndDate: typeof subscription.trial_end_date === 'string'
-            ? subscription.trial_end_date
-            : null,
-          now,
-        })
+        && hasLiveSubscription(
+          normalizeStatus(subscription.status),
+          subscription.cancel_at_period_end === true,
+        )
       ),
     );
     if (existingPaidSubscription) {

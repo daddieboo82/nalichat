@@ -178,7 +178,11 @@ export default function SubscriptionSettings() {
 
   const trialEnd = formattedDate(subscription.trialEndDate);
   const periodEnd = formattedDate(subscription.currentPeriodEnd);
-  const canManageBilling = subscription.provider === "stripe" || subscription.provider === "paypal";
+  // A canceled or ended agreement can no longer be billed, so those customers get
+  // the plan chooser (to buy a new plan or upgrade) instead of a cancel button.
+  const isCanceledSubscription = subscription.status === "canceled" || subscription.status === "ended";
+  const canManageBilling = !isCanceledSubscription
+    && (subscription.provider === "stripe" || subscription.provider === "paypal");
 
   return (
     <div className="ui-surface rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:p-6">
@@ -242,7 +246,7 @@ export default function SubscriptionSettings() {
             {periodEnd && (
               <div className="flex flex-wrap gap-x-2 gap-y-0.5">
                 <dt className="text-muted-foreground">
-                  {subscription.cancelAtPeriodEnd ? "Access until:" : "Renews on:"}
+                  {subscription.cancelAtPeriodEnd || isCanceledSubscription ? "Access until:" : "Renews on:"}
                 </dt>
                 <dd>{periodEnd}</dd>
               </div>
@@ -279,7 +283,7 @@ export default function SubscriptionSettings() {
           )}
         </div>
 
-        {subscription.provider === "paypal" && subscription.plan === "premium" && subscription.hasPaidAccess && (
+        {subscription.provider === "paypal" && subscription.plan === "premium" && subscription.hasLiveSubscription && (
           <Button onClick={upgradePayPal} disabled={upgrading} className="ui-hover min-h-12 w-full shrink-0 rounded-xl font-semibold sm:w-auto">
             {upgrading ? "Opening PayPal..." : "Upgrade to Premium Plus"}
           </Button>

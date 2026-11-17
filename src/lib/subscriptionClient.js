@@ -56,6 +56,7 @@ export const FREE_SUBSCRIPTION = Object.freeze({
   grandfatheredFromPlan: null,
   entitlements: normalizeEntitlements({ "chat.core": true }),
   hasPaidAccess: false,
+  hasLiveSubscription: false,
   hasPending: false,
   isTrialing: false,
 });
@@ -90,6 +91,9 @@ export function normalizeSubscription(value) {
       : null,
     entitlements,
     hasPaidAccess,
+    // Paid access can outlive a cancellation. Only a live, still-billing
+    // subscription may block a new purchase or upgrade.
+    hasLiveSubscription: plan !== "free" && source.hasLiveSubscription === true,
     hasPending: source.hasPending === true,
     isTrialing: status === "trialing" && hasPaidAccess,
   });
@@ -116,4 +120,3 @@ export async function checkSubscriptionStatus(expectedUserId) {
   }
   return normalizeSubscription(payload);
 }
-

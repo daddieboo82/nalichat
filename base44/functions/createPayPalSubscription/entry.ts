@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
 import { paypalPeriodEndForStatus, resolvePayPalSubscriptionStatus } from '../../shared/paypalSubscription.ts';
-import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
+import { hasLiveSubscription, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
 
 const CATALOG: Record<string, { plan: string; billingPeriod: string; secret: string }> = {
   premium_monthly: { plan: 'premium', billingPeriod: 'monthly', secret: 'PAYPAL_PREMIUM_MONTHLY_PLAN_ID' },
@@ -117,15 +117,13 @@ Deno.serve(async (req) => {
     const allSubs = Array.isArray(allSubsResult) ? allSubsResult : allSubsResult?.data;
     if (!Array.isArray(allSubs)) throw new Error('Subscription query returned an invalid result');
     if (allSubs.length >= 500) return Response.json({ error: 'Subscription history requires review before starting another checkout' }, { status: 409 });
-    const now = new Date().toISOString();
+    // Only a live agreement blocks a new checkout. A canceled plan that still
+    // has access until its period end no longer bills, so its owner must be able
+    // to start or upgrade to a new plan immediately.
     const alreadyPaid = allSubs.some((sub: any) => {
       const plan = normalizePlan(sub.plan);
       const status = normalizeStatus(sub.status);
-      return plan !== 'free' && hasPaidTierAccess(status, {
-        currentPeriodEnd: typeof sub.current_period_end === 'string' ? sub.current_period_end : null,
-        trialEndDate: typeof sub.trial_end_date === 'string' ? sub.trial_end_date : null,
-        now,
-      });
+      return plan !== 'free' && hasLiveSubscription(status, sub.cancel_at_period_end === true);
     });
     if (alreadyPaid) {
       return Response.json({ error: 'This account already has a paid subscription. Manage your existing subscription in Settings before starting another checkout.' }, { status: 409 });

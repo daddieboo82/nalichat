@@ -839,11 +839,31 @@ export default function Studio() {
       lastTime = time;
       
       let newTime = currentTimeRef.current + delta;
+      let didWrap = false;
       // Selection-based loop: when a selection is active and loop is on, loop within the selection
       if (loopActiveRef.current && selectionStartRef.current !== null && selectionEndRef.current !== null) {
-        if (newTime >= selectionEndRef.current) newTime = selectionStartRef.current;
-      } else if (newTime > 100) newTime = 0; // Loop at 100s
-      
+        if (newTime >= selectionEndRef.current) {
+          newTime = selectionStartRef.current;
+          didWrap = true;
+        }
+      } else if (newTime > 100) {
+        newTime = 0; // Loop at 100s
+        didWrap = true;
+      }
+
+      if (didWrap) {
+        // A transport jump must reposition already-playing audio, not just
+        // wait for a paused split clip to start on the next RAF.
+        for (const track of tracksRef.current) {
+          const audio = audioElementsRef.current[track.id];
+          if (!audio) continue;
+          const position = studioPlaybackPosition(track, newTime);
+          if (position.active) audio.currentTime = position.sourceTime;
+          else if (!audio.paused) audio.pause();
+        }
+        playbackFailedRef.current.clear();
+      }
+
       currentTimeRef.current = newTime;
       
       // Update DOM directly for maximum 60fps performance without React reconciliation

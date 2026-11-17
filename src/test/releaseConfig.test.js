@@ -784,14 +784,11 @@ describe('release configuration', () => {
   it('keeps subscription billing Stripe-authoritative and rate-limited', async () => {
     const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
     const portal = await readText('base44/functions/createBillingPortal/entry.ts');
-    const wix = await readText('base44/functions/wixPaymentsWebhook/entry.ts');
 
     expect(checkout).toContain("'subscription_checkout'");
     expect(checkout).toContain('status: 429');
     expect(portal).toContain("'billing_portal'");
     expect(portal).toContain('status: 429');
-    expect(wix).toContain('wix.ecom.v1.order_approved');
-    expect(wix).toContain("status: 'active'");
   });
 
 
@@ -2126,7 +2123,7 @@ describe('release configuration', () => {
       } catch {}
     }
 
-    const signedWebhooks = new Set(['stripeWebhook', 'paypalWebhook', 'wixPaymentsWebhook']);
+    const signedWebhooks = new Set(['stripeWebhook', 'paypalWebhook']);
     const capabilityEndpoints = new Set(['getSharedFileByToken', 'verifyCheckoutPayment']);
     const publicReadEndpoints = new Set(['getChallengeLeaderboard', 'getPushConfig', 'battleStreamingStatus', 'testBattleStreaming']);
     const internalWorkflowHandlers = new Set([
@@ -2150,10 +2147,6 @@ describe('release configuration', () => {
     const stripe = await readText('base44/functions/stripeWebhook/entry.ts');
     expect(stripe).toContain('verifyStripeSignature');
     expect(stripe).toContain("req.headers.get('Stripe-Signature')");
-
-    const wix = await readText('base44/functions/wixPaymentsWebhook/entry.ts');
-    expect(wix).toContain('jwt.verify');
-    expect(wix).toContain("algorithms: [\"RS256\"]");
 
     const shared = await readText('base44/functions/getSharedFileByToken/entry.ts');
     expect(shared).toContain('constantTimeEqual');
@@ -2195,7 +2188,7 @@ describe('release configuration', () => {
       expect(source).not.toContain('await req.json()');
     }
 
-    for (const name of ['stripeWebhook', 'wixPaymentsWebhook']) {
+    for (const name of ['stripeWebhook']) {
       const source = await readText(`base44/functions/${name}/entry.ts`);
       expect(source).toContain('readTextBodyLimited');
       expect(source).toContain('1024 * 1024');
@@ -2224,7 +2217,7 @@ describe('release configuration', () => {
     expect(requestLimits).toContain('reader.cancel()');
     expect(requestLimits).toContain("status: 413");
 
-    const anonymousErrorSafe = ['getChallengeLeaderboard','getSharedFileByToken','verifyCheckoutPayment','wixPaymentsWebhook','notifyOnFileUpload','notifyOnMessage','notifyOnTrackVersion','notifyOnTrackComment','notifyOnMilestoneUpdate'];
+    const anonymousErrorSafe = ['getChallengeLeaderboard','getSharedFileByToken','verifyCheckoutPayment','notifyOnFileUpload','notifyOnMessage','notifyOnTrackVersion','notifyOnTrackComment','notifyOnMilestoneUpdate'];
     for (const name of anonymousErrorSafe) {
       const source = await readText(`base44/functions/${name}/entry.ts`);
       expect(source).not.toContain('Response.json({ error: error.message }');

@@ -4,7 +4,7 @@
   "properties": {
     "checkoutSessionId": {
       "type": "string",
-      "description": "Provider checkout session ID \u2014 the only link from a payment back to the buyer"
+      "description": "Stripe Checkout Session ID \u2014 the only link from a payment back to the buyer"
     },
     "status": {
       "type": "string",
@@ -49,14 +49,6 @@
     "purchase_verifier_hash": {
       "type": "string",
       "description": "SHA-256 hash of the opaque verifier placed in the Stripe success return URL"
-    },
-    "expected_amount": {
-      "type": "string",
-      "description": "Server-owned total expected at checkout (decimal string). Webhook activation requires an exact match against the provider's charged total."
-    },
-    "currency": {
-      "type": "string",
-      "description": "Server-owned ISO currency for the expected total. Webhook activation requires an exact match against the provider's charge currency."
     }
   },
   "required": [

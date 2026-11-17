@@ -9,7 +9,6 @@ describe('admin and workflow backend SDK alignment', () => {
       'base44/functions/send-invite-email/entry.ts',
       'base44/functions/getAdminDashboardStats/entry.ts',
       'base44/functions/manageCollaboration/entry.ts',
-      'base44/functions/wixPaymentsWebhook/entry.ts',
       'base44/functions/onNewContent/entry.ts',
       'base44/functions/generateNetworkProfiles/entry.ts',
       'base44/functions/backfillTrackAccess/entry.ts',

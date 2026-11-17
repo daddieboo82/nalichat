@@ -2218,8 +2218,8 @@ export default function Studio() {
       const { vocals, instrumental } = await separateStems(track.audioUrl);
       const nextId = nextTrackId(tracks);
       setTracksWithHistory(prev => [...prev,
-        { ...track, id: nextId, name: `${track.name} (Vocals/Highs)`, color: "bg-green-500", audioUrl: vocals.url, waveform: vocals.waveform, duration: vocals.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined },
-        { ...track, id: nextId + 1, name: `${track.name} (Instrumental/Lows)`, color: "bg-green-500", audioUrl: instrumental.url, waveform: instrumental.waveform, duration: instrumental.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined }
+        { ...track, id: nextId, name: `${track.name} (Vocals/Highs)`, color: "bg-green-500", audioUrl: vocals.url, waveform: vocals.waveform, duration: vocals.duration, fullDuration: vocals.duration, clipStart: 0, splitFrom: undefined, startTime: track.startTime || 0, segments: undefined, effects: undefined },
+        { ...track, id: nextId + 1, name: `${track.name} (Instrumental/Lows)`, color: "bg-green-500", audioUrl: instrumental.url, waveform: instrumental.waveform, duration: instrumental.duration, fullDuration: instrumental.duration, clipStart: 0, splitFrom: undefined, startTime: track.startTime || 0, segments: undefined, effects: undefined }
       ]);
       toast.success("Stems separated successfully!", { id: toastId });
     } catch (e) {

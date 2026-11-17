@@ -465,7 +465,7 @@ export async function renderMixToBuffer(tracks, options = {}) {
   if (audioTracks.length === 0) return null;
 
   const hasSolo = audioTracks.some(t => t.solo);
-  const active = audioTracks.filter(t => (hasSolo ? t.solo : !t.muted));
+  const active = audioTracks.filter(t => !t.muted && (!hasSolo || t.solo));
   if (active.length === 0) return null;
 
   const decoded = (await Promise.all(active.map(async (t) => {

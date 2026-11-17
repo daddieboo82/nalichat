@@ -68,6 +68,7 @@ import { applyStudioRecordedTake, studioNewRecordingLaneCount } from '@/lib/stud
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
+import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
 const MAX_TRACKS = 999;
@@ -1231,6 +1232,7 @@ export default function Studio() {
     let mounted = true;
     let midiAccess = null;
     let midiAccessRequest = null;
+    let latestHardwareScan = 0;
     const midiInputsBound = new Set();
 
     const bindMidiInputs = () => {
@@ -1303,6 +1305,7 @@ export default function Studio() {
 
     const checkDevices = async () => {
       if (!mounted) return;
+      const hardwareScan = ++latestHardwareScan;
       let hasMic = false;
       let hasInterface = false;
       let hasOutput = false;
@@ -1313,7 +1316,7 @@ export default function Studio() {
         const devices = navigator.mediaDevices?.enumerateDevices
           ? await navigator.mediaDevices.enumerateDevices()
           : [];
-        if (!mounted) return;
+        if (!isCurrentStudioHardwareScan(hardwareScan, latestHardwareScan, mounted)) return;
         for (const device of devices) {
           if (device.kind === 'audioinput') {
             hasMic = true;
@@ -1331,6 +1334,7 @@ export default function Studio() {
         console.warn("Audio hardware enumeration failed; MIDI detection will still run", err);
       }
 
+      if (!isCurrentStudioHardwareScan(hardwareScan, latestHardwareScan, mounted)) return;
       let hasMidi = false;
       if (navigator.requestMIDIAccess) {
           try {
@@ -1354,12 +1358,12 @@ export default function Studio() {
           }
       }
 
-      if (mounted) {
+      if (isCurrentStudioHardwareScan(hardwareScan, latestHardwareScan, mounted)) {
         setHardware({
           mic: hasMic,
           interface: hasInterface,
           output: hasOutput,
-          midi: hasMidi
+          midi: midiAccess ? midiAccess.inputs.size > 0 : hasMidi,
         });
       }
     };
@@ -1371,6 +1375,7 @@ export default function Studio() {
     
     return () => {
       mounted = false;
+      latestHardwareScan += 1;
       if (navigator.mediaDevices) {
         navigator.mediaDevices.removeEventListener('devicechange', checkDevices);
       }

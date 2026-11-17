@@ -197,6 +197,7 @@ export default function Studio() {
   const audioChunksRef = useRef([]);
   const recordingFinalizeInFlightRef = useRef(false);
   const microphoneStartupRef = useRef({ token: 0, pending: false });
+  const studioMountedRef = useRef(true);
   const midiActiveNotesRef = useRef(new Map());
   const midiRecordingRef = useRef(false);
   const midiSustainRef = useRef(new Map()), midiAccessRef = useRef(null);
@@ -1171,7 +1172,15 @@ export default function Studio() {
   };
 
   useEffect(() => {
+    studioMountedRef.current = true;
     return () => {
+      studioMountedRef.current = false;
+      // A pending getUserMedia permission result can arrive after this
+      // component has left the page. Mark it stale before it resolves.
+      microphoneStartupRef.current.token += 1;
+      microphoneStartupRef.current.pending = false;
+      preRollRequestRef.current += 1;
+      pendingRecordStartRef.current = null;
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(t => t.stop());
       }
@@ -1665,7 +1674,8 @@ export default function Studio() {
         startupStream = stream;
         // Stop, project restore or a newer attempt may have happened while
         // the browser permission prompt was open. Never start a stale capture.
-        if (microphoneStartupRef.current.token !== startupToken ||
+        if (!studioMountedRef.current ||
+            microphoneStartupRef.current.token !== startupToken ||
             historyEpochRef.current !== startupEpoch) {
           stream.getTracks().forEach(track => track.stop());
           return;
@@ -1749,7 +1759,8 @@ export default function Studio() {
           if (mediaStreamRef.current === startupStream) mediaStreamRef.current = null;
         }
         // An old permission response cannot reset a newer project's UI.
-        if (microphoneStartupRef.current.token === startupToken &&
+        if (studioMountedRef.current &&
+            microphoneStartupRef.current.token === startupToken &&
             historyEpochRef.current === startupEpoch) {
           Object.values(audioElementsRef.current).forEach(audio => audio.pause());
           analyserRef.current = null;

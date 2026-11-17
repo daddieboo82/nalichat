@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { VOX_SHIFT_PRESETS } from '@/lib/voxShift';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { SlidersHorizontal, Power, X, Plus, Waves, Gauge, Sparkles, Clock } from 'lucide-react';
 
 const PLUGINS = [
+  { id: 'voxshift', name: 'VoxShift', icon: Waves, color: 'text-violet-400', params: [
+    { label: 'Pitch', min: 60, max: 160, default: 100, unit: '%' },
+    { label: 'Output', min: 0, max: 100, default: 100, unit: '%' },
+  ]},
   { id: 'eq', name: 'Equalizer', icon: Waves, color: 'text-blue-400', params: [
     { label: 'Low', min: 0, max: 100, default: 50, unit: '%' },
     { label: 'Mid', min: 0, max: 100, default: 50, unit: '%' },
@@ -54,7 +59,10 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
         const plugin = PLUGINS.find(p => p.id === pluginId);
         next[pluginId] = {
           enabled: true,
-          params: Object.fromEntries(plugin.params.map(p => [p.label, p.default])),
+          params: {
+            ...(pluginId === 'voxshift' ? { Preset: 'natural' } : {}),
+            ...Object.fromEntries(plugin.params.map(p => [p.label, p.default])),
+          },
         };
       }
       return next;
@@ -67,6 +75,16 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
       [pluginId]: {
         ...prev[pluginId],
         params: { ...prev[pluginId].params, [paramLabel]: value[0] },
+      },
+    }));
+  };
+
+  const selectVoxShiftPreset = (preset) => {
+    updatePlugins(prev => ({
+      ...prev,
+      voxshift: {
+        ...prev.voxshift,
+        params: { ...prev.voxshift.params, Preset: preset, Pitch: VOX_SHIFT_PRESETS[preset].pitch },
       },
     }));
   };
@@ -139,7 +157,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
 
               {/* Plugin Slots */}
               <div className={cn("flex overflow-x-auto custom-scrollbar gap-0 shrink-0", !hasTarget && "opacity-50 pointer-events-none")}>
-                {PLUGINS.map((plugin) => {
+                {PLUGINS.filter(plugin => !isMaster || plugin.id !== 'voxshift').map((plugin) => {
                   const state = activePlugins[plugin.id];
                   const isActive = !!state;
                   const isEnabled = state?.enabled !== false;
@@ -191,11 +209,26 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                       {/* Plugin Params */}
                       {isActive && isEnabled && (
                         <div className="flex flex-col gap-1.5">
+                          {plugin.id === 'voxshift' && (
+                            <label className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                              Preset
+                              <select
+                                value={state.params?.Preset ?? 'natural'}
+                                onChange={event => selectVoxShiftPreset(event.target.value)}
+                                className="min-w-0 flex-1 rounded bg-secondary px-2 py-1 text-foreground"
+                              >
+                                {Object.entries(VOX_SHIFT_PRESETS).map(([id, preset]) => (
+                                  <option key={id} value={id}>{preset.name}</option>
+                                ))}
+                              </select>
+                            </label>
+                          )}
                           {plugin.params.map(param => (
                             <div key={param.label} className="flex items-center gap-2">
                               <span className="text-[9px] text-muted-foreground w-14 shrink-0 uppercase tracking-wider">{param.label}</span>
                               <Slider
-                                value={[state.params[param.label] ?? param.default]}
+                                aria-label={`${plugin.name} ${param.label}`}
+                                value={[state.params?.[param.label] ?? param.default]}
                                 min={param.min}
                                 max={param.max}
                                 step={1}
@@ -203,7 +236,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                                 className="flex-1"
                               />
                               <span className="text-[9px] font-mono text-muted-foreground w-8 text-right shrink-0">
-                                {state.params[param.label] ?? param.default}{param.unit}
+                                {state.params?.[param.label] ?? param.default}{param.unit}
                               </span>
                             </div>
                           ))}

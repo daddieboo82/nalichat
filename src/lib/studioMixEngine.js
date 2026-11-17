@@ -31,6 +31,12 @@ export function needsCrossOrigin(url) {
   return !!url && !isSameOriginUrl(url);
 }
 
+function disposeNode(node) {
+  // VoxShift uses looping modulation sources that must stop when the graph is rebuilt.
+  try { node.stop?.(); } catch { /* already stopped */ }
+  try { node.disconnect(); } catch { /* already disconnected */ }
+}
+
 export function createMixEngine() {
   let context = null;
   let master = null;
@@ -41,7 +47,7 @@ export function createMixEngine() {
   const buildMaster = () => {
     if (!context) return;
     if (master) {
-      master.nodes.forEach(node => { try { node.disconnect(); } catch { /* already gone */ } });
+      master.nodes.forEach(disposeNode);
     }
     master = connectMasterChain(context, {
       masterFx: masterState.masterFx,
@@ -55,7 +61,7 @@ export function createMixEngine() {
   };
 
   const teardownEntry = (entry) => {
-    entry.nodes?.forEach(node => { try { node.disconnect(); } catch { /* already gone */ } });
+    entry.nodes?.forEach(disposeNode);
     entry.nodes = [];
     try { entry.source?.disconnect(); } catch { /* already gone */ }
   };
@@ -217,7 +223,7 @@ export function createMixEngine() {
       disposed = true;
       entries.forEach(teardownEntry);
       entries.clear();
-      if (master) master.nodes.forEach(node => { try { node.disconnect(); } catch { /* already gone */ } });
+      if (master) master.nodes.forEach(disposeNode);
       master = null;
       if (context && context.state !== 'closed') context.close().catch(() => {});
       context = null;

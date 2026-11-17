@@ -1,4 +1,5 @@
 // Real client-side audio processing helpers (Web Audio API).
+import { connectVoxShift } from './voxShift.js';
 import { studioClipAudioRange } from './studioClipAudioRange.js';
 // These operate on actual audio data — no simulation.
 
@@ -121,7 +122,7 @@ export function automatedTrackState(track, time) {
 }
 
 // Ordered so both the rack UI and the audio graph agree on insert order.
-export const FX_CHAIN_ORDER = ['eq', 'comp', 'reverb', 'delay'];
+export const FX_CHAIN_ORDER = ['voxshift', 'eq', 'comp', 'reverb', 'delay'];
 
 /** Normalize whatever shape a track stores its inserts in ("effects" legacy / "plugins"). */
 export function getTrackEffects(track) {
@@ -168,6 +169,11 @@ export function connectPluginChain(context, input, effects, output, nodes = []) 
   const fx = effects || {};
   let node = input;
   const insert = (next) => { node.connect(next); nodes.push(next); node = next; };
+
+  const voxShift = fx.voxshift;
+  if (voxShift && voxShift.enabled !== false) {
+    node = connectVoxShift(context, node, voxShift.params, nodes);
+  }
 
   const eq = fx.eq;
   if (eq && eq.enabled !== false) {

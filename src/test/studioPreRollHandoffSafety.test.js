@@ -6,6 +6,7 @@ describe('Studio pre-roll handoff and cancellation', () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
     const raf = source.slice(source.indexOf('// Pre-roll check:'), source.indexOf('// Post-roll check:'));
     expect(raf).toContain('skipPreRollRef.current = true;');
+    expect(raf).toContain('skipCountInRef.current = true;');
     const record = source.slice(source.indexOf('const toggleRecord = async () => {'), source.indexOf('let startupStream = null;'));
     expect(record).toContain('if (!isRecording && preRoll > 0 && !skipPreRollRef.current)');
     expect(record).toContain('skipPreRollRef.current = false;');

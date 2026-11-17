@@ -989,6 +989,8 @@ export default function Studio() {
       if (pendingRecordStartRef.current !== null && !isRecording && currentTimeRef.current >= pendingRecordStartRef.current) {
         pendingRecordStartRef.current = null;
         skipPreRollRef.current = true;
+        // Count-in already completed before pre-roll. Do not show it again.
+        skipCountInRef.current = true;
         toggleRecordRef.current();
       }
 

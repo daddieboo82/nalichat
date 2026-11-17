@@ -17,7 +17,8 @@ describe('Studio recording finalization exclusion', () => {
     const end = source.indexOf('    } else {', source.indexOf('stoppedRecorder.stop();', start));
     const handler = source.slice(start,end);
     expect(handler).toContain('try {');
-    expect(handler).toContain('} finally {\n          recordingFinalizeInFlightRef.current = false;');
+    expect(handler).toContain('} finally {\n          // Drop only this finished recorder.');
+    expect(handler).toContain('recordingFinalizeInFlightRef.current = false;');
     expect(handler).toContain('stoppedRecorder.stop();');
     expect(handler).toContain('catch (error) {\n        recordingFinalizeInFlightRef.current = false;');
   });

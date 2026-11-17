@@ -40,7 +40,16 @@ export default function StudioEditor() {
         project_title: uploadTitle || 'Untitled Mix'
       });
       if (result?.data?.error) throw new Error(result.data.error);
-      if (!result?.data?.compressor || !result?.data?.low_shelf || !result?.data?.high_shelf) {
+      const analysis = result.data;
+      const requiredFields = [
+        analysis.compressor,
+        analysis.low_shelf,
+        analysis.presence,
+        analysis.high_shelf,
+      ];
+      if (requiredFields.some((field) => !field) ||
+        typeof analysis.makeup_gain_db !== "number" ||
+        typeof analysis.limiter_ceiling_db !== "number") {
         throw new Error("AI mastering response was incomplete");
       }
       setMasterAnalysis(result.data);

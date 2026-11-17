@@ -133,7 +133,7 @@ describe("NaliStudio portable exports", () => {
     const loader = studio.slice(start, end);
     expect(loader).toContain("if (Array.isArray(savedState?.tracks))");
     expect(loader).not.toContain("savedState.tracks.length > 0");
-    expect(loader).toContain("const hydrated = savedState.tracks.map");
+    expect(loader).toContain("const hydrated = hydrateStudioTracks(");
     expect(loader).toContain("const persistedTracks = await listPersistedTracks(roomId)");
   });
 

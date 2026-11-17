@@ -1795,9 +1795,8 @@ export default function Studio() {
       audioElementsRef.current[trackId].src = '';
       delete audioElementsRef.current[trackId];
     }
-    if (track?.audioUrl?.startsWith('blob:')) {
-      try { URL.revokeObjectURL(track.audioUrl); } catch (e) {}
-    }
+    // Do not revoke track.audioUrl here: split siblings and Undo history
+    // may still reference the same temporary source.
     setTracksWithHistory(prev => prev.filter(t => t.id !== trackId));
     setSelectedTrackIds(prev => prev.filter(id => id !== trackId));
     toast.success("Track deleted");
@@ -2150,7 +2149,7 @@ export default function Studio() {
       });
       setTracksWithHistory(prev => prev.map(t => {
         if (t.id !== trackId) return t;
-        if (t.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(t.audioUrl); } catch (e) { /* ignore */ } }
+        // Preserve old audio for split siblings and Undo/Redo history.
         return { ...t, audioUrl: url, waveform, duration, fullDuration: duration, clipStart: 0 };
       }));
       toast.success(`${getInstrument(instrumentId).name} rendered`, { id: toastId });
@@ -4364,7 +4363,7 @@ export default function Studio() {
         onProcess={({ audioUrl, waveform, duration }) => {
           const track = tracks.find(t => selectedTrackIds.includes(t.id));
           if (!track) return;
-          if (track.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(track.audioUrl); } catch (e) {} }
+          // Keep the previous source available to sibling clips and Undo history.
           setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, audioUrl, waveform, duration, fullDuration: duration, clipStart: 0 } : t));
         }}
       />
@@ -4410,7 +4409,7 @@ export default function Studio() {
         onCommit={(newAudioUrl) => {
           const track = tracks.find(t => selectedTrackIds.includes(t.id));
           if (!track) return;
-          if (track.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(track.audioUrl); } catch (e) {} }
+          // Keep the previous source available to sibling clips and Undo history.
           // The render bakes fader, pan, inserts and Send 1 into the file — reset them
           // so committed audio isn't processed twice on playback/export.
           setTracksWithHistory(prev => prev.map(t => {

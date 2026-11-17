@@ -1804,6 +1804,8 @@ export default function Studio() {
 
   // Called when the count-in overlay finishes its 1-bar count → start actual recording
   const handleCountInComplete = () => {
+    // An already-canceled count-in must never restart a recording.
+    if (!countInActive) return;
     setCountInActive(false);
     skipCountInRef.current = true;
     toggleRecord();

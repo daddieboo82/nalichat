@@ -12,6 +12,8 @@ export default function CountInIndicator({ active, beatsPerBar = 4, bpm = 120, o
   const nextClickTimeRef = useRef(0);
   const currentBeatRef = useRef(0);
   const completionTimerRef = useRef(null);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     if (!active) {
@@ -20,8 +22,9 @@ export default function CountInIndicator({ active, beatsPerBar = 4, bpm = 120, o
       return;
     }
 
+    const ownsAudioContext = !audioCtxRef?.current;
     const ctx = audioCtxRef?.current || new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => {});
 
     const secondsPerBeat = 60 / (bpm || 120);
     nextClickTimeRef.current = ctx.currentTime + 0.1;
@@ -43,7 +46,9 @@ export default function CountInIndicator({ active, beatsPerBar = 4, bpm = 120, o
       } catch {}
     };
 
+    let canceled = false;
     const schedule = () => {
+      if (canceled) return;
       const ahead = 0.1;
       while (nextClickTimeRef.current < ctx.currentTime + ahead) {
         const b = currentBeatRef.current;
@@ -56,8 +61,8 @@ export default function CountInIndicator({ active, beatsPerBar = 4, bpm = 120, o
           if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
           completionTimerRef.current = setTimeout(() => {
             completionTimerRef.current = null;
-            onComplete?.();
-          }, (nextClickTimeRef.current - ctx.currentTime) * 1000 + 50);
+            if (!canceled) onCompleteRef.current?.();
+          }, Math.max(0, (nextClickTimeRef.current - ctx.currentTime) * 1000 + 50));
           return;
         }
       }
@@ -66,11 +71,13 @@ export default function CountInIndicator({ active, beatsPerBar = 4, bpm = 120, o
 
     schedule();
     return () => {
+      canceled = true;
       cancelAnimationFrame(rafRef.current);
       if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
       completionTimerRef.current = null;
+      if (ownsAudioContext && ctx.state !== 'closed') void ctx.close().catch(() => {});
     };
-  }, [active, beatsPerBar, bpm, onComplete, audioCtxRef]);
+  }, [active, beatsPerBar, bpm, audioCtxRef]);
 
   if (!active) return null;
 

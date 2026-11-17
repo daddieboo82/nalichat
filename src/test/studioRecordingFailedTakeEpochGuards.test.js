@@ -18,7 +18,8 @@ describe('Studio failed recording mutations remain in stopped session', () => {
     const block = src.slice(from, to);
     expect(block).toContain('setTracksWithHistory(prev => {');
     expect(block).toContain('if (historyEpochRef.current !== stoppedSessionEpoch) return prev;');
-    expect(block).toContain('stoppedArmedIds.has(String(track.id))');
+    expect(block).toContain('armedIds: stoppedArmedIds');
+    expect(block).toContain('heldNotes: stoppedMidiNotes');
   });
   it('guards synchronous MediaRecorder.stop failure cleanup before applying queued updates', async () => {
     const src = await readFile('src/pages/Studio.jsx', 'utf8');
@@ -27,6 +28,7 @@ describe('Studio failed recording mutations remain in stopped session', () => {
     const block = src.slice(from, to);
     expect(block).toContain('setTracksWithHistory(prev => {');
     expect(block).toContain('if (historyEpochRef.current !== stoppedSessionEpoch) return prev;');
-    expect(block).toContain('stoppedArmedIds.has(String(track.id))');
+    expect(block).toContain('armedIds: stoppedArmedIds');
+    expect(block).toContain('heldNotes: stoppedMidiNotes');
   });
 });

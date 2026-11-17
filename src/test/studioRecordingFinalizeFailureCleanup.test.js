@@ -8,7 +8,8 @@ describe('Studio recording finalization cleanup after error', () => {
     const end = source.indexOf('} finally {\n          // If finalization failed before ownership passed to a track', start);
     const block = source.slice(start,end);
     expect(block).toContain('if (historyEpochRef.current === stoppedSessionEpoch)');
-    expect(block).toContain('stoppedArmedIds.has(String(track.id)) ? { ...track, armed: false } : track');
+    expect(block).toContain('studioRecoverMidiOnAudioFailure(prev, {');
+    expect(block).toContain('heldNotes: stoppedMidiNotes');
     expect(block).toContain('setRecordingStartTime(null)');
     expect(block).not.toContain('waveform: []');
     expect(block).not.toContain('audioUrl:');

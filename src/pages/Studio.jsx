@@ -73,6 +73,7 @@ import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
 import { retriggerStudioMidiNote, finalizeStudioMidiNote } from '@/lib/studioMidiRetrigger';
 import { studioMidiNoteKey, studioMidiSustainKey } from '@/lib/studioMidiInputKeys';
 import { drainStudioDisconnectedMidiNotes } from '@/lib/studioMidiDisconnect';
+import { studioRecoverMidiOnAudioFailure } from '@/lib/studioRecoverMidiOnAudioFailure';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
 const MAX_TRACKS = 999;
@@ -1602,8 +1603,11 @@ export default function Studio() {
           if (historyEpochRef.current === stoppedSessionEpoch) {
             setTracksWithHistory(prev => {
               if (historyEpochRef.current !== stoppedSessionEpoch) return prev;
-              return prev.map(track =>
-                stoppedArmedIds.has(String(track.id)) ? { ...track, armed: false } : track);
+              return studioRecoverMidiOnAudioFailure(prev, {
+                armedIds: stoppedArmedIds, heldNotes: stoppedMidiNotes,
+                stoppedMidiEnabled, stopBeat: stoppedEndTime * (stoppedBpm / 60),
+                nextId: () => crypto.randomUUID(),
+              });
             });
             setRecordingStartTime(null);
             toast.error("Recording could not be finalized. Your existing tracks were preserved.");
@@ -1634,8 +1638,11 @@ export default function Studio() {
         if (historyEpochRef.current === stoppedSessionEpoch) {
           setTracksWithHistory(prev => {
             if (historyEpochRef.current !== stoppedSessionEpoch) return prev;
-            return prev.map(track =>
-              stoppedArmedIds.has(String(track.id)) ? { ...track, armed: false } : track);
+            return studioRecoverMidiOnAudioFailure(prev, {
+                armedIds: stoppedArmedIds, heldNotes: stoppedMidiNotes,
+                stoppedMidiEnabled, stopBeat: stoppedEndTime * (stoppedBpm / 60),
+                nextId: () => crypto.randomUUID(),
+              });
           });
           setRecordingStartTime(null);
           toast.error("Recording could not stop safely. Your existing tracks were preserved.");

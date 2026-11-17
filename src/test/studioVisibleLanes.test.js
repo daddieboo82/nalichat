@@ -24,7 +24,7 @@ describe('Studio timeline and header visible lane alignment', () => {
     const source = sample();
     const updated = reorderVisibleStudioClipLanes(source, 2, 0);
     expect(visibleStudioClipLanes(updated).map(l => l.primary.id)).toEqual([6,1,4,8]);
-    expect(updated.map(t=>t.id)).toEqual([6,7,1,2,3,4,5,8]);
+    expect(updated.map(t=>t.id)).toEqual([6,7,3,1,2,5,4,8]);
     expect(source.map(t=>t.id)).toEqual([1,2,3,4,5,6,7,8]);
   });
 

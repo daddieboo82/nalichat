@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getChatTheme } from "@/lib/chatThemes";
 import { toast } from "sonner";
 import { useLockedChats } from "@/lib/LockedChatsContext";
+import useChatScroll from "@/hooks/useChatScroll";
 
 import React from "react";
 
@@ -45,17 +46,25 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const [threadMessage, setThreadMessage] = useState(null);
   const [threadTargetId, setThreadTargetId] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
-  const [showScrollBottom, setShowScrollBottom] = useState(false);
-  const [unreadSinceScroll, setUnreadSinceScroll] = useState(0);
-  const scrollRef = useRef(null);
-  const prevLenRef = useRef(0);
-  const prevLatestIdRef = useRef(null);
-  const historyAnchorRef = useRef(null);
-  const isNearBottomRef = useRef(true);
   const markedRef = useRef(new Set());
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const theme = getChatTheme(themePreference?.id);
+  const {
+    scrollRef,
+    contentRef,
+    showScrollBottom,
+    unreadSinceScroll,
+    handleScroll,
+    scrollToBottom,
+    loadOlderMessages,
+  } = useChatScroll({
+    messages,
+    conversationId: conversation?.id,
+    isLoadingOlderMessages,
+    onLoadOlderMessages,
+    keyboardOffset,
+  });
   const {
     security: lockedChatSecurity,
     isEntitled: canConfigureLockedChats,
@@ -127,63 +136,8 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     };
   }, []);
 
-  // When the mobile keyboard opens, the composer lifts over the list. Keep the
-  // newest message visible instead of letting the last bubbles slide underneath.
-  useEffect(() => {
-    if (keyboardOffset > 0 && isNearBottomRef.current && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [keyboardOffset]);
-
-  const handleScroll = () => {
-    if (!scrollRef.current) return;
-    const isNearBottom = scrollRef.current.scrollHeight - scrollRef.current.scrollTop - scrollRef.current.clientHeight < 200;
-    isNearBottomRef.current = isNearBottom;
-    setShowScrollBottom(!isNearBottom);
-    if (isNearBottom) setUnreadSinceScroll(0);
-  };
-
-  const scrollToBottom = (behavior = 'smooth') => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
-    isNearBottomRef.current = true;
-    setShowScrollBottom(false);
-    setUnreadSinceScroll(0);
-  };
-
-  const loadOlderMessages = () => {
-    if (!scrollRef.current || isLoadingOlderMessages) return;
-    historyAnchorRef.current = {
-      height: scrollRef.current.scrollHeight,
-      top: scrollRef.current.scrollTop,
-    };
-    onLoadOlderMessages?.();
-  };
-
-  // Auto-scroll to bottom only when already near bottom (Messenger pattern).
-  // If the user is reading older messages, don't yank them down — just badge the FAB.
-  useEffect(() => {
-    if (!scrollRef.current) return;
-    const latestId = messages[messages.length - 1]?.id || null;
-    if (isNearBottomRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      setUnreadSinceScroll(0);
-    } else if (
-      messages.length > prevLenRef.current
-      && prevLatestIdRef.current
-      && latestId !== prevLatestIdRef.current
-    ) {
-      setUnreadSinceScroll(c => c + (messages.length - prevLenRef.current));
-    }
-    prevLenRef.current = messages.length;
-    prevLatestIdRef.current = latestId;
-
-    if (historyAnchorRef.current) {
-      const { height, top } = historyAnchorRef.current;
-      const addedHeight = scrollRef.current.scrollHeight - height;
-      scrollRef.current.scrollTop = top + Math.max(0, addedHeight);
-      historyAnchorRef.current = null;
-    }
-  }, [messages]);
+  // Transcript scrolling (pin to newest, unread badge, history anchoring and the
+  // mobile keyboard lift) is owned by useChatScroll.
 
   // Route a call to the device's native calling app when supported; fall back
   // to the in-app WebRTC engine when it isn't.
@@ -386,7 +340,12 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} onScroll={handleScroll} className="chat-theme-messages flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] [touch-action:pan-y] bg-gradient-to-b from-primary/[0.025] via-transparent to-accent/[0.025] px-3 sm:px-6 pt-2 sm:pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] space-y-0.5 custom-scrollbar">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        style={keyboardOffset > 0 ? { paddingBottom: `calc(max(1.5rem, env(safe-area-inset-bottom)) + ${keyboardOffset}px)` } : undefined}
+        className="chat-theme-messages flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] [touch-action:pan-y] bg-gradient-to-b from-primary/[0.025] via-transparent to-accent/[0.025] px-3 sm:px-6 pt-2 sm:pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] custom-scrollbar"
+      >
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -401,7 +360,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
             <p>No messages yet. Say hi!</p>
           </div>
         ) : (
-          <>
+          <div ref={contentRef} className="space-y-0.5">
             {hasOlderMessages && (
               <div className="flex justify-center pb-3">
                 <Button
@@ -513,7 +472,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
             />
           )
         )}
-          </>
+          </div>
         )}
       </div>
 

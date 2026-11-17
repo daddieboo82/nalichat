@@ -1181,6 +1181,9 @@ export default function Studio() {
       // component has left the page. Mark it stale before it resolves.
       microphoneStartupRef.current.token += 1;
       microphoneStartupRef.current.pending = false;
+      midiSustainRef.current.clear();
+      midiActiveNotesRef.current.clear();
+      midiRecordingRef.current = false;
       preRollRequestRef.current += 1;
       pendingRecordStartRef.current = null;
       if (mediaStreamRef.current) {
@@ -1398,6 +1401,7 @@ export default function Studio() {
       const stopBeat = currentTimeRef.current * (bpmRef.current / 60);
       const heldNotes = [...midiActiveNotesRef.current.values()];
       midiActiveNotesRef.current.clear();
+      midiSustainRef.current.clear();
       setTracksWithHistory(prev => {
         // A queued MIDI-only stop must not mutate a different project,
         // even if new tracks reuse the same IDs.
@@ -1439,6 +1443,7 @@ export default function Studio() {
       // Freeze the MIDI take at Stop, not after asynchronous audio decoding.
       midiRecordingRef.current = false;
       midiActiveNotesRef.current.clear();
+      midiSustainRef.current.clear();
       stoppedRecorder.onstop = async () => {
         let transientRecordedUrl = null;
         let recordedUrlTransferred = false;
@@ -1714,6 +1719,7 @@ export default function Studio() {
           return;
         }
         midiActiveNotesRef.current.clear();
+        midiSustainRef.current.clear();
         midiRecordingRef.current = true;
         setIsRecording(true);
         setRecordingStartTime(currentTimeRef.current);
@@ -1795,6 +1801,7 @@ export default function Studio() {
         const hasArmedMidi = tracks.some(t => t.armed && ['midi', 'instrument'].includes(t.type));
         if (hasArmedMidi && midiAccessRef.current?.inputs?.size > 0) {
           midiActiveNotesRef.current.clear();
+          midiSustainRef.current.clear();
           midiRecordingRef.current = true;
         }
         

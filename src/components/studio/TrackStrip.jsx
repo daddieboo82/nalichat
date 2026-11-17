@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import TrackVersionHistory from "./TrackVersionHistory";
+import { studioTrackStripWaveformBars } from "@/lib/studioTrackStripWaveform";
 import { toast } from "sonner";
 
 const trackTypeColors = {
@@ -84,8 +85,9 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
     },
   });
   const [showVersionHistory, setShowVersionHistory] = useState(false);
-  // Stable waveform bar heights — regenerated only when track id changes
-  const waveformBars = useMemo(() => Array.from({ length: 60 }, () => Math.random() * 28 + 4), [track.id]);
+  // Refresh when actual audio peaks change. Never draw synthetic
+  // transients for empty, silent, or undecodable tracks.
+  const waveformBars = useMemo(() => studioTrackStripWaveformBars(track.waveform), [track.waveform]);
   // externalRef may be a callback ref (function) or a ref object; normalise to an object
   const audioRef = useRef(null);
   const setAudioRef = useCallback((el) => {
@@ -142,7 +144,7 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
           <div
             key={i}
             className={cn("flex-1 rounded-full", track.muted ? "bg-muted-foreground/20" : trackTypeColors[track.type] || "bg-primary")}
-            style={{ height: `${h}px`, opacity: track.muted ? 0.3 : 0.7 }}
+            style={{ height: `${Math.round(h * 32)}px`, opacity: track.muted ? 0.3 : 0.7 }}
           />
         ))}
 

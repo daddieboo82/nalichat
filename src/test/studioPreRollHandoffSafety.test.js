@@ -8,7 +8,7 @@ describe('Studio pre-roll handoff and cancellation', () => {
     expect(raf).toContain('skipPreRollRef.current = true;');
     expect(raf).toContain('skipCountInRef.current = true;');
     const record = source.slice(source.indexOf('const toggleRecord = async () => {'), source.indexOf('let startupStream = null;'));
-    expect(record).toContain('if (!isRecording && preRoll > 0 && !skipPreRollRef.current)');
+    expect(record).toContain('if (!isRecording && preRollWindow.enabled && !skipPreRollRef.current)');
     expect(record).toContain('skipPreRollRef.current = false;');
   });
   it('rejects stale playback-promise completions after Stop or project replacement', async () => {

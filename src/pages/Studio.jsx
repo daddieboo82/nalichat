@@ -66,6 +66,7 @@ import { getStudioClipLaneId, groupStudioClipLanes, visibleStudioClipLanes, reor
 import { isStudioArmedLane } from '@/lib/studioRecordingLanes';
 import { applyStudioRecordedTake, studioNewRecordingLaneCount } from '@/lib/studioRecordingTake';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
+import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
 
 const MAX_TRACKS = 999;
@@ -1548,17 +1549,19 @@ export default function Studio() {
     }
     skipCountInRef.current = false;
 
-    // Pre-roll: jump back and start playback so the user hears context before the record point
-    if (!isRecording && preRoll > 0 && !skipPreRollRef.current) {
+    // Pre-roll: use only the real timeline before punch-in. At 0:00 there
+    // is no lead-in to hear, so begin recording without a transport round trip.
+    const preRollWindow = studioPreRollWindow(currentTimeRef.current, preRoll);
+    if (!isRecording && preRollWindow.enabled && !skipPreRollRef.current) {
       // A pending pre-roll must not be queued twice while playback starts.
       if (pendingRecordStartRef.current !== null) return;
       const preRollRequest = ++preRollRequestRef.current;
       const preRollEpoch = historyEpochRef.current;
       const recordStartPos = currentTimeRef.current;
       pendingRecordStartRef.current = recordStartPos;
-      updateCurrentTime(Math.max(0, recordStartPos - preRoll));
+      updateCurrentTime(preRollWindow.startTime);
       sounds.nav();
-      setActivity(`Pre-roll ${preRoll}s → recording 🎙️`);
+      setActivity(`Pre-roll ${preRollWindow.duration.toFixed(2)}s → recording 🎙️`);
       // Start playback of existing (non-armed) tracks for context.
       const preRollPlayPromises = [];
       tracks.forEach(track => {

@@ -1387,6 +1387,8 @@ export default function Studio() {
       const stoppedEndTime = currentTimeRef.current;
       const stoppedSessionEpoch = historyEpochRef.current;
       stoppedRecorder.onstop = async () => {
+        let transientRecordedUrl = null;
+        let recordedUrlTransferred = false;
         try {
         if (historyEpochRef.current !== stoppedSessionEpoch) return;
         const recordingMimeType =
@@ -1406,7 +1408,8 @@ export default function Studio() {
           return;
         }
         const audioUrl = URL.createObjectURL(blob);
-        
+        transientRecordedUrl = audioUrl;
+
         let realWaveform = [];
         let recordedDuration = null;
         let waveformUnavailable = false;
@@ -1428,16 +1431,18 @@ export default function Studio() {
           }
         }
         
-        if (historyEpochRef.current !== stoppedSessionEpoch) {
-          URL.revokeObjectURL(audioUrl);
-          return;
-        }
+        if (historyEpochRef.current !== stoppedSessionEpoch) return;
         const stopBeat = stoppedEndTime * (bpmRef.current / 60);
         const heldMidiNotes = midiRecordingRef.current ? [...midiActiveNotesRef.current.values()] : [];
         midiRecordingRef.current = false;
         midiActiveNotesRef.current.clear();
+        // Once a take is queued for track ownership, its blob URL is kept
+        // until the editor's normal track/Undo cleanup no longer retains it.
         setTracksWithHistory(prev => {
-          if (historyEpochRef.current !== stoppedSessionEpoch) return prev;
+          if (historyEpochRef.current !== stoppedSessionEpoch) {
+            URL.revokeObjectURL(audioUrl);
+            return prev;
+          }
           const midiFinalized = prev.map(t => {
             if (!stoppedArmedIds.has(String(t.id)) || !['midi', 'instrument'].includes(t.type)) return t;
             const finalized = heldMidiNotes.filter(note => note.trackId === t.id).map(note => ({
@@ -1462,6 +1467,7 @@ export default function Studio() {
             },
           );
         });
+        recordedUrlTransferred = true;
         if (historyEpochRef.current === stoppedSessionEpoch) {
           setRecordingStartTime(null);
           if (waveformUnavailable) {
@@ -1481,6 +1487,11 @@ export default function Studio() {
             toast.error("Recording could not be finalized. Your existing tracks were preserved.");
           }
         } finally {
+          // If finalization failed before ownership passed to a track, do
+          // not retain a temporary blob URL that no player can reference.
+          if (transientRecordedUrl && !recordedUrlTransferred) {
+            URL.revokeObjectURL(transientRecordedUrl);
+          }
           // Drop only this finished recorder. A later capture must not be
           // disconnected by an older callback.
           if (mediaRecorderRef.current === stoppedRecorder) {

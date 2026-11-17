@@ -247,6 +247,8 @@ export default function Studio() {
   const [preRoll, setPreRoll] = useState(0);
   const [postRoll, setPostRoll] = useState(0);
   const pendingRecordStartRef = useRef(null); // time in seconds when actual recording should begin (after pre-roll)
+  const skipPreRollRef = useRef(false);
+  const preRollRequestRef = useRef(0);
   const pendingStopAfterRef = useRef(null); // time in seconds when playback should stop (after post-roll)
 
   // Spot mode dialog — lets the user type exact timecode for a clip
@@ -986,6 +988,7 @@ export default function Studio() {
       // Pre-roll check: when playhead reaches the pending record start point, begin actual recording
       if (pendingRecordStartRef.current !== null && !isRecording && currentTimeRef.current >= pendingRecordStartRef.current) {
         pendingRecordStartRef.current = null;
+        skipPreRollRef.current = true;
         toggleRecordRef.current();
       }
 
@@ -1544,7 +1547,11 @@ export default function Studio() {
     skipCountInRef.current = false;
 
     // Pre-roll: jump back and start playback so the user hears context before the record point
-    if (!isRecording && preRoll > 0) {
+    if (!isRecording && preRoll > 0 && !skipPreRollRef.current) {
+      // A pending pre-roll must not be queued twice while playback starts.
+      if (pendingRecordStartRef.current !== null) return;
+      const preRollRequest = ++preRollRequestRef.current;
+      const preRollEpoch = historyEpochRef.current;
       const recordStartPos = currentTimeRef.current;
       pendingRecordStartRef.current = recordStartPos;
       updateCurrentTime(Math.max(0, recordStartPos - preRoll));
@@ -1569,15 +1576,23 @@ export default function Studio() {
       });
       if (preRollPlayPromises.length > 0) {
         const started = await Promise.all(preRollPlayPromises);
+        if (preRollRequestRef.current !== preRollRequest ||
+            historyEpochRef.current !== preRollEpoch ||
+            pendingRecordStartRef.current !== recordStartPos) return;
         if (!started.some(Boolean)) {
           pendingRecordStartRef.current = null;
           toast.error("Pre-roll audio couldn't start. Click Record again to retry.");
           return;
         }
       }
+      if (preRollRequestRef.current !== preRollRequest ||
+          historyEpochRef.current !== preRollEpoch ||
+          pendingRecordStartRef.current !== recordStartPos) return;
       setIsPlaying(true);
       return; // RAF loop will call toggleRecord when playhead reaches recordStartPos
     }
+    // One-shot bypass when pre-roll playback reaches its punch-in position.
+    skipPreRollRef.current = false;
 
     if (isPlaying) setIsPlaying(false);
 
@@ -1740,6 +1755,8 @@ export default function Studio() {
     setIsPlaying(false);
     setCountInActive(false);
     skipCountInRef.current = false;
+    skipPreRollRef.current = false;
+    preRollRequestRef.current += 1;
     pendingRecordStartRef.current = null;
     pendingStopAfterRef.current = null;
     if (isRecording) { setIsRecording(false); stopRecordingProcess(); } else { sounds.recStop(); }

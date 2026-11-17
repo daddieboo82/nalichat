@@ -19,7 +19,8 @@ describe('Studio MediaRecorder teardown safety', () => {
     expect(block).toContain('stoppedRecorder.onstop = null;');
     expect(block).toContain('recordingFinalizeInFlightRef.current = false;');
     expect(block).toContain('if (historyEpochRef.current === stoppedSessionEpoch)');
-    expect(block).toContain('stoppedArmedIds.has(String(track.id)) ? { ...track, armed: false } : track');
+    expect(block).toContain('studioRecoverMidiOnAudioFailure(prev, {');
+    expect(block).toContain('armedIds: stoppedArmedIds, heldNotes: stoppedMidiNotes');
     expect(block).not.toContain('throw error');
   });
 });

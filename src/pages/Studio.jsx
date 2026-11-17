@@ -319,8 +319,9 @@ export default function Studio() {
       toast.error('Select a track first to edit its FX chain');
       return;
     }
+    const laneId = getStudioClipLaneId(selectedPluginTrack);
     setTracksWithHistory(prev => prev.map(t => (
-      t.id === selectedPluginTrack.id ? { ...t, plugins } : t
+      getStudioClipLaneId(t) === laneId ? { ...t, plugins } : t
     )));
   };
 
@@ -1699,8 +1700,12 @@ export default function Studio() {
   };
 
   const updateAutomatableTrack = (trackId, data) => {
-    setTracks(prev => prev.map(t => {
-      if (t.id !== trackId) return t;
+    setTracks(prev => {
+      const target = prev.find(t => t.id === trackId);
+      if (!target) return prev;
+      const laneId = getStudioClipLaneId(target);
+      return prev.map(t => {
+      if (getStudioClipLaneId(t) !== laneId) return t;
       const next = { ...t, ...data };
       const mode = t.automationWriteMode || 'read';
       if (!isPlaying || mode === 'read') return next;
@@ -1708,13 +1713,14 @@ export default function Studio() {
       const property = Object.keys(data).find(key => keys[key] && t.automationMode === key);
       if (!property) return next;
       const time = currentTimeRef.current;
-      if (mode === 'latch') automationLatchRef.current.set(`${trackId}:${property}`, data[property]);
+      if (mode === 'latch') automationLatchRef.current.set(`${t.id}:${property}`, data[property]);
       const points = [...(t[keys[property]] || [])].filter(p => Math.abs(p.time - time) > (mode === 'write' ? 0.12 : 0.08));
       points.push({ time, value: data[property] });
       points.sort((a, b) => a.time - b.time);
       next[keys[property]] = points;
       return next;
-    }));
+      });
+    });
   };
 
   const handleTrackClick = (e, trackId) => {
@@ -4288,7 +4294,9 @@ export default function Studio() {
       <MixerPanel
         show={showMixerPanel}
         onClose={() => setShowMixerPanel(false)}
-        tracks={tracks}
+        tracks={groupStudioClipLanes(tracks).map(lane => ({
+          ...lane.primary, laneClips: lane.clips,
+        }))}
         masterVolume={masterVolume}
         setMasterVolume={setMasterVolume}
         updateVolume={updateVolume}

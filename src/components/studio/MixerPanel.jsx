@@ -18,15 +18,22 @@ function WaveformVuMeter({ track, isPlaying, currentTimeRef, isMaster = false, m
 
   useEffect(() => {
     const tick = () => {
-      if (isPlaying && !silenced && !track?.muted && track?.waveform?.length > 0) {
+      if (isPlaying && !silenced && !track?.muted) {
         const t = currentTimeRef?.current || 0;
-        const trackStart = track.startTime || 0;
-        const trackEnd = trackStart + (track.duration || 40);
-        if (t >= trackStart && t < trackEnd) {
-          const posInTrack = t - trackStart;
-          const fullDuration = track.fullDuration || track.duration || 40;
-          const waveformIdx = Math.floor((posInTrack / fullDuration) * track.waveform.length) % track.waveform.length;
-          const rawLevel = track.waveform[waveformIdx] || 0;
+        // A mixer strip represents the entire lane; its VU meter must follow
+        // whichever split clip is currently active, not only the root clip.
+        const clips = track?.laneClips?.length ? track.laneClips : [track];
+        const activeClip = clips.find(clip =>
+          clip.waveform?.length > 0 &&
+          t >= (clip.startTime ?? 0) &&
+          t < (clip.startTime ?? 0) + (clip.duration ?? 0));
+        if (activeClip) {
+          const posInTrack = t - (activeClip.startTime ?? 0);
+          const fullDuration = activeClip.fullDuration || activeClip.duration || 40;
+          const offset = activeClip.clipStart || 0;
+          const waveformIdx = Math.max(0, Math.min(activeClip.waveform.length - 1,
+            Math.floor(((offset + posInTrack) / fullDuration) * activeClip.waveform.length)));
+          const rawLevel = activeClip.waveform[waveformIdx] || 0;
           const volScale = isMaster ? (masterVolume / 100) : (track.volume / 100) * (masterVolume / 100);
           const scaled = Math.min(1, rawLevel * volScale * 1.5);
           setLevel(scaled);

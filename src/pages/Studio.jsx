@@ -20,8 +20,7 @@ import { sounds } from '@/hooks/use-sound';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePerformance } from '@/hooks/use-performance';
 import { useSubscription } from '@/hooks/useSubscription';
-
-
+import StudioStatusBanners from '@/components/studio/StudioStatusBanners';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
@@ -3445,31 +3444,15 @@ export default function Studio() {
         <div className="absolute -bottom-40 right-1/4 w-[32rem] h-[32rem] rounded-full bg-accent/10 blur-3xl" />
       </div>
 
-      {/* Performance warning for low-end devices */}
-      {isLowEnd && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 px-4 py-1.5 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-xs font-medium backdrop-blur-md whitespace-nowrap">
-          ⚠ Performance Mode: Reduced waveform quality for smoother experience
-        </div>
-      )}
-
-      {!subscriptionLoading && !hasPaidAccess && (
-        <div className="mx-2 sm:mx-3 mt-2 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2 flex items-center justify-between gap-3 relative z-20">
-          <div className="min-w-0">
-            <p className="text-xs sm:text-sm font-semibold text-foreground">Take this session further with Premium</p>
-            <p className="hidden sm:block text-xs text-muted-foreground">Unlock more NALI.ai, advanced Studio tools, and the complete creator workflow.</p>
-          </div>
-          <Button
-            size="sm"
-            className="shrink-0"
-            onClick={() => {
-              trackProductEvent("upgrade_click", { source: "studio_upgrade", upgrade_feature: "studio.creator_workflow" });
-              navigate('/pricing?source=studio_upgrade&feature=studio.creator_workflow');
-            }}
-          >
-            Unlock Premium
-          </Button>
-        </div>
-      )}
+      <StudioStatusBanners
+        isLowEnd={isLowEnd}
+        isViewOnly={Boolean(roomId) && !projectLoading && !canEditProject}
+        showUpgradeBanner={!subscriptionLoading && !hasPaidAccess}
+        onUpgradeClick={() => {
+          trackProductEvent("upgrade_click", { source: "studio_upgrade", upgrade_feature: "studio.creator_workflow" });
+          navigate('/pricing?source=studio_upgrade&feature=studio.creator_workflow');
+        }}
+      />
 
       {/* Top Toolbar */}
       <div className="min-h-[4rem] py-2 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center justify-between gap-2 pl-2 sm:pl-4 pr-2 shrink-0 relative z-10">

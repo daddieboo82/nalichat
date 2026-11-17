@@ -82,7 +82,7 @@ export function createStudioKeyHandler(deps) {
         setActiveTool(tools[(index + 1 + tools.length) % tools.length]);
       }
     }
-    else if (e.key === 'Tab') { e.preventDefault();
+    else if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey) { e.preventDefault();
       const curr = currentTimeRef.current;
       if (e.shiftKey) {
         let prevPeak = null;

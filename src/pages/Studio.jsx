@@ -59,7 +59,7 @@ import FadePresetsDialog from '@/components/studio/FadePresetsDialog';
 import NudgeValueSelector from '@/components/studio/NudgeValueSelector';
 import VcaTrackHeader from '@/components/studio/VcaTrackHeader';
 import FolderTrackHeader from '@/components/studio/FolderTrackHeader';
-import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
+import { useStudioKeyboard } from '@/hooks/useStudioKeyboard';
 import { cutStudioClipAtPointer } from '@/lib/studioClipCut';
 import { getStudioClipLaneId, groupStudioClipLanes, visibleStudioClipLanes, reorderVisibleStudioClipLanes } from '@/lib/studioClipLanes';
 import { isStudioArmedLane } from '@/lib/studioRecordingLanes';
@@ -1950,26 +1950,17 @@ export default function Studio() {
     toggleRecord();
   };
 
-  // Keyboard shortcuts — handler logic extracted to src/lib/studioKeyHandler.js
-  useEffect(() => {
-    const handleKeyDown = createStudioKeyHandler({
-      undo, redo, togglePlay, toggleRecord, stop,
-      selectedTrackIds, setSelectedTrackIds,
-      deleteSelectedTracks, duplicateSelectedTracks, splitSelectedTracks,
-      toggleTrackProperty, addTrack, addVcaTrack, addFolderTrack, setEditMode,
-      toggleSolo, toggleMute, setShowFadePresets, setActiveTool, activeTool,
-      updateCurrentTime, setSelectionStart, setSelectionEnd,
-      selectionStart, selectionEnd, tracks, setLoopActive, loopActive,
-      setMetronomeEnabled, metronomeEnabled, handleHealSplit,
-      handleToggleGroup, handleRepeatClip, handleSeparateStems,
-      handleGenerateMelody, setShowBeatDetective, setTracksWithHistory,
-      setShowBigCounter, showBigCounter, setShowAudioSuite,
-      handleConsolidateClips, tabToClip, nudgeValue, zoom, currentTimeRef,
-      sounds, requestSave: handleSave,
-    });
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, isRecording, togglePlay, toggleRecord, selectedTrackIds, tracks, activeTool]);
+  // Studio shortcuts; deps are read after every render, so never stale.
+  useStudioKeyboard(() => ({
+    undo, redo, togglePlay, toggleRecord, stop, selectedTrackIds, setSelectedTrackIds, deleteSelectedTracks,
+    duplicateSelectedTracks, splitSelectedTracks, toggleTrackProperty, addTrack, addVcaTrack, addFolderTrack,
+    setEditMode, toggleSolo, toggleMute, setShowFadePresets, setActiveTool, activeTool, updateCurrentTime,
+    setSelectionStart, setSelectionEnd, selectionStart, selectionEnd, tracks, setLoopActive, loopActive,
+    setMetronomeEnabled, metronomeEnabled, handleHealSplit, handleToggleGroup, handleRepeatClip,
+    handleSeparateStems, handleGenerateMelody, setShowBeatDetective, setTracksWithHistory, setShowBigCounter,
+    showBigCounter, setShowAudioSuite, handleConsolidateClips, tabToClip, nudgeValue, zoom, currentTimeRef,
+    sounds, requestSave: handleSave,
+  }));
 
   const toggleMute = (trackId) => {
     sounds.click();

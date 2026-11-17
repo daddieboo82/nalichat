@@ -1398,9 +1398,12 @@ export default function Studio() {
         const blob = new Blob(stoppedChunks, { type: recordingMimeType });
         if (blob.size === 0) {
           // Empty captures must never erase a previously recorded clip.
-          setTracksWithHistory(prev => prev.map(t => (
-            stoppedArmedIds.has(String(t.id)) ? { ...t, armed: false } : t
-          )));
+          setTracksWithHistory(prev => {
+            if (historyEpochRef.current !== stoppedSessionEpoch) return prev;
+            return prev.map(t => (
+              stoppedArmedIds.has(String(t.id)) ? { ...t, armed: false } : t
+            ));
+          });
           if (historyEpochRef.current === stoppedSessionEpoch) {
             setRecordingStartTime(null);
             toast.error("No audio was captured. Please check your microphone and try again.");
@@ -1481,8 +1484,11 @@ export default function Studio() {
           // A failed take must not leave stale record-arm indicators, but
           // must never clear audio or controls belonging to a newer session.
           if (historyEpochRef.current === stoppedSessionEpoch) {
-            setTracksWithHistory(prev => prev.map(track =>
-              stoppedArmedIds.has(String(track.id)) ? { ...track, armed: false } : track));
+            setTracksWithHistory(prev => {
+              if (historyEpochRef.current !== stoppedSessionEpoch) return prev;
+              return prev.map(track =>
+                stoppedArmedIds.has(String(track.id)) ? { ...track, armed: false } : track);
+            });
             setRecordingStartTime(null);
             toast.error("Recording could not be finalized. Your existing tracks were preserved.");
           }
@@ -1510,8 +1516,11 @@ export default function Studio() {
         }
         recordingFinalizeInFlightRef.current = false;
         if (historyEpochRef.current === stoppedSessionEpoch) {
-          setTracksWithHistory(prev => prev.map(track =>
-            stoppedArmedIds.has(String(track.id)) ? { ...track, armed: false } : track));
+          setTracksWithHistory(prev => {
+            if (historyEpochRef.current !== stoppedSessionEpoch) return prev;
+            return prev.map(track =>
+              stoppedArmedIds.has(String(track.id)) ? { ...track, armed: false } : track);
+          });
           setRecordingStartTime(null);
           toast.error("Recording could not stop safely. Your existing tracks were preserved.");
         }

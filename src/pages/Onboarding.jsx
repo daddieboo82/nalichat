@@ -9,6 +9,7 @@ import { Loader2, CheckCircle2, Music, UserRound, MapPin, CalendarDays, MessageS
 import { toast } from "sonner";
 import OnboardingNaliGuide from "@/components/onboarding/OnboardingNaliGuide";
 import { trackProductEvent } from "@/lib/productAnalytics";
+import { safeReturnTo } from "@/lib/authReturnTo";
 
 export default function Onboarding() {
   const { user, checkUserAuth, isAuthenticated } = useAuth();
@@ -118,7 +119,9 @@ export default function Onboarding() {
       // SPA navigation — the auth state is already refreshed in React context
       // (checkUserAuth confirmed onboarding_completed), so a full page reload
       // would just re-download JS and re-run the auth probe for nothing.
-      navigate("/", { replace: true });
+      const destination = safeReturnTo();
+      // Never loop back into setup after it has completed.
+      navigate(new URL(destination, window.location.origin).pathname.toLowerCase() === "/onboarding" ? "/" : destination, { replace: true });
     } catch (error) {
       const httpStatus = Number(error?.response?.status ?? error?.status ?? 0);
       const isBadRequest = httpStatus === 400 || /status code 400/.test(String(error?.message || ""));

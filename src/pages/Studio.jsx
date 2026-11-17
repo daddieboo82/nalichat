@@ -61,6 +61,7 @@ import NudgeValueSelector from '@/components/studio/NudgeValueSelector';
 import VcaTrackHeader from '@/components/studio/VcaTrackHeader';
 import FolderTrackHeader from '@/components/studio/FolderTrackHeader';
 import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
+import { cutStudioClipAtPointer } from '@/lib/studioClipCut';
 
 const MAX_TRACKS = 999;
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
@@ -3639,43 +3640,17 @@ export default function Studio() {
                         const smartAtRightEdge = relativeX >= rect.width - smartEdgeWidth;
 
                         if (activeTool === 'cut') {
-                           // Behave like Pro Tools Separate-at-cursor: preserve both sides of
-                           // the source instead of destructively deleting everything to the right.
-                           const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                           const clipStartTime = track.startTime || 0;
-                           const clipDuration = track.duration || 40;
-                           const splitTime = clipStartTime + (clipDuration * clickRatio);
-                           const leftDuration = splitTime - clipStartTime;
-                           const rightDuration = clipDuration - leftDuration;
-                           if (leftDuration <= 0.001 || rightDuration <= 0.001) return;
-                           if (tracksRef.current.length >= maxTracks) {
-                             toast.error(`Track limit reached (${maxTracks}).`);
-                             return;
-                           }
-                           const rightId = nextTrackId(tracksRef.current);
-                           const rightClip = {
-                             ...track,
-                             id: rightId,
-                             name: `${track.name} (Cut)`,
-                             startTime: splitTime,
-                             duration: rightDuration,
-                             fullDuration: track.fullDuration || clipDuration,
-                             clipStart: (track.clipStart || 0) + leftDuration,
-                             splitFrom: track.splitFrom || track.id,
-                           };
-                           setTracksWithHistory(prev => [
-                             ...prev.map(t => t.id === track.id ? {
-                               ...t,
-                               duration: leftDuration,
-                               fullDuration: t.fullDuration || clipDuration,
-                               splitFrom: t.splitFrom || t.id,
-                             } : t),
-                             rightClip,
-                           ]);
-                           setSelectedTrackIds([rightId]);
-                           updateCurrentTime(splitTime);
-                           toast.success("Clip separated at cursor");
-                           return;
+                          // Cut removes the unwanted side of this clip in place.
+                          // Left-half pointer trims the left side; right-half trims the right.
+                          // It must not create a new track or duplicate any source audio.
+                          const ratio = Math.max(0, Math.min(1, relativeX / rect.width));
+                          const result = cutStudioClipAtPointer(track, ratio);
+                          if (!result.changed) return;
+                          setTracksWithHistory(prev => prev.map(t => t.id === track.id ? result.clip : t));
+                          setSelectedTrackIds([track.id]);
+                          updateCurrentTime(result.cutTime);
+                          toast.success(result.side === 'left' ? 'Removed audio left of cursor' : 'Removed audio right of cursor');
+                          return;
                         }
 
                         if (activeTool === 'scrub') {

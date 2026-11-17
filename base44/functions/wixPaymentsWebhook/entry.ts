@@ -10,6 +10,24 @@ async function sha256Hex(value: string) {
     .join('');
 }
 
+// Parse a decimal money string into integer minor units so totals compare
+// exactly. Returns null for anything that is not a clean >=2dp-safe decimal.
+function parseMinorUnits(value: unknown): number | null {
+  if (typeof value !== 'string' && typeof value !== 'number') return null;
+  const raw = String(value).trim();
+  if (!/^\d+(\.\d+)?$/.test(raw)) return null;
+  const [whole, fraction = ''] = raw.split('.');
+  // Sub-cent fractions are not a match; never truncate silently.
+  if (fraction.length > 2 && Number(fraction.slice(2)) !== 0) return null;
+  return Number(whole) * 100 + Number((fraction + '00').slice(0, 2));
+}
+
+function amountsMatch(charged: unknown, expected: unknown): boolean {
+  const left = parseMinorUnits(charged);
+  const right = parseMinorUnits(expected);
+  return left !== null && right !== null && left === right;
+}
+
 // Legacy compatibility only. New subscription checkout is Stripe-only.
 Deno.serve(async (req) => {
   let wixEventEntity: any = null;
@@ -124,7 +142,51 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Find the Subscription by checkout_id
+        // The server-owned purchase record is the only trustworthy description of
+        // what this checkout was allowed to charge, and the only link back to the
+        // buyer. Fail closed when it is missing.
+        const purchases = await base44.asServiceRole.entities.Base44Purchase.filter(
+          { checkoutSessionId: checkoutId }, '-created_date', 1,
+        );
+        const purchase = purchases[0];
+        if (!purchase) {
+          console.error('No Base44Purchase for Wix checkoutId:', checkoutId);
+          throw new Error('Unknown checkout');
+        }
+        if (purchase.status === 'paid') {
+          console.log('Wix order already processed:', checkoutId);
+          return Response.json({ success: true, duplicate: true });
+        }
+
+        // Never grant on the event alone: require an approved, paid order.
+        if (order?.status !== 'APPROVED' || order?.paymentStatus !== 'PAID') {
+          console.warn('Wix order not paid yet; leaving purchase pending:', checkoutId, order?.status, order?.paymentStatus);
+          throw new Error('Payment not confirmed');
+        }
+
+        // Require the charged total and currency to match the server-owned values.
+        const chargedAmount = order?.priceSummary?.total?.amount;
+        const chargedCurrency = order?.currency;
+        const storedAmount = typeof purchase.expected_amount === 'string' ? purchase.expected_amount : '';
+        if (storedAmount) {
+          const currencyMatches = String(chargedCurrency || '').toUpperCase() === String(purchase.currency || '').toUpperCase();
+          if (!amountsMatch(chargedAmount, storedAmount) || !currencyMatches) {
+            console.error('Wix charge does not match expected total:', checkoutId, {
+              chargedAmount,
+              chargedCurrency,
+              storedAmount,
+              storedCurrency: purchase.currency,
+            });
+            throw new Error('Charge does not match expected total');
+          }
+        } else {
+          // Records created before expected totals were stored. Status checks above
+          // still apply; log so the gap is visible rather than silent.
+          console.warn('Wix purchase has no stored expected total; relying on status checks:', checkoutId);
+        }
+
+        // Grant access BEFORE marking the purchase paid, so a crash in between
+        // leaves the record pending and retriable rather than paid without access.
         const subs = await base44.asServiceRole.entities.Subscription.filter(
           { checkout_id: checkoutId }, '-created_date', 1,
         );
@@ -145,23 +207,17 @@ Deno.serve(async (req) => {
             console.log('Subscription activated via Wix:', sub.id, 'checkoutId:', checkoutId, 'subscriptionId:', subscriptionId);
           }
         } else {
-          console.warn('No subscription found for Wix checkoutId:', checkoutId);
+          // Without a subscription to activate there is no access to grant, so the
+          // purchase stays pending and retriable.
+          console.error('No subscription found for paid Wix checkoutId:', checkoutId);
+          throw new Error('No subscription to activate');
         }
 
         // Mark the Base44Purchase as paid (idempotent)
-        try {
-          const purchases = await base44.asServiceRole.entities.Base44Purchase.filter(
-            { checkoutSessionId: checkoutId }, '-created_date', 1,
-          );
-          if (purchases[0] && purchases[0].status !== 'paid') {
-            await base44.asServiceRole.entities.Base44Purchase.update(purchases[0].id, {
-              status: 'paid',
-              paid_at: new Date().toISOString(),
-            });
-          }
-        } catch (purchaseError) {
-          console.error('Failed to mark Base44Purchase as paid for Wix checkout:', checkoutId, purchaseError);
-        }
+        await base44.asServiceRole.entities.Base44Purchase.update(purchase.id, {
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+        });
 
         return Response.json({ success: true });
       } catch (err) {

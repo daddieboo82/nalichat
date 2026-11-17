@@ -191,6 +191,9 @@ Deno.serve(async (req) => {
         user_id: user.id,
         user_email: user.email || null,
         items: [{ type: 'subscription', sku, plan: item.plan, billingPeriod: item.billingPeriod }],
+        // Server-owned expectation the webhook must match before granting access.
+        expected_amount: item.price,
+        currency: 'USD',
       });
     } catch (error) {
       console.error('Failed to persist Base44Purchase for Wix checkout:', error);

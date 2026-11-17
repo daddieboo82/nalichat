@@ -212,6 +212,7 @@ export default function Studio() {
   const getTrackAudioRef = useRef(null);
   const playbackStartingRef = useRef(new Set());
   const playbackFailedRef = useRef(new Set());
+  const playbackAttemptRef = useRef(0);
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
   if (!mixEngineRef.current) mixEngineRef.current = createMixEngine();
@@ -1109,6 +1110,9 @@ export default function Studio() {
   };
 
   const togglePlay = () => {
+    // Each Play/Pause action invalidates promises from earlier starts.
+    const playbackAttempt = ++playbackAttemptRef.current;
+    const playbackEpoch = historyEpochRef.current;
     if (isRecording) {
       setIsRecording(false);
       stopRecordingProcess();
@@ -1138,6 +1142,8 @@ export default function Studio() {
       // previously this failed silently, so the transport looked like it was playing with no sound.
       if (playPromises.length > 0) {
         Promise.all(playPromises).then(results => {
+          if (playbackAttemptRef.current !== playbackAttempt ||
+              historyEpochRef.current !== playbackEpoch) return;
           if (results.every(r => r && r.failed)) {
             toast.error("Playback was blocked by your browser. Click Play again to retry.");
             setIsPlaying(false);
@@ -1610,7 +1616,10 @@ export default function Studio() {
     // One-shot bypass when pre-roll playback reaches its punch-in position.
     skipPreRollRef.current = false;
 
-    if (isPlaying) setIsPlaying(false);
+    if (isPlaying) {
+      playbackAttemptRef.current += 1;
+      setIsPlaying(false);
+    }
 
     if (!isRecording) {
       const armedMidiOnly = tracks.some(t => t.armed && ['midi', 'instrument'].includes(t.type)) && !tracks.some(t => t.armed && !['midi', 'instrument'].includes(t.type));
@@ -1765,6 +1774,7 @@ export default function Studio() {
   toggleRecordRef.current = toggleRecord;
 
   const stop = () => {
+    playbackAttemptRef.current += 1;
     // Invalidate an in-flight permission request before it resolves.
     microphoneStartupRef.current.token += 1;
     microphoneStartupRef.current.pending = false;

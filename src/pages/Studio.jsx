@@ -2927,18 +2927,24 @@ export default function Studio() {
   // Render each audible track and package the stems in one browser download.
   // Multiple programmatic downloads can be blocked by mobile/desktop browsers.
   const handleExportStems = async () => {
-    const audioTracks = tracks.filter(t => (t.audioUrl || t.file_url) && !t.muted);
-    if (audioTracks.length === 0) {
+    const audioLanes = groupStudioClipLanes(
+      tracks.filter(t => (t.audioUrl || t.file_url) && !t.muted),
+    );
+    if (audioLanes.length === 0) {
       toast.error("No audio tracks to export as stems.");
       return;
     }
     setIsDownloading(true);
-    toast.info(`Exporting ${audioTracks.length} stems...`);
+    toast.info(`Exporting ${audioLanes.length} stems...`);
     try {
       const zip = new JSZip();
       const usedNames = new Set();
-      for (const [index, track] of audioTracks.entries()) {
-        const blob = await renderMixToWav([{ ...track, audioUrl: track.audioUrl || track.file_url }]);
+      for (const [index, lane] of audioLanes.entries()) {
+        // One stem per visible lane, mixing every split region in that lane.
+        const track = lane.primary;
+        const blob = await renderMixToWav(lane.clips.map(clip => ({
+          ...clip, audioUrl: clip.audioUrl || clip.file_url,
+        })));
         if (!(blob instanceof Blob) || blob.size === 0) {
           throw new Error(`Could not render stem: ${track.name || index + 1}`);
         }
@@ -2952,7 +2958,7 @@ export default function Studio() {
         usedNames.add(filename.toLowerCase());
         zip.file(filename, blob);
       }
-      if (Object.keys(zip.files).length !== audioTracks.length) {
+      if (Object.keys(zip.files).length !== audioLanes.length) {
         throw new Error("Stem archive is missing one or more tracks.");
       }
       const archive = await zip.generateAsync({ type: "blob" });

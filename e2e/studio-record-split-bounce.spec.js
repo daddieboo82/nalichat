@@ -26,16 +26,21 @@ async function openDemoProject(page) {
   return clips;
 }
 
-// Clicks the ruler so the playhead lands inside the demo clips (they all start at 0).
-async function seekIntoClips(page, pageIndex) {
+// Clicks the ruler at the horizontal middle of a clip, so the playhead lands
+// strictly inside it at any zoom level (split ignores a playhead outside the clip).
+async function seekIntoClip(page, clip) {
   const ruler = page.getByTestId('studio-timeline-ruler');
   await expect(ruler).toBeVisible({ timeout: 15000 });
-  const box = await ruler.boundingBox();
-  await page.mouse.click(box.x + box.width * 0.5, box.y + box.height / 2);
+  const rulerBox = await ruler.boundingBox();
+  const clipBox = await clip.boundingBox();
+  await page.mouse.click(clipBox.x + clipBox.width / 2, rulerBox.y + rulerBox.height / 2);
 }
 
 test.describe('Studio record, split and bounce', () => {
   test.skip(!(email && password), 'requires E2E credentials');
+  // The Studio editor is a desktop DAW; the phone layout collapses its transport
+  // and toolbar onto a different surface, so these flows are desktop-only.
+  test.skip(({ isMobile }) => isMobile, 'Studio editor flows run on desktop');
 
   test('splits a clip at the playhead and undoes it', async ({ page }) => {
     await login(page);
@@ -44,13 +49,13 @@ test.describe('Studio record, split and bounce', () => {
 
     await clips.first().click();
     await expect(clips.first()).toHaveAttribute('class', /border-primary/, { timeout: 10000 });
-    await seekIntoClips(page, 0.5);
+    await seekIntoClip(page, clips.first());
 
     await page.keyboard.press('Control+e');
-    await expect.poll(() => clips.count(), { timeout: 10000 }).toBe(before + 1);
+    await expect(clips).toHaveCount(before + 1, { timeout: 10000 });
 
     await page.keyboard.press('Control+z');
-    await expect.poll(() => clips.count(), { timeout: 10000 }).toBe(before);
+    await expect(clips).toHaveCount(before, { timeout: 10000 });
   });
 
   test('records a take through an armed track', async ({ page }) => {

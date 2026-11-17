@@ -1258,7 +1258,9 @@ export default function Studio() {
         if (navigator.requestMIDIAccess) {
           try {
             if (!midiAccess) {
-              midiAccessRef.current = midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+              midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+              if (!mounted) return;
+              midiAccessRef.current = midiAccess;
               midiAccess.onstatechange = (e) => {
                 if (mounted) {
                    setHardware(prev => ({ ...prev, midi: e.currentTarget.inputs.size > 0 }));
@@ -1268,7 +1270,14 @@ export default function Studio() {
             hasMidi = midiAccess.inputs.size > 0;
             midiAccess.inputs.forEach(input => {
               input.onmidimessage = (event) => {
-                if (!midiRecordingRef.current) return;
+                if (!mounted || !midiRecordingRef.current) return;
+                const eventSessionEpoch = historyEpochRef.current;
+                // Events queued by a previous project must not write into
+                // newly loaded tracks, even when their IDs are reused.
+                const updateMidiTrack = (trackId, updater) => setTracks(prev => {
+                  if (!mounted || historyEpochRef.current !== eventSessionEpoch) return prev;
+                  return prev.map(t => String(t.id) === String(trackId) ? updater(t) : t);
+                });
                 const [status, note, velocity] = event.data || [];
                 const command = status & 0xf0;
                 const channel = (status & 0x0f) + 1;
@@ -1277,7 +1286,8 @@ export default function Studio() {
                 const beatNow = currentTimeRef.current * (bpmRef.current / 60);
                 armedMidi.forEach(track => {
                   const key = `${track.id}:${channel}:${note}`;
-                  const appendEvent = (eventKey, eventData) => setTracks(prev => prev.map(t => t.id === track.id ? { ...t, [eventKey]: [...(t[eventKey] || []), eventData] } : t));
+                  const appendEvent = (eventKey, eventData) =>
+                    updateMidiTrack(track.id, t => ({ ...t, [eventKey]: [...(t[eventKey] || []), eventData] }));
                   if (command === 0x90 && velocity > 0) {
                     midiActiveNotesRef.current.set(key, { trackId: track.id, note, startBeat: beatNow, velocity, released: false });
                   } else if (command === 0x80 || (command === 0x90 && velocity === 0)) {
@@ -1290,7 +1300,9 @@ export default function Studio() {
                     midiActiveNotesRef.current.delete(key);
                     const durationBeats = Math.max(.25, Math.round((beatNow - active.startBeat) * 4) / 4);
                     const recorded = { id: crypto.randomUUID(), note: active.note, startBeat: Math.round(active.startBeat * 4) / 4, durationBeats, velocity: active.velocity };
-                    setTracks(prev => prev.map(t => t.id === active.trackId ? { ...t, midiNotes: [...(t.midiNotes || []), recorded].sort((a,b) => a.startBeat - b.startBeat) } : t));
+                    updateMidiTrack(active.trackId, t => ({
+                      ...t, midiNotes: [...(t.midiNotes || []), recorded].sort((a, b) => a.startBeat - b.startBeat),
+                    }));
                   } else if (command === 0xb0) {
                     const controller = note;
                     const value = velocity;
@@ -1305,7 +1317,9 @@ export default function Studio() {
                           midiActiveNotesRef.current.delete(activeKey);
                           const durationBeats = Math.max(.25, Math.round((beatNow - active.startBeat) * 4) / 4);
                           const recorded = { id: crypto.randomUUID(), note: active.note, startBeat: Math.round(active.startBeat * 4) / 4, durationBeats, velocity: active.velocity };
-                          setTracks(prev => prev.map(t => t.id === active.trackId ? { ...t, midiNotes: [...(t.midiNotes || []), recorded].sort((a,b) => a.startBeat - b.startBeat) } : t));
+                          updateMidiTrack(active.trackId, t => ({
+                      ...t, midiNotes: [...(t.midiNotes || []), recorded].sort((a, b) => a.startBeat - b.startBeat),
+                    }));
                         });
                       }
                     }
@@ -1346,6 +1360,8 @@ export default function Studio() {
       }
       if (midiAccess) {
         midiAccess.onstatechange = null;
+        midiAccess.inputs.forEach(input => { input.onmidimessage = null; });
+        if (midiAccessRef.current === midiAccess) midiAccessRef.current = null;
       }
     };
   }, []);

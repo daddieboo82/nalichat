@@ -13,17 +13,17 @@ export default function StudioWelcome({
 }) {
   const backupInputRef = useRef(null);
   return (
-    <div className="relative flex min-h-screen min-h-[100dvh] flex-1 flex-col items-center justify-center overflow-y-auto bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:p-8">
+    <div className="studio-mobile-welcome relative flex min-h-screen min-h-[100dvh] flex-1 flex-col items-center justify-center overflow-y-auto bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:p-8">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(var(--primary),0.15)_0%,transparent_70%)] pointer-events-none" />
-      <div className="ui-surface z-10 flex w-full max-w-lg flex-col items-center rounded-3xl border border-border/80 bg-card/80 p-5 shadow-2xl backdrop-blur-xl sm:p-8">
-        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/20 shadow-lg shadow-primary/10 sm:mb-6">
+      <div className="studio-mobile-welcome-card ui-surface z-10 flex w-full max-w-lg flex-col items-center rounded-3xl border border-border/80 bg-card/80 p-5 shadow-2xl backdrop-blur-xl sm:p-8">
+        <div className="studio-mobile-welcome-icon mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/20 shadow-lg shadow-primary/10 sm:mb-6">
           <Mic className="w-8 h-8 text-primary" />
         </div>
         <h1 className="mb-2 text-center text-2xl font-heading font-bold tracking-tight sm:text-3xl">Welcome to Studio</h1>
-        <p className="mb-7 max-w-sm text-center text-sm leading-relaxed text-muted-foreground sm:mb-8">Record anywhere on your phone or tablet. Open the same saved session on a PC for the full professional mixing and editing workspace.</p>
+        <p className="studio-mobile-welcome-description mb-7 max-w-sm text-center text-sm leading-relaxed text-muted-foreground sm:mb-8">Record anywhere on your phone or tablet. Open the same saved session on a PC for the full professional mixing and editing workspace.</p>
         
         {recoveryPanel && <div className="w-full mb-3">{recoveryPanel}</div>}
-        <div className="flex flex-col gap-3 w-full">
+        <div className="studio-mobile-welcome-actions flex flex-col gap-3 w-full">
           <Button onClick={handleStartBlank} className="ui-hover min-h-14 w-full justify-start rounded-xl text-base font-semibold shadow-lg shadow-primary/15" variant="default">
             <Plus className="w-5 h-5 mr-3" /> Create New Project
           </Button>

@@ -1,6 +1,7 @@
 /* Studio is recording-first on narrow portrait phones AND short landscape phones.
    Full tablets and PC editors are unaffected. */
-.studio-mobile-workspace { min-width: 0; }
+.studio-mobile-workspace { min-width: 0; padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+.studio-mobile-landscape { padding-bottom: calc(55px + env(safe-area-inset-bottom, 0px)); }
 .studio-mobile-workspace .studio-mobile-record-view,
 .studio-mobile-workspace .studio-mobile-tools-view,
 .studio-mobile-workspace .studio-mobile-timeline { min-height: 0; min-width: 0; }
@@ -42,7 +43,7 @@
   grid-template-columns: minmax(210px, 38%) minmax(0, 1fr);
   grid-template-rows: 28px minmax(0, 1fr);
 }
-.studio-mobile-landscape .studio-mobile-record-view[style*="display: block"] { display: grid !important; }
+.studio-mobile-landscape .studio-mobile-record-grid { display: grid !important; }
 .studio-mobile-landscape .studio-mobile-record-heading {
   grid-column: 1 / -1; grid-row: 1;
   position: static; overflow: hidden; padding: 3px 10px;

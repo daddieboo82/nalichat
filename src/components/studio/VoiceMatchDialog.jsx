@@ -35,13 +35,15 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
     let active = true;
     setProviderModes(null);
     setProviderError('');
+    // Never invoke a hosted AI backend while using either free local mode.
+    if (mode === 'enhance' || mode === 'local-rvc') return () => { active = false; };
     getVoiceMatchModes().then(modes => {
       if (active) setProviderModes(modes);
     }).catch(error => {
       if (active) setProviderError(error.message || 'Voice Match provider is unavailable.');
     });
     return () => { active = false; };
-  }, [owner, providerCheck]);
+  }, [owner, providerCheck, mode]);
 
   useEffect(() => {
     let active = true;
@@ -122,12 +124,12 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
           </div>
           <p className="text-xs text-muted-foreground" role="status">{gpuCheck?.reason || 'WebGPU uses your device, not paid cloud inference. Checking support does not install a voice model or use credits.'}</p>
         </div>
-        {providerError ? (
+        {mode !== 'enhance' && mode !== 'local-rvc' && (providerError ? (
           <div className="flex items-center justify-between gap-2">
             <p role="status" className="text-sm text-muted-foreground">Local Vocal Polish is available. AI voice modes need a connected provider. {providerError}</p>
             <Button type="button" variant="outline" size="sm" onClick={() => setProviderCheck(attempt => attempt + 1)}>Check again</Button>
           </div>
-        ) : !providerModes && <p role="status" className="text-sm text-muted-foreground">Local Vocal Polish is available. Checking AI voice modes…</p>}
+        ) : !providerModes && <p role="status" className="text-sm text-muted-foreground">Checking hosted AI voice modes…</p>)}
         {mode !== 'enhance' && mode !== 'local-rvc' && providerModes && !providerModes.includes(mode) && <p role="status" className="text-sm text-muted-foreground">This generation mode is unavailable on the connected provider.</p>}
         <fieldset disabled={busy} className="space-y-4">
           <label className="flex gap-2 text-sm">
@@ -206,6 +208,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
             <div className="space-y-2">
               <audio controls src={preview} className="w-full" aria-label="Generated voice preview" />
               {mode === 'enhance' && <p className="text-xs text-muted-foreground" role="status">Processed on this device using {result.processingBackend === 'webgpu' ? 'free WebGPU acceleration' : 'the browser CPU fallback'}. No paid inference credits used.</p>}
+              {mode === 'local-rvc' && <p className="text-xs text-muted-foreground" role="status">Converted locally using browser WebGPU/WebAssembly. Your model files and audio were not uploaded to an inference server.</p>
               <Button type="button" onClick={() => { if (onAdd(result)) onClose(); }}>Add to new track</Button>
             </div>
           )}

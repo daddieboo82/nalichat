@@ -218,3 +218,12 @@
 }
 @media (prefers-reduced-motion:reduce){.studio-mobile-welcome-actions>button{transition:none}}
 
+
+@media (orientation:portrait) and (max-height:700px){
+.studio-mobile-premium .studio-mobile-meter-panel{display:none!important}
+.studio-mobile-premium .studio-mobile-active-status{display:flex!important;align-items:center;justify-content:space-between;gap:6px}
+.studio-mobile-premium .studio-mobile-active-status .studio-landscape-live{display:inline;white-space:nowrap;font-size:10px}
+.studio-mobile-premium .studio-mobile-active-status>div{min-width:0;font-size:11px;line-height:1.2}
+.studio-mobile-premium .studio-mobile-active-status>p{display:none}
+}
+

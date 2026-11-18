@@ -1,6 +1,6 @@
 import { validateNaliVoiceModel } from './naliVoiceCore';
-import { readPrivateNaliVoiceModel, savePrivateNaliVoiceModel } from './naliVoiceModelStore';
-import { isPrivateVoiceTrainingEnabled } from './naliVoiceTrainingConsent';
+import { readPrivateNaliVoiceModel, savePrivateNaliVoiceModel, clearPrivateNaliVoiceModel } from './naliVoiceModelStore';
+import { isPrivateVoiceTrainingEnabled, setPrivateVoiceTrainingEnabled } from './naliVoiceTrainingConsent';
 
 // Keep updates serialized per owner: older recordings must never overwrite a
 // newer model. Each queued update reads the latest checkpoint before training.
@@ -73,4 +73,13 @@ export async function trainPrivateNaliVoiceFromRecording(owner, blob, {
   });
   queues.set(owner, task);
   try { return await task; } finally { if (queues.get(owner) === task) queues.delete(owner); }
+}
+
+export async function forgetPrivateNaliVoiceTraining(owner) {
+  // Revoke first; let any already-running training settle before deleting the
+  // checkpoint so its late write cannot recreate a model after erasure.
+  setPrivateVoiceTrainingEnabled(owner, false);
+  const pending = queues.get(owner);
+  if (pending) await pending.catch(() => {});
+  await clearPrivateNaliVoiceModel(owner);
 }

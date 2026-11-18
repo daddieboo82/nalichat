@@ -76,6 +76,7 @@ import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from '@/lib/sharedStudioCapture';
 import { createPreferredStudioRecorder } from '@/lib/studioPcmRecorder';
 import NaliLatencyControl from '@/components/studio/NaliLatencyControl';
+import { readStudioLatencyProfile, safeNaliOverdubCompensation } from '@/lib/naliLatencyEngine';
 import { fetchAuthorizedStudioVoiceMessage } from '@/lib/studioMessageVoiceImport';
 import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
 import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
@@ -214,6 +215,7 @@ export default function Studio() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const recordingFinalizeInFlightRef = useRef(false);
+  const recordingOverdubRef = useRef({ hasBackingTrack: false, micDeviceId: null });
   const microphoneStartupRef = useRef({ token: 0, pending: false });
   const studioMountedRef = useRef(true);
   const midiActiveNotesRef = useRef(new Map());
@@ -1537,6 +1539,7 @@ export default function Studio() {
       const stoppedRecorder = mediaRecorderRef.current;
       const stoppedChunks = audioChunksRef.current;
       const stoppedArmedIds = new Set(tracksRef.current.filter(t => t.armed).map(t => String(t.id)));
+      const stoppedOverdub = { ...recordingOverdubRef.current };
       const stoppedStartTime = recordingStartTime !== null ? recordingStartTime : currentTimeRef.current;
       const stoppedEndTime = currentTimeRef.current;
       const stoppedSessionEpoch = historyEpochRef.current;
@@ -1640,6 +1643,9 @@ export default function Studio() {
             })),
             {
               audioUrl, waveform: realWaveform, captureQuality,
+              latencyCorrectionSeconds: safeNaliOverdubCompensation(readStudioLatencyProfile(), {
+                ...stoppedOverdub, duration: recordedDuration || Math.max(1, stoppedEndTime - stoppedStartTime),
+              }),
               startTime: stoppedStartTime,
               duration: recordedDuration || Math.max(1, stoppedEndTime - stoppedStartTime),
               nextId: nextTrackId(prev),
@@ -1881,6 +1887,12 @@ export default function Studio() {
           return;
         }
         mediaStreamRef.current = stream;
+        recordingOverdubRef.current = {
+          micDeviceId: stream.getAudioTracks?.()[0]?.getSettings?.().deviceId || null,
+          hasBackingTrack: tracks.some(track => !isStudioArmedLane(track, tracks) && track.audioUrl &&
+            !track.muted && (!tracks.some(t => t.solo) || track.solo) &&
+            studioPlaybackPosition(track, currentTimeRef.current).active),
+        };
         const micSettings = inspectSharedStudioCaptureSettings(stream.getAudioTracks?.()[0]?.getSettings?.());
         if (micSettings.warning) toast.warning(micSettings.warning);
 

@@ -45,6 +45,7 @@ import { saveStudioRecoveryTake, studioRecoveryScope } from '@/lib/studioTakeRec
 import { startMobileRecordingCheckpoints } from '@/lib/mobileRecordingCheckpoints';
 import { startCompressedRecordingCheckpoints } from '@/lib/compressedRecordingCheckpoints';
 import MobileStudioRecoveries from '@/components/studio/MobileStudioRecoveries';
+import MobileStudioPreflight from '@/components/studio/MobileStudioPreflight';
 import { copyToClipboard } from '@/lib/clipboard';
 import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
@@ -4154,7 +4155,10 @@ export default function Studio() {
           <p className="text-sm font-bold">Record anywhere</p>
           <p className="text-[11px] text-muted-foreground">Capture on your phone. Open this session on a PC for precision editing, mixing, and mastering.</p>
         </div>
-        <div className="p-3 pb-0"><MobileStudioRecoveries ownerId={user?.id} scope={studioRecoveryScope(roomId)} onRestore={restoreMobileTake} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving || !canEditProject} /></div>
+        <div className="p-3 pb-0 space-y-3">
+          <MobileStudioPreflight disabled={isRecording || mobileTakeFinalizing || microphoneStartupRef.current.pending} />
+          <MobileStudioRecoveries ownerId={user?.id} scope={studioRecoveryScope(roomId)} onRestore={restoreMobileTake} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving || !canEditProject} />
+        </div>
         <MobileStudioTracks lanes={visibleStudioClipLanes(tracks)} selectedTrackIds={selectedTrackIds}
           onSelect={id => setSelectedTrackIds([id])} onArm={toggleArm} onMute={toggleMute} onSolo={toggleSolo}
           onVolume={updateVolume} onAdd={addMobileVocalTrack} onImport={handleImportClick} onReconstruct={openGenerativeReconstruction}

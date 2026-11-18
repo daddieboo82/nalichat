@@ -10,6 +10,7 @@ import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from "@/lib/
 import { analyzeSharedStudioRecordedBlob } from "@/lib/sharedStudioCaptureQuality";
 import { studioRecordingExtension } from "@/lib/studioRecorderCodec";
 import { createPreferredStudioRecorder } from "@/lib/studioPcmRecorder";
+import NaliLatencyControl from "@/components/studio/NaliLatencyControl";
 import { sessionTrackStart } from "@/lib/sessionTrackTiming";
 
 // BounceDialog and renderMasteredMix key off `audioUrl`, but Track entities
@@ -254,7 +255,8 @@ export default function ChatSessionViewer({ message, currentUser }) {
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-b border-border/50 bg-secondary/30">
         <h3 className="font-semibold text-sm truncate min-w-0 flex-1 max-w-[200px]">Live Session: {message.text || "Untitled"}</h3>
         <div className="flex items-center gap-2">
-          {uploading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+          <NaliLatencyControl compact disabled={isRecording || uploading} />
+          {uploading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
           {isRecording ? (
             <Button size="sm" variant="destructive" onClick={stopRecording} className="h-8 rounded-full gap-2">
               <Square className="w-3.5 h-3.5 fill-current" /> Stop

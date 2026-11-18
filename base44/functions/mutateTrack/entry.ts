@@ -9,7 +9,7 @@ import {
 } from '../../shared/conversationMembershipLock.ts';
 
 const MUTABLE_KEYS = new Set([
-  'name','volume','pan','muted','solo','color','description','waveform_data','duration'
+  'name','volume','pan','muted','solo','color','description','waveform_data','duration','start_time'
 ]);
 const DELETE_BATCH_SIZE = 200;
 
@@ -230,6 +230,13 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Invalid track duration' }, { status: 400 });
       }
       patch.duration = duration;
+    }
+    if (patch.start_time !== undefined) {
+      const startTime = Number(patch.start_time);
+      if (!Number.isFinite(startTime) || startTime < 0 || startTime > 24 * 60 * 60) {
+        return Response.json({ error: 'Invalid track timeline position', code: 'INVALID_TRACK_START_TIME' }, { status: 400 });
+      }
+      patch.start_time = startTime;
     }
     if (patch.muted !== undefined) {
       if (typeof patch.muted !== 'boolean') {

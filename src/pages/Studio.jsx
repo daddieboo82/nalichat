@@ -37,6 +37,7 @@ import StudioWelcome from '@/components/studio/StudioWelcome';
 import StudioDialogs from '@/components/studio/StudioDialogs';
 import JamRoomOverlay from '@/components/studio/JamRoomOverlay';
 import StudioToolbar2 from '@/components/studio/StudioToolbar2';
+import MobileStudioTracks from '@/components/studio/MobileStudioTracks';
 import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
 const PluginRack = lazy(() => import('@/components/studio/PluginRack'));
@@ -166,6 +167,7 @@ export default function Studio() {
   // resolution changes; use the latest resolution during an intentional load.
   const waveformPointsRef = useRef(WAVEFORM_POINTS);
   waveformPointsRef.current = WAVEFORM_POINTS;
+  const [mobileStudioTab, setMobileStudioTab] = useState('record');
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const currentTimeRef = useRef(0);
@@ -3692,7 +3694,7 @@ export default function Studio() {
         </div>
 
         {/* Transport Controls */}
-        <div className="flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
+        <div className="hidden md:flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Return to Zero (Home)" aria-label="Return to Zero (Home)" aria-keyshortcuts="Home" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Return to Zero <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Home</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop" aria-label="Stop" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Square className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Numpad 0</kbd></TooltipContent></Tooltip>
@@ -3711,7 +3713,7 @@ export default function Studio() {
            <PreRollPostRoll preRoll={preRoll} setPreRoll={setPreRoll} postRoll={postRoll} setPostRoll={setPostRoll} />
 
         {/* Right Tools - Hardware & Export */}
-        <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
+        <div className="hidden md:flex flex-wrap items-center justify-end gap-2 min-w-0">
           {/* Live Collaborators */}
           <LivePresenceBar peers={livePeers} />
 
@@ -3899,7 +3901,8 @@ export default function Studio() {
         </div>
       </div>
 
-      {/* Toolbar 2 (Tools) */}
+      {/* Desktop precision editing remains available on PC. */}
+      <div className="hidden md:block">
       <StudioToolbar2
         addTrack={addTrack} addVcaTrack={addVcaTrack} addFolderTrack={addFolderTrack} selectedTrackIds={selectedTrackIds} tracks={tracks}
         handleSeparateStems={handleSeparateStems} isProcessing={isProcessing} handleGenerateMelody={handleGenerateMelody}
@@ -3911,18 +3914,56 @@ export default function Studio() {
         deleteSelectedTracks={deleteSelectedTracks} zoom={zoom} setZoom={setZoom}
         gridSize={gridSize} setGridSize={setGridSize}
       />
+      </div>
       {/* setEditingTrack prop removed — Wave Editor was merged into this inline timeline */}
 
       {/* Markers Bar — Pro Tools-style memory locations */}
+      <div className={cn("hidden md:block", mobileStudioTab === "timeline" && "max-md:block")}>
       <MarkersBar
         projectId={roomId || 'local_studio'}
         currentTime={() => currentTimeRef.current}
         onSeek={updateCurrentTime}
         zoom={zoom}
       />
+      </div>
+
+      {/* Mobile recording-first workspace: full desktop projects, simpler touch controls. */}
+      <div className="md:hidden mx-2 mt-2 flex shrink-0 gap-1 rounded-2xl border border-white/10 bg-white/[0.05] p-1" role="tablist" aria-label="Mobile Studio views">
+        {[["record", "Record"], ["timeline", "Timeline"], ["tools", "Tools"]].map(([tab, label]) => (
+          <button key={tab} type="button" role="tab" aria-selected={mobileStudioTab === tab}
+            onClick={() => setMobileStudioTab(tab)}
+            className={cn("min-h-11 flex-1 rounded-xl text-sm font-semibold transition-colors", mobileStudioTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}>{label}</button>
+        ))}
+      </div>
+      <div className={cn("md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]", mobileStudioTab !== "record" && "hidden")}>
+        <div className="sticky top-0 z-10 border-b border-white/10 bg-[#1D1728]/95 px-4 py-3 backdrop-blur">
+          <p className="text-sm font-bold">Record anywhere</p>
+          <p className="text-[11px] text-muted-foreground">Capture on your phone. Open this session on a PC for precision editing, mixing, and mastering.</p>
+        </div>
+        <MobileStudioTracks lanes={visibleStudioClipLanes(tracks)} selectedTrackIds={selectedTrackIds}
+          onSelect={id => setSelectedTrackIds([id])} onArm={toggleArm} onMute={toggleMute} onSolo={toggleSolo}
+          onVolume={updateVolume} onAdd={addTrack} onImport={handleImportClick} onReconstruct={openGenerativeReconstruction}
+          onMixer={() => setShowMixerPanel(true)} onPolish={toggleAutoPolishVocals} autoPolish={autoPolishVocals}
+          readOnly={!canEditProject || isRecording} />
+      </div>
+      <div className={cn("md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19] p-3", mobileStudioTab !== "tools" && "hidden")}>
+        <h2 className="mb-3 text-base font-semibold">Studio tools</h2>
+        <div className="grid grid-cols-2 gap-2">
+          <Button className="min-h-12" variant="outline" onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Session</Button>
+          <Button className="min-h-12" variant="outline" onClick={() => { setExportFormat("wav"); setExportDialogOpen(true); }}><Download className="mr-2 h-4 w-4"/> Export Mix</Button>
+          <Button className="min-h-12" variant="outline" onClick={() => setShowPluginRack(true)}><SlidersHorizontal className="mr-2 h-4 w-4"/> Plugins</Button>
+          <Button className="min-h-12" variant="outline" onClick={() => { stop(); setShowPreferencesDialog(true); }}><Settings2 className="mr-2 h-4 w-4"/> Mic Setup</Button>
+          <Button className="min-h-12" variant="outline" onClick={() => { setJamRoomActive(true); setMobileStudioTab("record"); }}><Users className="mr-2 h-4 w-4"/> Jam Room</Button>
+          <Button className="min-h-12" variant="outline" onClick={() => setShowQuickMemo(true)}><Mic className="mr-2 h-4 w-4"/> Quick Memo</Button>
+          <Button className="min-h-12" variant="outline" onClick={() => { if (!selectedTrackIds.length) return toast.info("Select a track first."); setShowAudioSuite(true); }}><Wand2 className="mr-2 h-4 w-4"/> AudioSuite</Button>
+          <Button className="min-h-12" variant="outline" onClick={() => sessionImportRef.current?.click()}><FolderOpen className="mr-2 h-4 w-4"/> Restore ZIP</Button>
+        </div>
+        <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3"><p className="text-sm font-semibold">Finish on desktop</p><p className="mt-1 text-xs text-muted-foreground">Your session works on both devices. Record here, save it, then open NaliChat Studio on your PC for detailed editing and the full production toolkit.</p></div>
+        <div className="mt-3"><NaliLatencyControl disabled={isRecording || recordingFinalizeInFlightRef.current}/></div>
+      </div>
 
       {/* Main Workspace */}
-      <div ref={workspaceRef} className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+      <div ref={workspaceRef} className={cn("flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]", mobileStudioTab !== "timeline" && "max-md:hidden")}> 
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} roomId={roomId} />
         {/* Unified scroll — left pane + waveforms move together in one container */}
@@ -4798,7 +4839,7 @@ export default function Studio() {
       </Suspense>
 
       {/* Bottom Mixer / Status Bar */}
-      <div className="relative z-10 mx-2 mb-[4.5rem] mt-2 flex min-h-[2.75rem] shrink-0 flex-wrap items-center justify-between gap-2 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl sm:mx-3 sm:mb-3 sm:mt-3 sm:px-4 lg:mb-3">
+      <div className="relative z-10 mx-2 mb-[4.5rem] mt-2 hidden md:flex min-h-[2.75rem] shrink-0 flex-wrap items-center justify-between gap-2 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl sm:mx-3 sm:mb-3 sm:mt-3 sm:px-4 lg:mb-3">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Button variant="ghost" size="sm" onClick={() => setShowMixerPanel(!showMixerPanel)} className={cn("ui-hover min-h-10 rounded-xl text-xs gap-1.5", showMixerPanel && "bg-secondary text-foreground")}>
             <SlidersHorizontal className="w-3 h-3" /> Mixer
@@ -5041,17 +5082,15 @@ export default function Studio() {
         }}
       />
 
-      {/* Mobile bottom bar - Studio only */}
-      <div 
-        className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center border-t border-border bg-card/95 px-3 py-2 backdrop-blur-xl lg:hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <button
-          onClick={async () => { if (await handleSave()) navigate('/'); }}
-          className="ui-hover flex min-h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-secondary px-6 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
-        >
-          <ChevronLeft className="w-4 h-4" /> Exit Studio
-        </button>
+      {/* Persistent phone transport: core recording actions stay reachable. */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#171321]/95 px-3 pt-2 backdrop-blur-xl md:hidden"
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 10px)" }} aria-label="Mobile Studio transport">
+        <div className="mx-auto flex max-w-md items-center justify-between gap-2">
+          <button type="button" onClick={() => stop()} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10" aria-label="Stop"><Square className="h-5 w-5"/></button>
+          <button type="button" onClick={togglePlay} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-white/10 font-semibold" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}{isPlaying ? "Pause" : "Play"}</button>
+          <button type="button" onClick={toggleRecord} disabled={!canEditProject} className={cn("flex min-h-14 flex-[1.2] items-center justify-center gap-2 rounded-2xl font-bold text-white disabled:opacity-40", isRecording ? "bg-red-700" : "bg-red-600")} aria-label={isRecording ? "Stop recording" : "Record"}><Circle className="h-5 w-5 fill-current"/>{isRecording ? "Finish" : "Record"}</button>
+          <button type="button" onClick={handleSave} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10" aria-label="Save session"><Save className="h-5 w-5"/></button>
+        </div>
       </div>
     </div>
   );

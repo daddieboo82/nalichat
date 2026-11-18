@@ -90,7 +90,7 @@ export function safeNaliOverdubCompensation(profile, { micDeviceId, hasBackingTr
       !profile.micDeviceId || !micDeviceId || profile.micDeviceId !== micDeviceId ||
       !Number.isFinite(profile.calibratedAt) || Date.now() - profile.calibratedAt > 24 * 3600000 ||
       profile.calibratedAt > Date.now()) return 0;
-  return Math.min(profile.roundTripMs / 1000, duration * 0.1);
+  return Math.min(profile.roundTripMs / 1000, duration * 0.09);
 }
 
 const PROFILE_KEY = 'nalichat-studio-acoustic-latency-v1';

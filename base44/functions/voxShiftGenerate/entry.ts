@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
+import { secrets } from 'base44:runtime';
 import { encodeBase64, decodeBase64 } from 'jsr:@std/encoding@1.0.10/base64';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
@@ -15,8 +16,8 @@ Deno.serve(async (request) => {
     const user = await client.auth.me().catch(() => null);
     if (!user?.id || user.is_banned) return reply('Sign in to generate a voice.', 401);
 
-    const address = Deno.env.get('VOXSHIFT_PROVIDER_URL');
-    const key = Deno.env.get('VOXSHIFT_API_KEY');
+    const address = secrets.get('VOXSHIFT_PROVIDER_URL');
+    const key = secrets.get('VOXSHIFT_API_KEY');
     if (!address || !key) return reply('VoxShift AI is awaiting provider setup.', 503);
     const origin = new URL(address);
     if (origin.protocol !== 'https:' || origin.username || origin.password) {

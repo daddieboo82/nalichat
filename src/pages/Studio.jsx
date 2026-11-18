@@ -17,7 +17,8 @@ import BounceDialog from '@/components/studio/BounceDialog';
 import Metronome from '@/components/studio/Metronome';
 import MarkersBar from '@/components/studio/MarkersBar';
 import { sounds } from '@/hooks/use-sound';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useStudioMobileViewport } from '@/hooks/useStudioMobileViewport';
+import '@/styles/studioMobileOrientation.css';
 import { usePerformance } from '@/hooks/use-performance';
 import { useSubscription } from '@/hooks/useSubscription';
 import StudioStatusBanners from '@/components/studio/StudioStatusBanners';
@@ -173,7 +174,7 @@ export default function Studio() {
   const inviteToken = searchParams.get('invite');
   const voiceMessageId = searchParams.get('voiceMessage');
   const voiceMessageImportRef = useRef(null);
-  const isMobile = useIsMobile();
+  const {mobile:isMobile,landscape:isLandscapePhone} = useStudioMobileViewport();
   const { isLowEnd } = usePerformance();
   const WAVEFORM_POINTS = isMobile ? 2000 : 8000;
   // Project hydration must not rerun just because the responsive waveform
@@ -3881,7 +3882,7 @@ export default function Studio() {
   );
 
   return (
-    <div className="flex flex-col h-screen h-[100dvh] bg-[#0D0B14] text-foreground overflow-hidden relative">
+    <div className={cn("flex flex-col h-screen h-[100dvh] bg-[#0D0B14] text-foreground overflow-hidden relative",isMobile&&"studio-mobile-workspace",isLandscapePhone&&"studio-mobile-landscape")}>
       <StudioVideoHelp />
       {/* Ambient stage glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
@@ -3900,7 +3901,7 @@ export default function Studio() {
       />
 
       {/* Top Toolbar */}
-      <div className="min-h-[4rem] py-2 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center justify-between gap-2 pl-2 sm:pl-4 pr-2 shrink-0 relative z-10">
+      <div className="studio-mobile-topbar min-h-[4rem] py-2 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center justify-between gap-2 pl-2 sm:pl-4 pr-2 shrink-0 relative z-10">
         <div className="flex items-center gap-4 shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip>
@@ -3924,7 +3925,7 @@ export default function Studio() {
         </div>
 
         {/* Transport Controls */}
-        <div className="hidden md:flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
+        <div className="hidden md:flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0" style={isMobile ? {display:"none"} : undefined}>
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Return to Zero (Home)" aria-label="Return to Zero (Home)" aria-keyshortcuts="Home" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Return to Zero <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Home</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop" aria-label="Stop" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Square className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Numpad 0</kbd></TooltipContent></Tooltip>
@@ -3940,10 +3941,10 @@ export default function Studio() {
            </div>
 
            {/* Pro Tools-style Pre-roll / Post-roll */}
-           <div className="hidden md:block"><PreRollPostRoll preRoll={preRoll} setPreRoll={setPreRoll} postRoll={postRoll} setPostRoll={setPostRoll} /></div>
+           <div className="hidden md:block" style={isMobile ? {display:"none"} : undefined}><PreRollPostRoll preRoll={preRoll} setPreRoll={setPreRoll} postRoll={postRoll} setPostRoll={setPostRoll} /></div>
 
         {/* Right Tools - Hardware & Export */}
-        <div className="hidden md:flex flex-wrap items-center justify-end gap-2 min-w-0">
+        <div className="hidden md:flex flex-wrap items-center justify-end gap-2 min-w-0" style={isMobile ? {display:"none"} : undefined}>
           {/* Live Collaborators */}
           <LivePresenceBar peers={livePeers} />
 
@@ -4133,7 +4134,7 @@ export default function Studio() {
       <input type="file" ref={fileInputRef} className="sr-only" tabIndex={-1} multiple accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} aria-label="Import Studio audio" />
       <input type="file" ref={sessionImportRef} className="sr-only" tabIndex={-1} accept=".zip,.nalistudio.zip" onChange={handleSessionImport} aria-label="Restore Studio session backup" />
       {/* Desktop precision editing remains available on PC. */}
-      <div className="hidden md:block">
+      <div className="hidden md:block" style={isMobile ? {display:"none"} : undefined}>
       <StudioToolbar2
         addTrack={addTrack} addVcaTrack={addVcaTrack} addFolderTrack={addFolderTrack} selectedTrackIds={selectedTrackIds} tracks={tracks}
         handleSeparateStems={handleSeparateStems} isProcessing={isProcessing} handleGenerateMelody={handleGenerateMelody}
@@ -4149,7 +4150,7 @@ export default function Studio() {
       {/* setEditingTrack prop removed — Wave Editor was merged into this inline timeline */}
 
       {/* Markers Bar — Pro Tools-style memory locations */}
-      <div className={cn("hidden md:block", mobileStudioTab === "timeline" && "max-md:block")}>
+      <div className={cn("hidden md:block", mobileStudioTab === "timeline" && "max-md:block")} style={isMobile ? {display:mobileStudioTab==="timeline"?"block":"none"} : undefined}>
       <MarkersBar
         projectId={roomId || 'local_studio'}
         currentTime={() => currentTimeRef.current}
@@ -4159,7 +4160,7 @@ export default function Studio() {
       </div>
 
       {/* Honest mobile capture status: temporary takes are not cloud saves. */}
-      <div className="md:hidden mx-2 mt-2 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" role="status" aria-live="polite">
+      <div className="studio-mobile-status md:hidden mx-2 mt-2 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" style={{display:isMobile?"block":"none"}} role="status" aria-live="polite">
         {(() => {
           const status = getMobileStudioRecordingStatus({
             recording: isRecording, micPending: microphoneStartupRef.current.pending,
@@ -4217,14 +4218,14 @@ export default function Studio() {
         </div>}
       </section>}
       {/* Mobile recording-first workspace: full desktop projects, simpler touch controls. */}
-      <div className="md:hidden mx-2 mt-2 flex shrink-0 gap-1 rounded-2xl border border-white/10 bg-white/[0.05] p-1" role="tablist" aria-label="Mobile Studio views">
+      <div className="studio-mobile-tabs md:hidden mx-2 mt-2 flex shrink-0 gap-1 rounded-2xl border border-white/10 bg-white/[0.05] p-1" style={{display:isMobile?"flex":"none"}} role="tablist" aria-label="Mobile Studio views">
         {[["record", "Record"], ["timeline", "Timeline"], ["tools", "Tools"]].map(([tab, label]) => (
           <button key={tab} type="button" role="tab" aria-selected={mobileStudioTab === tab}
             onClick={() => setMobileStudioTab(tab)}
             className={cn("min-h-11 flex-1 rounded-xl text-sm font-semibold transition-colors", mobileStudioTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}>{label}</button>
         ))}
       </div>
-      <div className={cn("md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]", mobileStudioTab !== "record" && "hidden")}>
+      <div className={cn("studio-mobile-record-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]", mobileStudioTab !== "record" && "hidden")} style={{display:isMobile&&mobileStudioTab==="record"?"block":"none"}}>
         <div className="sticky top-0 z-10 border-b border-white/10 bg-[#1D1728]/95 px-4 py-3 backdrop-blur">
           <p className="text-sm font-bold">Record anywhere</p>
           <p className="text-[11px] text-muted-foreground">Capture on your phone. Open this session on a PC for precision editing, mixing, and mastering.</p>
@@ -4251,7 +4252,7 @@ export default function Studio() {
           onMixer={() => setShowMixerPanel(true)} onPolish={toggleAutoPolishVocals} autoPolish={autoPolishVocals}
           readOnly={!canEditProject || isRecording} />
       </div>
-      <div className={cn("md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19] p-3 pb-28", mobileStudioTab !== "tools" && "hidden")}>
+      <div className={cn("studio-mobile-tools-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19] p-3 pb-28", mobileStudioTab !== "tools" && "hidden")} style={{display:isMobile&&mobileStudioTab==="tools"?"block":"none"}}>
         <h2 className="mb-3 text-base font-semibold">Studio tools</h2>
         <div className="grid grid-cols-2 gap-2">
           <Button className="min-h-12" variant="outline" disabled={isRecording || mobileHandoffSaving} onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Session</Button>
@@ -4282,7 +4283,7 @@ export default function Studio() {
       </div>
 
       {/* Main Workspace */}
-      <div ref={workspaceRef} className={cn("flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]", mobileStudioTab !== "timeline" && "max-md:hidden")}> 
+      <div ref={workspaceRef} className={cn("studio-mobile-timeline flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]", mobileStudioTab !== "timeline" && "max-md:hidden")} style={isMobile?{display:mobileStudioTab==="timeline"?"block":"none"}:undefined}> 
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} roomId={roomId} />
         {/* Unified scroll — left pane + waveforms move together in one container */}
@@ -5158,7 +5159,7 @@ export default function Studio() {
       </Suspense>
 
       {/* Bottom Mixer / Status Bar */}
-      <div className="relative z-10 mx-2 mb-[4.5rem] mt-2 hidden md:flex min-h-[2.75rem] shrink-0 flex-wrap items-center justify-between gap-2 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl sm:mx-3 sm:mb-3 sm:mt-3 sm:px-4 lg:mb-3">
+      <div style={isMobile ? {display:"none"} : undefined} className="relative z-10 mx-2 mb-[4.5rem] mt-2 hidden md:flex min-h-[2.75rem] shrink-0 flex-wrap items-center justify-between gap-2 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl sm:mx-3 sm:mb-3 sm:mt-3 sm:px-4 lg:mb-3">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Button variant="ghost" size="sm" onClick={() => setShowMixerPanel(!showMixerPanel)} className={cn("ui-hover min-h-10 rounded-xl text-xs gap-1.5", showMixerPanel && "bg-secondary text-foreground")}>
             <SlidersHorizontal className="w-3 h-3" /> Mixer
@@ -5402,8 +5403,8 @@ export default function Studio() {
       />
 
       {/* Persistent phone transport: core recording actions stay reachable. */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#171321]/95 px-3 pt-2 backdrop-blur-xl md:hidden"
-        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 10px)" }} aria-label="Mobile Studio transport">
+      <div className="studio-mobile-transport fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#171321]/95 px-3 pt-2 backdrop-blur-xl md:hidden"
+        style={{ display:isMobile?"block":"none",paddingBottom:"max(env(safe-area-inset-bottom), 10px)" }} aria-label="Mobile Studio transport">
         <div className="mx-auto flex max-w-md items-center justify-between gap-2">
           <button type="button" onClick={() => stop()} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10" aria-label="Stop"><Square className="h-5 w-5"/></button>
           <button type="button" onClick={togglePlay} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-white/10 font-semibold" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}{isPlaying ? "Pause" : "Play"}</button>

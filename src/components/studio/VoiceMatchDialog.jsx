@@ -11,7 +11,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialM
   const [selected, setSelected] = useState('');
   const [name, setName] = useState('');
   const [reference, setReference] = useState(null);
-  const [mode, setMode] = useState(initialMode === 'local-rvc' && take?.audioUrl ? 'local-rvc' : take?.audioUrl ? 'enhance' : 'speech');
+  const [mode, setMode] = useState(initialMode === 'nali-voice' && take?.audioUrl ? 'nali-voice' : take?.audioUrl ? 'enhance' : 'speech');
   const [text, setText] = useState('');
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -38,7 +38,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialM
     setProviderModes(null);
     setProviderError('');
     // Never invoke a hosted AI backend while using either free local mode.
-    if (mode === 'enhance' || mode === 'local-rvc') return () => { active = false; };
+    if (mode === 'enhance' || mode === 'local-rvc' || mode === 'nali-voice') return () => { active = false; };
     getVoiceMatchModes().then(modes => {
       if (active) setProviderModes(modes);
     }).catch(error => {
@@ -101,7 +101,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialM
     try {
       const audio = await generateVoiceMatch({ profile, mode, text, track: take, signal: controller.signal, onStatus: setJobStatus, localModels });
       controller.signal.throwIfAborted();
-      setResult({ ...audio, name: mode === 'enhance' ? `${take.name} (Vocal Polish)` : mode === 'local-rvc' ? `${take.name} (Local AI Voice)` : `${profile.name} (Voice Match)`, startTime: mode === 'speech' ? 0 : take.startTime });
+      setResult({ ...audio, name: mode === 'enhance' ? `${take.name} (Vocal Polish)` : mode === 'nali-voice' ? `${take.name} (NaliVoice Research)` : mode === 'local-rvc' ? `${take.name} (RVC Voice)` : `${profile.name} (Voice Match)`, startTime: mode === 'speech' ? 0 : take.startTime });
     } finally {
       generation.current = null;
       setJobStatus('');
@@ -113,7 +113,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialM
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>VoxShift Vocal Studio</DialogTitle>
-          <DialogDescription>Polish your original vocal or optionally reconstruct its vocal timbre with an authorized, pre-trained AI voice model. Model selection is required for generative reconstruction; it never starts automatically.</DialogDescription>
+          <DialogDescription>NaliVoice is a custom NaliBase neural audio research engine. No model files or paid AI services are needed. It does not yet provide full generative singing or voice cloning.</DialogDescription>
         </DialogHeader>
         {mode === 'enhance' && (
           <div className="rounded-md border p-3 space-y-2">
@@ -134,13 +134,13 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialM
             <p className="text-xs text-muted-foreground" role="status">{localRvcReadiness?.reason}</p>
           </div>
         )}
-        {mode !== 'enhance' && mode !== 'local-rvc' && (providerError ? (
+        {mode !== 'enhance' && mode !== 'local-rvc' && mode !== 'nali-voice' && (providerError ? (
           <div className="flex items-center justify-between gap-2">
             <p role="status" className="text-sm text-muted-foreground">Local Vocal Polish is available. AI voice modes need a connected provider. {providerError}</p>
             <Button type="button" variant="outline" size="sm" onClick={() => setProviderCheck(attempt => attempt + 1)}>Check again</Button>
           </div>
         ) : !providerModes && <p role="status" className="text-sm text-muted-foreground">Checking hosted AI voice modes…</p>)}
-        {mode !== 'enhance' && mode !== 'local-rvc' && providerModes && !providerModes.includes(mode) && <p role="status" className="text-sm text-muted-foreground">This generation mode is unavailable on the connected provider.</p>}
+        {mode !== 'enhance' && mode !== 'local-rvc' && mode !== 'nali-voice' && providerModes && !providerModes.includes(mode) && <p role="status" className="text-sm text-muted-foreground">This generation mode is unavailable on the connected provider.</p>}
         <fieldset disabled={busy} className="space-y-4">
           <label className="flex gap-2 text-sm">
             <input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} />
@@ -172,12 +172,19 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialM
             Generation mode
             <select className="mt-1 block w-full rounded border bg-background p-2" value={mode} onChange={event => { setMode(event.target.value); setResult(null); }}>
               <option value="enhance" disabled={!take?.audioUrl}>Vocal Polish · keep my own voice</option>
-              <option value="local-rvc" disabled={!take?.audioUrl}>Generative AI Vocal Reconstruction · beta (local RVC)</option>
+              <option value="nali-voice" disabled={!take?.audioUrl}>NaliVoice · automatic neural restoration (research)</option>
+              <option value="local-rvc" disabled={!take?.audioUrl}>Advanced RVC conversion · optional licensed model files</option>
               <option value="sing" disabled={!take?.audioUrl}>Singing · preserve melody (beta)</option>
               <option value="convert" disabled={!take?.audioUrl}>Convert spoken take</option>
               <option value="speech">Text to speech</option>
             </select>
           </label>
+          {mode === 'nali-voice' && (
+            <div className="rounded border p-3 space-y-2 text-sm">
+              <p className="font-medium">NaliVoice · no model setup</p>
+              <p className="text-xs text-muted-foreground">This first-party neural restoration prototype learns from the selected audio locally and creates a separate processed track. It is experimental, not a trained generative singer or a Suno-quality reconstruction engine. No file upload, voice model selection, or paid inference is necessary.</p>
+            </div>
+          )}
           {mode === 'local-rvc' && (
             <div className="rounded border p-3 space-y-2 text-sm">
               <p className="font-medium">Generative AI Vocal Reconstruction · Experimental</p>
@@ -204,14 +211,14 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialM
             </div>
           )}
           {mode !== 'speech' ? (
-            <p className="text-sm text-muted-foreground">Source: {take?.name} · 1–60 seconds of isolated vocal{mode === 'enhance' ? ' · processes locally in your browser, reduces rumble and evens levels' : mode === 'local-rvc' ? ' · select 1–20 seconds of isolated vocal' : ''}</p>
+            <p className="text-sm text-muted-foreground">Source: {take?.name} · 1–60 seconds of isolated vocal{mode === 'enhance' ? ' · processes locally in your browser, reduces rumble and evens levels' : ['local-rvc','nali-voice'].includes(mode) ? ' · select 1–20 seconds of isolated vocal' : ''}</p>
           ) : (
             <label className="block text-sm">
               Words to speak
               <textarea className="mt-1 block w-full rounded border bg-background p-2" rows={3} maxLength={400} value={text} onChange={event => { setText(event.target.value); setResult(null); }} />
             </label>
           )}
-          <Button type="button" disabled={(mode !== 'enhance' && mode !== 'local-rvc' && !providerModes?.includes(mode)) || (!['enhance', 'local-rvc'].includes(mode) && !profile) || !consent || (mode === 'local-rvc' && (!localRvcReadiness?.supported || localModelError || !modelPermission)) || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
+          <Button type="button" disabled={(!['enhance', 'local-rvc', 'nali-voice'].includes(mode) && !providerModes?.includes(mode)) || (!['enhance', 'local-rvc', 'nali-voice'].includes(mode) && !profile) || !consent || (mode === 'local-rvc' && (!localRvcReadiness?.supported || localModelError || !modelPermission)) || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
             Generate audio
           </Button>
           {result && preview && (
@@ -219,6 +226,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialM
               <audio controls src={preview} className="w-full" aria-label="Generated voice preview" />
               {mode === 'enhance' && <p className="text-xs text-muted-foreground" role="status">Processed on this device using {result.processingBackend === 'webgpu' ? 'free WebGPU acceleration' : 'the browser CPU fallback'}. No paid inference credits used.</p>}
               {mode === 'local-rvc' && <p className="text-xs text-muted-foreground" role="status">Converted locally with WebAssembly (CPU). Your model files and audio were not uploaded to an inference server.</p>}
+              {mode === 'nali-voice' && <p className="text-xs text-muted-foreground" role="status">Processed locally by the experimental NaliVoice neural restorer. No third-party voice model was used.</p>}
               <Button type="button" onClick={() => { if (onAdd(result)) onClose(); }}>Add to new track</Button>
             </div>
           )}
@@ -226,7 +234,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialM
         {busy && (
           <div className="flex items-center gap-2">
             <p role="status" className="text-sm">
-              {mode === 'local-rvc' && jobStatus ? jobStatus : jobStatus === 'polishing' ? 'Polishing vocal in your browser…' : jobStatus === 'queued' ? 'Waiting for the voice model…' : jobStatus === 'running' ? 'Generating audio…' : 'Preparing audio…'}
+              {['local-rvc', 'nali-voice'].includes(mode) && jobStatus ? jobStatus : jobStatus === 'polishing' ? 'Polishing vocal in your browser…' : jobStatus === 'queued' ? 'Waiting for the voice model…' : jobStatus === 'running' ? 'Generating audio…' : 'Preparing audio…'}
             </p>
             {jobStatus && <Button type="button" variant="outline" onClick={() => generation.current?.abort()}>Cancel processing</Button>}
           </div>

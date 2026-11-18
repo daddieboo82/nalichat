@@ -99,9 +99,9 @@ function waitForNextCheck(signal) {
   });
 }
 
-export async function generateVoiceMatch({ profile, mode, text, track, signal, onStatus, localModels }) {
+export async function generateVoiceMatch({ profile, mode, text, track, owner, signal, onStatus, localModels }) {
   if (mode === 'nali-voice') {
-    return restoreWithNaliVoice({ track, signal, onStatus });
+    return restoreWithNaliVoice({ track, owner, signal, onStatus });
   }
   if (mode === 'local-rvc') {
     return convertRvcLocally({ track, files: localModels, signal, onStatus });

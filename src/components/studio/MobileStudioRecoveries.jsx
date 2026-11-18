@@ -42,10 +42,10 @@ export default function MobileStudioRecoveries({
   if (!ownerId || unavailable || rows.length === 0) return null;
   return <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 space-y-2" aria-label="Device recording recovery">
     <p className="font-semibold text-sm">Recover recordings from this device</p>
-    <p className="text-xs text-muted-foreground">These completed takes are stored in this browser, not in NaliChat cloud storage. Restore one to a new track, then Save for PC to upload it.</p>
+    <p className="text-xs text-muted-foreground">Completed takes and available recording checkpoints are stored in this browser, not the NaliChat cloud. An interrupted take may be missing its last few seconds. Restore, listen, then Save for PC.</p>
     {rows.map(row => <div key={row.id} className="rounded-lg border border-white/10 p-2 space-y-2">
-      <div className="text-xs font-medium truncate">{row.name || 'Recovered Vocal'}</div>
-      <div className="text-[11px] text-muted-foreground">{new Date(row.createdAt).toLocaleString()} · {Math.ceil(row.bytes/1024)} KB</div>
+      <div className="text-xs font-medium truncate">{row.name || 'Recovered Vocal'} {row.partial ? '(Interrupted recording checkpoint)' : '(Completed backup)'}</div>
+      <div className="text-[11px] text-muted-foreground">{new Date(row.createdAt).toLocaleString()} · {Math.ceil(row.bytes/1024)} KB · {Math.round(row.duration || 0)}s saved</div>
       <div className="flex gap-2">
         <Button size="sm" type="button" disabled={disabled || Boolean(working)}
           className="min-h-11 flex-1" onClick={async () => {
@@ -53,7 +53,7 @@ export default function MobileStudioRecoveries({
             try {
               const stored = await getStudioRecoveryTake(ownerId,scope,row.id);
               await onRestore(stored);
-              toast.success('Recovered audio added as a new track. Save to keep it in the cloud.');
+              toast.success(stored.partial ? 'Interrupted take restored from last checkpoint. Listen before saving to the cloud.' : 'Recovered audio added as a new track. Save to keep it in the cloud.');
             } catch (error) { toast.error(error?.message || 'Could not recover this take.'); }
             finally { setWorking(null); }
           }}>Restore take</Button>

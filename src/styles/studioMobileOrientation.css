@@ -405,3 +405,118 @@
   .studio-mobile-premium .studio-mobile-record-heading{padding:4px 8px}
 }
 
+
+/* NaliChat theme alignment — visual tokens only. No sizing, layout, behavior,
+   recording, editing, storage or routing changes. Uses the same global
+   color tokens as Home, Messages and the application shell. */
+.studio-mobile-premium {
+  --st-edge: hsl(var(--border) / .9);
+  --st-lavender: hsl(var(--primary));
+  --st-cyan: hsl(var(--accent));
+  background:hsl(var(--background));
+}
+.studio-mobile-premium .studio-mobile-topbar {
+  background:hsl(var(--card));
+  border-color:hsl(var(--border));
+}
+.studio-mobile-premium .studio-mobile-record-view,
+.studio-mobile-premium .studio-mobile-tools-view,
+.studio-mobile-premium .studio-mobile-timeline {
+  background:hsl(var(--card));
+  border-color:hsl(var(--border));
+}
+.studio-mobile-premium .studio-mobile-record-heading {
+  background:hsl(var(--secondary));
+  border-color:hsl(var(--border));
+}
+.studio-mobile-premium .studio-mobile-heading-light {
+  background:hsl(var(--accent));
+}
+.studio-mobile-premium .studio-mobile-status {
+  background:hsl(var(--card));
+  border-color:hsl(var(--primary) / .3);
+  border-left-color:hsl(var(--accent));
+}
+.studio-mobile-premium .studio-mobile-tabs {
+  background:hsl(var(--secondary));
+  border-color:hsl(var(--border));
+}
+.studio-mobile-premium .studio-mobile-tabs button[aria-selected="true"] {
+  background:hsl(var(--primary));
+  color:hsl(var(--primary-foreground));
+  border-bottom-color:hsl(var(--accent));
+}
+.studio-mobile-premium .studio-mobile-tabs button[aria-selected="false"] {
+  color:hsl(var(--muted-foreground));
+}
+.studio-mobile-premium .studio-track-count {
+  background:hsl(var(--primary) / .12);
+  border-color:hsl(var(--primary) / .28);
+  color:hsl(var(--primary));
+}
+.studio-mobile-premium .studio-mobile-quick-actions button {
+  background:hsl(var(--secondary));
+  border-color:hsl(var(--border));
+  color:hsl(var(--secondary-foreground));
+}
+.studio-mobile-premium .studio-cubasis-lane,
+.studio-mobile-premium .studio-cubasis-lane:nth-of-type(odd) {
+  background:hsl(var(--card));
+  border-color:hsl(var(--border));
+}
+.studio-mobile-premium .studio-cubasis-lane::before {
+  background:hsl(var(--primary));
+}
+.studio-mobile-premium .studio-cubasis-lane.studio-mobile-track-armed::before {
+  background:hsl(var(--destructive));
+}
+.studio-mobile-premium .studio-cubasis-lane.studio-mobile-track-selected {
+  background:hsl(var(--primary) / .12);
+  border-color:hsl(var(--primary) / .7);
+  box-shadow:inset 0 0 0 1px hsl(var(--primary) / .2);
+}
+.studio-mobile-premium .studio-cubasis-lane-waveform {
+  background:repeating-linear-gradient(90deg,transparent 0,transparent 31px,hsl(var(--foreground) / .045) 32px),
+    linear-gradient(180deg,hsl(var(--primary) / .18),hsl(var(--card)));
+  border-color:hsl(var(--primary) / .3);
+}
+.studio-mobile-premium .studio-mobile-track-controls button {
+  background:hsl(var(--secondary));
+  border-color:hsl(var(--border));
+  color:hsl(var(--secondary-foreground));
+}
+.studio-mobile-premium .studio-mobile-track-controls button[aria-pressed="true"] {
+  background:hsl(var(--primary) / .18);
+  border-color:hsl(var(--primary));
+  color:hsl(var(--foreground));
+}
+.studio-mobile-premium .studio-mobile-track-controls button:first-child[aria-pressed="true"] {
+  background:hsl(var(--destructive) / .2);
+  border-color:hsl(var(--destructive));
+  color:hsl(var(--foreground));
+}
+.studio-mobile-premium .studio-mobile-review-button {
+  background:hsl(var(--primary) / .12);
+  border-color:hsl(var(--primary) / .36);
+  color:hsl(var(--primary));
+}
+.studio-mobile-premium .studio-cubasis-lane-volume input[type="range"] {
+  accent-color:hsl(var(--primary));
+}
+.studio-mobile-premium .studio-mobile-transport {
+  background:hsl(var(--card) / .98);
+  border-color:hsl(var(--border));
+}
+.studio-mobile-premium .studio-mobile-transport button:not(.studio-mobile-record-button) {
+  background:hsl(var(--secondary));
+  border-color:hsl(var(--border));
+  color:hsl(var(--secondary-foreground));
+}
+.studio-mobile-premium .studio-mobile-record-button {
+  background:hsl(var(--destructive));
+}
+.studio-mobile-premium .studio-mobile-side-pane {
+  background:hsl(var(--card)) !important;
+  border-color:hsl(var(--border)) !important;
+}
+

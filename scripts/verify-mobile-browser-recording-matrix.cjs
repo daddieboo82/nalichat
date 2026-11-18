@@ -17,8 +17,8 @@ const {chromium,webkit,devices}=require('@playwright/test');
         osc.connect(dest);osc.start();
         const details={
           audioWorklet:!!context.audioWorklet,mediaRecorder:typeof MediaRecorder,
-          webm:MediaRecorder.isTypeSupported?.('audio/webm;codecs=opus'),
-          mp4:MediaRecorder.isTypeSupported?.('audio/mp4'),
+          webm:globalThis.MediaRecorder?.isTypeSupported?.('audio/webm;codecs=opus'),
+          mp4:globalThis.MediaRecorder?.isTypeSupported?.('audio/mp4'),
           indexedDB:!!indexedDB,
           scope:studioRecoveryScope(null),
         };

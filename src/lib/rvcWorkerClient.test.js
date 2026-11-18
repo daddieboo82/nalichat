@@ -68,7 +68,7 @@ describe('cancelable local RVC worker', () => {
     await expect(runCancelableRvcWorker(
       { ...context, workerUrl: 'https://other.example/worker.js' },
       models(), new Float32Array([0.3]), 16000, { workerFactory },
-    )).rejects.toThrow(/same/);
+    )).rejects.toThrow(/this website/);
     expect(workerFactory).not.toHaveBeenCalled();
   });
 

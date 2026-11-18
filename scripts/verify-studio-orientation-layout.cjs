@@ -18,7 +18,7 @@ const sizes=[[390,844],[320,568],[844,390],[667,375],[932,430],[1024,768]];
       const {studioMobileViewport}=await import('/src/hooks/useStudioMobileViewport.js');
       const {mobile,landscape}=studioMobileViewport(innerWidth,innerHeight);
       const root=document.getElementById('root');
-      root.innerHTML='<main class="flex flex-col h-screen h-[100dvh] overflow-hidden bg-[#0D0B14] text-white relative '+(mobile?'studio-mobile-workspace ':'')+(landscape?'studio-mobile-landscape':'')+'">'+
+      root.innerHTML='<main class="flex flex-col h-screen h-[100dvh] overflow-hidden bg-[#0D0B14] text-white relative '+(mobile?'studio-mobile-workspace studio-mobile-premium ':'')+(landscape?'studio-mobile-landscape':'')+'">'+
        '<header class="studio-mobile-topbar min-h-[4rem] py-2 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 flex flex-wrap items-center justify-between gap-2 pl-2 pr-2 shrink-0">NaliStudio · '+window.__studioTestProjectName+'</header>'+
        '<section class="studio-mobile-status mx-2 mt-2 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" style="display:'+(mobile?'block':'none')+'"><div class="flex justify-between"><strong>Microphone is recording</strong><span class="studio-landscape-live">00:12 · Peak -9 dBFS</span></div><p>Keep this page open</p></section>'+
        '<section class="studio-mobile-recording-extended studio-mobile-capture-progress mx-2 mt-1 shrink-0 rounded-xl border border-white/10 px-3 py-2" style="display:'+(mobile?'block':'none')+'"><strong>Recording 00:12 · protected through 00:08</strong><p>Keep recording until finish</p></section>'+
@@ -55,6 +55,8 @@ const sizes=[[390,844],[320,568],[844,390],[667,375],[932,430],[1024,768]];
         sideWidth:Math.round(rect(main.querySelector('.studio-mobile-side-pane')).width),
         tracksWidth:Math.round(rect(main.querySelector('.studio-mobile-tracks-pane')).width),
         projectRetained:main.querySelector('header').textContent.includes(window.__studioTestProjectName),
+        tabsSelectedGradient:getComputedStyle(tabs.querySelector('button')).backgroundImage.includes('gradient'),
+        portraitTracksFirst: !landscape && mobile ? Number.parseInt(getComputedStyle(main.querySelector('.studio-mobile-tracks-pane')).order) < Number.parseInt(getComputedStyle(main.querySelector('.studio-mobile-side-pane')).order) : null,
       };
       if(mobile){
         const tools=main.querySelector('.studio-mobile-tools-view');
@@ -73,7 +75,7 @@ const sizes=[[390,844],[320,568],[844,390],[667,375],[932,430],[1024,768]];
     if(result.mobile){
       if(result.docWidth>width+2 || result.recordHeight<90 || result.recordTop>=result.footerTop ||
          result.toolsHeight<80 || result.timelineHeight<80 || !result.timelineScrollable || !result.footerAfterTabs ||
-         result.minButtonHeight<43 || !result.footerVisible || !result.projectRetained)
+         result.minButtonHeight<43 || !result.footerVisible || !result.projectRetained || !result.tabsSelectedGradient || (result.landscape===false && !result.portraitTracksFirst))
          throw Error(engineName+': invalid mobile controls '+JSON.stringify(result));
       if(result.landscape && (result.recordDisplay!=='grid'||result.sideWidth<205||result.tracksWidth<250||result.toolsColumns!==4||
         !result.leftScroll||!result.rightScroll)) throw Error(engineName+': bad landscape panes '+JSON.stringify(result));

@@ -186,3 +186,35 @@
 .studio-mobile-premium .studio-mobile-tracks-pane{overflow-y:auto}
 }
 
+
+/* Matching mobile welcome / first-session experience. */
+@media (max-width:767px), (orientation:landscape) and (max-width:1024px) and (max-height:540px){
+.studio-mobile-welcome{
+  background:radial-gradient(ellipse 88% 58% at 50% 0,#5538a23c,transparent 72%),radial-gradient(ellipse 70% 40% at 95% 100%,#118ca329,transparent),#090914;
+  color:#f8f4ff;
+}
+.studio-mobile-welcome-card{
+  background:linear-gradient(140deg,#25203cfa,#151626f7);
+  border-color:#b7a4e348;
+  box-shadow:0 22px 65px #0009,inset 0 1px #fff1;
+}
+.studio-mobile-welcome-icon{background:linear-gradient(145deg,#56428a,#272442);box-shadow:0 10px 30px #a17aef33,inset 0 1px #ffffff30}
+.studio-mobile-welcome-card h1{letter-spacing:-.04em;color:#faf8ff}
+.studio-mobile-welcome-description{color:#c1bfd2}
+.studio-mobile-welcome-actions>button{
+ border-radius:14px;
+ border-color:#c4b7ef40;
+ box-shadow:inset 0 1px #ffffff17;
+ transition:background-color .17s ease,transform .17s ease;
+}
+.studio-mobile-welcome-actions>button:first-child{
+ background:linear-gradient(125deg,#b69aff,#8269e2);
+ color:#100b20;
+ box-shadow:0 7px 24px #8d6fe33d,inset 0 1px #ffffff60;
+}
+.studio-mobile-welcome-actions>button:not(:first-child){background:#ffffff0d;color:#f2efff}
+.studio-mobile-welcome-actions>button:active{transform:scale(.985)}
+.studio-mobile-welcome-actions>button:focus-visible{outline:2px solid #86e6f7;outline-offset:3px}
+}
+@media (prefers-reduced-motion:reduce){.studio-mobile-welcome-actions>button{transition:none}}
+

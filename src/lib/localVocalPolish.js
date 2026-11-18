@@ -1,6 +1,7 @@
 // Browser-only vocal polish. No AI provider, upload, or voice cloning required.
 // Uses offline Web Audio for a conservative high-pass/compression/peak-safe finish.
 import { audioBufferToWav, bufferToWaveform } from './audioProcessing';
+import { gpuVocalGain } from './voxGpuProcessing';
 
 export async function polishVocalLocally(sourceBlob, signal) {
   signal?.throwIfAborted();
@@ -64,10 +65,13 @@ export async function polishVocalLocally(sourceBlob, signal) {
   const rms = Math.sqrt(sum / Math.max(1, count));
   const boost = rms < 0.0001 ? 1 : Math.min(1.6, Math.max(1, 0.12 / rms));
   const level = peak > 0 ? Math.min(boost, 0.93 / peak) : 1;
-  if (level !== 1) {
+  let processingBackend = 'cpu';
+  if (level !== 1 || peak > 0.93) {
     for (let channel = 0; channel < processed.numberOfChannels; channel++) {
       const data = processed.getChannelData(channel);
-      for (let i = 0; i < data.length; i++) data[i] *= level;
+      const result = await gpuVocalGain(data, level, { signal });
+      data.set(result.samples);
+      if (result.backend === 'webgpu') processingBackend = 'webgpu';
     }
   }
   signal?.throwIfAborted();
@@ -75,5 +79,6 @@ export async function polishVocalLocally(sourceBlob, signal) {
     blob: audioBufferToWav(processed),
     waveform: bufferToWaveform(processed),
     duration: processed.duration,
+    processingBackend,
   };
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, VolumeX, Headphones, Plus, AudioLines, SlidersHorizontal, Upload, Wand2, PlayCircle } from 'lucide-react';
+import { Mic, VolumeX, Headphones, Plus, AudioLines, SlidersHorizontal, Upload, Wand2, PlayCircle, CheckCircle2 } from 'lucide-react';
 import TrackWaveformSVG from './TrackWaveformSVG';
 import { cn } from '@/lib/utils';
 
@@ -17,17 +17,17 @@ export default function MobileStudioTracks({
   autoPolish = false, readOnly = false,
 }) {
   return (
-    <section className="flex flex-col gap-3 p-3 pb-28" aria-label="Mobile Studio tracks" data-testid="mobile-studio-tracks">
-      <div className="flex items-center justify-between gap-2">
+    <section className="studio-mobile-track-list flex flex-col gap-3 p-3 pb-28" aria-label="Mobile Studio tracks" data-testid="mobile-studio-tracks">
+      <div className="studio-mobile-track-heading flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="font-semibold text-base text-foreground">Your tracks</h2>
+          <h2 className="font-semibold text-base text-foreground">Session tracks <span className="studio-track-count ml-1 align-middle text-[11px] tabular-nums">{lanes.length}</span></h2>
           <p className="text-xs text-muted-foreground">Tap a track to select it. Arm a mic to record.</p>
         </div>
         <button type="button" onClick={onAdd} disabled={readOnly}
           className="min-h-11 shrink-0 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-40"
           aria-label="Add audio track"><Plus className="mr-1 inline h-4 w-4" />Track</button>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="studio-mobile-quick-actions grid grid-cols-2 gap-2">
         <button type="button" onClick={onImport} disabled={readOnly}
           className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border/60 bg-secondary/40 text-xs font-medium disabled:opacity-40"><Upload className="h-4 w-4" />Import audio</button>
         <button type="button" onClick={onMixer}
@@ -53,24 +53,24 @@ export default function MobileStudioTracks({
         const canRecord = !readOnly && !['folder', 'vca'].includes(track.trackType) &&
           !['midi', 'instrument'].includes(track.type);
         return (
-          <div key={track.id} className={cn('rounded-2xl border bg-[#171421] p-3 shadow-md', selected ? 'border-primary ring-1 ring-primary/50' : 'border-white/10')}
+          <div key={track.id} className={cn('studio-mobile-track-card rounded-2xl border bg-[#171421] p-3 shadow-md', selected ? 'studio-mobile-track-selected border-primary ring-1 ring-primary/50' : 'border-white/10', track.armed && 'studio-mobile-track-armed')}
             data-testid={`mobile-track-${track.id}`}>
             <button type="button" onClick={() => onSelect(track.id)} aria-pressed={selected}
               className="flex min-h-11 w-full items-center justify-between gap-2 text-left">
-              <span className="min-w-0 truncate font-medium text-foreground">{track.name || 'Audio track'}</span>
-              <span className="shrink-0 text-[10px] text-muted-foreground">{track.type || 'audio'}</span>
+              <span className="flex min-w-0 items-center gap-2 truncate font-medium text-foreground"><span className="studio-track-color-dot shrink-0" aria-hidden="true"/>{track.name || 'Audio track'}</span>
+              <span className="studio-track-type shrink-0 text-[10px] text-muted-foreground">{selected && <CheckCircle2 className="mr-1 inline h-3 w-3"/>}{track.armed ? "REC READY" : track.type || "audio"}</span>
             </button>
             <button type="button" onClick={() => onSelect(track.id)} aria-label={`Select ${track.name || 'track'} waveform`}
-              className="relative mb-3 block h-16 w-full overflow-hidden rounded-lg border border-white/10 bg-black/35">
+              className="studio-mobile-waveform relative mb-3 block h-16 w-full overflow-hidden rounded-lg border border-white/10 bg-black/35">
               {audio.waveform?.length ? <TrackWaveformSVG track={{ ...audio, waveform: mobilePreviewWaveform(audio.waveform) }} /> :
                 <span className="flex h-full items-center justify-center text-xs text-muted-foreground">{audio.audioUrl || audio.file_url ? 'Audio ready · view timeline' : 'No audio recorded yet'}</span>}
             </button>
             {(audio.audioUrl || audio.file_url) && <button type="button"
               onClick={() => onReview?.(audio.id)} aria-label={`Review ${audio.name || 'recorded track'}`}
-              className="mb-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 text-xs font-semibold text-primary">
+              className="studio-mobile-review-button mb-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 text-xs font-semibold text-primary">
               <PlayCircle className="h-4 w-4"/>Listen & review take
             </button>}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="studio-mobile-track-controls grid grid-cols-3 gap-2">
               <button type="button" onClick={() => onArm(track.id)} disabled={!canRecord}
                 aria-label={`Arm ${track.name || 'track'} for recording`} aria-pressed={Boolean(track.armed)}
                 className={cn('min-h-11 rounded-xl border text-xs font-semibold disabled:opacity-30', track.armed ? 'border-red-500 bg-red-500/20 text-red-300' : 'border-border/60 bg-secondary/40')}>

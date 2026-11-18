@@ -21,6 +21,9 @@ const sizes=[[390,844],[320,568],[844,390],[667,375],[932,430],[1024,768]];
       root.innerHTML='<main class="flex flex-col h-screen h-[100dvh] overflow-hidden bg-[#0D0B14] text-white relative '+(mobile?'studio-mobile-workspace ':'')+(landscape?'studio-mobile-landscape':'')+'">'+
        '<header class="studio-mobile-topbar min-h-[4rem] py-2 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 flex flex-wrap items-center justify-between gap-2 pl-2 pr-2 shrink-0">NaliStudio · '+window.__studioTestProjectName+'</header>'+
        '<section class="studio-mobile-status mx-2 mt-2 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" style="display:'+(mobile?'block':'none')+'"><div class="flex justify-between"><strong>Microphone is recording</strong><span class="studio-landscape-live">00:12 · Peak -9 dBFS</span></div><p>Keep this page open</p></section>'+
+       '<section class="studio-mobile-recording-extended studio-mobile-capture-progress mx-2 mt-1 shrink-0 rounded-xl border border-white/10 px-3 py-2" style="display:'+(mobile?'block':'none')+'"><strong>Recording 00:12 · protected through 00:08</strong><p>Keep recording until finish</p></section>'+
+       '<section class="studio-mobile-recording-extended studio-mobile-meter-panel mx-2 mt-1 shrink-0 rounded-xl border border-white/10 px-3 py-2" style="display:'+(mobile?'block':'none')+'"><strong>Live input · Peak -9 dBFS</strong><div class="mt-2 h-3 bg-emerald-500"></div><p>Input level is healthy</p><p>Monitor peaks</p></section>'+
+       '<section class="studio-mobile-recording-extended studio-mobile-coach-panel mx-2 mt-1 shrink-0 rounded-xl border border-white/10 px-3 py-2" style="display:'+(mobile?'block':'none')+'"><strong>Vocal assistant</strong><p>Recording signal looks healthy.</p></section>'+
        '<nav class="studio-mobile-tabs mx-2 mt-2 flex shrink-0 gap-1 rounded-2xl border border-white/10 p-1" style="display:'+(mobile?'flex':'none')+'">'+['Record','Timeline','Tools'].map(x=>'<button class="flex-1 min-h-11 rounded-xl bg-white/10 text-sm">'+x+'</button>').join('')+'</nav>'+
        '<section class="studio-mobile-record-view '+(landscape?'studio-mobile-record-grid ':'')+'min-h-0 flex-1 overflow-y-auto mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]" style="display:'+(mobile?'block':'none')+'">'+
          '<div class="studio-mobile-record-heading sticky top-0 z-10 border-b border-white/10 px-4 py-3"><p>Record anywhere</p><p>Record on your phone and finish on PC</p></div>'+
@@ -29,6 +32,7 @@ const sizes=[[390,844],[320,568],[844,390],[667,375],[932,430],[1024,768]];
            Array.from({length:8},(_,i)=>'<div class="rounded-xl border border-white/10 p-3"><div>Vocal '+(i+1)+'</div><button class="min-h-11 w-full">Listen and review</button></div>').join('')+'</div></div>'+
        '</section>'+
        '<section class="studio-mobile-tools-view min-h-0 flex-1 overflow-auto mx-2 mt-2 rounded-2xl border border-white/10 p-3 pb-28" style="display:none"><div class="grid grid-cols-2 gap-2">'+Array.from({length:8},(_,i)=>'<button class="min-h-12 border border-white/10">Tool '+i+'</button>').join('')+'</div></section>'+
+       '<section class="studio-mobile-timeline min-h-0 flex-1 overflow-auto mx-2 mt-2 rounded-xl border border-white/10" style="display:none"><div style="width:1800px;height:450px">Timeline track headers and waveforms</div></section>'+
        '<footer aria-label="Mobile Studio transport" class="studio-mobile-transport fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#171321] px-3 pt-2" style="display:'+(mobile?'block':'none')+';padding-bottom:10px"><div class="mx-auto flex max-w-md items-center justify-between gap-2">'+['Stop','Play','Record','Save'].map(x=>'<button class="min-h-12 flex-1 rounded-xl border border-white/10">'+x+'</button>').join('')+'</div></footer>'+
       '</main>';
       await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
@@ -52,14 +56,26 @@ const sizes=[[390,844],[320,568],[844,390],[667,375],[932,430],[1024,768]];
         tracksWidth:Math.round(rect(main.querySelector('.studio-mobile-tracks-pane')).width),
         projectRetained:main.querySelector('header').textContent.includes(window.__studioTestProjectName),
       };
+      if(mobile){
+        const tools=main.querySelector('.studio-mobile-tools-view');
+        const timeline=main.querySelector('.studio-mobile-timeline');
+        record.style.display='none';tools.style.display='block';
+        measurements.toolsHeight=Math.round(rect(tools).height);
+        measurements.toolsColumns=getComputedStyle(tools.querySelector('.grid-cols-2')).gridTemplateColumns.split(' ').length;
+        tools.style.display='none';timeline.style.display='block';
+        measurements.timelineHeight=Math.round(rect(timeline).height);
+        measurements.timelineScrollable=timeline.scrollWidth>timeline.clientWidth;
+        measurements.footerAfterTabs=getComputedStyle(footer).display!=='none';
+      }
       return measurements;
     });
     console.log(engineName,JSON.stringify(result));
     if(result.mobile){
       if(result.docWidth>width+2 || result.recordHeight<90 || result.recordTop>=result.footerTop ||
+         result.toolsHeight<80 || result.timelineHeight<80 || !result.timelineScrollable || !result.footerAfterTabs ||
          result.minButtonHeight<43 || !result.footerVisible || !result.projectRetained)
          throw Error(engineName+': invalid mobile controls '+JSON.stringify(result));
-      if(result.landscape && (result.recordDisplay!=='grid'||result.sideWidth<205||result.tracksWidth<250||
+      if(result.landscape && (result.recordDisplay!=='grid'||result.sideWidth<205||result.tracksWidth<250||result.toolsColumns!==4||
         !result.leftScroll||!result.rightScroll)) throw Error(engineName+': bad landscape panes '+JSON.stringify(result));
     } else if(result.landscape||result.footerVisible)throw Error('Desktop mode incorrectly treated as phone');
    }

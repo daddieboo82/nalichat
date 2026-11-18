@@ -41,8 +41,9 @@ export async function prepareVoiceAudio(blob, track) {
   const input = await decodeAudio(blob);
   const range = track ? studioClipAudioRange(track, input.duration) : { offset: 0, duration: input.duration };
   const minimum = track ? 1 : 3;
-  if (!range || range.duration < minimum || range.duration > 30) {
-    throw new Error(`Choose ${minimum}–30 seconds of isolated ${track ? 'lead vocal' : 'reference audio'}.`);
+  const maximum = track ? 60 : 30;
+  if (!range || range.duration < minimum || range.duration > maximum) {
+    throw new Error(`Choose ${minimum}–${maximum} seconds of isolated ${track ? 'lead vocal' : 'reference audio'}.`);
   }
   const rate = 24000;
   const context = new OfflineAudioContext(1, Math.floor(range.duration * rate), rate);
@@ -133,7 +134,7 @@ export async function generateVoiceMatch({ profile, mode, text, track, signal, o
     onStatus(data.status);
   }
   if (data?.status !== 'complete') throw new Error('This voice job took too long to finish.');
-  if (typeof data?.wav !== 'string' || data.wav.length > 2_666_668) {
+  if (typeof data?.wav !== 'string' || data.wav.length > 4_000_000) {
     throw new Error('The provider returned invalid audio.');
   }
   const bytes = Uint8Array.from(atob(data.wav), char => char.charCodeAt(0));

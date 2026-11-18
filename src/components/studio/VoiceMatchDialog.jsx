@@ -147,7 +147,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
             </select>
           </label>
           {mode !== 'speech' ? (
-            <p className="text-sm text-muted-foreground">Source: {take?.name} · 1–30 seconds of isolated vocal</p>
+            <p className="text-sm text-muted-foreground">Source: {take?.name} · 1–60 seconds of isolated vocal</p>
           ) : (
             <label className="block text-sm">
               Words to speak

@@ -3,8 +3,8 @@ import { encodeBase64, decodeBase64 } from 'jsr:@std/encoding@1.0.10/base64';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
-const AUDIO_LIMIT = 2_000_000;
-const REQUEST_LIMIT = 5_500_000;
+const AUDIO_LIMIT = 3_000_000;
+const REQUEST_LIMIT = 6_000_000;
 const statusResponse = (data: unknown) => Response.json(data, { headers: { 'Cache-Control': 'no-store' } });
 const reply = (error: string, status: number) => Response.json({ error }, { status });
 

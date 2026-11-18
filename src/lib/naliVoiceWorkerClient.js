@@ -1,6 +1,6 @@
 // Cancellable NaliVoice browser worker. The PCM buffer transfers by ownership,
 // avoiding copies on memory-constrained phones. The browser never uploads it.
-export async function runNaliVoiceWorker(samples, { signal, onStatus, workerFactory } = {}) {
+export async function runNaliVoiceWorker(samples, { signal, onStatus, workerFactory, model } = {}) {
   if (!(samples instanceof Float32Array) || samples.length < 1024 || samples.length > 2_000_000) {
     throw new Error('NaliVoice requires 1–20 seconds of vocal audio.');
   }
@@ -37,7 +37,7 @@ export async function runNaliVoiceWorker(samples, { signal, onStatus, workerFact
         }
       };
       worker.onerror = () => finish(new Error('NaliVoice could not run in this browser.'));
-      worker.postMessage({ type: 'RESTORE', samples: samples.buffer }, [samples.buffer]);
+      worker.postMessage({ type: 'RESTORE', samples: samples.buffer, ...(model ? { model } : {}) }, [samples.buffer]);
     });
   } finally {
     worker.terminate();

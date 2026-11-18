@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { sharedStudioCaptureConstraints, inspectSharedStudioCaptureSettings } from './sharedStudioCapture';
+import { sharedStudioCaptureConstraints, inspectSharedStudioCaptureSettings, openStudioMicrophone } from './sharedStudioCapture';
 import { analyzeSharedStudioRecordedBlob } from './sharedStudioCaptureQuality';
 
 describe('remote Studio microphone capture', () => {
@@ -11,6 +11,31 @@ describe('remote Studio microphone capture', () => {
       channelCount: { ideal: 1 },
       sampleRate: { ideal: 48000 },
     });
+  });
+
+  it('uses the device built-in mic without an external interface', async () => {
+    const stream = { getTracks: () => [] };
+    const devices = { getUserMedia: vi.fn().mockResolvedValue(stream) };
+    expect(await openStudioMicrophone(devices)).toBe(stream);
+    expect(devices.getUserMedia).toHaveBeenCalledWith(sharedStudioCaptureConstraints);
+  });
+
+  it('falls back for browsers that reject optional sample-rate constraints', async () => {
+    const stream = { getTracks: () => [] };
+    const reject = Object.assign(new Error('unsupported sample rate'), { name: 'OverconstrainedError' });
+    const devices = { getUserMedia: vi.fn().mockRejectedValueOnce(reject).mockResolvedValue(stream) };
+    expect(await openStudioMicrophone(devices)).toBe(stream);
+    expect(devices.getUserMedia).toHaveBeenCalledTimes(2);
+    expect(devices.getUserMedia.mock.calls[1][0]).toEqual({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
+  });
+
+  it('does not retry or bypass denied microphone permission', async () => {
+    const denied = Object.assign(new Error('denied'), { name: 'NotAllowedError' });
+    const devices = { getUserMedia: vi.fn().mockRejectedValue(denied) };
+    await expect(openStudioMicrophone(devices)).rejects.toBe(denied);
+    expect(devices.getUserMedia).toHaveBeenCalledTimes(1);
   });
 
   it('warns if a mobile browser overrides the mic processing request', () => {

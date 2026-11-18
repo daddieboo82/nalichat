@@ -67,6 +67,13 @@ export async function createLosslessStudioRecorder(stream, {
       this.state = 'recording';
       node.port.postMessage({type:'start'});
     },
+    // Snapshot only PCM already received from the worklet; never clear the
+    // ongoing recording. Each result contains its own complete WAV header.
+    // This is used for optional device-local crash recovery, not cloud upload.
+    snapshot() {
+      if (completed || this.state !== 'recording' || byteLength < context.sampleRate * 2) return null;
+      return pcm16WavBlob(chunks, context.sampleRate);
+    },
     requestData() { /* PCM is emitted on stop as a single valid WAV file. */ },
     dispose() {
       if (completed) return;

@@ -12,7 +12,7 @@ function renderTracks(overrides={}) {
     lanes: [{primary:first,clips:[first]}, {primary:second,clips:[second]}],
     selectedTrackIds:[1],
     onSelect:vi.fn(),onArm:vi.fn(),onMute:vi.fn(),onSolo:vi.fn(),onVolume:vi.fn(),
-    onAdd:vi.fn(),onImport:vi.fn(),onReconstruct:vi.fn(),onMixer:vi.fn(),onPolish:vi.fn(),
+    onAdd:vi.fn(),onImport:vi.fn(),onReconstruct:vi.fn(),onMixer:vi.fn(),onPolish:vi.fn(),onReview:vi.fn(),
     autoPolish:true, ...overrides,
   };
   return {props, ...render(<MobileStudioTracks {...props}/>)};
@@ -27,12 +27,14 @@ describe('Mobile NaliChat recording-first Studio', () => {
     fireEvent.click(screen.getByRole('button',{name:/import audio/i}));
     fireEvent.click(screen.getByRole('button',{name:/ai vocal/i}));
     fireEvent.click(screen.getByRole('button',{name:/mixer/i}));
+    fireEvent.click(screen.getByRole('button',{name:/review lead vocal/i}));
     expect(props.onArm).toHaveBeenCalledWith(1);
     expect(props.onMute).toHaveBeenCalledWith(1);
     expect(props.onSolo).toHaveBeenCalledWith(1);
     expect(props.onImport).toHaveBeenCalledOnce();
     expect(props.onReconstruct).toHaveBeenCalledOnce();
     expect(props.onMixer).toHaveBeenCalledOnce();
+    expect(props.onReview).toHaveBeenCalledWith(1);
   });
 
   it('allows touch volume adjustments and clear selected-track feedback', () => {

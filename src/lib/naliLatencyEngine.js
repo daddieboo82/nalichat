@@ -99,19 +99,21 @@ export function safeNaliOverdubCompensation(profile, { micDeviceId, outputLatenc
 }
 
 const PROFILE_KEY = 'nalichat-studio-acoustic-latency-v1';
-export function saveStudioLatencyProfile(profile, storage = globalThis.localStorage) {
+export function saveStudioLatencyProfile(profile, storage = null) {
   if (!profile?.valid || !Number.isFinite(profile.roundTripMs) ||
       profile.method !== 'acoustic-correlation-v1' ||
       !profile.micDeviceId || !Number.isFinite(profile.jitterMs) ||
       !Number.isFinite(profile.confidence)) throw new Error('Only reliable measured calibration can be saved.');
-  try { storage?.setItem(PROFILE_KEY, JSON.stringify({ ...profile, calibratedAt: Date.now() })); return true; }
+  try { const store = storage || globalThis.localStorage; if (!store) return false;
+    store.setItem(PROFILE_KEY, JSON.stringify({ ...profile, calibratedAt: Date.now() })); return true; }
   catch { return false; }
 }
-export function readStudioLatencyProfile(storage = globalThis.localStorage) {
+export function readStudioLatencyProfile(storage = null) {
   try {
-    const value = JSON.parse(storage?.getItem(PROFILE_KEY) || 'null');
+    const value = JSON.parse((storage || globalThis.localStorage)?.getItem(PROFILE_KEY) || 'null');
     if (value?.valid !== true || value.method !== 'acoustic-correlation-v1' ||
         !Number.isFinite(value.roundTripMs) || value.roundTripMs < 4 || value.roundTripMs > 350 ||
+        !value.micDeviceId || !Number.isFinite(value.jitterMs) || !Number.isFinite(value.confidence) ||
         !Number.isFinite(value.calibratedAt) || Date.now() - value.calibratedAt > 24 * 3600000 ||
         value.calibratedAt > Date.now()) return null;
     return value;

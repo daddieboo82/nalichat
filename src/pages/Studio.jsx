@@ -38,6 +38,8 @@ import StudioDialogs from '@/components/studio/StudioDialogs';
 import JamRoomOverlay from '@/components/studio/JamRoomOverlay';
 import StudioToolbar2 from '@/components/studio/StudioToolbar2';
 import MobileStudioTracks from '@/components/studio/MobileStudioTracks';
+import { studioDesktopHandoffUrl } from '@/lib/studioDesktopHandoff';
+import { copyToClipboard } from '@/lib/clipboard';
 import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
 const PluginRack = lazy(() => import('@/components/studio/PluginRack'));
@@ -168,6 +170,9 @@ export default function Studio() {
   const waveformPointsRef = useRef(WAVEFORM_POINTS);
   waveformPointsRef.current = WAVEFORM_POINTS;
   const [mobileStudioTab, setMobileStudioTab] = useState('record');
+  const [mobileDesktopHandoffUrl, setMobileDesktopHandoffUrl] = useState(null);
+  const [mobileHandoffSaving, setMobileHandoffSaving] = useState(false);
+  const lastSavedStudioProjectRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const currentTimeRef = useRef(0);
@@ -2969,6 +2974,7 @@ export default function Studio() {
         };
       }));
 
+      lastSavedStudioProjectRef.current = targetProjectId;
       toast.success(
         localPersistenceFailed
           ? "Studio project saved to My Sessions. Local autosave is unavailable on this device."
@@ -2989,6 +2995,32 @@ export default function Studio() {
       return false;
     } finally {
       studioSaveInFlightRef.current = false;
+    }
+  };
+
+  const saveMobileForDesktop = async () => {
+    if (mobileHandoffSaving) return;
+    if (isRecording || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current) {
+      toast.warning('Finish the recording and let it save before moving the session to your PC.');
+      return;
+    }
+    if (!user?.id) return toast.error('Sign in to save a session for your PC.');
+    setMobileHandoffSaving(true);
+    setMobileDesktopHandoffUrl(null);
+    try {
+      const saved = await handleSave();
+      if (!saved) return;
+      const savedId = lastSavedStudioProjectRef.current;
+      if (!savedId) throw new Error('The cloud save did not provide a project link.');
+      const link = studioDesktopHandoffUrl(savedId);
+      setMobileDesktopHandoffUrl(link);
+      const copied = await copyToClipboard(link);
+      if (copied) toast.success('PC Studio link copied. Sign in with this same NaliChat account on your computer.');
+      else toast.info('Project saved to My Sessions. Your PC link is shown below.');
+    } catch (error) {
+      toast.error(error?.message || 'Unable to prepare the PC handoff.');
+    } finally {
+      setMobileHandoffSaving(false);
     }
   };
 
@@ -3974,7 +4006,20 @@ export default function Studio() {
           <Button className="min-h-12" variant="outline" onClick={() => { if (!selectedTrackIds.length) return toast.info("Select a track first."); setShowAudioSuite(true); }}><Wand2 className="mr-2 h-4 w-4"/> AudioSuite</Button>
           <Button className="min-h-12" variant="outline" onClick={() => sessionImportRef.current?.click()}><FolderOpen className="mr-2 h-4 w-4"/> Restore ZIP</Button>
         </div>
-        <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3"><p className="text-sm font-semibold">Finish on desktop</p><p className="mt-1 text-xs text-muted-foreground">Your session works on both devices. Record here, save it, then open NaliChat Studio on your PC for detailed editing and the full production toolkit.</p></div>
+        <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+          <p className="text-sm font-semibold">Finish on desktop</p>
+          <p className="text-xs text-muted-foreground">Record on your phone, then save your audio and session to NaliChat. Open the link on your PC and sign in with the same account for the full editing, mixing, and mastering workspace.</p>
+          <Button type="button" className="min-h-12 w-full font-semibold" onClick={saveMobileForDesktop}
+            disabled={mobileHandoffSaving || isRecording || !canEditProject} aria-label="Save project and copy PC Studio link">
+            {mobileHandoffSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Monitor className="mr-2 h-4 w-4"/>}
+            {mobileHandoffSaving ? "Saving for PC…" : "Save for PC · Copy Link"}
+          </Button>
+          {mobileDesktopHandoffUrl && <div className="space-y-1 rounded-lg border border-primary/20 bg-background/60 p-2">
+            <p role="status" className="text-xs font-semibold text-foreground">Session saved to My Sessions</p>
+            <a className="block break-all text-xs text-primary underline underline-offset-2" href={mobileDesktopHandoffUrl}>Open saved session in Studio</a>
+            <p className="text-[11px] text-muted-foreground">Private to your account. Copy the link or open My Sessions on your computer.</p>
+          </div>}
+        </div>
         <div className="mt-3"><NaliLatencyControl disabled={isRecording || recordingFinalizeInFlightRef.current}/></div>
       </div>
 

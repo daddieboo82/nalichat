@@ -19,7 +19,7 @@ export default function StudioWelcome({
           <Mic className="w-8 h-8 text-primary" />
         </div>
         <h1 className="mb-2 text-center text-2xl font-heading font-bold tracking-tight sm:text-3xl">Welcome to Studio</h1>
-        <p className="mb-7 max-w-sm text-center text-sm leading-relaxed text-muted-foreground sm:mb-8">Choose how you'd like to start your session.</p>
+        <p className="mb-7 max-w-sm text-center text-sm leading-relaxed text-muted-foreground sm:mb-8">Record anywhere on your phone or tablet. Open the same saved session on a PC for the full professional mixing and editing workspace.</p>
         
         <div className="flex flex-col gap-3 w-full">
           <Button onClick={handleStartBlank} className="ui-hover min-h-14 w-full justify-start rounded-xl text-base font-semibold shadow-lg shadow-primary/15" variant="default">

@@ -78,6 +78,21 @@ export function estimateStudioRoundTrip({
   };
 }
 
+// Automatic correction only applies to local overdubs against a backing track,
+// never to independent Messaging voice notes or uncalibrated sessions. The
+// original WAV remains untouched; clipStart stores the reversible trim.
+export function safeNaliOverdubCompensation(profile, { micDeviceId, hasBackingTrack, duration } = {}) {
+  if (!hasBackingTrack || !profile?.valid || profile.method !== 'acoustic-correlation-v1' ||
+      !Number.isFinite(profile.roundTripMs) || profile.roundTripMs < 4 || profile.roundTripMs > 250 ||
+      !Number.isFinite(profile.jitterMs) || profile.jitterMs > 12 ||
+      !Number.isFinite(profile.confidence) || profile.confidence < 0.6 ||
+      !Number.isFinite(duration) || duration < 1 ||
+      !profile.micDeviceId || !micDeviceId || profile.micDeviceId !== micDeviceId ||
+      !Number.isFinite(profile.calibratedAt) || Date.now() - profile.calibratedAt > 24 * 3600000 ||
+      profile.calibratedAt > Date.now()) return 0;
+  return Math.min(profile.roundTripMs / 1000, duration * 0.1);
+}
+
 const PROFILE_KEY = 'nalichat-studio-acoustic-latency-v1';
 export function saveStudioLatencyProfile(profile, storage = globalThis.localStorage) {
   if (!profile?.valid || !Number.isFinite(profile.roundTripMs)) throw new Error('Only measured calibration can be saved.');

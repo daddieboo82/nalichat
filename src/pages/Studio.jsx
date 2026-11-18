@@ -65,6 +65,7 @@ import { cutStudioClipAtPointer } from '@/lib/studioClipCut';
 import { getStudioClipLaneId, groupStudioClipLanes, visibleStudioClipLanes, reorderVisibleStudioClipLanes } from '@/lib/studioClipLanes';
 import { isStudioArmedLane } from '@/lib/studioRecordingLanes';
 import { applyStudioRecordedTake, studioNewRecordingLaneCount } from '@/lib/studioRecordingTake';
+import { isAutoPolishVocalTrack, setVocalAutoPolish } from '@/lib/studioAutoPolish';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
@@ -317,6 +318,23 @@ export default function Studio() {
   const { peers: livePeers, setActivity } = useStudioPresence(roomId || 'local_studio');
   
   const [tracks, setTracks] = useState([]);
+  const [autoPolishVocals, setAutoPolishVocals] = useState(false);
+  // Existing sessions can persist each track's Auto Polish flag in the track data.
+  // Newly recorded/imported vocal tracks inherit the current session toggle.
+  useEffect(() => {
+    if (autoPolishVocals) setTracks(current => setVocalAutoPolish(current, true));
+  }, [tracks, autoPolishVocals]);
+  useEffect(() => {
+    if (!autoPolishVocals && tracks.some(t => t.autoPolish === true && isAutoPolishVocalTrack(t))) {
+      setAutoPolishVocals(true);
+    }
+  }, [tracks, autoPolishVocals]);
+  const toggleAutoPolishVocals = () => {
+    const enabled = !autoPolishVocals;
+    setAutoPolishVocals(enabled);
+    setTracks(current => setVocalAutoPolish(current, enabled));
+    toast.success(enabled ? 'Auto Polish ON — vocal tracks are processed automatically' : 'Auto Polish OFF — original vocal audio remains unchanged');
+  };
   const [showWelcome, setShowWelcome] = useState(true);
   const [hasAutosave, setHasAutosave] = useState(false);
   const [showPluginRack, setShowPluginRack] = useState(false);
@@ -3651,6 +3669,9 @@ export default function Studio() {
             <input type="file" ref={sessionImportRef} className="hidden" accept=".zip,.nalistudio.zip" onChange={handleSessionImport} aria-label="Restore Studio session backup" />
             <Button id="milestones-btn" onClick={() => setShowMilestones(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-border/50 hover:bg-secondary transition-colors">
               <ListTodo className="w-4 h-4" /> Milestones
+            </Button>
+            <Button type="button" onClick={toggleAutoPolishVocals} aria-pressed={autoPolishVocals} aria-label="Auto Polish all vocal tracks" title="Automatically polish all vocal tracks during playback and export, including new vocals" variant={autoPolishVocals ? 'default' : 'outline'} size="sm" className={cn('gap-2 rounded-xl', autoPolishVocals ? 'bg-primary text-primary-foreground' : 'border-primary/50')}>
+              <Wand2 className="w-4 h-4" /> Auto Polish {autoPolishVocals ? 'ON' : 'OFF'}
             </Button>
             <Button onClick={() => setShowQuickMemo(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-primary/50 text-primary hover:bg-primary/10 transition-colors">
                <Mic className="w-4 h-4" /> Quick Memo

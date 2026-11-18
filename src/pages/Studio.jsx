@@ -40,6 +40,8 @@ import StudioToolbar2 from '@/components/studio/StudioToolbar2';
 import MobileStudioTracks from '@/components/studio/MobileStudioTracks';
 import { studioDesktopHandoffUrl } from '@/lib/studioDesktopHandoff';
 import { getMobileStudioRecordingStatus } from '@/lib/mobileStudioRecordingStatus';
+import { saveStudioRecoveryTake, studioRecoveryScope } from '@/lib/studioTakeRecovery';
+import MobileStudioRecoveries from '@/components/studio/MobileStudioRecoveries';
 import { copyToClipboard } from '@/lib/clipboard';
 import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
@@ -1607,6 +1609,24 @@ export default function Studio() {
         }
         const audioUrl = URL.createObjectURL(blob);
         transientRecordedUrl = audioUrl;
+        // Commit the complete audio bytes to device-local IndexedDB *before*
+        // asynchronous waveform decoding. A reload can destroy blob: URLs,
+        // but a completed take remains recoverable on this device when the
+        // browser grants storage. Never upload or train from this backup.
+        if (isMobile && trainingOwner && captureHadMicTrack) {
+          try {
+            await saveStudioRecoveryTake({
+              ownerId: trainingOwner, scope: studioRecoveryScope(roomId),
+              audio: blob, duration: Math.max(0, stoppedEndTime - stoppedStartTime),
+              startTime: stoppedStartTime, name: tracksRef.current.find(t => stoppedArmedIds.has(String(t.id)) &&
+                !['midi', 'instrument'].includes(t.type))?.name || 'Mobile vocal',
+            });
+            window.dispatchEvent(new Event('nalichat:mobile-take-recovered'));
+          } catch (error) {
+            console.warn('Device-only Studio take backup unavailable:', error?.message);
+            toast.warning('Take captured, but device recovery backup is unavailable. Save your Studio project to keep it.');
+          }
+        }
 
         let realWaveform = [];
         let recordedDuration = null;
@@ -3044,6 +3064,36 @@ export default function Studio() {
       toast.error(error?.message || 'Unable to prepare the PC handoff.');
     } finally {
       setMobileHandoffSaving(false);
+    }
+  };
+
+  const restoreMobileTake = async (record) => {
+    if (isRecording || recordingFinalizeInFlightRef.current || studioSaveInFlightRef.current ||
+        studioRestoreInFlightRef.current || microphoneStartupRef.current.pending) {
+      throw new Error('Finish recording and saving before restoring a device backup.');
+    }
+    if (!canEditProject && roomId) throw new Error('This shared project is read-only.');
+    if (!record?.audio || !record.audio.size) throw new Error('Recovery audio is missing.');
+    if (tracksRef.current.length >= maxTracks) throw new Error('Track limit reached. Make room before restoring.');
+    const audioUrl = URL.createObjectURL(record.audio);
+    try {
+      const id = nextTrackId(tracksRef.current);
+      const track = {
+        id, name: `${record.name || 'Mobile Vocal'} (Recovered)`,
+        type: 'audio', color: 'bg-purple-500', volume:75, pan:50,
+        muted:false, solo:false, armed:false, waveform:[],
+        startTime:record.startTime || 0, duration:record.duration || 0,
+        fullDuration:record.duration || 0, clipStart:0,
+        audioUrl, file_url:audioUrl, recordedFromMicrophone:true,
+      };
+      // Never replace a cloud track; the recovered take is appended.
+      setTracksWithHistory(prev => [...prev,track]);
+      setSelectedTrackIds([id]);
+      setShowWelcome(false);
+      setMobileStudioTab('record');
+    } catch (error) {
+      URL.revokeObjectURL(audioUrl);
+      throw error;
     }
   };
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { studioCaptureHealth, formatCaptureClock, STUDIO_PCM_MEMORY_LIMIT_BYTES } from './studioCaptureHealth';
+import { studioCaptureHealth, formatCaptureClock, STUDIO_PCM_MEMORY_LIMIT_BYTES, shouldFinalizeMobilePcm } from './studioCaptureHealth';
 import { readFile } from 'node:fs/promises';
 
 describe('mobile long-session recording feedback',()=>{
@@ -21,6 +21,11 @@ describe('mobile long-session recording feedback',()=>{
     expect(status.memoryPercent).toBe(78);
     expect(status.detail).toMatch(/Press Finish/i);
   });
+  it('finalizes PCM capture before the recorder hard limit but does not force-stop compressed audio',()=>{
+    expect(shouldFinalizeMobilePcm(STUDIO_PCM_MEMORY_LIMIT_BYTES*.89,true)).toBe(false);
+    expect(shouldFinalizeMobilePcm(STUDIO_PCM_MEMORY_LIMIT_BYTES*.91,true)).toBe(true);
+    expect(shouldFinalizeMobilePcm(STUDIO_PCM_MEMORY_LIMIT_BYTES,false)).toBe(false);
+  });
   it('warns after an unsuccessful checkpoint even if an earlier one succeeded',()=>{
     const status=studioCaptureHealth({elapsedSeconds:38,checkpointSeconds:30,checkpointError:true});
     expect(status.detail).toMatch(/could not be updated/i);
@@ -33,6 +38,8 @@ describe('mobile long-session recording feedback',()=>{
     const studio=await readFile('src/pages/Studio.jsx','utf8');
     expect(studio).toContain('setMobileCaptureProgress(prev => ({...prev,checkpointSeconds');
     expect(studio).toContain('mediaRecorderRef.current === mediaRecorder');
+    expect(studio).toContain('shouldFinalizeMobilePcm(capturedBytes,pcm)');
+    expect(studio).toContain('mobileCaptureAutoFinishRef.current = true');
     expect(studio).toContain('aria-label="Mobile recording progress"');
     const recorder=await readFile('src/lib/studioPcmRecorder.js','utf8');
     expect(recorder).toContain('get capturedByteLength() { return byteLength; }');

@@ -43,10 +43,11 @@ describe('media storage resilience', () => {
 
   it('preserves collaborative recording MIME type and rejects empty captures', async () => {
     const source = await readText('src/components/messages/ChatSessionViewer.jsx');
-    expect(source).toContain('const recordingMimeType = recorder.mimeType || mimeType || "audio/webm"');
+    expect(source).toContain('const recordingMimeType = recorder.mimeType || codec || "audio/webm"');
+    expect(source).toContain('createStudioMediaRecorder(stream, MediaRecorder)');
     expect(source).toContain('new Blob(chunksRef.current, { type: recordingMimeType })');
     expect(source).toContain('if (blob.size === 0)');
-    expect(source).toContain('const extension = recordingExtension(recordingMimeType)');
+    expect(source).toContain('const extension = studioRecordingExtension(recordingMimeType)');
   });
 
   it('preserves Studio recorder MIME type and closes waveform decode contexts', async () => {

@@ -3894,7 +3894,7 @@ export default function Studio() {
   );
 
   return (
-    <div className={cn("flex flex-col h-screen h-[100dvh] bg-[#0D0B14] text-foreground overflow-hidden relative",isMobile&&"studio-mobile-workspace",isLandscapePhone&&"studio-mobile-landscape")}>
+    <div className={cn("flex flex-col h-screen h-[100dvh] bg-[#0D0B14] text-foreground overflow-hidden relative",isMobile&&"studio-mobile-workspace studio-mobile-premium",isLandscapePhone&&"studio-mobile-landscape")}>
       <StudioVideoHelp />
       {/* Ambient stage glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
@@ -4242,10 +4242,10 @@ export default function Studio() {
       </div>
       <div className={cn("studio-mobile-record-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]", mobileStudioTab !== "record" && "hidden",isLandscapePhone&&mobileStudioTab==="record"&&"studio-mobile-record-grid")} style={{display:isMobile&&mobileStudioTab==="record"?"block":"none"}}>
         <div className="studio-mobile-record-heading sticky top-0 z-10 border-b border-white/10 bg-[#1D1728]/95 px-4 py-3 backdrop-blur">
-          <p className="text-sm font-bold">Record anywhere</p>
-          <p className="text-[11px] text-muted-foreground">Capture on your phone. Open this session on a PC for precision editing, mixing, and mastering.</p>
+          <p className="studio-mobile-heading-title text-sm font-bold"><span className="studio-mobile-heading-light" aria-hidden="true"/>THE VOCAL ROOM <span className="studio-mobile-heading-label">MOBILE STUDIO</span></p>
+          <p className="studio-mobile-heading-subtitle text-[11px] text-muted-foreground">Capture the moment. Shape the sound. Finish anywhere.</p>
         </div>
-        <div className="studio-mobile-side-pane p-3 pb-0 space-y-3">
+        <div className="studio-mobile-side-pane p-3 pb-0 space-y-3" aria-label="Capture and take review">
           {isLandscapePhone && isRecording && <section className="studio-landscape-capture-summary rounded-xl border border-white/10 bg-[#191526] px-3 py-2 text-xs" aria-label="Landscape recording levels">
             <div className="flex items-center justify-between gap-2 font-semibold">
               <span>Recording {Math.floor(mobileCaptureProgress.elapsedSeconds/60).toString().padStart(2,"0")}:{Math.floor(mobileCaptureProgress.elapsedSeconds%60).toString().padStart(2,"0")}</span>
@@ -4271,7 +4271,7 @@ export default function Studio() {
               recording={isRecording || mobileTakeFinalizing} saving={mobileHandoffSaving} readOnly={!canEditProject} />
           </div>
         </div>
-        <div className="studio-mobile-tracks-pane min-h-0">
+        <div className="studio-mobile-tracks-pane min-h-0" aria-label="Track rack">
         <MobileStudioTracks lanes={visibleStudioClipLanes(tracks)} selectedTrackIds={selectedTrackIds}
           onSelect={id => setSelectedTrackIds([id])} onArm={toggleArm} onMute={toggleMute} onSolo={toggleSolo}
           onVolume={updateVolume} onAdd={addMobileVocalTrack} onImport={handleImportClick} onReconstruct={openGenerativeReconstruction}
@@ -4285,7 +4285,7 @@ export default function Studio() {
         </div>
       </div>
       <div className={cn("studio-mobile-tools-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19] p-3 pb-28", mobileStudioTab !== "tools" && "hidden")} style={{display:isMobile&&mobileStudioTab==="tools"?"block":"none"}}>
-        <h2 className="mb-3 text-base font-semibold">Studio tools</h2>
+        <h2 className="studio-tools-title mb-3 text-base font-semibold">Studio tools <span className="studio-tools-subtitle">YOUR CREATIVE CONTROL CENTER</span></h2>
         <div className="grid grid-cols-2 gap-2">
           <Button className="min-h-12" variant="outline" disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving} onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Session</Button>
           <Button className="min-h-12" variant="outline" onClick={() => { setExportFormat("wav"); setExportDialogOpen(true); }}><Download className="mr-2 h-4 w-4"/> Export Mix</Button>
@@ -5440,7 +5440,7 @@ export default function Studio() {
         <div className="mx-auto flex max-w-md items-center justify-between gap-2">
           <button type="button" onClick={() => stop()} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10" aria-label="Stop"><Square className="h-5 w-5"/></button>
           <button type="button" onClick={togglePlay} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-white/10 font-semibold" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}{isPlaying ? "Pause" : "Play"}</button>
-          <button type="button" onClick={toggleRecord} disabled={!canEditProject} className={cn("flex min-h-14 flex-[1.2] items-center justify-center gap-2 rounded-2xl font-bold text-white disabled:opacity-40", isRecording ? "bg-red-700" : "bg-red-600")} aria-label={isRecording ? "Stop recording" : "Record"}><Circle className="h-5 w-5 fill-current"/>{isRecording ? "Finish" : "Record"}</button>
+          <button type="button" onClick={toggleRecord} disabled={!canEditProject || mobileTakeFinalizing} className={cn("studio-mobile-record-button flex min-h-14 flex-[1.2] items-center justify-center gap-2 rounded-2xl font-bold text-white disabled:opacity-40", isRecording ? "bg-red-700" : "bg-red-600")} aria-label={isRecording ? "Stop recording" : "Record"}><Circle className="h-5 w-5 fill-current"/>{isRecording ? "Finish" : "Record"}</button>
           <button type="button" onClick={handleSave} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10 disabled:opacity-40" aria-label="Save session"><Save className="h-5 w-5"/></button>
         </div>
       </div>

@@ -75,6 +75,7 @@ import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from '@/lib/sharedStudioCapture';
 import { createPreferredStudioRecorder } from '@/lib/studioPcmRecorder';
+import NaliLatencyControl from '@/components/studio/NaliLatencyControl';
 import { fetchAuthorizedStudioVoiceMessage } from '@/lib/studioMessageVoiceImport';
 import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
 import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
@@ -3778,6 +3779,7 @@ export default function Studio() {
             <Button id="milestones-btn" onClick={() => setShowMilestones(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-border/50 hover:bg-secondary transition-colors">
               <ListTodo className="w-4 h-4" /> Milestones
             </Button>
+            <NaliLatencyControl disabled={isRecording || recordingFinalizeInFlightRef.current} />
             <Button type="button" onClick={toggleAutoPolishVocals} aria-pressed={autoPolishVocals} aria-label="Auto Polish all vocal tracks" title="Automatically polish all vocal tracks during playback and export, including new vocals" variant={autoPolishVocals ? 'default' : 'outline'} size="sm" className={cn('gap-2 rounded-xl', autoPolishVocals ? 'bg-primary text-primary-foreground' : 'border-primary/50')}>
               <Wand2 className="w-4 h-4" /> Auto Polish {autoPolishVocals ? 'ON' : 'OFF'}
             </Button>

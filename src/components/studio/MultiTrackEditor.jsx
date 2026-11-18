@@ -35,6 +35,10 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   const audioElements = useRef({});
 
   useEffect(() => {
+    setDuration(Math.max(0, ...tracks.map(track => sessionTrackEnd(track, audioElements.current[track.id]?.duration))));
+  }, [tracks]);
+
+  useEffect(() => {
     return () => {
       playbackRef.current = null;
       Object.values(audioElements.current).forEach(el => el?.pause());

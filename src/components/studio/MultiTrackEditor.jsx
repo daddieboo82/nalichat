@@ -9,6 +9,7 @@ import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { sessionTrackLocalTime, sessionTrackShouldPlay, sessionTrackStart, sessionTrackEnd } from "@/lib/sessionTrackTiming";
 
 export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle, canEdit = true, currentUser }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -29,14 +30,55 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   const removeFromQueue = (id) => setQueue(prev => prev.filter(t => t.id !== id));
   const audioContextRef = useRef(null);
   const playbackRef = useRef(null);
+  const pendingPlayRef = useRef(new WeakSet());
 
   const audioElements = useRef({});
 
   useEffect(() => {
     return () => {
+      playbackRef.current = null;
       Object.values(audioElements.current).forEach(el => el?.pause());
     };
   }, []);
+
+  // One session clock owns the timeline. Individual HTML media timeupdate
+  // events must not reset the shared transport or erase another track offset.
+  useEffect(() => {
+    if (!isPlaying || !playbackRef.current) return;
+    const timer = window.setInterval(() => {
+      const clock = playbackRef.current;
+      if (!clock) return;
+      const sessionTime = clock.from + (performance.now() - clock.startedAt) / 1000;
+      setCurrentTime(sessionTime);
+      const hasSolo = tracks.some(t => t.solo && !t.muted);
+      for (const track of tracks) {
+        const element = audioElements.current[track.id];
+        if (!element) continue;
+        const allowed = !track.muted && (!hasSolo || track.solo);
+        const active = allowed && sessionTrackShouldPlay(track, sessionTime, element.duration);
+        if (!active) {
+          if (!element.paused) element.pause();
+          continue;
+        }
+        const local = sessionTrackLocalTime(track, sessionTime);
+        if (Math.abs(element.currentTime - local) > 0.15 && Number.isFinite(local)) {
+          try { element.currentTime = local; } catch { /* decoding in progress */ }
+        }
+        if (element.paused && !pendingPlayRef.current.has(element)) {
+          pendingPlayRef.current.add(element);
+          Promise.resolve(element.play()).catch(error => console.warn("Shared track playback could not start", error))
+            .finally(() => pendingPlayRef.current.delete(element));
+        }
+      }
+      const end = Math.max(0, ...tracks.map(t => sessionTrackEnd(t, audioElements.current[t.id]?.duration)));
+      if (end > 0 && sessionTime >= end) {
+        playbackRef.current = null;
+        setIsPlaying(false);
+        Object.values(audioElements.current).forEach(element => element?.pause());
+      }
+    }, 50);
+    return () => window.clearInterval(timer);
+  }, [isPlaying, tracks]);
 
   const handlePlay = async () => {
     if (!isPlaying) {
@@ -44,10 +86,10 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
       const hasSoloTrack = tracks.some((track) => track.solo && !track.muted);
       // A soloed track takes precedence; muted and soloed-away tracks must stay silent.
       Object.entries(audioElements.current).forEach(([trackId, el]) => {
-        const track = tracks.find(t => t.id === trackId);
+        const track = tracks.find(t => String(t.id) === String(trackId));
         const shouldPlay = track && !track.muted && (!hasSoloTrack || track.solo);
-        if (el && track?.file_url && shouldPlay) {
-          el.currentTime = currentTime;
+        if (el && (track?.file_url || track?.audioUrl) && shouldPlay && sessionTrackShouldPlay(track, currentTime, el.duration)) {
+          el.currentTime = sessionTrackLocalTime(track, currentTime);
           attempts.push(
             el.play().then(() => true).catch((error) => {
               console.error("Multitrack playback failed:", error);
@@ -58,25 +100,30 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           el.pause();
         }
       });
-      if (attempts.length === 0) {
+      const futurePlayable = tracks.some(track => (track.audioUrl || track.file_url) && !track.muted &&
+        (!hasSoloTrack || track.solo) && sessionTrackStart(track) > currentTime);
+      if (attempts.length === 0 && !futurePlayable) {
         setIsPlaying(false);
         toast.error("Add a playable audio track, or unmute a track, before pressing Play.");
         return;
       }
       const started = await Promise.all(attempts);
-      if (!started.some(Boolean)) {
+      if (!started.some(Boolean) && !futurePlayable) {
         setIsPlaying(false);
         toast.error("Couldn't start track playback. Please try again.");
         return;
       }
+      playbackRef.current = { from: currentTime, startedAt: performance.now() };
       setIsPlaying(true);
     } else {
+      playbackRef.current = null;
       setIsPlaying(false);
       Object.values(audioElements.current).forEach(el => el?.pause());
     }
   };
 
   const handleStop = () => {
+    playbackRef.current = null;
     setIsPlaying(false);
     setCurrentTime(0);
     Object.values(audioElements.current).forEach(el => {
@@ -106,9 +153,11 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
 
   const handleTimelineClick = (time) => {
     setCurrentTime(time);
-    Object.values(audioElements.current).forEach(el => {
-      if (el) el.currentTime = time;
-    });
+    if (playbackRef.current) playbackRef.current = { from: time, startedAt: performance.now() };
+    for (const track of tracks) {
+      const el = audioElements.current[track.id];
+      if (el) el.currentTime = sessionTrackLocalTime(track, time);
+    }
   };
 
   return (
@@ -321,19 +370,16 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                       if (ref) {
                         audioElements.current[track.id] = ref;
                         if (Number.isFinite(ref.duration) && ref.duration > 0) {
-                          setDuration((d) => Math.max(d, ref.duration));
+                          setDuration((d) => Math.max(d, sessionTrackEnd(track, ref.duration)));
                         }
                         ref.onloadedmetadata = () => {
                           if (Number.isFinite(ref.duration) && ref.duration > 0) {
-                            setDuration((d) => Math.max(d, ref.duration));
+                            setDuration((d) => Math.max(d, sessionTrackEnd(track, ref.duration)));
                           }
                         };
-                        ref.ontimeupdate = () => setCurrentTime(ref.currentTime || 0);
+                        // The session clock advances the ruler; track media timestamps are local.
                         ref.onended = () => {
-                          const audio = Object.values(audioElements.current);
-                          if (audio.length && audio.every((item) => !item || item.ended || item.paused)) {
-                            setIsPlaying(false);
-                          }
+                          // The shared session clock handles the final stop.
                         };
                       } else {
                         delete audioElements.current[track.id];

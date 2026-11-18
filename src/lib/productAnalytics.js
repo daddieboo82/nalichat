@@ -12,6 +12,7 @@ let session = null;
 let flushTimer = null;
 let lastRoute = null;
 let foregroundSince = null;
+let lastIosCheckpointEngagedMs = 0;
 
 function now() { return Date.now(); }
 function supportsCredentialedAnalyticsTransport() {
@@ -20,7 +21,8 @@ function supportsCredentialedAnalyticsTransport() {
   // origin while using credentials. WebKit rejects that combination, so keep
   // product analytics non-blocking on iPhone/iPad until the endpoint supplies
   // an explicit origin. Funnel events below continue to use app entities.
-  return !/iPad|iPhone|iPod/.test(navigator.userAgent || "");
+  return !/iPad|iPhone|iPod/.test(navigator.userAgent || "") &&
+    !(navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 function safeGet() {
   try {
@@ -113,7 +115,7 @@ function track(name, properties = {}) {
     "upgrade_click", "billing_review_click", "paywall_view", "paywall_tier_select", "paywall_primary_cta", "paywall_dismissed", "entitlement_prompt_view", "entitlement_prompt_convert", "checkout_started", "checkout_canceled", "purchase_completed", "purchase_failed", "checkout_error_diagnostic"
   ]);
   const shouldPersistEvent = funnelEvents.has(name) &&
-    (name !== "product_session_engagement" || properties.reason !== "heartbeat");
+    (name !== "product_session_engagement" || properties.reason !== "heartbeat" || properties.ios_checkpoint === true);
   if (shouldPersistEvent) {
     try {
       const record = {
@@ -157,8 +159,17 @@ function markActive() {
 function flush(reason = "heartbeat") {
   accrueForegroundUntil();
   const s = ensureSession();
+  // Safari can discard a pending pagehide request. Persist occasional progress
+  // through our existing first-party funnel entity on iOS/iPadOS instead of
+  // retrying the credentialed analytics endpoint that WebKit rejects.
+  // At most one extra record per 30 seconds of visible engagement.
+  const iosCheckpoint = reason === "heartbeat" && !supportsCredentialedAnalyticsTransport() &&
+    document.visibilityState === "visible" &&
+    s.engagedMs - lastIosCheckpointEngagedMs >= 30_000;
+  if (iosCheckpoint) lastIosCheckpointEngagedMs = s.engagedMs;
   track("product_session_engagement", {
     reason,
+    ios_checkpoint: iosCheckpoint,
     engaged_seconds: Math.round((s.engagedMs / 1000) * 10) / 10,
     elapsed_seconds: Math.round(((now() - s.startedAt) / 1000) * 10) / 10,
     route: window.location.pathname,
@@ -190,6 +201,7 @@ export function initProductAnalytics(userId = null) {
   session = null;
   lastRoute = null;
   foregroundSince = document.visibilityState === "visible" ? now() : null;
+  lastIosCheckpointEngagedMs = 0;
   initialized = true;
   const s = ensureSession();
   track("product_session_started", { route: window.location.pathname, returning_tab_session: s.startedAt !== s.lastActiveAt });

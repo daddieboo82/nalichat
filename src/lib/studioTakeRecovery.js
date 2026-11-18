@@ -68,7 +68,9 @@ export async function listStudioRecoveryTakes(ownerId, scope, indexedDBImpl = gl
   return withDatabase(indexedDBImpl,async db => {
     const rows = await runTransaction(db,'readonly', store => store.index('ownerScope').getAll(ownerScope));
     return (rows || []).filter(row => row?.ownerScope === ownerScope &&
-      row?.audio instanceof Blob && row.audio.size > 0).sort((a,b) => b.createdAt - a.createdAt)
+      ((row?.audio instanceof Blob && row.audio.size > 0) ||
+       (row?.audioBytes instanceof ArrayBuffer && row.audioBytes.byteLength > 0)))
+      .sort((a,b) => b.createdAt - a.createdAt)
       .map(({id, createdAt, name, duration, bytes, mimeType, partial}) => ({id,createdAt,name,duration,bytes,mimeType,partial:Boolean(partial)}));
   });
 }
@@ -99,7 +101,18 @@ export async function saveStudioRecoveryTake({
       audio, bytes: audio.size, mimeType: audio.type,
       duration, startTime, partial:Boolean(partial), createdAt: Date.now(),
     };
-    await runTransaction(db,'readwrite', store => replaceExisting ? store.put(record) : store.add(record));
+    try {
+      await runTransaction(db,'readwrite', store => replaceExisting ? store.put(record) : store.add(record));
+    } catch (blobError) {
+      // WebKit/Safari implementations may abort transactions when serializing
+      // a Blob even though IndexedDB itself is available. Retry using a
+      // standard ArrayBuffer; this preserves bytes and MIME without cloud IO.
+      const audioBytes = await audio.arrayBuffer();
+      const portable = { ...record, audio: null, audioBytes };
+      try {
+        await runTransaction(db,'readwrite', store => replaceExisting ? store.put(portable) : store.add(portable));
+      } catch { throw blobError; }
+    }
     return { id:record.id, bytes:record.bytes, createdAt:record.createdAt };
   });
 }
@@ -108,9 +121,14 @@ export async function getStudioRecoveryTake(ownerId, scope, id, indexedDBImpl = 
   if (typeof id !== 'string' || !id) throw new Error('Invalid recovery take.');
   return withDatabase(indexedDBImpl,async db => {
     const record = await runTransaction(db,'readonly', store => store.get(id));
-    if (!record || record.ownerScope !== ownerScope || !(record.audio instanceof Blob) ||
-        record.audio.size === 0 || record.audio.size > MAX_BYTES) throw new Error('This take is no longer available to recover.');
-    return record;
+    if (!record || record.ownerScope !== ownerScope) throw new Error('This take is no longer available to recover.');
+    const audio = record.audio instanceof Blob ? record.audio :
+      record.audioBytes instanceof ArrayBuffer
+        ? new Blob([record.audioBytes], {type:record.mimeType || 'audio/wav'}) : null;
+    if (!audio || !audio.size || audio.size > MAX_BYTES || !audio.type.startsWith('audio/')) {
+      throw new Error('This take is no longer available to recover.');
+    }
+    return {...record, audio, audioBytes:undefined};
   });
 }
 export async function deleteStudioRecoveryTake(ownerId, scope, id, indexedDBImpl = globalThis.indexedDB) {

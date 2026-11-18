@@ -68,6 +68,15 @@ export async function createLosslessStudioRecorder(stream, {
       node.port.postMessage({type:'start'});
     },
     requestData() { /* PCM is emitted on stop as a single valid WAV file. */ },
+    dispose() {
+      if (completed) return;
+      completed = true;
+      this.state = 'inactive';
+      clearTimeout(watchdog);
+      chunks = [];
+      try { source.disconnect(); node.disconnect(); mute.disconnect(); } catch {}
+      void context.close().catch(() => {});
+    },
     stop() {
       if (this.state !== 'recording') return;
       this.state = 'inactive';

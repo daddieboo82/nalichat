@@ -5,7 +5,7 @@ import { Headphones, Mic2, Monitor, ShieldCheck } from 'lucide-react';
 // not alter the project playhead or perform a destructive render. The original
 // take remains a clip even if a new take is prepared.
 export default function MobileTakeReview({
-  track, onRetake, onSaveForPC, recording = false, saving = false, readOnly = false,
+  track, comparisonTakes = [], onChooseTake, onRetake, onSaveForPC, recording = false, saving = false, readOnly = false,
 }) {
   const url = track?.audioUrl || track?.file_url;
   if (!track || !url) return null;
@@ -27,6 +27,19 @@ export default function MobileTakeReview({
         <p className="truncate text-xs text-muted-foreground">{track.name || 'Vocal recording'}</p>
       </div>
     </div>
+    {comparisonTakes.length > 1 && <div className="space-y-1" aria-label="Compare vocal takes">
+      <p className="text-xs font-semibold">Compare performances · {comparisonTakes.length} takes</p>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {comparisonTakes.map((take,index)=><button key={take.id} type="button"
+          aria-pressed={String(track.id)===String(take.id)}
+          aria-label={`Listen to take ${index+1}: ${take.name}`}
+          onClick={()=>onChooseTake?.(take.id)}
+          className={`min-h-11 shrink-0 rounded-xl border px-3 text-xs font-semibold ${String(track.id)===String(take.id)?'border-primary bg-primary/15 text-primary':'border-white/20 bg-white/5 text-muted-foreground'}`}>
+          Take {index+1}{take.quality?.status==='clipping'?' · Possible clipping':''}
+        </button>)}
+      </div>
+      <p className="text-[11px] text-muted-foreground">Choose a take to hear it. Switching stops the previous preview. All takes remain in your project.</p>
+    </div>}
     <audio key={url} controls preload="metadata" src={url} className="w-full min-w-0" aria-label="Playback selected Studio take"/>
     <p className="text-xs text-muted-foreground">{recommendation}</p>
     {quality && Number.isFinite(quality.peakDb) && <p className="text-[11px] text-muted-foreground">

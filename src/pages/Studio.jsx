@@ -2895,6 +2895,13 @@ export default function Studio() {
   };
 
   const handleSave = async () => {
+    // Mobile transport, Tools, exit, and desktop Save all share this path.
+    // Never persist a pre-finalization snapshot that omits the take whose
+    // recorder has stopped but whose WAV decoding is still in progress.
+    if (isRecording || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current || mobileTakeFinalizing) {
+      toast.warning('Finish recording and wait for the take to appear before saving your Studio session.');
+      return false;
+    }
     if (studioDeviceExportInFlightRef.current) {
       toast.error("Finish the Studio device backup before saving.");
       return false;
@@ -4275,7 +4282,7 @@ export default function Studio() {
       <div className={cn("studio-mobile-tools-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19] p-3 pb-28", mobileStudioTab !== "tools" && "hidden")} style={{display:isMobile&&mobileStudioTab==="tools"?"block":"none"}}>
         <h2 className="mb-3 text-base font-semibold">Studio tools</h2>
         <div className="grid grid-cols-2 gap-2">
-          <Button className="min-h-12" variant="outline" disabled={isRecording || mobileHandoffSaving} onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Session</Button>
+          <Button className="min-h-12" variant="outline" disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving} onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Session</Button>
           <Button className="min-h-12" variant="outline" onClick={() => { setExportFormat("wav"); setExportDialogOpen(true); }}><Download className="mr-2 h-4 w-4"/> Export Mix</Button>
           <Button className="min-h-12" variant="outline" onClick={() => setShowPluginRack(true)}><SlidersHorizontal className="mr-2 h-4 w-4"/> Plugins</Button>
           <Button className="min-h-12" variant="outline" onClick={() => { stop(); setShowPreferencesDialog(true); }}><Settings2 className="mr-2 h-4 w-4"/> Mic Setup</Button>
@@ -4289,7 +4296,7 @@ export default function Studio() {
           <p className="text-sm font-semibold">Finish on desktop</p>
           <p className="text-xs text-muted-foreground">Record on your phone, then save your audio and session to NaliChat. Open the link on your PC and sign in with the same account for the full editing, mixing, and mastering workspace.</p>
           <Button type="button" className="min-h-12 w-full font-semibold" onClick={saveMobileForDesktop}
-            disabled={mobileHandoffSaving || isRecording || !canEditProject} aria-label="Save project and copy PC Studio link">
+            disabled={mobileHandoffSaving || isRecording || mobileTakeFinalizing || !canEditProject} aria-label="Save project and copy PC Studio link">
             {mobileHandoffSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Monitor className="mr-2 h-4 w-4"/>}
             {mobileHandoffSaving ? "Saving for PC…" : "Save for PC · Copy Link"}
           </Button>
@@ -5429,7 +5436,7 @@ export default function Studio() {
           <button type="button" onClick={() => stop()} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10" aria-label="Stop"><Square className="h-5 w-5"/></button>
           <button type="button" onClick={togglePlay} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-white/10 font-semibold" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}{isPlaying ? "Pause" : "Play"}</button>
           <button type="button" onClick={toggleRecord} disabled={!canEditProject} className={cn("flex min-h-14 flex-[1.2] items-center justify-center gap-2 rounded-2xl font-bold text-white disabled:opacity-40", isRecording ? "bg-red-700" : "bg-red-600")} aria-label={isRecording ? "Stop recording" : "Record"}><Circle className="h-5 w-5 fill-current"/>{isRecording ? "Finish" : "Record"}</button>
-          <button type="button" onClick={handleSave} disabled={isRecording || mobileHandoffSaving} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10 disabled:opacity-40" aria-label="Save session"><Save className="h-5 w-5"/></button>
+          <button type="button" onClick={handleSave} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10 disabled:opacity-40" aria-label="Save session"><Save className="h-5 w-5"/></button>
         </div>
       </div>
     </div>

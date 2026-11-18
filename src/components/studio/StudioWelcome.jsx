@@ -8,6 +8,7 @@ export default function StudioWelcome({
   handleLoadAutosave,
   handleLoadDemo,
   handleSessionImport,
+  recoveryPanel,
   navigate
 }) {
   const backupInputRef = useRef(null);
@@ -21,6 +22,7 @@ export default function StudioWelcome({
         <h1 className="mb-2 text-center text-2xl font-heading font-bold tracking-tight sm:text-3xl">Welcome to Studio</h1>
         <p className="mb-7 max-w-sm text-center text-sm leading-relaxed text-muted-foreground sm:mb-8">Record anywhere on your phone or tablet. Open the same saved session on a PC for the full professional mixing and editing workspace.</p>
         
+        {recoveryPanel && <div className="w-full mb-3">{recoveryPanel}</div>}
         <div className="flex flex-col gap-3 w-full">
           <Button onClick={handleStartBlank} className="ui-hover min-h-14 w-full justify-start rounded-xl text-base font-semibold shadow-lg shadow-primary/15" variant="default">
             <Plus className="w-5 h-5 mr-3" /> Create New Project

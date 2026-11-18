@@ -8,7 +8,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
   const [selected, setSelected] = useState('');
   const [name, setName] = useState('');
   const [reference, setReference] = useState(null);
-  const [mode, setMode] = useState(take?.audioUrl ? 'convert' : 'speech');
+  const [mode, setMode] = useState(take?.audioUrl ? 'sing' : 'speech');
   const [text, setText] = useState('');
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -75,7 +75,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
     try {
       const audio = await generateVoiceMatch({ profile, mode, text, track: take, signal: controller.signal, onStatus: setJobStatus });
       controller.signal.throwIfAborted();
-      setResult({ ...audio, name: `${profile.name} (Voice Match)`, startTime: mode === 'convert' ? take.startTime : 0 });
+      setResult({ ...audio, name: `${profile.name} (Voice Match)`, startTime: mode === 'speech' ? 0 : take.startTime });
     } finally {
       generation.current = null;
       setJobStatus('');
@@ -119,11 +119,12 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
           <label className="block text-sm">
             Generation mode
             <select className="mt-1 block w-full rounded border bg-background p-2" value={mode} onChange={event => { setMode(event.target.value); setResult(null); }}>
-              <option value="convert" disabled={!take?.audioUrl}>Convert selected vocal</option>
+              <option value="sing" disabled={!take?.audioUrl}>Singing · preserve melody (beta)</option>
+              <option value="convert" disabled={!take?.audioUrl}>Convert spoken take</option>
               <option value="speech">Text to speech</option>
             </select>
           </label>
-          {mode === 'convert' ? (
+          {mode !== 'speech' ? (
             <p className="text-sm text-muted-foreground">Source: {take?.name} · 1–30 seconds of isolated vocal</p>
           ) : (
             <label className="block text-sm">

@@ -44,7 +44,7 @@ Deno.serve(async (request) => {
       return await readRenderedAudio(upstream);
     }
 
-    if (!payload || payload.consent !== true || !['speech', 'convert'].includes(payload.mode)) {
+    if (!payload || payload.consent !== true || !['speech', 'convert', 'sing'].includes(payload.mode)) {
       return reply('Choose a mode and confirm permission to use the reference voice.', 400);
     }
     const form = new FormData();

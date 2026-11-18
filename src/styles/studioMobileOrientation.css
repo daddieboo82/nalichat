@@ -635,3 +635,11 @@
   border-color:hsl(var(--border));
 }
 
+
+/* Unselected review takes use NaliChat's shared secondary surface. */
+.studio-mobile-premium [data-testid="mobile-take-review"] button[aria-pressed="false"] {
+  background:hsl(var(--secondary));
+  border-color:hsl(var(--border));
+  color:hsl(var(--muted-foreground));
+}
+

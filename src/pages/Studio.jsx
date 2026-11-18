@@ -74,6 +74,7 @@ import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from '@/lib/sharedStudioCapture';
+import { createStudioMediaRecorder } from '@/lib/studioRecorderCodec';
 import { fetchAuthorizedStudioVoiceMessage } from '@/lib/studioMessageVoiceImport';
 import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
 import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
@@ -1913,8 +1914,8 @@ export default function Studio() {
         gainNode.connect(audioCtx.destination);
         
         // Start actual recording with frequent chunks for memory efficiency
-        const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? { mimeType: 'audio/webm;codecs=opus' } : {};
-        const mediaRecorder = new MediaRecorder(stream, options);
+        const { recorder: mediaRecorder, lossless } = createStudioMediaRecorder(stream, MediaRecorder);
+        if (lossless) toast.info('Lossless microphone recording is supported on this device.');
         startupRecorder = mediaRecorder;
         mediaRecorderRef.current = mediaRecorder;
         const captureChunks = [];

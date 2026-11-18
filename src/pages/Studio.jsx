@@ -1911,6 +1911,8 @@ export default function Studio() {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
         startupContext = audioCtx;
         audioContextRef.current = audioCtx;
+        recordingOverdubRef.current.outputLatencyMs = Number.isFinite(audioCtx.outputLatency)
+          ? Math.round(audioCtx.outputLatency * 1000 * 10) / 10 : null;
         const source = audioCtx.createMediaStreamSource(stream);
         
         const analyser = audioCtx.createAnalyser();

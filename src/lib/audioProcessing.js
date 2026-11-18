@@ -353,7 +353,29 @@ export function connectTrackChain(context, source, track, { destination, reverbB
 
   const insertsOut = context.createGain();
   nodes.push(insertsOut);
-  connectPluginChain(context, trackGain, getTrackEffects(track), insertsOut, nodes);
+  // Session Auto Polish is a reversible insert applied equally during playback
+  // and offline mixdown; it never rewrites or uploads the source recording.
+  let insertsInput = trackGain;
+  if (track?.autoPolish === true) {
+    const highpass = context.createBiquadFilter();
+    highpass.type = 'highpass';
+    highpass.frequency.value = 70;
+    highpass.Q.value = 0.707;
+    const compressor = context.createDynamicsCompressor();
+    compressor.threshold.value = -20;
+    compressor.knee.value = 12;
+    compressor.ratio.value = 2.5;
+    compressor.attack.value = 0.008;
+    compressor.release.value = 0.18;
+    const makeup = context.createGain();
+    makeup.gain.value = 1.08;
+    trackGain.connect(highpass);
+    highpass.connect(compressor);
+    compressor.connect(makeup);
+    nodes.push(highpass, compressor, makeup);
+    insertsInput = makeup;
+  }
+  connectPluginChain(context, insertsInput, getTrackEffects(track), insertsOut, nodes);
 
   let output = insertsOut;
   if (typeof context.createStereoPanner === 'function') {

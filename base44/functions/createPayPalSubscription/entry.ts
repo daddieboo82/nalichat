@@ -3,6 +3,7 @@ import { secrets } from 'base44:runtime';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
 import { paypalPeriodEndForStatus, resolvePayPalSubscriptionStatus } from '../../shared/paypalSubscription.ts';
 import { hasLiveSubscription, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
+import { paypalSubscriptionRequestId } from '../../shared/paypalCheckoutRequest.ts';
 
 const CATALOG: Record<string, { plan: string; billingPeriod: string; secret: string }> = {
   premium_monthly: { plan: 'premium', billingPeriod: 'monthly', secret: 'PAYPAL_PREMIUM_MONTHLY_PLAN_ID' },
@@ -70,17 +71,9 @@ async function reservePayPalCheckout(
   return persisted?.paypal_checkout_claim_id === claimId;
 }
 
-// PayPal-Request-Id is limited to 38 single-byte characters. Hash the
-// authenticated user and stable client request key into 36 hex chars.
-// Identical retries produce the same provider idempotency key.
-async function paypalRequestId(userId: string, _requestKey: string): Promise<string> {
-  // A stable account/day key prevents different client request keys from
-  // creating multiple PayPal agreements in a concurrent checkout race.
-  const day = new Date().toISOString().slice(0, 10);
-  const bytes = new TextEncoder().encode(userId + ':subscription:' + day);
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('').slice(0, 36);
-}
+// PayPal-Request-Id must distinguish SKU changes. Per-account/day only keys
+// collide when a customer chooses Premium Plus after attempting Premium.
+// The existing subscription verification and reservation guards remain in force.
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
@@ -222,7 +215,7 @@ Deno.serve(async (req) => {
         Authorization: 'Bearer ' + token,
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'PayPal-Request-Id': await paypalRequestId(user.id, idempotencyKey),
+        'PayPal-Request-Id': await paypalSubscriptionRequestId(user.id, sku),
       },
       body: JSON.stringify({
         plan_id: planId,

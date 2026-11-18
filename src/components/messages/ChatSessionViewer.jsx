@@ -256,7 +256,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
         <h3 className="font-semibold text-sm truncate min-w-0 flex-1 max-w-[200px]">Live Session: {message.text || "Untitled"}</h3>
         <div className="flex items-center gap-2">
           <NaliLatencyControl compact disabled={isRecording || uploading} />
-          {uploading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+          {uploading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           {isRecording ? (
             <Button size="sm" variant="destructive" onClick={stopRecording} className="h-8 rounded-full gap-2">
               <Square className="w-3.5 h-3.5 fill-current" /> Stop

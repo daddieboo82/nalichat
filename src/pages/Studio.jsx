@@ -66,6 +66,7 @@ import { getStudioClipLaneId, groupStudioClipLanes, visibleStudioClipLanes, reor
 import { isStudioArmedLane } from '@/lib/studioRecordingLanes';
 import { applyStudioRecordedTake, studioNewRecordingLaneCount } from '@/lib/studioRecordingTake';
 import { isAutoPolishVocalTrack, setVocalAutoPolish } from '@/lib/studioAutoPolish';
+import { selectReconstructionTrack } from '@/lib/studioReconstructionSelection';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
@@ -2934,8 +2935,8 @@ export default function Studio() {
   const openGenerativeReconstruction = () => {
     if (!user?.id) return toast.info('Sign in to reconstruct a vocal.');
     if (isRecording) return toast.info('Stop recording before reconstructing a vocal.');
-    const take = tracks.find(track => selectedTrackIds.includes(track.id) && track.audioUrl && isAutoPolishVocalTrack(track));
-    if (!take) return toast.info('Select an audio track labeled as a vocal, voice, or microphone recording first.');
+    const take = selectReconstructionTrack(tracks, selectedTrackIds);
+    if (!take) return toast.error('Choose a clip with audio in Studio first. AI Reconstruction works even if the track has a generic name.');
     setVoiceMatch({ owner: user.id, take, epoch: historyEpochRef.current, initialMode: 'local-rvc' });
   };
 

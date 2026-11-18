@@ -101,6 +101,7 @@ export async function convertRvcLocally({ track, files, signal, onStatus, runtim
       || result.outputWav.size < 44 || result.outputWav.size > 50 * 1024 * 1024) {
     throw new Error(result?.errorMessage || 'Local voice conversion returned no valid WAV output.');
   }
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   const decoder = new AudioContextClass();
   let preview;
   try {

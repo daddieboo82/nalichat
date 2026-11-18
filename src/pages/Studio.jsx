@@ -73,6 +73,7 @@ import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
+import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from '@/lib/sharedStudioCapture';
 import { fetchAuthorizedStudioVoiceMessage } from '@/lib/studioMessageVoiceImport';
 import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
 import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
@@ -325,7 +326,9 @@ export default function Studio() {
   const { peers: livePeers, setActivity } = useStudioPresence(roomId || 'local_studio');
   
   const [tracks, setTracks] = useState([]);
-  const [autoPolishVocals, setAutoPolishVocals] = useState(false);
+  // Studio Sound is ON by default for vocal recordings. Its reversible audio
+  // insert is shared by live playback and the export renderer; originals stay dry.
+  const [autoPolishVocals, setAutoPolishVocals] = useState(true);
   const [trainMyVoice, setTrainMyVoice] = useState(false);
   useEffect(() => {
     let active = true;
@@ -1864,14 +1867,7 @@ export default function Studio() {
       let startupContext = null;
       let startupRecorder = null;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: { 
-            echoCancellation: false, 
-            noiseSuppression: false,
-            autoGainControl: false,
-            latency: 0
-          } 
-        });
+        const stream = await openStudioMicrophone(navigator.mediaDevices);
         startupStream = stream;
         // Stop, project restore or a newer attempt may have happened while
         // the browser permission prompt was open. Never start a stale capture.
@@ -1882,6 +1878,8 @@ export default function Studio() {
           return;
         }
         mediaStreamRef.current = stream;
+        const micSettings = inspectSharedStudioCaptureSettings(stream.getAudioTracks?.()[0]?.getSettings?.());
+        if (micSettings.warning) toast.warning(micSettings.warning);
 
         // Overdub: play back existing (non-armed) tracks while recording
         tracks.forEach(track => {

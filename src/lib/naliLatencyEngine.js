@@ -56,11 +56,12 @@ export function estimateStudioRoundTrip({
       !Array.isArray(pulseFrames) || pulseFrames.length < 3 || !Number.isFinite(sampleRate)) {
     return { valid: false, reason: 'Calibration audio is unavailable.' };
   }
-  const detections = pulseFrames.map(frame =>
+  const candidates = pulseFrames.map(frame =>
     findPulse(captured, reference, frame, sampleRate, maxDelayMs),
-  ).filter(Boolean).filter(m => m.confidence >= 0.4 && m.milliseconds >= 4 && m.milliseconds <= maxDelayMs);
+  ).filter(Boolean);
+  const detections = candidates.filter(m => m.confidence >= 0.4 && m.milliseconds >= 4 && m.milliseconds <= maxDelayMs);
   if (detections.length < 3) {
-    return { valid: false, reason: 'The calibration sound was not detected reliably. Use your device speaker near the microphone and try again.' };
+    return { valid: false, reason: 'The calibration sound was not detected reliably. Use your device speaker near the microphone and try again.', candidates };
   }
   const values = detections.map(d => d.milliseconds).sort((a, b) => a - b);
   const median = values[Math.floor(values.length / 2)];

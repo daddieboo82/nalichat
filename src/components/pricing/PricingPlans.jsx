@@ -324,7 +324,7 @@ export default function PricingPlans({
         : checkoutCode === "CHECKOUT_DEPENDENCY_ERROR" ? "dependency_error"
         : /pending|already been started|previous PayPal|account review|subscription history requires review/i.test(checkoutMessage) ? "existing_billing_review"
         : /already has a paid subscription/i.test(checkoutMessage) ? "already_subscribed"
-        : /plan is not configured|credentials are not configured/i.test(checkoutMessage) ? "configuration"
+        : checkoutCode === "PAYPAL_PLAN_CONFIGURATION_REQUIRED" || /plan is not configured|plan is not currently active|subscription plan is temporarily unavailable|credentials are not configured/i.test(checkoutMessage) ? "configuration"
         : "other";
       trackPaywallEvent("purchase_failed", {
         variant,

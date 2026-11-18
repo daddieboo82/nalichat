@@ -24,6 +24,7 @@ vi.mock('lucide-react', () => ({
   Mic: () => <span aria-hidden="true" />,
   Square: () => <span aria-hidden="true" />,
   Loader2: () => <span aria-hidden="true" />,
+  Clock3: () => <span aria-hidden="true" />,
 }));
 vi.mock('@/components/studio/MultiTrackEditor', () => ({
   default: ({ tracks }) => <div data-testid="track-count">{tracks.length}</div>,

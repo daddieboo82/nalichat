@@ -41,12 +41,12 @@ export async function trainPrivateNaliVoiceFromRecording(owner, blob, {
   consentCheck = isPrivateVoiceTrainingEnabled,
   prepare = prepareSamples,
 } = {}) {
-  if (!consentCheck(owner)) return { skipped: 'not_opted_in' };
+  if (!await consentCheck(owner)) return { skipped: 'not_opted_in' };
   const prior = queues.get(owner) || Promise.resolve();
   const task = prior.catch(() => {}).then(async () => {
-    if (!consentCheck(owner)) return { skipped: 'not_opted_in' };
+    if (!await consentCheck(owner)) return { skipped: 'not_opted_in' };
     const samples = await prepare(blob);
-    if (!consentCheck(owner)) return { skipped: 'not_opted_in' };
+    if (!await consentCheck(owner)) return { skipped: 'not_opted_in' };
     const model = await readModel(owner);
     validateNaliVoiceModel(model);
     const worker = workerFactory
@@ -67,7 +67,7 @@ export async function trainPrivateNaliVoiceFromRecording(owner, blob, {
     }
     validateNaliVoiceModel(next);
     // Consent may have been revoked while the asynchronous worker ran.
-    if (!consentCheck(owner)) return { skipped: 'consent_revoked' };
+    if (!await consentCheck(owner)) return { skipped: 'consent_revoked' };
     await saveModel(owner, next);
     return { trained: true, trainedSteps: next.trainedSteps };
   });
@@ -78,7 +78,7 @@ export async function trainPrivateNaliVoiceFromRecording(owner, blob, {
 export async function forgetPrivateNaliVoiceTraining(owner) {
   // Revoke first; let any already-running training settle before deleting the
   // checkpoint so its late write cannot recreate a model after erasure.
-  setPrivateVoiceTrainingEnabled(owner, false);
+  await setPrivateVoiceTrainingEnabled(owner, false);
   const pending = queues.get(owner);
   if (pending) await pending.catch(() => {});
   await clearPrivateNaliVoiceModel(owner);

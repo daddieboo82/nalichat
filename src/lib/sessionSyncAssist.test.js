@@ -8,12 +8,19 @@ function sourceAudio(length = 22000) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     samples[i] = ((seed / 4294967296) * 2 - 1) * .45;
   }
-  return samples;
+  // Simulate band-limited guide audio rather than impossible full-band white noise.
+  const smooth = new Float32Array(length);
+  for (let i = 3; i < length - 3; i++) {
+    smooth[i] = (samples[i-3] + 2*samples[i-2] + 3*samples[i-1] + 4*samples[i] +
+      3*samples[i+1] + 2*samples[i+2] + samples[i+3]) / 16;
+  }
+  return smooth;
 }
 function shifted(reference, offsetMs, driftMs = 0) {
   return Float32Array.from(reference, (_, i) => {
-    const offset = offsetMs + driftMs * i / reference.length;
-    return reference[Math.round(i + offset)] || 0;
+    const at = i + offsetMs + driftMs * i / reference.length;
+    const lo = Math.floor(at), mix = at - lo;
+    return (reference[lo] || 0) * (1-mix) + (reference[lo+1] || 0) * mix;
   });
 }
 
@@ -48,7 +55,6 @@ describe('non-destructive cross-device session sync', () => {
       target: shifted(guide, 180, 100),
       sampleRate: 1000,
     });
-    console.log('drift-test', result);
     expect(result.valid).toBe(false);
     expect(result.driftDetected).toBe(true);
     expect(Math.abs(result.driftMs)).toBeGreaterThan(15);

@@ -61,6 +61,7 @@ export async function createLosslessStudioRecorder(stream, {
   let watchdog = null;
   const recorder = {
     mimeType: 'audio/wav', stream, state: 'inactive',
+    get capturedByteLength() { return byteLength; },
     ondataavailable: null, onstop: null, onerror: null,
     start() {
       if (this.state !== 'inactive') throw new Error('Recorder already started');

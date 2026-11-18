@@ -4160,7 +4160,7 @@ export default function Studio() {
       </div>
 
       {/* Honest mobile capture status: temporary takes are not cloud saves. */}
-      <div className="studio-mobile-status md:hidden mx-2 mt-2 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" style={{display:isMobile?"block":"none"}} role="status" aria-live="polite">
+      <div className={cn("studio-mobile-status md:hidden mx-2 mt-2 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2",isRecording&&"studio-mobile-active-status")} style={{display:isMobile?"block":"none"}} role="status" aria-live="polite">
         {(() => {
           const status = getMobileStudioRecordingStatus({
             recording: isRecording, micPending: microphoneStartupRef.current.pending,

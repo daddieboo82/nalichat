@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   makeLatencyProbe, estimateStudioRoundTrip, NALI_LATENCY_PROBE_MS,
-  saveStudioLatencyProfile, readStudioLatencyProfile,
+  saveStudioLatencyProfile, readStudioLatencyProfile, safeNaliOverdubCompensation,
 } from './naliLatencyEngine';
 import { calibrateNaliStudioLatency } from './naliLatencyCalibration';
 
@@ -52,6 +52,15 @@ describe('NaliChat measured acoustic round-trip latency engine', () => {
     for (const [k,v] of entries) entries.set(k,JSON.stringify({...JSON.parse(v),calibratedAt:Date.now()-25*3600000}));
     expect(readStudioLatencyProfile(storage)).toBeNull();
     expect(() => saveStudioLatencyProfile({valid:false},storage)).toThrow();
+  });
+
+  it('applies reversible alignment only to reliable same-mic overdubs', () => {
+    const profile = {...estimateStudioRoundTrip(acousticTest()), micDeviceId:'mic-1',calibratedAt:Date.now()};
+    expect(safeNaliOverdubCompensation(profile,{micDeviceId:'mic-1',hasBackingTrack:true,duration:5})).toBeCloseTo(.115);
+    expect(safeNaliOverdubCompensation(profile,{micDeviceId:'mic-2',hasBackingTrack:true,duration:5})).toBe(0);
+    expect(safeNaliOverdubCompensation(profile,{micDeviceId:'mic-1',hasBackingTrack:false,duration:5})).toBe(0);
+    expect(safeNaliOverdubCompensation({...profile,jitterMs:19},{micDeviceId:'mic-1',hasBackingTrack:true,duration:5})).toBe(0);
+    expect(safeNaliOverdubCompensation({...profile,calibratedAt:Date.now()-25*3600000},{micDeviceId:'mic-1',hasBackingTrack:true,duration:5})).toBe(0);
   });
 
   it('releases the mic if AudioWorklet initialization fails', async () => {

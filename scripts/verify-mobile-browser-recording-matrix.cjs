@@ -54,16 +54,18 @@ const {chromium,webkit,devices}=require('@playwright/test');
             recorder.start();setTimeout(()=>recorder.stop(),1150);
           });
           tone.stop();await ctx.close();
-          return saveStudioRecoveryTake({ownerId:owner,scope:'draft',id:'compat-recovery-00001',audio,duration:1.1});
+          try {return await saveStudioRecoveryTake({ownerId:owner,scope:'draft',id:'compat-recovery-00001',audio,duration:1.1});}
+          catch(error) { throw Error('SAVE: '+error.message+' '+error?.name); }
         },{owner:label+'-user'});
         await page.reload();
         result.recovery=await page.evaluate(async ({owner,id})=>{
           const {getStudioRecoveryTake,deleteStudioRecoveryTake}=await import('/src/lib/studioTakeRecovery.js');
-          const item=await getStudioRecoveryTake(owner,'draft',id);
+          let item;
+          try {item=await getStudioRecoveryTake(owner,'draft',id);} catch(error) {throw Error('LOAD: '+error.message+' '+error.name);}
           const ctx=new AudioContext();
           const decoded=await ctx.decodeAudioData(await item.audio.arrayBuffer());
           await ctx.close();
-          await deleteStudioRecoveryTake(owner,'draft',id);
+          try {await deleteStudioRecoveryTake(owner,'draft',id);} catch(error) {throw Error('DELETE: '+error.message+' '+error.name);}
           return {bytes:item.audio.size,duration:decoded.duration};
         },{owner:label+'-user',id:saved.id});
       }

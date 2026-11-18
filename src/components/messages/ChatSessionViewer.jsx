@@ -276,6 +276,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
           </div>
         )}
         <MultiTrackEditor
+          enableSyncAssist
           tracks={tracks}
           selectedProject={{ id: message.id, title: message.text || "Live Session" }}
           onTrackUpdate={async (id, data) => {

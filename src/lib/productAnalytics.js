@@ -15,6 +15,11 @@ let foregroundSince = null;
 let lastIosCheckpointEngagedMs = 0;
 
 function now() { return Date.now(); }
+// Synthetic browser audits should not count as real visitors or conversions.
+// This is a conservative signal; do not attempt broader bot fingerprinting.
+function isAutomatedBrowser() {
+  return typeof navigator !== "undefined" && navigator.webdriver === true;
+}
 function supportsCredentialedAnalyticsTransport() {
   if (typeof navigator === "undefined") return false;
   // Base44's analytics batch endpoint currently responds with a wildcard
@@ -85,6 +90,7 @@ function logDashboardActivity(route) {
   } catch {}
 }
 function track(name, properties = {}) {
+  if (isAutomatedBrowser()) return;
   if (
     name === "product_page_view" ||
     (name === "product_session_engagement" && properties.reason !== "heartbeat")
@@ -195,7 +201,7 @@ export function markActivationComplete(userId, source, properties = {}) {
 }
 
 export function initProductAnalytics(userId = null) {
-  if (initialized || typeof window === "undefined") return () => {};
+  if (initialized || typeof window === "undefined" || isAutomatedBrowser()) return () => {};
   sessionStorageKey = sessionKeyFor(userId);
   analyticsUserId = userId || null;
   session = null;

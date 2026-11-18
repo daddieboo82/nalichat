@@ -8,12 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from "@/lib/sharedStudioCapture";
 import { analyzeSharedStudioRecordedBlob } from "@/lib/sharedStudioCaptureQuality";
-
-function recordingExtension(mimeType = "") {
-  if (mimeType.includes("mp4")) return "m4a";
-  if (mimeType.includes("ogg")) return "ogg";
-  return "webm";
-}
+import { createStudioMediaRecorder, studioRecordingExtension } from "@/lib/studioRecorderCodec";
 
 // BounceDialog and renderMasteredMix key off `audioUrl`, but Track entities
 // store the media under `file_url`. Normalize every track so the studio export
@@ -119,12 +114,9 @@ export default function ChatSessionViewer({ message, currentUser }) {
       streamRef.current = stream;
       const microphoneSettings = inspectSharedStudioCaptureSettings(stream.getAudioTracks?.()[0]?.getSettings?.());
       if (microphoneSettings.warning) toast.warning(microphoneSettings.warning);
-      const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
-      const mimeType = mimeTypes.find((type) => MediaRecorder.isTypeSupported?.(type)) || "";
-      const recorder = mimeType
-        ? new MediaRecorder(stream, { mimeType })
-        : new MediaRecorder(stream);
-      const recordingMimeType = recorder.mimeType || mimeType || "audio/webm";
+      const { recorder, codec, lossless } = createStudioMediaRecorder(stream, MediaRecorder);
+      const recordingMimeType = recorder.mimeType || codec || "audio/webm";
+      if (lossless) toast.info("Recording uncompressed/lossless audio on this device.");
 
       chunksRef.current = [];
       recorder.ondataavailable = (event) => {
@@ -150,7 +142,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
         setUploading(true);
         // Keep the original take untouched. Codec support varies across devices.
         const qualityPromise = analyzeSharedStudioRecordedBlob(blob);
-        const extension = recordingExtension(recordingMimeType);
+        const extension = studioRecordingExtension(recordingMimeType);
         const file = new File([blob], `track-${Date.now()}.${extension}`, { type: recordingMimeType });
         try {
           const validation = validateUpload(file);

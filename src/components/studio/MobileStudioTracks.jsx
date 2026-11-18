@@ -20,8 +20,8 @@ export default function MobileStudioTracks({
     <section className="studio-mobile-track-list flex flex-col gap-3 p-3 pb-28" aria-label="Mobile Studio tracks" data-testid="mobile-studio-tracks">
       <div className="studio-mobile-track-heading flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="font-semibold text-base text-foreground">Session tracks <span className="studio-track-count ml-1 align-middle text-[11px] tabular-nums">{lanes.length}</span></h2>
-          <p className="text-xs text-muted-foreground">Tap a track to select it. Arm a mic to record.</p>
+          <h2 className="font-semibold text-base text-foreground">Tracks <span className="studio-track-count ml-1 align-middle text-[11px] tabular-nums">{lanes.length}</span></h2>
+          <p className="text-xs text-muted-foreground">Select a lane · arm to record</p>
         </div>
         <button type="button" onClick={onAdd} disabled={readOnly}
           className="min-h-11 shrink-0 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-40"
@@ -53,15 +53,15 @@ export default function MobileStudioTracks({
         const canRecord = !readOnly && !['folder', 'vca'].includes(track.trackType) &&
           !['midi', 'instrument'].includes(track.type);
         return (
-          <div key={track.id} className={cn('studio-mobile-track-card rounded-2xl border bg-[#171421] p-3 shadow-md', selected ? 'studio-mobile-track-selected border-primary ring-1 ring-primary/50' : 'border-white/10', track.armed && 'studio-mobile-track-armed')}
+          <div key={track.id} className={cn('studio-mobile-track-card studio-cubasis-lane rounded-2xl border bg-[#171421] p-3 shadow-md', selected ? 'studio-mobile-track-selected border-primary ring-1 ring-primary/50' : 'border-white/10', track.armed && 'studio-mobile-track-armed')}
             data-testid={`mobile-track-${track.id}`}>
             <button type="button" onClick={() => onSelect(track.id)} aria-pressed={selected}
-              className="flex min-h-11 w-full items-center justify-between gap-2 text-left">
+              className="studio-cubasis-lane-header flex min-h-11 w-full items-center justify-between gap-2 text-left">
               <span className="flex min-w-0 items-center gap-2 truncate font-medium text-foreground"><span className="studio-track-color-dot shrink-0" aria-hidden="true"/>{track.name || 'Audio track'}</span>
               <span className="studio-track-type shrink-0 text-[10px] text-muted-foreground">{selected && <CheckCircle2 className="mr-1 inline h-3 w-3"/>}{track.armed ? "REC READY" : track.type || "audio"}</span>
             </button>
             <button type="button" onClick={() => onSelect(track.id)} aria-label={`Select ${track.name || 'track'} waveform`}
-              className="studio-mobile-waveform relative mb-3 block h-16 w-full overflow-hidden rounded-lg border border-white/10 bg-black/35">
+              className="studio-mobile-waveform studio-cubasis-lane-waveform relative mb-3 block h-16 w-full overflow-hidden rounded-lg border border-white/10 bg-black/35">
               {audio.waveform?.length ? <TrackWaveformSVG track={{ ...audio, waveform: mobilePreviewWaveform(audio.waveform) }} /> :
                 <span className="flex h-full items-center justify-center text-xs text-muted-foreground">{audio.audioUrl || audio.file_url ? 'Audio ready · view timeline' : 'No audio recorded yet'}</span>}
             </button>
@@ -87,7 +87,7 @@ export default function MobileStudioTracks({
                 <Headphones className="mr-1 inline h-4 w-4" />Solo
               </button>
             </div>
-            <label className="mt-3 flex min-h-9 items-center gap-3 text-xs text-muted-foreground">
+            <label className="studio-cubasis-lane-volume mt-3 flex min-h-9 items-center gap-3 text-xs text-muted-foreground">
               <span className="w-12 shrink-0">Volume</span>
               <input type="range" min="0" max="100" step="1" value={Math.min(100, Math.max(0, Number(track.volume ?? 100)))}
                 disabled={readOnly} onChange={event => onVolume(track.id, [Number(event.target.value)])}

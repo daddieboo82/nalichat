@@ -25,6 +25,18 @@ Deno.serve(async (request) => {
 
     const payload = await readJsonBodyLimited(request, REQUEST_LIMIT);
     const headers = { Authorization: `Bearer ${key}`, 'X-VoxShift-Owner': user.id };
+    if (payload?.action === 'capabilities') {
+      const upstream = await fetch(new URL('/v1/capabilities', origin), {
+        headers,
+        redirect: 'error',
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!upstream.ok) return reply('Voice Match provider is unavailable.', 503);
+      const { modes } = await upstream.json();
+      const available = Array.isArray(modes) ? ['sing', 'convert', 'speech'].filter(mode => modes.includes(mode)) : [];
+      if (!available.length) return reply('Voice Match provider is unavailable.', 503);
+      return statusResponse({ modes: available });
+    }
     if (payload?.action === 'status') {
       if (typeof payload.jobId !== 'string' || !/^[a-f0-9]{32}$/.test(payload.jobId)) {
         return reply('Invalid voice job.', 400);

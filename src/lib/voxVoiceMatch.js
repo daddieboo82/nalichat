@@ -74,6 +74,12 @@ async function invokeVoiceMatch(payload) {
   }
 }
 
+export async function getVoiceMatchModes() {
+  const data = await invokeVoiceMatch({ action: 'capabilities' });
+  if (!Array.isArray(data?.modes) || !data.modes.length) throw new Error('Voice Match provider is unavailable.');
+  return data.modes;
+}
+
 function waitForNextCheck(signal) {
   signal.throwIfAborted();
   return new Promise((resolve, reject) => {

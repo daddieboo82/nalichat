@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { deleteVoiceProfile, generateVoiceMatch, prepareVoiceAudio, readVoiceProfiles, saveVoiceProfile } from '@/lib/voxVoiceMatch';
+import { deleteVoiceProfile, generateVoiceMatch, getVoiceMatchModes, prepareVoiceAudio, readVoiceProfiles, saveVoiceProfile } from '@/lib/voxVoiceMatch';
 
 export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
   const [profiles, setProfiles] = useState([]);
@@ -15,11 +15,26 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [preview, setPreview] = useState('');
+  const [providerModes, setProviderModes] = useState(null);
+  const [providerError, setProviderError] = useState('');
+  const [providerCheck, setProviderCheck] = useState(0);
   const [jobStatus, setJobStatus] = useState('');
   const generation = useRef(null);
   const profile = profiles.find(item => item.id === selected);
 
   useEffect(() => () => generation.current?.abort(), []);
+
+  useEffect(() => {
+    let active = true;
+    setProviderModes(null);
+    setProviderError('');
+    getVoiceMatchModes().then(modes => {
+      if (active) setProviderModes(modes);
+    }).catch(error => {
+      if (active) setProviderError(error.message || 'Voice Match provider is unavailable.');
+    });
+    return () => { active = false; };
+  }, [owner, providerCheck]);
 
   useEffect(() => {
     let active = true;
@@ -89,6 +104,13 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
           <DialogTitle>VoxShift Voice Match</DialogTitle>
           <DialogDescription>Match a reference voice to a recorded take or generate spoken words from text. Voice profiles are saved in this browser.</DialogDescription>
         </DialogHeader>
+        {providerError ? (
+          <div className="flex items-center justify-between gap-2">
+            <p role="status" className="text-sm text-muted-foreground">{providerError}</p>
+            <Button type="button" variant="outline" size="sm" onClick={() => setProviderCheck(attempt => attempt + 1)}>Check again</Button>
+          </div>
+        ) : !providerModes && <p role="status" className="text-sm text-muted-foreground">Checking Voice Match availability…</p>}
+        {providerModes && !providerModes.includes(mode) && <p role="status" className="text-sm text-muted-foreground">This generation mode is unavailable on the connected provider.</p>}
         <fieldset disabled={busy} className="space-y-4">
           <label className="flex gap-2 text-sm">
             <input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} />
@@ -132,7 +154,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
               <textarea className="mt-1 block w-full rounded border bg-background p-2" rows={3} maxLength={400} value={text} onChange={event => { setText(event.target.value); setResult(null); }} />
             </label>
           )}
-          <Button type="button" disabled={!profile || !consent || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
+          <Button type="button" disabled={!providerModes?.includes(mode) || !profile || !consent || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
             Generate audio
           </Button>
           {result && preview && (

@@ -49,6 +49,8 @@ export async function runCancelableRvcWorker(
         }
       };
       worker.onerror = () => finish(new Error('The local voice worker stopped unexpectedly.'));
+      // Ownership transfers rather than structured-cloning enormous ONNX buffers.
+      // All buffers here are local, disposable copies; the source File objects remain intact.
       worker.postMessage({
         type: 'RUN_PIPELINE',
         wasmBaseUrl: context.wasmBaseUrl,
@@ -60,7 +62,7 @@ export async function runCancelableRvcWorker(
           rmvpe: files.rmvpe.name,
         },
         options,
-      });
+      }, [model, contentVec, rmvpe, audioData.buffer]);
     });
   } finally {
     clearTimeout(timer);

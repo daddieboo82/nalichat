@@ -12,6 +12,7 @@ import { studioRecordingExtension } from "@/lib/studioRecorderCodec";
 import { createPreferredStudioRecorder } from "@/lib/studioPcmRecorder";
 import NaliLatencyControl from "@/components/studio/NaliLatencyControl";
 import { sessionTrackStart } from "@/lib/sessionTrackTiming";
+import { startSharedSessionGuide, SHARED_GUIDE_BPM, SHARED_GUIDE_COUNT } from "@/lib/sharedSessionGuide";
 
 // BounceDialog and renderMasteredMix key off `audioUrl`, but Track entities
 // store the media under `file_url`. Normalize every track so the studio export
@@ -53,15 +54,19 @@ export default function ChatSessionViewer({ message, currentUser }) {
   const [isRecording, setIsRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [tracksError, setTracksError] = useState(false);
+  const [countInEnabled, setCountInEnabled] = useState(true);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const mountedRef = useRef(true);
   const chunksRef = useRef([]);
+  const guideRef = useRef(null);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      guideRef.current?.stop();
+      guideRef.current = null;
       const recorder = mediaRecorderRef.current;
       if (recorder?.dispose) recorder.dispose();
       else if (recorder && recorder.state !== "inactive") {
@@ -202,16 +207,33 @@ export default function ChatSessionViewer({ message, currentUser }) {
       };
       mediaRecorderRef.current = recorder;
       try {
+        if (countInEnabled) {
+          guideRef.current = await startSharedSessionGuide();
+          if (!mountedRef.current) {
+            guideRef.current.stop();
+            guideRef.current = null;
+            recorder.dispose?.();
+            stream.getTracks().forEach(track => track.stop());
+            return;
+          }
+        }
         recorder.start(1000);
       } catch (startError) {
+        guideRef.current?.stop();
+        guideRef.current = null;
         mediaRecorderRef.current = null;
         recorder.dispose?.();
         stream.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         throw startError;
       }
-      if (mountedRef.current) setIsRecording(true);
+      if (mountedRef.current) {
+        setIsRecording(true);
+        if (countInEnabled) toast.info("4-beat count-in started. Use headphones to prevent click bleed.");
+      }
     } catch (e) {
+      guideRef.current?.stop();
+      guideRef.current = null;
       console.error("Couldn't start live session recording:", e);
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -229,6 +251,8 @@ export default function ChatSessionViewer({ message, currentUser }) {
   };
 
   const stopRecording = () => {
+    guideRef.current?.stop();
+    guideRef.current = null;
     const recorder = mediaRecorderRef.current;
     if (!recorder || recorder.state === "inactive") {
       setIsRecording(false);
@@ -255,6 +279,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-b border-border/50 bg-secondary/30">
         <h3 className="font-semibold text-sm truncate min-w-0 flex-1 max-w-[200px]">Live Session: {message.text || "Untitled"}</h3>
         <div className="flex items-center gap-2">
+          <label className="inline-flex items-center gap-1 text-[10px] text-muted-foreground" title="Use headphones to avoid click bleed. All collaborators use the same four-beat guide."><input type="checkbox" checked={countInEnabled} disabled={isRecording || uploading} onChange={event => setCountInEnabled(event.target.checked)} aria-label="Four-beat Studio count-in" />{SHARED_GUIDE_COUNT}-beat · {SHARED_GUIDE_BPM} BPM</label>
           <NaliLatencyControl compact disabled={isRecording || uploading} />
           {uploading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           {isRecording ? (

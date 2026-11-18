@@ -40,8 +40,35 @@ const {chromium,webkit,devices}=require('@playwright/test');
         osc.stop(); await context.close();
         return details;
       });
+      if(!result.error && result.bytes>0){
+        const saved=await page.evaluate(async({owner})=>{
+          const {createPreferredStudioRecorder}=await import('/src/lib/studioPcmRecorder.js');
+          const {saveStudioRecoveryTake}=await import('/src/lib/studioTakeRecovery.js');
+          const ctx=new AudioContext(),tone=ctx.createOscillator(),dest=ctx.createMediaStreamDestination();
+          tone.connect(dest);tone.start();
+          const {recorder}=await createPreferredStudioRecorder(dest.stream,{MediaRecorderType:globalThis.MediaRecorder});
+          const audio=await new Promise((resolve,reject)=>{
+            const chunks=[];recorder.ondataavailable=e=>chunks.push(e.data);
+            recorder.onerror=e=>reject(e.error||Error('capture error'));
+            recorder.onstop=()=>resolve(new Blob(chunks,{type:recorder.mimeType}));
+            recorder.start();setTimeout(()=>recorder.stop(),1150);
+          });
+          tone.stop();await ctx.close();
+          return saveStudioRecoveryTake({ownerId:owner,scope:'draft',id:'compat-recovery-00001',audio,duration:1.1});
+        },{owner:label+'-user'});
+        await page.reload();
+        result.recovery=await page.evaluate(async ({owner,id})=>{
+          const {getStudioRecoveryTake,deleteStudioRecoveryTake}=await import('/src/lib/studioTakeRecovery.js');
+          const item=await getStudioRecoveryTake(owner,'draft',id);
+          const ctx=new AudioContext();
+          const decoded=await ctx.decodeAudioData(await item.audio.arrayBuffer());
+          await ctx.close();
+          await deleteStudioRecoveryTake(owner,'draft',id);
+          return {bytes:item.audio.size,duration:decoded.duration};
+        },{owner:label+'-user',id:saved.id});
+      }
       console.log(label,JSON.stringify(result));
-      if(result.error || !result.bytes || result.decodedDuration<0.5)process.exitCode=2;
+      if(result.error || !result.bytes || result.decodedDuration<0.5 || result.recovery?.duration<0.5)process.exitCode=2;
       await page.close();
     }catch(error){console.error(label,String(error).slice(0,450));process.exitCode=1;}
     finally{await browser?.close();}

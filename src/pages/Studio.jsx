@@ -74,7 +74,7 @@ import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from '@/lib/sharedStudioCapture';
-import { createStudioMediaRecorder } from '@/lib/studioRecorderCodec';
+import { createPreferredStudioRecorder } from '@/lib/studioPcmRecorder';
 import { fetchAuthorizedStudioVoiceMessage } from '@/lib/studioMessageVoiceImport';
 import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
 import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
@@ -1914,8 +1914,17 @@ export default function Studio() {
         gainNode.connect(audioCtx.destination);
         
         // Start actual recording with frequent chunks for memory efficiency
-        const { recorder: mediaRecorder, lossless } = createStudioMediaRecorder(stream, MediaRecorder);
-        if (lossless) toast.info('Lossless microphone recording is supported on this device.');
+        const { recorder: mediaRecorder, lossless } = await createPreferredStudioRecorder(stream, { MediaRecorderType: MediaRecorder });
+        // Lossless AudioWorklet initialization is asynchronous on some phones.
+        // Never start a capture belonging to a canceled or replaced session.
+        if (!studioMountedRef.current ||
+            microphoneStartupRef.current.token !== startupToken ||
+            historyEpochRef.current !== startupEpoch) {
+          mediaRecorder.stop?.();
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        if (lossless) toast.info('Recording lossless WAV on this device.');
         startupRecorder = mediaRecorder;
         mediaRecorderRef.current = mediaRecorder;
         const captureChunks = [];

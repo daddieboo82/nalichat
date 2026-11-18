@@ -3,9 +3,7 @@
 // third-party pretrained voice checkpoints, accounts or hosted inference.
 import { audioBufferToWav, bufferToWaveform } from './audioProcessing';
 import { studioClipAudioRange } from './studioClipAudioRange';
-import {
-  createNaliVoiceModel, trainNaliVoiceRestorer, inferNaliVoice,
-} from './naliVoiceCore';
+import { runNaliVoiceWorker } from './naliVoiceWorkerClient';
 
 // This is an original trainable proof-of-concept and NOT full generative voice
 // synthesis. It cannot imitate artists, reconstruct missing syllables, or
@@ -48,12 +46,8 @@ export async function restoreWithNaliVoice({
   const mono = await offline.startRendering();
   signal?.throwIfAborted();
   const samples = mono.getChannelData(0).slice();
-  onStatus?.('Training NaliVoice’s original neural restorer locally…');
-  const model = createNaliVoiceModel();
-  trainNaliVoiceRestorer(model, samples, { iterations: 2800, signal });
-  signal?.throwIfAborted();
-  onStatus?.('Applying NaliVoice neural restoration…');
-  const restored = inferNaliVoice(model, samples, { signal });
+  onStatus?.('Training and applying the original NaliVoice neural restorer…');
+  const restored = await runNaliVoiceWorker(samples, { signal, onStatus });
   const output = offline.createBuffer(1, restored.length, rate);
   output.copyToChannel(restored, 0);
   signal?.throwIfAborted();

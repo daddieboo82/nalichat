@@ -334,16 +334,16 @@ export default function Studio() {
   const togglePrivateVoiceTraining = async () => {
     if (!user?.id) return toast.error('Sign in to manage private voice training.');
     const next = !trainMyVoice;
-    if (next && !window.confirm('Allow future microphone recordings you own or have permission to use to train your private NaliVoice model on this device? Other speakers must have consented. Nothing will be uploaded to a shared training model.')) return;
+    if (next && !window.confirm('Train my private NaliVoice model automatically from future recordings I make in Studio? Only use recordings you have permission to train on. Audio stays on this device; learned model weights are saved privately to your NaliChat account. You can switch this off at any time.')) return;
     try {
       await setPrivateVoiceTrainingEnabled(user.id, next);
       setTrainMyVoice(next);
-      toast.success(next ? 'Private NaliVoice training enabled for future microphone recordings.' : 'Private NaliVoice training disabled. Server checkpoint retained until erased.');
-    } catch { toast.error('Could not save training preference on this device.'); }
+      toast.success(next ? 'Voice learning ON. Just record normally.' : 'Voice learning OFF. Your saved model is unchanged.');
+    } catch { toast.error('Could not save your voice learning setting.'); }
   };
   const erasePrivateVoiceModel = async () => {
     if (!user?.id) return;
-    if (!window.confirm('Erase the private NaliVoice model on this device and disable future training? This cannot be undone.')) return;
+    if (!window.confirm('Delete my trained NaliVoice model from my account and turn voice learning off? This cannot be undone.')) return;
     try {
       await forgetPrivateNaliVoiceTraining(user.id);
       setTrainMyVoice(false);
@@ -3729,9 +3729,17 @@ export default function Studio() {
               <Wand2 className="w-4 h-4" /> Auto Polish {autoPolishVocals ? 'ON' : 'OFF'}
             </Button>
             <Button type="button" onClick={togglePrivateVoiceTraining} aria-pressed={trainMyVoice} aria-label="Train my private NaliVoice from future microphone takes" title="Opt in to train your private NaliVoice model saved under your account on NaliChat; OFF by default" variant={trainMyVoice ? 'default' : 'outline'} size="sm" className="gap-2 rounded-xl border-violet-500/50">
-              <Mic className="w-4 h-4" /> Train My Voice {trainMyVoice ? 'ON' : 'OFF'}
+              <Mic className="w-4 h-4" /> Voice Learning {trainMyVoice ? 'ON' : 'OFF'}
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={erasePrivateVoiceModel} title="Erase my private NaliVoice server checkpoint and disable training" className="gap-2 rounded-xl border-border/50">Erase Voice Learning</Button>
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="ghost" size="sm" aria-label="Voice learning privacy settings" title="Voice learning privacy" className="rounded-xl text-muted-foreground"><Settings className="w-4 h-4" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">Voice learning is private and optional. Recordings stay on your device; your learned model syncs with your account.</div>
+                <DropdownMenuItem onSelect={() => { void erasePrivateVoiceModel(); }} className="text-destructive cursor-pointer">Delete my trained voice model</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button type="button" variant="outline" size="sm" className="gap-2 rounded-xl border-violet-500/50 text-violet-400 hover:bg-violet-500/10" onClick={openGenerativeReconstruction} title="Open NaliVoice's automatic local neural restoration prototype (experimental; not yet generative singing)" aria-label="Generative AI Vocal Reconstruction">
               <AudioLines className="w-4 h-4" /> AI Reconstruct <span className="text-[10px]">Beta</span>
             </Button>

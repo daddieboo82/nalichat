@@ -2580,6 +2580,21 @@ export default function Studio() {
     setNewTrackCount(1);
     setCreatingTrack(true);
   };
+  // Phone-first shortcut: one tap creates and arms a vocal lane, avoiding
+  // the desktop's multi-field track dialog before a quick mobile take.
+  const addMobileVocalTrack = () => {
+    if (!canEditProject || isRecording) return;
+    if (tracks.length >= maxTracks) return toast.error(`Track limit reached (${maxTracks}).`);
+    const id = nextTrackId(tracks);
+    const track = {
+      id, name: `Vocal ${id}`, type: 'audio', color: 'bg-purple-500',
+      volume: 75, pan: 50, muted: false, solo: false, armed: true,
+      waveform: [], startTime: 0, duration: 0,
+    };
+    setTracksWithHistory([...tracks, track]);
+    setSelectedTrackIds([id]);
+    toast.success('Vocal track armed. Press Record to capture your voice.');
+  };
   const handleCreateTrackConfirm = () => {
     if (!newTrackName.trim()) return;
     const count = Math.max(1, Math.min(64, Number(newTrackCount) || 1));
@@ -3798,8 +3813,6 @@ export default function Studio() {
 
 
           <div className="flex flex-wrap items-center justify-end gap-2 pl-2 min-w-0">
-            <input type="file" ref={fileInputRef} className="hidden" multiple accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} />
-            <input type="file" ref={sessionImportRef} className="hidden" accept=".zip,.nalistudio.zip" onChange={handleSessionImport} aria-label="Restore Studio session backup" />
             <Button id="milestones-btn" onClick={() => setShowMilestones(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-border/50 hover:bg-secondary transition-colors">
               <ListTodo className="w-4 h-4" /> Milestones
             </Button>
@@ -3901,6 +3914,9 @@ export default function Studio() {
         </div>
       </div>
 
+      {/* Inputs stay mounted outside hidden desktop toolbars for iOS file picking. */}
+      <input type="file" ref={fileInputRef} className="sr-only" tabIndex={-1} multiple accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} aria-label="Import Studio audio" />
+      <input type="file" ref={sessionImportRef} className="sr-only" tabIndex={-1} accept=".zip,.nalistudio.zip" onChange={handleSessionImport} aria-label="Restore Studio session backup" />
       {/* Desktop precision editing remains available on PC. */}
       <div className="hidden md:block">
       <StudioToolbar2
@@ -3942,7 +3958,7 @@ export default function Studio() {
         </div>
         <MobileStudioTracks lanes={visibleStudioClipLanes(tracks)} selectedTrackIds={selectedTrackIds}
           onSelect={id => setSelectedTrackIds([id])} onArm={toggleArm} onMute={toggleMute} onSolo={toggleSolo}
-          onVolume={updateVolume} onAdd={addTrack} onImport={handleImportClick} onReconstruct={openGenerativeReconstruction}
+          onVolume={updateVolume} onAdd={addMobileVocalTrack} onImport={handleImportClick} onReconstruct={openGenerativeReconstruction}
           onMixer={() => setShowMixerPanel(true)} onPolish={toggleAutoPolishVocals} autoPolish={autoPolishVocals}
           readOnly={!canEditProject || isRecording} />
       </div>

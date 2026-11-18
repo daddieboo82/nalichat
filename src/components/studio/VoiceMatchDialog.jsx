@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { deleteVoiceProfile, generateVoiceMatch, getVoiceMatchModes, prepareVoiceAudio, readVoiceProfiles, saveVoiceProfile } from '@/lib/voxVoiceMatch';
+import { checkLocalWebGPU } from '@/lib/voxWebGPU';
 
 export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
   const [profiles, setProfiles] = useState([]);
@@ -18,6 +19,8 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
   const [providerModes, setProviderModes] = useState(null);
   const [providerError, setProviderError] = useState('');
   const [providerCheck, setProviderCheck] = useState(0);
+  const [gpuCheck, setGpuCheck] = useState(null);
+  const [checkingGPU, setCheckingGPU] = useState(false);
   const [jobStatus, setJobStatus] = useState('');
   const generation = useRef(null);
   const profile = profiles.find(item => item.id === selected);
@@ -104,6 +107,17 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
           <DialogTitle>VoxShift Vocal Studio</DialogTitle>
           <DialogDescription>Polish your own recorded vocal, match an authorized reference voice, or generate spoken words. Voice profiles are saved in this browser.</DialogDescription>
         </DialogHeader>
+        <div className="rounded-md border p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">Free on-device AI readiness</p>
+            <Button type="button" size="sm" variant="outline" disabled={checkingGPU} onClick={async () => {
+              setCheckingGPU(true);
+              try { setGpuCheck(await checkLocalWebGPU()); }
+              finally { setCheckingGPU(false); }
+            }}>{checkingGPU ? 'Checking…' : 'Check WebGPU'}</Button>
+          </div>
+          <p className="text-xs text-muted-foreground" role="status">{gpuCheck?.reason || 'WebGPU uses your device, not paid cloud inference. Checking support does not install a voice model or use credits.'}</p>
+        </div>
         {providerError ? (
           <div className="flex items-center justify-between gap-2">
             <p role="status" className="text-sm text-muted-foreground">Local Vocal Polish is available. AI voice modes need a connected provider. {providerError}</p>

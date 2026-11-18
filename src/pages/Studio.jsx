@@ -3765,7 +3765,8 @@ export default function Studio() {
 
   if (showWelcome) return (
     <>
-      <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} handleSessionImport={handleSessionImport} navigate={navigate} />
+      <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} handleSessionImport={handleSessionImport} navigate={navigate}
+        recoveryPanel={isMobile && user?.id ? <MobileStudioRecoveries ownerId={user.id} scope={studioRecoveryScope(roomId)} onRestore={restoreMobileTake} /> : null} />
       <StudioVideoHelp />
     </>
   );
@@ -4075,6 +4076,7 @@ export default function Studio() {
           <p className="text-sm font-bold">Record anywhere</p>
           <p className="text-[11px] text-muted-foreground">Capture on your phone. Open this session on a PC for precision editing, mixing, and mastering.</p>
         </div>
+        <div className="p-3 pb-0"><MobileStudioRecoveries ownerId={user?.id} scope={studioRecoveryScope(roomId)} onRestore={restoreMobileTake} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving || !canEditProject} /></div>
         <MobileStudioTracks lanes={visibleStudioClipLanes(tracks)} selectedTrackIds={selectedTrackIds}
           onSelect={id => setSelectedTrackIds([id])} onArm={toggleArm} onMute={toggleMute} onSolo={toggleSolo}
           onVolume={updateVolume} onAdd={addMobileVocalTrack} onImport={handleImportClick} onReconstruct={openGenerativeReconstruction}

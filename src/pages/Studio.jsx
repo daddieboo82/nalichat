@@ -2937,7 +2937,7 @@ export default function Studio() {
     if (isRecording) return toast.info('Stop recording before reconstructing a vocal.');
     const take = selectReconstructionTrack(tracks, selectedTrackIds);
     if (!take) return toast.error('Choose a clip with audio in Studio first. AI Reconstruction works even if the track has a generic name.');
-    setVoiceMatch({ owner: user.id, take, epoch: historyEpochRef.current, initialMode: 'local-rvc' });
+    setVoiceMatch({ owner: user.id, take, epoch: historyEpochRef.current, initialMode: 'nali-voice' });
   };
 
   const addVoiceMatchTrack = (result) => {
@@ -3677,7 +3677,7 @@ export default function Studio() {
             <Button type="button" onClick={toggleAutoPolishVocals} aria-pressed={autoPolishVocals} aria-label="Auto Polish all vocal tracks" title="Automatically polish all vocal tracks during playback and export, including new vocals" variant={autoPolishVocals ? 'default' : 'outline'} size="sm" className={cn('gap-2 rounded-xl', autoPolishVocals ? 'bg-primary text-primary-foreground' : 'border-primary/50')}>
               <Wand2 className="w-4 h-4" /> Auto Polish {autoPolishVocals ? 'ON' : 'OFF'}
             </Button>
-            <Button type="button" variant="outline" size="sm" className="gap-2 rounded-xl border-violet-500/50 text-violet-400 hover:bg-violet-500/10" onClick={openGenerativeReconstruction} title="Reconstruct a selected vocal using a free local AI voice model (experimental)" aria-label="Generative AI Vocal Reconstruction">
+            <Button type="button" variant="outline" size="sm" className="gap-2 rounded-xl border-violet-500/50 text-violet-400 hover:bg-violet-500/10" onClick={openGenerativeReconstruction} title="Open NaliVoice's automatic local neural restoration prototype (experimental; not yet generative singing)" aria-label="Generative AI Vocal Reconstruction">
               <AudioLines className="w-4 h-4" /> AI Reconstruct <span className="text-[10px]">Beta</span>
             </Button>
             <Button onClick={() => setShowQuickMemo(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-primary/50 text-primary hover:bg-primary/10 transition-colors">

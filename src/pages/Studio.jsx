@@ -4118,6 +4118,21 @@ export default function Studio() {
           </div><p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">{status.detail}</p></>;
         })()}
       </div>
+      {isRecording && isMobile && (() => {
+        const progress = studioCaptureHealth(mobileCaptureProgress);
+        return <div className="mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2 text-xs" aria-live="polite" aria-label="Mobile recording progress">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold tabular-nums">Recording {progress.elapsedLabel}</span>
+            <span className="text-muted-foreground tabular-nums">{progress.checkpointLabel ? `Protected through ${progress.checkpointLabel}` : 'No checkpoint yet'}</span>
+          </div>
+          <p className={cn('mt-1 leading-4', progress.memoryWarning || mobileCaptureProgress.checkpointError ? 'text-amber-300' : 'text-muted-foreground')}>
+            {progress.detail}
+          </p>
+          {progress.memoryPercent !== null && <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Local recording memory use" aria-valuenow={progress.memoryPercent} aria-valuemin={0} aria-valuemax={100}>
+            <div className={cn('h-full rounded-full',progress.memoryWarning?'bg-amber-400':'bg-primary')} style={{width:`${progress.memoryPercent}%`}} />
+          </div>}
+        </div>;
+      })()}
       {/* Mobile recording-first workspace: full desktop projects, simpler touch controls. */}
       <div className="md:hidden mx-2 mt-2 flex shrink-0 gap-1 rounded-2xl border border-white/10 bg-white/[0.05] p-1" role="tablist" aria-label="Mobile Studio views">
         {[["record", "Record"], ["timeline", "Timeline"], ["tools", "Tools"]].map(([tab, label]) => (

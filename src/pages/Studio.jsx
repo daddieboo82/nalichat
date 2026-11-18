@@ -1943,7 +1943,7 @@ export default function Studio() {
         // Only compensate a take against backing audio that actually started.
         // An available but blocked/paused backing clip is not an overdub.
         recordingOverdubRef.current.hasBackingTrack = recordingOverdubRef.current.hasBackingTrack &&
-          tracks.some(track => !isStudioArmedLane(track, tracks) && track.audioUrl &&
+          tracks.some(track => isStudioArmedLane(track, tracks) === false && track.audioUrl &&
             !track.muted && !getTrackAudio(track)?.paused);
         if (lossless) toast.info('Recording lossless WAV on this device.');
         startupRecorder = mediaRecorder;

@@ -69,12 +69,12 @@ export async function listStudioRecoveryTakes(ownerId, scope, indexedDBImpl = gl
     const rows = await runTransaction(db,'readonly', store => store.index('ownerScope').getAll(ownerScope));
     return (rows || []).filter(row => row?.ownerScope === ownerScope &&
       row?.audio instanceof Blob && row.audio.size > 0).sort((a,b) => b.createdAt - a.createdAt)
-      .map(({id, createdAt, name, duration, bytes, mimeType}) => ({id,createdAt,name,duration,bytes,mimeType}));
+      .map(({id, createdAt, name, duration, bytes, mimeType, partial}) => ({id,createdAt,name,duration,bytes,mimeType,partial:Boolean(partial)}));
   });
 }
 export async function saveStudioRecoveryTake({
   ownerId, scope, audio, name = 'Mobile Vocal', duration, startTime = 0,
-  id = globalThis.crypto?.randomUUID?.(),
+  id = globalThis.crypto?.randomUUID?.(), partial = false, replaceExisting = false,
 }, indexedDBImpl = globalThis.indexedDB) {
   const ownerScope = keyOf(ownerId,scope);
   if (!id || typeof id !== 'string' || !/^[a-z0-9_-]{8,128}$/i.test(id) ||
@@ -86,15 +86,20 @@ export async function saveStudioRecoveryTake({
   }
   return withDatabase(indexedDBImpl, async db => {
     const existing = await runTransaction(db,'readonly', store => store.index('ownerScope').getAll(ownerScope));
-    if ((existing || []).length >= MAX_TAKES_PER_SCOPE) {
+    if (replaceExisting && !(existing || []).some(row => row.id === id && row.ownerScope === ownerScope)) {
+      const collision = await runTransaction(db,'readonly', store => store.get(id));
+      if (collision && collision.ownerScope !== ownerScope) throw new Error('Device recovery ID is already in use.');
+    }
+    if ((existing || []).length >= MAX_TAKES_PER_SCOPE &&
+        !(replaceExisting && (existing || []).some(row => row.id === id))) {
       throw new Error('Device recovery is full. Recover or delete older takes before recording more.');
     }
     const record = {
       id, ownerScope, ownerId, scope, name: String(name).slice(0,90),
       audio, bytes: audio.size, mimeType: audio.type,
-      duration, startTime, createdAt: Date.now(),
+      duration, startTime, partial:Boolean(partial), createdAt: Date.now(),
     };
-    await runTransaction(db,'readwrite', store => store.add(record));
+    await runTransaction(db,'readwrite', store => replaceExisting ? store.put(record) : store.add(record));
     return { id:record.id, bytes:record.bytes, createdAt:record.createdAt };
   });
 }

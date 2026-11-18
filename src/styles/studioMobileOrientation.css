@@ -227,3 +227,181 @@
 .studio-mobile-premium .studio-mobile-active-status>p{display:none}
 }
 
+
+/* Nali Studio compact arrangement: original, flatter mobile DAW treatment.
+   Flat track lanes, dominant waveforms and a restrained instrument palette. */
+.studio-mobile-premium {
+  --st-edge: rgba(143,161,178,.22);
+  --st-lavender: #b9b7ff;
+  --st-cyan: #57bdda;
+  background: #171c25;
+}
+.studio-mobile-premium .studio-mobile-topbar {
+  background:#252d38;
+  border:0;
+  border-bottom:1px solid #475364;
+  box-shadow:none;
+  border-radius:4px;
+}
+.studio-mobile-premium .studio-mobile-record-view,
+.studio-mobile-premium .studio-mobile-tools-view,
+.studio-mobile-premium .studio-mobile-timeline{
+  background:#202630;
+  border:1px solid #3b4653;
+  box-shadow:none;
+  border-radius:5px;
+}
+.studio-mobile-premium .studio-mobile-record-heading{
+  background:#283441;
+  border-bottom:1px solid #405567;
+  padding:7px 10px;
+}
+.studio-mobile-premium .studio-mobile-heading-title{
+  font-size:11px;
+  letter-spacing:.07em;
+}
+.studio-mobile-premium .studio-mobile-heading-label,
+.studio-mobile-premium .studio-mobile-heading-subtitle { display:none; }
+.studio-mobile-premium .studio-mobile-heading-light{background:#58c7da;box-shadow:none}
+.studio-mobile-premium .studio-mobile-status{
+  background:#223340;border:1px solid #426276;
+  border-left:3px solid #5cc4d7;border-radius:5px;
+  box-shadow:none;
+}
+.studio-mobile-premium .studio-mobile-tabs{
+  background:#171f2b;border:1px solid #3a4858;box-shadow:none;
+  border-radius:5px;padding:2px;gap:2px;
+}
+.studio-mobile-premium .studio-mobile-tabs button{border-radius:3px;font-size:12px}
+.studio-mobile-premium .studio-mobile-tabs button[aria-selected="true"]{
+  background:#387995;color:#f4fdff;box-shadow:none;border-bottom:2px solid #86daf0;
+}
+.studio-mobile-premium .studio-mobile-tabs button[aria-selected="false"]{color:#c3ced7}
+.studio-mobile-premium .studio-mobile-track-list{
+  gap:4px;
+  padding:6px 7px 14px;
+}
+.studio-mobile-premium .studio-mobile-track-heading{padding:2px 4px 5px}
+.studio-mobile-premium .studio-mobile-track-heading h2{font-size:13px;font-weight:700;letter-spacing:0}
+.studio-mobile-premium .studio-mobile-track-heading p{font-size:10px}
+.studio-mobile-premium .studio-track-count{background:#32566a;border-color:#426d83;color:#e4f8ff;border-radius:3px;padding:1px 5px}
+.studio-mobile-premium .studio-mobile-quick-actions{
+  display:flex;
+  gap:3px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;
+  flex-shrink:0;
+}
+.studio-mobile-premium .studio-mobile-quick-actions::-webkit-scrollbar{display:none}
+.studio-mobile-premium .studio-mobile-quick-actions button{
+  flex:0 0 auto;
+  padding:0 11px;
+  background:#303d4a;
+  border:1px solid #516070;
+  border-radius:4px;
+  box-shadow:none;
+  color:#e9f2f6;
+  white-space:nowrap;
+  font-size:11px;
+}
+.studio-mobile-premium .studio-cubasis-lane{
+  display:grid;
+  grid-template-columns:minmax(88px,29%) minmax(0,1fr);
+  align-items:center;
+  gap:3px 7px;
+  padding:6px;
+  margin:0;
+  border-radius:3px;
+  background:#2b333d;
+  border:1px solid #445261;
+  box-shadow:none;
+}
+.studio-mobile-premium .studio-cubasis-lane:nth-of-type(odd){background:#303a45}
+.studio-mobile-premium .studio-cubasis-lane::before{
+  width:3px;background:#5d9dc3;opacity:1;
+}
+.studio-mobile-premium .studio-cubasis-lane.studio-mobile-track-armed::before{background:#ec6877}
+.studio-mobile-premium .studio-cubasis-lane.studio-mobile-track-selected{
+  background:#344657;border-color:#6ec7e5;
+  box-shadow:inset 0 0 0 1px #4a97ad;
+}
+.studio-mobile-premium .studio-cubasis-lane-header{
+  min-height:56px;
+  grid-column:1;grid-row:1;
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  gap:4px;
+  padding:4px 5px;
+  font-size:11px;
+}
+.studio-mobile-premium .studio-cubasis-lane-header>span:first-child{
+  width:100%;font-size:12px;
+}
+.studio-mobile-premium .studio-track-type{
+  font-size:9px;color:#b8c9d5;letter-spacing:.03em;
+}
+.studio-mobile-premium .studio-cubasis-lane-waveform{
+  grid-column:2;grid-row:1;
+  height:56px;
+  margin:0;
+  border:1px solid #557e95;
+  border-radius:2px;
+  background:repeating-linear-gradient(90deg,transparent 0,transparent 31px,#ffffff0c 32px),linear-gradient(180deg,#1d526d,#244765);
+}
+.studio-mobile-premium .studio-cubasis-lane-waveform svg{filter:none!important}
+.studio-mobile-premium .studio-mobile-track-controls{
+  grid-column:1/-1;grid-row:2;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:4px;
+}
+.studio-mobile-premium .studio-mobile-track-controls button{
+  min-height:40px;
+  border-radius:3px;
+  background:#3a4856;
+  border-color:#596977;
+  font-size:11px;
+}
+.studio-mobile-premium .studio-mobile-track-controls button[aria-pressed="true"]{
+  background:#365d6f;
+  border-color:#83cee8;
+}
+.studio-mobile-premium .studio-mobile-track-controls button:first-child[aria-pressed="true"]{
+  background:#763544;border-color:#f07382;color:#fff;
+}
+.studio-mobile-premium .studio-mobile-review-button{
+  grid-column:1/-1;grid-row:3;
+  min-height:39px;margin:0;border-radius:3px;
+  background:#274e60;border-color:#4a839b;color:#d3f7ff;
+}
+.studio-mobile-premium .studio-cubasis-lane-volume{
+  grid-column:1/-1;grid-row:4;
+  margin:0;min-height:29px;padding:0 4px;font-size:11px;
+}
+.studio-mobile-premium .studio-cubasis-lane-volume input[type="range"]{accent-color:#6cc8e8}
+.studio-mobile-premium .studio-mobile-transport{
+  background:#222a36;
+  border-top:1px solid #607487;
+  box-shadow:0 -3px 12px #0004;
+}
+.studio-mobile-premium .studio-mobile-transport button:not(.studio-mobile-record-button){
+  background:#394858;border:1px solid #596d7c;border-radius:4px;color:#f2f5f7;
+}
+.studio-mobile-premium .studio-mobile-record-button{
+  background:#b43d50;box-shadow:none;border-radius:4px;
+}
+.studio-mobile-premium .studio-mobile-side-pane{
+  background:#242e3b!important;border-color:#435261!important;
+}
+.studio-mobile-premium .studio-tools-title{font-size:17px}
+.studio-mobile-premium .studio-tools-subtitle{color:#a4b9c7}
+@media (orientation:landscape) and (max-height:540px) {
+  .studio-mobile-premium .studio-mobile-record-grid{
+    grid-template-columns:minmax(180px,27%) minmax(0,1fr);
+    grid-template-rows:26px minmax(0,1fr);
+  }
+  .studio-mobile-premium .studio-cubasis-lane{grid-template-columns:minmax(98px,25%) minmax(0,1fr);gap:2px 6px}
+  .studio-mobile-premium .studio-mobile-track-list{padding:4px 5px 58px;gap:3px}
+  .studio-mobile-premium .studio-cubasis-lane-waveform{height:46px}
+  .studio-mobile-premium .studio-cubasis-lane-header{min-height:46px}
+  .studio-mobile-premium .studio-mobile-quick-actions{display:flex;grid-template-columns:none;gap:3px}
+  .studio-mobile-premium .studio-mobile-track-controls button{min-height:37px}
+  .studio-mobile-premium .studio-mobile-record-heading{padding:4px 8px}
+}
+

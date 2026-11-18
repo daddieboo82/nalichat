@@ -9,6 +9,10 @@ describe('PayPal checkout configuration guard', () => {
     expect(source).toContain("!/^P-[A-Z0-9]{10,}$/.test(planId.trim())");
     expect(source.indexOf("PAYPAL_PLAN_CONFIGURATION_REQUIRED"))
       .toBeLessThan(source.indexOf("const reserved = await reservePayPalCheckout("));
+    expect(source).toContain("'/v1/billing/plans/' + encodeURIComponent(planId)");
+    expect(source).toContain("verifiedPlan?.status !== 'ACTIVE'");
+    expect(source.indexOf("checkoutStage = 'verify_plan_configuration'"))
+      .toBeLessThan(source.indexOf("const reserved = await reservePayPalCheckout("));
   });
 
   it('rejects placeholder PayPal credentials before authorization', async () => {

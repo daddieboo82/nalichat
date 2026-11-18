@@ -4,12 +4,13 @@
 import { audioBufferToWav, bufferToWaveform } from './audioProcessing';
 import { studioClipAudioRange } from './studioClipAudioRange';
 import { runNaliVoiceWorker } from './naliVoiceWorkerClient';
+import { readPrivateNaliVoiceModel } from './naliVoiceModelStore';
 
 // This is an original trainable proof-of-concept and NOT full generative voice
 // synthesis. It cannot imitate artists, reconstruct missing syllables, or
 // promise Suno-level audio. Keep the original clip and save only a new track.
 export async function restoreWithNaliVoice({
-  track, signal, onStatus, fetchImpl = fetch,
+  track, owner, signal, onStatus, fetchImpl = fetch,
 } = {}) {
   signal?.throwIfAborted();
   if (!track?.audioUrl) throw new Error('Select a recorded audio clip first.');
@@ -47,7 +48,9 @@ export async function restoreWithNaliVoice({
   signal?.throwIfAborted();
   const samples = mono.getChannelData(0).slice();
   onStatus?.('Training and applying the original NaliVoice neural restorer…');
-  const restored = await runNaliVoiceWorker(samples, { signal, onStatus });
+  const model = owner ? await readPrivateNaliVoiceModel(owner) : null;
+  signal?.throwIfAborted();
+  const restored = await runNaliVoiceWorker(samples, { signal, onStatus, model });
   const output = offline.createBuffer(1, restored.length, rate);
   output.copyToChannel(restored, 0);
   signal?.throwIfAborted();

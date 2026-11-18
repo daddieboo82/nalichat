@@ -42,6 +42,7 @@ import { studioDesktopHandoffUrl } from '@/lib/studioDesktopHandoff';
 import { getMobileStudioRecordingStatus } from '@/lib/mobileStudioRecordingStatus';
 import { saveStudioRecoveryTake, studioRecoveryScope } from '@/lib/studioTakeRecovery';
 import { startMobileRecordingCheckpoints } from '@/lib/mobileRecordingCheckpoints';
+import { startCompressedRecordingCheckpoints } from '@/lib/compressedRecordingCheckpoints';
 import MobileStudioRecoveries from '@/components/studio/MobileStudioRecoveries';
 import { copyToClipboard } from '@/lib/clipboard';
 import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
@@ -2009,8 +2010,10 @@ export default function Studio() {
         // successful checkpoint, not necessarily the final few seconds.
         recordingCheckpointRef.current?.stop();
         recordingCheckpointRef.current = isMobile && user?.id
-          ? startMobileRecordingCheckpoints({
-              recorder: mediaRecorder, ownerId: user.id,
+          ? (typeof mediaRecorder.snapshot === 'function'
+            ? startMobileRecordingCheckpoints
+            : startCompressedRecordingCheckpoints)({
+              recorder: mediaRecorder, chunks: captureChunks, ownerId: user.id,
               scope: studioRecoveryScope(roomId), id: crypto.randomUUID(),
               name: tracks.find(track => track.armed && !['midi','instrument'].includes(track.type))?.name || 'Mobile vocal',
               startTime: currentTimeRef.current,

@@ -4,19 +4,21 @@
 // Measures combined output + physical path + input delay, NOT network ping.
 export const NALI_LATENCY_PROBE_MS = [400, 950, 1500];
 
-export function makeLatencyProbe(sampleRate, samples = 768) {
+export function makeLatencyProbe(sampleRate, samples = 2048) {
   if (!Number.isFinite(sampleRate) || sampleRate < 8000 || sampleRate > 192000) {
     throw new Error('Unsupported calibration sample rate.');
   }
   const reference = new Float32Array(samples);
-  let random = 0x4e414c49;
+  // Band-limited exponential-ish sweep survives real phone speakers and mic
+  // processing better than full-band pseudo-random noise. A smooth envelope
+  // avoids an abrupt click while retaining a distinctive correlation peak.
+  const maxHz = Math.min(3600, sampleRate * 0.33);
+  const minHz = Math.min(650, maxHz * .35);
   for (let i = 0; i < samples; i++) {
-    random ^= random << 13;
-    random ^= random >>> 17;
-    random ^= random << 5;
-    // Smooth the ends to avoid loud transients and keep safe output level.
+    const phase = 2 * Math.PI * (minHz * i / sampleRate +
+      (maxHz - minHz) * (i * i) / (2 * sampleRate * (samples - 1)));
     const envelope = Math.sin(Math.PI * i / (samples - 1)) ** 2;
-    reference[i] = ((random >>> 0) / 2147483648 - 1) * envelope * 0.24;
+    reference[i] = Math.sin(phase) * envelope * 0.2;
   }
   return reference;
 }
@@ -43,9 +45,9 @@ function findPulse(captured, reference, expected, rate, maxDelayMs) {
       if (score > bestScore) { bestScore = score; bestFrame = offset; }
     }
   };
-  scan(begin, finish, 4);
+  scan(begin, finish, 8);
   if (bestFrame < 0) return null;
-  scan(Math.max(begin, bestFrame - 6), Math.min(finish, bestFrame + 6), 1);
+  scan(Math.max(begin, bestFrame - 16), Math.min(finish, bestFrame + 16), 1);
   return { milliseconds: (bestFrame - expected) * 1000 / rate, confidence: bestScore };
 }
 

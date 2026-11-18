@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect,useRef} from 'react';
 import { Headphones, Mic2, Monitor, ShieldCheck } from 'lucide-react';
 
 // Playback uses an isolated native <audio> element; unlike the timeline it does
@@ -8,6 +8,14 @@ export default function MobileTakeReview({
   track, comparisonTakes = [], onChooseTake, onRetake, onSaveForPC, recording = false, saving = false, readOnly = false,
 }) {
   const url = track?.audioUrl || track?.file_url;
+  const previewRef = useRef(null);
+  useEffect(() => {
+    const audio = previewRef.current;
+    return () => {
+      if (!audio) return;
+      try { audio.pause(); audio.currentTime = 0; } catch { /* browser disposed preview */ }
+    };
+  },[url]);
   if (!track || !url) return null;
   const quality = track.captureQuality;
   const isTemporary = typeof url === 'string' && url.startsWith('blob:');
@@ -40,7 +48,7 @@ export default function MobileTakeReview({
       </div>
       <p className="text-[11px] text-muted-foreground">Choose a take to hear it. Switching stops the previous preview. All takes remain in your project.</p>
     </div>}
-    <audio key={url} controls preload="metadata" src={url} className="w-full min-w-0" aria-label="Playback selected Studio take"/>
+    <audio ref={previewRef} key={url} controls preload="metadata" src={url} className="w-full min-w-0" aria-label="Playback selected Studio take"/>
     <p className="text-xs text-muted-foreground">{recommendation}</p>
     {quality && Number.isFinite(quality.peakDb) && <p className="text-[11px] text-muted-foreground">
       Peak {quality.peakDb.toFixed(1)} dBFS · RMS {Number.isFinite(quality.rmsDb) ? quality.rmsDb.toFixed(1) : 'unknown'} dBFS

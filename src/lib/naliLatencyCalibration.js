@@ -39,6 +39,8 @@ export async function calibrateNaliStudioLatency({
     volume = context.createGain();
     volume.gain.value = 1;
     volume.connect(context.destination);
+    await context.resume();
+    signal?.throwIfAborted();
     const rate = context.sampleRate;
     const pulse = makeLatencyProbe(rate);
     const initial = context.currentTime;
@@ -53,7 +55,6 @@ export async function calibrateNaliStudioLatency({
       capture.set(samples.subarray(0, capture.length - first), first);
       chunks++;
     };
-    await context.resume();
     for (const frame of frames) {
       const buffer = context.createBuffer(1, pulse.length, rate);
       buffer.copyToChannel(pulse, 0);
@@ -65,7 +66,9 @@ export async function calibrateNaliStudioLatency({
     }
     onStatus?.('Playing three short calibration sounds…');
     const waitUntil = initial + 2.1;
+    const deadline = Date.now() + 7500;
     while (context.currentTime < waitUntil) {
+      if (Date.now() > deadline) throw new Error('Device calibration timed out. No correction was applied.');
       signal?.throwIfAborted();
       await new Promise(resolve => setTimeout(resolve, 35));
       if (context.state !== 'running') throw new Error('Audio playback was interrupted; calibration stopped.');

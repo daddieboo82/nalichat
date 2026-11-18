@@ -165,3 +165,24 @@
 }
 @media (prefers-reduced-motion:reduce){.studio-mobile-premium .studio-mobile-tabs button{transition:none}}
 
+
+/* Recording-first content priority: tracks first on portrait phones;
+   setup and recovery remain reachable beneath the tracks. */
+.studio-mobile-premium:not(.studio-mobile-landscape) .studio-mobile-record-view{
+  display:flex !important;flex-direction:column;
+}
+.studio-mobile-premium:not(.studio-mobile-landscape) .studio-mobile-record-heading{order:0;flex:0 0 auto}
+.studio-mobile-premium:not(.studio-mobile-landscape) .studio-mobile-tracks-pane{order:1;flex:0 0 auto}
+.studio-mobile-premium:not(.studio-mobile-landscape) .studio-mobile-side-pane{
+  order:2;flex:0 0 auto;padding:10px 12px 90px;
+  border-top:1px solid rgba(171,156,229,.2);
+  background:linear-gradient(160deg,#29213b69,#15132155);
+}
+.studio-mobile-premium:not(.studio-mobile-landscape) .studio-mobile-track-list{padding-bottom:10px}
+.studio-mobile-premium:not(.studio-mobile-landscape) .studio-mobile-track-heading{padding-top:1px}
+.studio-mobile-premium:not(.studio-mobile-landscape) .studio-mobile-review-button{border-radius:12px}
+@media (orientation:landscape) and (max-height:540px){
+.studio-mobile-premium .studio-mobile-side-pane{padding-bottom:65px}
+.studio-mobile-premium .studio-mobile-tracks-pane{overflow-y:auto}
+}
+

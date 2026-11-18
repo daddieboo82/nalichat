@@ -3,6 +3,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ChatSessionViewer from '@/components/messages/ChatSessionViewer';
+import { sharedStudioCaptureConstraints } from '@/lib/sharedStudioCapture';
 
 const base44 = vi.hoisted(() => ({
   entities: { Track: { filter: vi.fn() } },
@@ -98,9 +99,10 @@ describe('ChatSessionViewer browser recording flow', () => {
     fireEvent.click(screen.getByRole('button', { name: /record track/i }));
 
     await waitFor(() => expect(screen.getByRole('button', { name: /^stop$/i })).toBeTruthy());
-    expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-    });
+    expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith(sharedStudioCaptureConstraints);
+    expect(sharedStudioCaptureConstraints.audio.echoCancellation).toBe(false);
+    expect(sharedStudioCaptureConstraints.audio.noiseSuppression).toBe(false);
+    expect(sharedStudioCaptureConstraints.audio.autoGainControl).toBe(false);
 
     fireEvent.click(screen.getByRole('button', { name: /^stop$/i }));
 

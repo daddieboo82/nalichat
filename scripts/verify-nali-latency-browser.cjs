@@ -1,4 +1,4 @@
-const {chromium} = require('/app/node_modules/@playwright/test');
+const {chromium} = require('@playwright/test');
 (async () => {
  const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
  try {

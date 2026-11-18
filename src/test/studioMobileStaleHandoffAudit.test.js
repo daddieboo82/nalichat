@@ -11,7 +11,7 @@ describe('Studio PC handoff rejects stale cloud snapshots',()=>{
   const warning=save.indexOf('if (editsDuringSave) {\n        // The prior snapshot');
   expect(warning).toBeGreaterThan(save.indexOf('lastSavedStudioProjectRef.current = targetProjectId;'));
   expect(save.slice(warning,warning+500)).toContain('return false;');
-  expect(save.slice(warning+500)).toContain('toast.success(');
+  expect(save.indexOf('toast.success(',warning)).toBeGreaterThan(save.indexOf('return false;',warning));
  });
  it('does not generate or advertise a PC handoff link after a stale save',async()=>{
   const src=await readFile('src/pages/Studio.jsx','utf8');

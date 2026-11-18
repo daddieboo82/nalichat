@@ -756,6 +756,15 @@ Deno.serve(async (req) => {
       }),
     );
 
+    // Erase private voice-model weights and consent when the owner deletes
+    // the account. These are voice-derived data and must not be tombstoned.
+    if (entities.NaliVoicePrivateModel) {
+      await processMatchingBatches(
+        entities.NaliVoicePrivateModel,
+        { user_id: user.id },
+        (row) => entities.NaliVoicePrivateModel.delete(row.id),
+      );
+    }
     await entities.User.delete(user.id);
     return Response.json({ success: true, action: 'delete_my_account', userId: user.id, deleted: true });
     } finally {

@@ -65,6 +65,7 @@ export async function createLosslessStudioRecorder(stream, {
     start() {
       if (this.state !== 'inactive') throw new Error('Recorder already started');
       this.state = 'recording';
+      node.port.postMessage({type:'start'});
     },
     requestData() { /* PCM is emitted on stop as a single valid WAV file. */ },
     stop() {
@@ -73,7 +74,7 @@ export async function createLosslessStudioRecorder(stream, {
       pending = true;
       node.port.postMessage({type:'flush'});
       // Never deadlock a stopped capture when a browser suspends its worklet.
-      watchdog = setTimeout(() => finish(), 1200);
+      watchdog = setTimeout(() => finish(new Error('Lossless capture could not finalize safely')), 1500);
     },
   };
   const finish = async (error) => {

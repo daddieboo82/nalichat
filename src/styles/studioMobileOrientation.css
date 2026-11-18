@@ -12,6 +12,13 @@
 .studio-mobile-workspace .studio-mobile-record-view,
 .studio-mobile-workspace .studio-mobile-tools-view { scrollbar-width: thin; }
 .studio-mobile-workspace .studio-landscape-live { display: none; }
+/* Keep a live capture's essential status visible without stacking guidance
+   cards over the tracks. Full details stay available in Record scrolling. */
+.studio-mobile-workspace .studio-mobile-active-status p { display: none; }
+.studio-mobile-workspace:not(.studio-mobile-landscape) .studio-mobile-coach-panel { display: none !important; }
+.studio-mobile-workspace:not(.studio-mobile-landscape) .studio-mobile-coach-inline { display: block !important; }
+.studio-mobile-workspace:not(.studio-mobile-landscape) .studio-mobile-capture-progress > p { display: none; }
+.studio-mobile-workspace:not(.studio-mobile-landscape) .studio-mobile-meter-panel > p:last-child { display: none; }
 
 .studio-mobile-landscape .studio-mobile-upgrade-banner { display: none; }
 .studio-mobile-landscape .studio-mobile-performance-banner {

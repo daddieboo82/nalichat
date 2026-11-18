@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag, Ban, RefreshCw, AlertCircle } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
+import { useNavigate } from 'react-router-dom';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -69,6 +70,7 @@ function ReadReceipts({ readBy, users }) {
 
 
 function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownload, currentUserId }) {
+  const navigate = useNavigate();
   const [dlProgress, setDlProgress] = useState(null); // null = idle, 0-100 = downloading
   const isImage = message.type === "image" || message.file_type?.startsWith("image");
   const isAudio = message.type === "audio" || message.file_type?.startsWith("audio") || !!message.file_name?.match(/\.(mp3|wav|ogg|m4a|aac)$/i) || !!message.file_url?.match(/\.(mp3|wav|ogg|m4a|aac)(\?.*)?$/i);
@@ -125,6 +127,7 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
       <div className="flex flex-col gap-2 min-w-0 w-full sm:min-w-[240px]">
         <CustomMediaPlayer src={message.file_url} title={message.file_name || "Audio Message"} className="shadow-md" />
         {canTranscribe && <VoiceTranscription message={message} isOwn={isOwn} />}
+        {canDownload && <button type="button" onClick={() => navigate(`/studio?voiceMessage=${encodeURIComponent(message.id)}`)} className="text-[11px] text-primary hover:underline text-left px-1" aria-label="Open this voice recording in NaliChat Studio">Open in Studio</button>}
         <button onClick={() => onOpenViewer(message)} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center justify-end gap-1 transition-colors mt-1 font-medium px-1">
           <Maximize2 className="w-3 h-3" /> Open full viewer
         </button>

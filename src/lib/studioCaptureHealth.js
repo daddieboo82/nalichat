@@ -3,6 +3,11 @@
 // whose IndexedDB transaction has completed successfully.
 export const STUDIO_PCM_MEMORY_LIMIT_BYTES = 80 * 1024 * 1024;
 export const STUDIO_CAPTURE_WARNING_RATIO = .75;
+export const STUDIO_CAPTURE_AUTO_FINISH_RATIO = .9;
+export function shouldFinalizeMobilePcm(capturedBytes, pcm=true) {
+  return pcm && Number.isFinite(capturedBytes) && capturedBytes >=
+    STUDIO_PCM_MEMORY_LIMIT_BYTES * STUDIO_CAPTURE_AUTO_FINISH_RATIO;
+}
 export function formatCaptureClock(seconds) {
   const whole = Math.max(0,Math.floor(Number.isFinite(seconds)?seconds:0));
   return `${Math.floor(whole/60).toString().padStart(2,'0')}:${(whole%60).toString().padStart(2,'0')}`;

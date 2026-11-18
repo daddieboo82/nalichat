@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { deleteVoiceProfile, generateVoiceMatch, getVoiceMatchModes, prepareVoiceAudio, readVoiceProfiles, saveVoiceProfile } from '@/lib/voxVoiceMatch';
 import { checkLocalWebGPU } from '@/lib/voxWebGPU';
 import { validateLocalRvcModels } from '@/lib/voxRvcLocal';
+import { checkLocalRvcReadiness } from '@/lib/voxLocalReadiness';
 
 export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
   const [profiles, setProfiles] = useState([]);
@@ -28,6 +29,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
   const generation = useRef(null);
   const profile = profiles.find(item => item.id === selected);
   const localModelError = mode === 'local-rvc' ? validateLocalRvcModels(localModels) : null;
+  const localRvcReadiness = mode === 'local-rvc' ? checkLocalRvcReadiness() : null;
 
   useEffect(() => () => generation.current?.abort(), []);
 
@@ -113,17 +115,25 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
           <DialogTitle>VoxShift Vocal Studio</DialogTitle>
           <DialogDescription>Polish your own recorded vocal, match an authorized reference voice, or generate spoken words. Voice profiles are saved in this browser.</DialogDescription>
         </DialogHeader>
-        <div className="rounded-md border p-3 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium">Free on-device AI readiness</p>
-            <Button type="button" size="sm" variant="outline" disabled={checkingGPU} onClick={async () => {
-              setCheckingGPU(true);
-              try { setGpuCheck(await checkLocalWebGPU()); }
-              finally { setCheckingGPU(false); }
-            }}>{checkingGPU ? 'Checking…' : 'Check WebGPU'}</Button>
+        {mode === 'enhance' && (
+          <div className="rounded-md border p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">Free Vocal Polish GPU readiness</p>
+              <Button type="button" size="sm" variant="outline" disabled={checkingGPU} onClick={async () => {
+                setCheckingGPU(true);
+                try { setGpuCheck(await checkLocalWebGPU()); }
+                finally { setCheckingGPU(false); }
+              }}>{checkingGPU ? 'Checking…' : 'Check WebGPU'}</Button>
+            </div>
+            <p className="text-xs text-muted-foreground" role="status">{gpuCheck?.reason || 'WebGPU can accelerate the final level stage. Vocal Polish also works without WebGPU and never calls paid inference.'}</p>
           </div>
-          <p className="text-xs text-muted-foreground" role="status">{gpuCheck?.reason || 'WebGPU uses your device, not paid cloud inference. Checking support does not install a voice model or use credits.'}</p>
-        </div>
+        )}
+        {mode === 'local-rvc' && (
+          <div className="rounded-md border p-3 space-y-2">
+            <p className="text-sm font-medium">Free local AI browser compatibility</p>
+            <p className="text-xs text-muted-foreground" role="status">{localRvcReadiness?.reason}</p>
+          </div>
+        )}
         {mode !== 'enhance' && mode !== 'local-rvc' && (providerError ? (
           <div className="flex items-center justify-between gap-2">
             <p role="status" className="text-sm text-muted-foreground">Local Vocal Polish is available. AI voice modes need a connected provider. {providerError}</p>
@@ -201,7 +211,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
               <textarea className="mt-1 block w-full rounded border bg-background p-2" rows={3} maxLength={400} value={text} onChange={event => { setText(event.target.value); setResult(null); }} />
             </label>
           )}
-          <Button type="button" disabled={(mode !== 'enhance' && mode !== 'local-rvc' && !providerModes?.includes(mode)) || (!['enhance', 'local-rvc'].includes(mode) && !profile) || !consent || (mode === 'local-rvc' && (localModelError || !modelPermission)) || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
+          <Button type="button" disabled={(mode !== 'enhance' && mode !== 'local-rvc' && !providerModes?.includes(mode)) || (!['enhance', 'local-rvc'].includes(mode) && !profile) || !consent || (mode === 'local-rvc' && (!localRvcReadiness?.supported || localModelError || !modelPermission)) || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
             Generate audio
           </Button>
           {result && preview && (

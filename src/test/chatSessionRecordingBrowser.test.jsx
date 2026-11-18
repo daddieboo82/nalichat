@@ -12,7 +12,7 @@ const base44 = vi.hoisted(() => ({
 }));
 const upload = vi.hoisted(() => vi.fn());
 const validate = vi.hoisted(() => vi.fn(() => ({ ok: true })));
-const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
+const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn(), info: vi.fn(), warning: vi.fn() }));
 
 vi.mock('@/api/base44Client', () => ({ base44 }));
 vi.mock('@/lib/secureUpload', () => ({ secureUploadFile: upload }));

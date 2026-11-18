@@ -48,6 +48,7 @@ import { startMobileRecordingCheckpoints } from '@/lib/mobileRecordingCheckpoint
 import { startCompressedRecordingCheckpoints } from '@/lib/compressedRecordingCheckpoints';
 import MobileStudioRecoveries from '@/components/studio/MobileStudioRecoveries';
 import MobileStudioPreflight from '@/components/studio/MobileStudioPreflight';
+import MobileTakeReview from '@/components/studio/MobileTakeReview';
 import { copyToClipboard } from '@/lib/clipboard';
 import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
@@ -179,6 +180,7 @@ export default function Studio() {
   const waveformPointsRef = useRef(WAVEFORM_POINTS);
   waveformPointsRef.current = WAVEFORM_POINTS;
   const [mobileStudioTab, setMobileStudioTab] = useState('record');
+  const [mobileReviewedTakeId, setMobileReviewedTakeId] = useState(null);
   const [mobileDesktopHandoffUrl, setMobileDesktopHandoffUrl] = useState(null);
   const [mobileHandoffSaving, setMobileHandoffSaving] = useState(false);
   const [mobilePageVisible, setMobilePageVisible] = useState(() => typeof document === 'undefined' || document.visibilityState !== 'hidden');
@@ -3187,6 +3189,21 @@ export default function Studio() {
     }
   };
 
+  const prepareMobileRetake = (track) => {
+    if (!canEditProject || isRecording || mobileTakeFinalizing || recordingFinalizeInFlightRef.current) return;
+    if (!track) return;
+    const target = tracksRef.current.find(t => String(t.id) === String(track.id));
+    if (!target || ['midi','instrument'].includes(target.type) || ['folder','vca'].includes(target.trackType)) return;
+    if (tracksRef.current.length + studioNewRecordingLaneCount(tracksRef.current.map(t=>({ ...t,armed:String(t.id)===String(target.id) }))) > maxTracks) {
+      toast.warning('No room for another take. Save your current session and free a track first.');
+      return;
+    }
+    setTracks(prev => prev.map(t=>({ ...t,armed:String(t.id)===String(target.id) })));
+    setSelectedTrackIds([target.id]);
+    setMobileStudioTab('record');
+    toast.info('Original audio preserved. Press Record to capture another take.');
+  };
+
   const pitchCorrectionRef = useRef(false);
   const [isTuningVocal, setIsTuningVocal] = useState(false);
 
@@ -4213,10 +4230,14 @@ export default function Studio() {
         <div className="p-3 pb-0 space-y-3">
           <MobileStudioPreflight disabled={isRecording || mobileTakeFinalizing || microphoneStartupRef.current.pending} />
           <MobileStudioRecoveries ownerId={user?.id} scope={studioRecoveryScope(roomId)} onRestore={restoreMobileTake} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving || !canEditProject} />
+          <MobileTakeReview track={tracks.find(t=>String(t.id)===String(mobileReviewedTakeId))}
+            onRetake={prepareMobileRetake} onSaveForPC={saveMobileForDesktop}
+            recording={isRecording || mobileTakeFinalizing} saving={mobileHandoffSaving} readOnly={!canEditProject} />
         </div>
         <MobileStudioTracks lanes={visibleStudioClipLanes(tracks)} selectedTrackIds={selectedTrackIds}
           onSelect={id => setSelectedTrackIds([id])} onArm={toggleArm} onMute={toggleMute} onSolo={toggleSolo}
           onVolume={updateVolume} onAdd={addMobileVocalTrack} onImport={handleImportClick} onReconstruct={openGenerativeReconstruction}
+          onReview={id=>{setMobileReviewedTakeId(id);setSelectedTrackIds([id]);}}
           onMixer={() => setShowMixerPanel(true)} onPolish={toggleAutoPolishVocals} autoPolish={autoPolishVocals}
           readOnly={!canEditProject || isRecording} />
       </div>

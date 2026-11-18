@@ -40,7 +40,7 @@ import StudioToolbar2 from '@/components/studio/StudioToolbar2';
 import MobileStudioTracks from '@/components/studio/MobileStudioTracks';
 import { studioDesktopHandoffUrl } from '@/lib/studioDesktopHandoff';
 import { getMobileStudioRecordingStatus } from '@/lib/mobileStudioRecordingStatus';
-import { studioCaptureHealth } from '@/lib/studioCaptureHealth';
+import { studioCaptureHealth, shouldFinalizeMobilePcm } from '@/lib/studioCaptureHealth';
 import { saveStudioRecoveryTake, studioRecoveryScope } from '@/lib/studioTakeRecovery';
 import { startMobileRecordingCheckpoints } from '@/lib/mobileRecordingCheckpoints';
 import { startCompressedRecordingCheckpoints } from '@/lib/compressedRecordingCheckpoints';
@@ -232,6 +232,7 @@ export default function Studio() {
   const audioChunksRef = useRef([]);
   const recordingFinalizeInFlightRef = useRef(false);
   const recordingCheckpointRef = useRef(null);
+  const mobileCaptureAutoFinishRef = useRef(false);
   useEffect(() => {
     if (!isRecording || !isMobile) return undefined;
     const refresh = () => {

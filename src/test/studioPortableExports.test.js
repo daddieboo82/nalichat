@@ -167,9 +167,9 @@ describe("NaliStudio portable exports", () => {
     const start = studio.indexOf("const handleLoadDemo = async () => {");
     const end = studio.indexOf("// Temporary object URLs", start);
     const demo = studio.slice(start, end);
-    expect(demo).toContain("if (isRecording || isPlaying)");
-    expect(demo).toContain("Stop recording and playback before loading the demo.");
-    expect(demo.indexOf("if (isRecording || isPlaying)"))
+    expect(demo).toContain("if (isRecording || isPlaying || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current)");
+    expect(demo).toContain("Finish recording, take finalization, and playback before loading the demo.");
+    expect(demo.indexOf("if (isRecording || isPlaying || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current)"))
       .toBeLessThan(demo.indexOf("historyEpochRef.current += 1"));
     expect(demo).toContain("historyEpochRef.current += 1");
     expect(demo).toContain("historyRef.current = [demoTracks]");
@@ -207,12 +207,12 @@ describe("NaliStudio portable exports", () => {
     const blank = studio.slice(start, load);
     const autosave = studio.slice(load, demo);
     expect(blank).toContain("studioSaveInFlightRef.current || studioRestoreInFlightRef.current");
-    expect(blank).toContain("if (isRecording || isPlaying)");
-    expect(blank.indexOf("if (isRecording || isPlaying)"))
+    expect(blank).toContain("if (isRecording || isPlaying || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current)");
+    expect(blank.indexOf("if (isRecording || isPlaying || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current)"))
       .toBeLessThan(blank.indexOf("historyEpochRef.current += 1"));
     expect(autosave).toContain("studioSaveInFlightRef.current || studioRestoreInFlightRef.current");
-    expect(autosave).toContain("if (isRecording || isPlaying)");
-    expect(autosave.indexOf("if (isRecording || isPlaying)"))
+    expect(autosave).toContain("if (isRecording || isPlaying || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current)");
+    expect(autosave.indexOf("if (isRecording || isPlaying || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current)"))
       .toBeLessThan(autosave.indexOf("historyEpochRef.current += 1"));
     expect(blank).toContain("historyEpochRef.current += 1");
     expect(blank).toContain("historyRef.current = [[]]");
@@ -358,8 +358,8 @@ describe("NaliStudio portable exports", () => {
     expect(handler).toContain("} finally {");
     expect(handler).toContain("studioRestoreInFlightRef.current = false;");
     expect(handler).toContain("studioRestoreInFlightRef.current = false;");
-    expect(handler).toContain("if (isRecording || isPlaying)");
-    expect(handler).toContain("Stop playback and recording before restoring a Studio backup.");
+    expect(handler).toContain("if (isRecording || isPlaying || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current)");
+    expect(handler).toContain("Finish recording, take finalization, and playback before restoring a Studio backup.");
     expect(handler).toContain("historyEpochRef.current += 1");
     expect(handler).toContain("historyRef.current = [restoredTracks]");
     expect(handler).toContain("historyIndexRef.current = 0");

@@ -242,8 +242,14 @@ export default function Studio() {
       const capturedBytes = Number.isFinite(recorder.capturedByteLength)
         ? recorder.capturedByteLength
         : audioChunksRef.current.reduce((total,chunk)=>total+(chunk?.size||0),0);
-      setMobileCaptureProgress(prev => ({...prev,elapsedSeconds:Math.max(0,elapsed),capturedBytes,
-        pcm: typeof recorder.snapshot === 'function'}));
+      const pcm = typeof recorder.snapshot === 'function';
+      setMobileCaptureProgress(prev => ({...prev,elapsedSeconds:Math.max(0,elapsed),capturedBytes,pcm}));
+      if (shouldFinalizeMobilePcm(capturedBytes,pcm) && !mobileCaptureAutoFinishRef.current &&
+          !recordingFinalizeInFlightRef.current) {
+        mobileCaptureAutoFinishRef.current = true;
+        toast.warning('Recording is approaching the phone memory limit. Finishing this take to preserve the audio captured.');
+        void toggleRecordRef.current?.();
+      }
     };
     refresh();
     const ticker = window.setInterval(refresh,1000);
@@ -2024,6 +2030,7 @@ export default function Studio() {
           if (e.data.size > 0) captureChunks.push(e.data);
         };
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
+        mobileCaptureAutoFinishRef.current = false;
         if (isMobile) setMobileCaptureProgress({elapsedSeconds:0,checkpointSeconds:0,capturedBytes:0,
           pcm:typeof mediaRecorder.snapshot === 'function',checkpointError:false});
         // On supported PCM recorders, periodically persist complete WAV

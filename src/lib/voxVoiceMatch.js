@@ -3,6 +3,7 @@ import { audioBufferToWav, bufferToWaveform } from './audioProcessing';
 import { studioClipAudioRange } from './studioClipAudioRange';
 import { polishVocalLocally } from './localVocalPolish';
 import { convertRvcLocally } from './voxRvcLocal';
+import { restoreWithNaliVoice } from './naliVoiceRestoration';
 
 async function useProfiles(mode, operation) {
   const database = await new Promise((resolve, reject) => {
@@ -99,6 +100,9 @@ function waitForNextCheck(signal) {
 }
 
 export async function generateVoiceMatch({ profile, mode, text, track, signal, onStatus, localModels }) {
+  if (mode === 'nali-voice') {
+    return restoreWithNaliVoice({ track, signal, onStatus });
+  }
   if (mode === 'local-rvc') {
     return convertRvcLocally({ track, files: localModels, signal, onStatus });
   }

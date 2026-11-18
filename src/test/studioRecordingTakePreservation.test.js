@@ -17,6 +17,19 @@ describe('Studio non-destructive recording takes', () => {
     expect(output[2].splitFrom).toBeUndefined();
     expect(original[0].armed).toBe(true);
   });
+  it('compensates measured overdub delay with reversible clip trimming, leaving the source untouched', () => {
+    const take = applyStudioRecordedTake([{id:4,name:'Voice',type:'audio',armed:true}], {
+      ...capture, duration: 4, latencyCorrectionSeconds:.115,
+    })[0];
+    expect(take.clipStart).toBeCloseTo(.115);
+    expect(take.duration).toBeCloseTo(3.885);
+    expect(take.fullDuration).toBe(4);
+    expect(take.audioUrl).toBe('blob:new');
+    expect(take.latencyCompensationMs).toBe(115);
+    const dry = applyStudioRecordedTake([{id:4,name:'Voice',type:'audio',armed:true}],capture)[0];
+    expect(dry.clipStart).toBe(0);
+  });
+
   it('records directly into an empty track without allocating a new lane', () => {
     const result = applyStudioRecordedTake([{id:9,name:'Mic',armed:true,waveform:[],duration:0}],capture);
     expect(result).toHaveLength(1);

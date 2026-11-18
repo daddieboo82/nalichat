@@ -63,7 +63,7 @@ export function estimateStudioRoundTrip({
   ).filter(Boolean);
   const detections = candidates.filter(m => m.confidence >= 0.4 && m.milliseconds >= 4 && m.milliseconds <= maxDelayMs);
   if (detections.length < 3) {
-    return { valid: false, reason: 'The calibration sound was not detected reliably. Use your device speaker near the microphone and try again.', candidates };
+    return { valid: false, reason: 'The calibration sound was not detected reliably. Use your device speaker near the microphone and try again.' };
   }
   const values = detections.map(d => d.milliseconds).sort((a, b) => a - b);
   const median = values[Math.floor(values.length / 2)];
@@ -84,13 +84,15 @@ export function estimateStudioRoundTrip({
 // Automatic correction only applies to local overdubs against a backing track,
 // never to independent Messaging voice notes or uncalibrated sessions. The
 // original WAV remains untouched; clipStart stores the reversible trim.
-export function safeNaliOverdubCompensation(profile, { micDeviceId, hasBackingTrack, duration } = {}) {
+export function safeNaliOverdubCompensation(profile, { micDeviceId, outputLatencyMs, hasBackingTrack, duration } = {}) {
   if (!hasBackingTrack || !profile?.valid || profile.method !== 'acoustic-correlation-v1' ||
       !Number.isFinite(profile.roundTripMs) || profile.roundTripMs < 4 || profile.roundTripMs > 250 ||
       !Number.isFinite(profile.jitterMs) || profile.jitterMs > 12 ||
       !Number.isFinite(profile.confidence) || profile.confidence < 0.6 ||
       !Number.isFinite(duration) || duration < 1 ||
       !profile.micDeviceId || !micDeviceId || profile.micDeviceId !== micDeviceId ||
+      (Number.isFinite(profile.browserOutputLatencyMs) && Number.isFinite(outputLatencyMs) &&
+        Math.abs(profile.browserOutputLatencyMs - outputLatencyMs) > 20) ||
       !Number.isFinite(profile.calibratedAt) || Date.now() - profile.calibratedAt > 24 * 3600000 ||
       profile.calibratedAt > Date.now()) return 0;
   return Math.min(profile.roundTripMs / 1000, duration * 0.09);
@@ -98,7 +100,10 @@ export function safeNaliOverdubCompensation(profile, { micDeviceId, hasBackingTr
 
 const PROFILE_KEY = 'nalichat-studio-acoustic-latency-v1';
 export function saveStudioLatencyProfile(profile, storage = globalThis.localStorage) {
-  if (!profile?.valid || !Number.isFinite(profile.roundTripMs)) throw new Error('Only measured calibration can be saved.');
+  if (!profile?.valid || !Number.isFinite(profile.roundTripMs) ||
+      profile.method !== 'acoustic-correlation-v1' ||
+      !profile.micDeviceId || !Number.isFinite(profile.jitterMs) ||
+      !Number.isFinite(profile.confidence)) throw new Error('Only reliable measured calibration can be saved.');
   try { storage?.setItem(PROFILE_KEY, JSON.stringify({ ...profile, calibratedAt: Date.now() })); return true; }
   catch { return false; }
 }

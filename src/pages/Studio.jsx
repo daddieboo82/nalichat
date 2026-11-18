@@ -4170,12 +4170,15 @@ export default function Studio() {
           return <><div className="flex items-center gap-2 text-sm font-semibold">
             <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", status.level === "recording" ? "bg-red-500 animate-pulse" : status.level === "warning" ? "bg-amber-400" : status.level === "working" ? "bg-blue-400" : "bg-emerald-400")}/>
             {status.label}
-          </div><p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">{status.detail}</p></>;
+          </div>{isRecording && isLandscapePhone && <span className="studio-landscape-live text-[11px] tabular-nums text-foreground">
+            {Math.floor(mobileCaptureProgress.elapsedSeconds/60).toString().padStart(2,"0")}:{Math.floor(mobileCaptureProgress.elapsedSeconds%60).toString().padStart(2,"0")}
+            {mobileMicLevel ? ` · Peak ${mobileMicLevel.peakDb} dBFS` : ""}
+          </span>}<p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">{status.detail}</p></>;
         })()}
       </div>
       {isRecording && isMobile && (() => {
         const progress = studioCaptureHealth(mobileCaptureProgress);
-        return <div className="mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2 text-xs" aria-live="polite" aria-label="Mobile recording progress">
+        return <div className="studio-mobile-recording-extended mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2 text-xs" aria-live="polite" aria-label="Mobile recording progress">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-semibold tabular-nums">Recording {progress.elapsedLabel}</span>
             <span className="text-muted-foreground tabular-nums">{progress.checkpointLabel ? `Protected through ${progress.checkpointLabel}` : 'No checkpoint yet'}</span>
@@ -4190,7 +4193,7 @@ export default function Studio() {
       })()}
       {isRecording && isMobile && mobileMicLevel && (() => {
         const guidance = mobileMicLevelMessage(mobileMicLevel);
-        return <div className="mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Live microphone input meter">
+        return <div className="studio-mobile-recording-extended mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Live microphone input meter">
           <div className="flex items-center justify-between gap-2 text-xs font-semibold">
             <span>Live microphone input</span>
             <span className="tabular-nums text-muted-foreground">Peak {mobileMicLevel.peakDb} dBFS</span>
@@ -4205,7 +4208,7 @@ export default function Studio() {
           <p className="text-[11px] leading-4 text-muted-foreground">{guidance.help} The meter does not change or process your recording.</p>
         </div>;
       })()}
-      {isMobile && isRecording && <section className="mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Mobile vocal recording assistant">
+      {isMobile && isRecording && <section className="studio-mobile-recording-extended mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Mobile vocal recording assistant">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-xs font-semibold">Vocal recording assistant</h3>
           <button type="button" aria-pressed={mobileCoachEnabled} onClick={()=>setMobileCoachEnabled(value=>!value)}
@@ -4226,11 +4229,22 @@ export default function Studio() {
         ))}
       </div>
       <div className={cn("studio-mobile-record-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]", mobileStudioTab !== "record" && "hidden")} style={{display:isMobile&&mobileStudioTab==="record"?"block":"none"}}>
-        <div className="sticky top-0 z-10 border-b border-white/10 bg-[#1D1728]/95 px-4 py-3 backdrop-blur">
+        <div className="studio-mobile-record-heading sticky top-0 z-10 border-b border-white/10 bg-[#1D1728]/95 px-4 py-3 backdrop-blur">
           <p className="text-sm font-bold">Record anywhere</p>
           <p className="text-[11px] text-muted-foreground">Capture on your phone. Open this session on a PC for precision editing, mixing, and mastering.</p>
         </div>
-        <div className="p-3 pb-0 space-y-3">
+        <div className="studio-mobile-side-pane p-3 pb-0 space-y-3">
+          {isLandscapePhone && isRecording && <section className="studio-landscape-capture-summary rounded-xl border border-white/10 bg-[#191526] px-3 py-2 text-xs" aria-label="Landscape recording levels">
+            <div className="flex items-center justify-between gap-2 font-semibold">
+              <span>Recording {Math.floor(mobileCaptureProgress.elapsedSeconds/60).toString().padStart(2,"0")}:{Math.floor(mobileCaptureProgress.elapsedSeconds%60).toString().padStart(2,"0")}</span>
+              <span>{mobileMicLevel ? `Peak ${mobileMicLevel.peakDb} dBFS` : "Mic starting…"}</span>
+            </div>
+            {mobileMicLevel && <div className="mt-1 h-2 rounded-full bg-white/10 overflow-hidden" role="meter" aria-label="Landscape microphone level" aria-valuemin={0} aria-valuemax={100} aria-valuenow={mobileMicLevel.level}>
+              <div className={cn("h-full rounded-full",mobileMicLevel.clip?"bg-red-500":mobileMicLevel.quiet?"bg-amber-400":"bg-emerald-400")} style={{width:`${mobileMicLevel.level}%`}}/>
+            </div>}
+            <p className="mt-1 text-[11px] text-muted-foreground">{mobileCaptureProgress.checkpointSeconds > 0 ? `Device recovery protected through ${Math.floor(mobileCaptureProgress.checkpointSeconds)}s` : "Waiting for device recovery checkpoint"}</p>
+            {mobileCoachEnabled && mobileCoachGuidance && <p className="mt-1 text-[11px] text-amber-300">{mobileCoachGuidance.title}</p>}
+          </section>}
           <MobileStudioPreflight disabled={isRecording || mobileTakeFinalizing || microphoneStartupRef.current.pending} />
           <MobileStudioRecoveries ownerId={user?.id} scope={studioRecoveryScope(roomId)} onRestore={restoreMobileTake} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving || !canEditProject} />
           <div ref={mobileReviewPanelRef}>
@@ -4241,6 +4255,7 @@ export default function Studio() {
               recording={isRecording || mobileTakeFinalizing} saving={mobileHandoffSaving} readOnly={!canEditProject} />
           </div>
         </div>
+        <div className="studio-mobile-tracks-pane min-h-0">
         <MobileStudioTracks lanes={visibleStudioClipLanes(tracks)} selectedTrackIds={selectedTrackIds}
           onSelect={id => setSelectedTrackIds([id])} onArm={toggleArm} onMute={toggleMute} onSolo={toggleSolo}
           onVolume={updateVolume} onAdd={addMobileVocalTrack} onImport={handleImportClick} onReconstruct={openGenerativeReconstruction}
@@ -4251,6 +4266,7 @@ export default function Studio() {
           }}
           onMixer={() => setShowMixerPanel(true)} onPolish={toggleAutoPolishVocals} autoPolish={autoPolishVocals}
           readOnly={!canEditProject || isRecording} />
+        </div>
       </div>
       <div className={cn("studio-mobile-tools-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19] p-3 pb-28", mobileStudioTab !== "tools" && "hidden")} style={{display:isMobile&&mobileStudioTab==="tools"?"block":"none"}}>
         <h2 className="mb-3 text-base font-semibold">Studio tools</h2>

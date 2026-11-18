@@ -47,7 +47,7 @@ describe('NaliChat measured acoustic round-trip latency engine', () => {
     const entries = new Map();
     const storage = {setItem:(k,v)=>entries.set(k,v), getItem:k=>entries.get(k)};
     expect(readStudioLatencyProfile(storage)).toBeNull();
-    expect(saveStudioLatencyProfile({valid:true,roundTripMs:90,method:'acoustic-correlation-v1'},storage)).toBe(true);
+    expect(saveStudioLatencyProfile({valid:true,roundTripMs:90,method:'acoustic-correlation-v1', micDeviceId:'mic-1', jitterMs:2, confidence:.92},storage)).toBe(true);
     expect(readStudioLatencyProfile(storage).roundTripMs).toBe(90);
     for (const [k,v] of entries) entries.set(k,JSON.stringify({...JSON.parse(v),calibratedAt:Date.now()-25*3600000}));
     expect(readStudioLatencyProfile(storage)).toBeNull();
@@ -59,6 +59,7 @@ describe('NaliChat measured acoustic round-trip latency engine', () => {
     expect(safeNaliOverdubCompensation(profile,{micDeviceId:'mic-1',hasBackingTrack:true,duration:5})).toBeCloseTo(.115);
     expect(safeNaliOverdubCompensation(profile,{micDeviceId:'mic-2',hasBackingTrack:true,duration:5})).toBe(0);
     expect(safeNaliOverdubCompensation(profile,{micDeviceId:'mic-1',hasBackingTrack:false,duration:5})).toBe(0);
+    expect(safeNaliOverdubCompensation({...profile,browserOutputLatencyMs:15},{micDeviceId:'mic-1',outputLatencyMs:80,hasBackingTrack:true,duration:5})).toBe(0);
     expect(safeNaliOverdubCompensation({...profile,jitterMs:19},{micDeviceId:'mic-1',hasBackingTrack:true,duration:5})).toBe(0);
     expect(safeNaliOverdubCompensation({...profile,calibratedAt:Date.now()-25*3600000},{micDeviceId:'mic-1',hasBackingTrack:true,duration:5})).toBe(0);
   });

@@ -4182,7 +4182,7 @@ export default function Studio() {
           return <><div className="flex items-center gap-2 text-sm font-semibold">
             <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", status.level === "recording" ? "bg-red-500 animate-pulse" : status.level === "warning" ? "bg-amber-400" : status.level === "working" ? "bg-blue-400" : "bg-emerald-400")}/>
             {status.label}
-          </div>{isRecording && isLandscapePhone && <span className="studio-landscape-live text-[11px] tabular-nums text-foreground">
+          </div>{isRecording && <span className="studio-landscape-live text-[11px] tabular-nums text-foreground">
             {Math.floor(mobileCaptureProgress.elapsedSeconds/60).toString().padStart(2,"0")}:{Math.floor(mobileCaptureProgress.elapsedSeconds%60).toString().padStart(2,"0")}
             {mobileMicLevel ? ` · Peak ${mobileMicLevel.peakDb} dBFS` : ""}
           </span>}<p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">{status.detail}</p></>;

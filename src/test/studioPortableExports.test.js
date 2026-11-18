@@ -96,7 +96,7 @@ describe("NaliStudio portable exports", () => {
     const save = studio.slice(start, end);
     expect(save).toContain("const editsDuringSave = tracksRef.current !== tracks");
     expect(save).toContain("if (autosaveStorageKey && !roomId && !editsDuringSave)");
-    expect(save).toContain("Newer edits are not yet saved to My Sessions; save again.");
+    expect(save).toContain("Newer edits are not yet saved to My Sessions; save again before leaving or continuing on PC.");
     expect(save.indexOf("Project save was not confirmed."))
       .toBeLessThan(save.indexOf("const editsDuringSave ="));
   });

@@ -12,7 +12,7 @@ export function applyStudioRecordedTake(tracks, { audioUrl, waveform, startTime,
       Boolean(t.audioUrl || t.file_url));
     const capture = {
       audioUrl, file_url: audioUrl, waveform, startTime, duration,
-      fullDuration: duration, clipStart: 0, armed: false,
+      fullDuration: duration, clipStart: 0, armed: false, recordedFromMicrophone: true,
     };
     if (occupied) {
       // A new lane avoids accidentally mixing a new take into an existing

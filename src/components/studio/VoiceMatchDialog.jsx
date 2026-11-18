@@ -106,11 +106,11 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
         </DialogHeader>
         {providerError ? (
           <div className="flex items-center justify-between gap-2">
-            <p role="status" className="text-sm text-muted-foreground">{providerError}</p>
+            <p role="status" className="text-sm text-muted-foreground">Local Vocal Polish is available. AI voice modes need a connected provider. {providerError}</p>
             <Button type="button" variant="outline" size="sm" onClick={() => setProviderCheck(attempt => attempt + 1)}>Check again</Button>
           </div>
-        ) : !providerModes && <p role="status" className="text-sm text-muted-foreground">Checking Voice Match availability…</p>}
-        {providerModes && !providerModes.includes(mode) && <p role="status" className="text-sm text-muted-foreground">This generation mode is unavailable on the connected provider.</p>}
+        ) : !providerModes && <p role="status" className="text-sm text-muted-foreground">Local Vocal Polish is available. Checking AI voice modes…</p>}
+        {mode !== 'enhance' && providerModes && !providerModes.includes(mode) && <p role="status" className="text-sm text-muted-foreground">This generation mode is unavailable on the connected provider.</p>}
         <fieldset disabled={busy} className="space-y-4">
           <label className="flex gap-2 text-sm">
             <input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} />
@@ -148,14 +148,14 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
             </select>
           </label>
           {mode !== 'speech' ? (
-            <p className="text-sm text-muted-foreground">Source: {take?.name} · 1–60 seconds of isolated vocal{mode === 'enhance' ? ' · cleans rumble, evens levels, preserves your vocal identity' : ''}</p>
+            <p className="text-sm text-muted-foreground">Source: {take?.name} · 1–60 seconds of isolated vocal{mode === 'enhance' ? ' · processes locally in your browser, reduces rumble and evens levels' : ''}</p>
           ) : (
             <label className="block text-sm">
               Words to speak
               <textarea className="mt-1 block w-full rounded border bg-background p-2" rows={3} maxLength={400} value={text} onChange={event => { setText(event.target.value); setResult(null); }} />
             </label>
           )}
-          <Button type="button" disabled={!providerModes?.includes(mode) || (mode !== 'enhance' && !profile) || !consent || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
+          <Button type="button" disabled={(mode !== 'enhance' && !providerModes?.includes(mode)) || (mode !== 'enhance' && !profile) || !consent || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
             Generate audio
           </Button>
           {result && preview && (
@@ -168,7 +168,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
         {busy && (
           <div className="flex items-center gap-2">
             <p role="status" className="text-sm">
-              {jobStatus === 'queued' ? 'Waiting for the voice model…' : jobStatus === 'running' ? 'Generating audio…' : 'Preparing audio…'}
+              {jobStatus === 'polishing' ? 'Polishing vocal in your browser…' : jobStatus === 'queued' ? 'Waiting for the voice model…' : jobStatus === 'running' ? 'Generating audio…' : 'Preparing audio…'}
             </p>
             {jobStatus && <Button type="button" variant="outline" onClick={onClose}>Close preview</Button>}
           </div>

@@ -62,10 +62,11 @@ describe('PayPal subscription integration contracts', () => {
 
   it('uses PayPal-compatible, deterministic request IDs', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
-    expect(createSource).toContain("crypto.subtle.digest('SHA-256', bytes)");
-    expect(createSource).toContain('.slice(0, 36)');
-    expect(createSource).toContain("'PayPal-Request-Id': await paypalRequestId(user.id, idempotencyKey)");
-    expect(createSource).toContain("userId + ':subscription:' + day");
+    const requestIdSource = await read('base44/shared/paypalCheckoutRequest.ts');
+    expect(requestIdSource).toContain("crypto.subtle.digest('SHA-256', bytes)");
+    expect(requestIdSource).toContain('.slice(0, 36)');
+    expect(createSource).toContain("'PayPal-Request-Id': await paypalSubscriptionRequestId(user.id, sku)");
+    expect(requestIdSource).toContain("userId + ':subscription:' + sku + ':' + day");
   });
 
   it('keeps pending PayPal approval recovery available after checkout cancellation', async () => {

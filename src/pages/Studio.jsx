@@ -3733,7 +3733,7 @@ export default function Studio() {
             </Button>
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" aria-label="Voice learning privacy settings" title="Voice learning privacy" className="rounded-xl text-muted-foreground"><Settings className="w-4 h-4" /></Button>
+                <Button type="button" variant="ghost" size="sm" aria-label="Voice learning privacy settings" title="Voice learning privacy" className="rounded-xl text-muted-foreground"><Settings2 className="w-4 h-4" /></Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">Voice learning is private and optional. Recordings stay on your device; your learned model syncs with your account.</div>

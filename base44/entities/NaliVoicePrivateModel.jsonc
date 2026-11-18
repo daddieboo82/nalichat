@@ -1,0 +1,54 @@
+{
+  "name": "NaliVoicePrivateModel",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Server-authenticated owner, never client-provided"
+    },
+    "consent": {
+      "type": "boolean",
+      "default": false
+    },
+    "model_json": {
+      "type": "string",
+      "maxLength": 40000,
+      "description": "Small research checkpoint weights, never raw recordings"
+    },
+    "revision": {
+      "type": "integer",
+      "default": 0
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "consent",
+    "revision"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

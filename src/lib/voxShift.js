@@ -90,7 +90,7 @@ function connectVocalPolish(context, input, nodes, warm) {
   presence.gain.value = warm ? 0.5 : 2;
 
   const makeup = context.createGain();
-  makeup.gain.value = 1.2;
+  makeup.gain.value = warm ? 1.2 : 1;
 
   input.connect(rumble);
   rumble.connect(mud);

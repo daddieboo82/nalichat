@@ -11,6 +11,7 @@ const sizes=[[390,844],[320,568],[844,390],[667,375],[932,430],[1024,768]];
     document.body.innerHTML='<div id="root"></div>';document.body.style.margin='0';
     window.__studioTestProjectName='Portrait/landscape original take';
    });
+   await page.evaluate(async()=>{await import('/src/index.css');await new Promise(resolve=>setTimeout(resolve,300));});
    for(const [width,height] of sizes){
     await page.setViewportSize({width,height});
     const result=await page.evaluate(async()=>{

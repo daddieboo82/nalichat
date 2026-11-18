@@ -1,58 +1,51 @@
-// Local per-account neural-model checkpoint storage. Never store raw speech.
-// Private IndexedDB database scoped to this browser origin.
+// Authenticated, account-scoped model checkpoints stored on NaliChat servers.
+// No raw audio is sent. This replaces browser IndexedDB as source of truth.
+import { base44 } from '@/api/base44Client';
 import { createNaliVoiceModel, validateNaliVoiceModel } from './naliVoiceCore';
 
-const DB_NAME = 'nalivoice-private-models-v1';
-const STORE = 'models';
-
-function openDb() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => request.result.createObjectStore(STORE, { keyPath: 'owner' });
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error('Voice model storage unavailable.'));
-  });
+async function request(action, fields = {}) {
+  const response = await base44.functions.invoke('naliVoicePrivateModel', { action, ...fields });
+  const data = response?.data;
+  if (!data || data.error) throw new Error(data?.error || 'Private voice model service unavailable.');
+  return data;
 }
 
-async function transaction(owner, mode, callback) {
-  if (typeof owner !== 'string' || !owner) throw new Error('Voice model owner required.');
-  const db = await openDb();
-  try {
-    return await new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, mode);
-      const req = callback(tx.objectStore(STORE), owner);
-      req.onerror = () => reject(req.error || new Error('Voice model storage failed.'));
-      tx.onabort = () => reject(tx.error || new Error('Voice model storage failed.'));
-      tx.oncomplete = () => resolve(req.result);
-    });
-  } finally {
-    db.close();
-  }
+export async function getPrivateNaliVoiceStatus() {
+  return request('get');
 }
 
-export async function readPrivateNaliVoiceModel(owner) {
-  const row = await transaction(owner, 'readonly', (store, id) => store.get(id));
-  if (!row) return createNaliVoiceModel();
-  const model = { ...row.model,
-    w1: new Float32Array(row.model.w1),
-    b1: new Float32Array(row.model.b1),
-    w2: new Float32Array(row.model.w2),
-  };
+export async function updatePrivateNaliVoiceConsent(enabled) {
+  if (typeof enabled !== 'boolean') throw new Error('Consent choice required.');
+  return request('set_consent', { enabled });
+}
+
+export async function readPrivateNaliVoiceModel() {
+  const data = await getPrivateNaliVoiceStatus();
+  const model = data.model ? {
+    ...data.model,
+    w1: new Float32Array(data.model.w1),
+    b1: new Float32Array(data.model.b1),
+    w2: new Float32Array(data.model.w2),
+  } : createNaliVoiceModel();
   validateNaliVoiceModel(model);
+  model._serverRevision = data.revision;
   return model;
 }
 
-export async function savePrivateNaliVoiceModel(owner, model) {
+export async function savePrivateNaliVoiceModel(_owner, model) {
   validateNaliVoiceModel(model);
-  const copy = {
-    ...model, w1: new Float32Array(model.w1),
-    b1: new Float32Array(model.b1), w2: new Float32Array(model.w2),
+  if (!Number.isSafeInteger(model._serverRevision)) {
+    throw new Error('Reload the private voice model before saving.');
+  }
+  const payload = {
+    format: model.format, taps: model.taps, hidden: model.hidden,
+    trainedSteps: model.trainedSteps, b2: model.b2,
+    w1: Array.from(model.w1), b1: Array.from(model.b1), w2: Array.from(model.w2),
   };
-  await transaction(owner, 'readwrite', (store, id) => store.put({
-    owner: id, model: copy, updatedAt: new Date().toISOString(),
-  }));
+  const result = await request('save', { model: payload, revision: model._serverRevision });
+  model._serverRevision = result.revision;
 }
 
-export async function clearPrivateNaliVoiceModel(owner) {
-  await transaction(owner, 'readwrite', (store, id) => store.delete(id));
+export async function clearPrivateNaliVoiceModel() {
+  return request('erase');
 }

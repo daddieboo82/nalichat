@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, VolumeX, Headphones, Plus, AudioLines, SlidersHorizontal, Upload, Wand2 } from 'lucide-react';
+import { Mic, VolumeX, Headphones, Plus, AudioLines, SlidersHorizontal, Upload, Wand2, PlayCircle } from 'lucide-react';
 import TrackWaveformSVG from './TrackWaveformSVG';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +13,7 @@ export function mobilePreviewWaveform(values, maxPoints = 160) {
 // The full desktop timeline remains reachable through the Timeline tab.
 export default function MobileStudioTracks({
   lanes = [], selectedTrackIds = [], onSelect, onArm, onMute, onSolo,
-  onVolume, onAdd, onImport, onReconstruct, onMixer, onPolish,
+  onVolume, onAdd, onImport, onReconstruct, onMixer, onPolish, onReview,
   autoPolish = false, readOnly = false,
 }) {
   return (
@@ -65,6 +65,11 @@ export default function MobileStudioTracks({
               {audio.waveform?.length ? <TrackWaveformSVG track={{ ...audio, waveform: mobilePreviewWaveform(audio.waveform) }} /> :
                 <span className="flex h-full items-center justify-center text-xs text-muted-foreground">{audio.audioUrl || audio.file_url ? 'Audio ready · view timeline' : 'No audio recorded yet'}</span>}
             </button>
+            {(audio.audioUrl || audio.file_url) && <button type="button"
+              onClick={() => onReview?.(audio.id)} aria-label={`Review ${audio.name || 'recorded track'}`}
+              className="mb-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 text-xs font-semibold text-primary">
+              <PlayCircle className="h-4 w-4"/>Listen & review take
+            </button>}
             <div className="grid grid-cols-3 gap-2">
               <button type="button" onClick={() => onArm(track.id)} disabled={!canRecord}
                 aria-label={`Arm ${track.name || 'track'} for recording`} aria-pressed={Boolean(track.armed)}

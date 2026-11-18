@@ -1,6 +1,7 @@
 import { base44 } from '@/api/base44Client';
 import { audioBufferToWav, bufferToWaveform } from './audioProcessing';
 import { studioClipAudioRange } from './studioClipAudioRange';
+import { polishVocalLocally } from './localVocalPolish';
 
 async function useProfiles(mode, operation) {
   const database = await new Promise((resolve, reject) => {
@@ -97,8 +98,17 @@ function waitForNextCheck(signal) {
 }
 
 export async function generateVoiceMatch({ profile, mode, text, track, signal, onStatus }) {
-  const payload = { consent: true, mode };
-  if (mode !== 'enhance') payload.reference = await toBase64(profile.wav);
+  if (mode === 'enhance') {
+    if (!track?.audioUrl) throw new Error('Select a recorded vocal track to polish.');
+    const response = await fetch(track.audioUrl, { signal });
+    if (!response.ok) throw new Error('Could not read the selected vocal clip.');
+    const source = await prepareVoiceAudio(await response.blob(), track);
+    signal.throwIfAborted();
+    onStatus?.('polishing');
+    return polishVocalLocally(source, signal);
+  }
+
+  const payload = { consent: true, mode, reference: await toBase64(profile.wav) };
   if (mode === 'speech') {
     payload.text = text.trim();
   } else {

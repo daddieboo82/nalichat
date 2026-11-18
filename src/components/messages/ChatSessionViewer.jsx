@@ -110,7 +110,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
   const startRecording = async () => {
     if (isRecording || uploading) return;
     try {
-      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error("Media recording is not supported in this browser");
       }
 
@@ -123,7 +123,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
       streamRef.current = stream;
       const microphoneSettings = inspectSharedStudioCaptureSettings(stream.getAudioTracks?.()[0]?.getSettings?.());
       if (microphoneSettings.warning) toast.warning(microphoneSettings.warning);
-      const { recorder, codec, lossless } = await createPreferredStudioRecorder(stream, { MediaRecorderType: MediaRecorder });
+      const { recorder, codec, lossless } = await createPreferredStudioRecorder(stream, { MediaRecorderType: globalThis.MediaRecorder });
       if (!mountedRef.current) {
         recorder.dispose?.();
         stream.getTracks().forEach(track => track.stop());

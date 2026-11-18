@@ -3997,7 +3997,7 @@ export default function Studio() {
       <div className={cn("md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19] p-3 pb-28", mobileStudioTab !== "tools" && "hidden")}>
         <h2 className="mb-3 text-base font-semibold">Studio tools</h2>
         <div className="grid grid-cols-2 gap-2">
-          <Button className="min-h-12" variant="outline" onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Session</Button>
+          <Button className="min-h-12" variant="outline" disabled={isRecording || mobileHandoffSaving} onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Session</Button>
           <Button className="min-h-12" variant="outline" onClick={() => { setExportFormat("wav"); setExportDialogOpen(true); }}><Download className="mr-2 h-4 w-4"/> Export Mix</Button>
           <Button className="min-h-12" variant="outline" onClick={() => setShowPluginRack(true)}><SlidersHorizontal className="mr-2 h-4 w-4"/> Plugins</Button>
           <Button className="min-h-12" variant="outline" onClick={() => { stop(); setShowPreferencesDialog(true); }}><Settings2 className="mr-2 h-4 w-4"/> Mic Setup</Button>
@@ -4016,7 +4016,7 @@ export default function Studio() {
             {mobileHandoffSaving ? "Saving for PC…" : "Save for PC · Copy Link"}
           </Button>
           {mobileDesktopHandoffUrl && <div className="space-y-1 rounded-lg border border-primary/20 bg-background/60 p-2">
-            <p role="status" className="text-xs font-semibold text-foreground">Session saved to My Sessions</p>
+            <p role="status" className="text-xs font-semibold text-foreground">Last saved session is ready for your PC</p>
             <a className="block break-all text-xs text-primary underline underline-offset-2" href={mobileDesktopHandoffUrl}>Open saved session in Studio</a>
             <p className="text-[11px] text-muted-foreground">Private to your account. Copy the link or open My Sessions on your computer.</p>
           </div>}
@@ -5151,7 +5151,7 @@ export default function Studio() {
           <button type="button" onClick={() => stop()} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10" aria-label="Stop"><Square className="h-5 w-5"/></button>
           <button type="button" onClick={togglePlay} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-white/10 font-semibold" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}{isPlaying ? "Pause" : "Play"}</button>
           <button type="button" onClick={toggleRecord} disabled={!canEditProject} className={cn("flex min-h-14 flex-[1.2] items-center justify-center gap-2 rounded-2xl font-bold text-white disabled:opacity-40", isRecording ? "bg-red-700" : "bg-red-600")} aria-label={isRecording ? "Stop recording" : "Record"}><Circle className="h-5 w-5 fill-current"/>{isRecording ? "Finish" : "Record"}</button>
-          <button type="button" onClick={handleSave} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10" aria-label="Save session"><Save className="h-5 w-5"/></button>
+          <button type="button" onClick={handleSave} disabled={isRecording || mobileHandoffSaving} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10 disabled:opacity-40" aria-label="Save session"><Save className="h-5 w-5"/></button>
         </div>
       </div>
     </div>

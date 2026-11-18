@@ -613,3 +613,14 @@
   background:radial-gradient(ellipse at center,hsl(var(--primary) / .14) 0%,transparent 70%);
 }
 
+
+/* Final compact-track color tokens: appearance only, no geometry changes. */
+.studio-mobile-premium .studio-tools-subtitle {
+  color:hsl(var(--muted-foreground));
+}
+.studio-mobile-premium .studio-mobile-quick-actions button:last-child {
+  background:hsl(var(--primary) / .1);
+  border-color:hsl(var(--primary) / .4);
+  color:hsl(var(--primary));
+}
+

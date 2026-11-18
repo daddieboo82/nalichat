@@ -4240,7 +4240,7 @@ export default function Studio() {
             className={cn("min-h-11 flex-1 rounded-xl text-sm font-semibold transition-colors", mobileStudioTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}>{label}</button>
         ))}
       </div>
-      <div className={cn("studio-mobile-record-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]", mobileStudioTab !== "record" && "hidden",isLandscapePhone&&mobileStudioTab==="record"&&"studio-mobile-record-grid")} style={{display:isMobile&&mobileStudioTab==="record"?"block":"none"}}>
+      <div className={cn("studio-mobile-record-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]", mobileStudioTab !== "record" && "hidden",isLandscapePhone&&mobileStudioTab==="record"&&"studio-mobile-record-grid",isMobile&&mobileStudioTab==="record"&&"studio-mobile-record-active")} style={{display:isMobile&&mobileStudioTab==="record"?"block":"none"}}>
         <div className="studio-mobile-record-heading sticky top-0 z-10 border-b border-white/10 bg-[#1D1728]/95 px-4 py-3 backdrop-blur">
           <p className="studio-mobile-heading-title text-sm font-bold"><span className="studio-mobile-heading-light" aria-hidden="true"/>THE VOCAL ROOM <span className="studio-mobile-heading-label">MOBILE STUDIO</span></p>
           <p className="studio-mobile-heading-subtitle text-[11px] text-muted-foreground">Capture the moment. Shape the sound. Finish anywhere.</p>

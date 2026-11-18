@@ -124,6 +124,29 @@ Deno.serve(async (req) => {
 
     checkoutStage = 'paypal_authentication';
     const token = await accessToken();
+    // Confirm the selected PayPal plan is active before reserving the account.
+    // A stale or inactive plan should not create a checkout claim or an
+    // uncertain recurring agreement that blocks subsequent legitimate attempts.
+    checkoutStage = 'verify_plan_configuration';
+    const planLookup = await fetch(apiBase() + '/v1/billing/plans/' + encodeURIComponent(planId), {
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+    });
+    if (!planLookup.ok) {
+      console.error('PayPal checkout plan lookup failed', { sku, status: planLookup.status });
+      return Response.json({
+        error: 'This PayPal subscription plan is temporarily unavailable. Please contact NaliChat support.',
+        code: planLookup.status === 404 || planLookup.status === 400
+          ? 'PAYPAL_PLAN_CONFIGURATION_REQUIRED' : 'CHECKOUT_DEPENDENCY_ERROR',
+      }, { status: 503 });
+    }
+    const verifiedPlan = await planLookup.json().catch(() => null);
+    if (verifiedPlan?.id !== planId || verifiedPlan?.status !== 'ACTIVE') {
+      console.error('PayPal checkout plan not active', { sku, status: verifiedPlan?.status || 'missing' });
+      return Response.json({
+        error: 'This PayPal subscription plan is not currently active. Please contact NaliChat support.',
+        code: 'PAYPAL_PLAN_CONFIGURATION_REQUIRED',
+      }, { status: 503 });
+    }
     // Verify all prior PayPal agreements with PayPal before deciding whether
     // a locally pending row actually represents an open recurring agreement.
     // Fail closed on stale local statuses: check every other recorded PayPal

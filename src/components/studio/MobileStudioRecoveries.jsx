@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { listStudioRecoveryTakes, getStudioRecoveryTake, deleteStudioRecoveryTake } from '@/lib/studioTakeRecovery';
+import { studioRecoveryStorageHealth } from '@/lib/studioRecoveryStorageHealth';
 
 // The user explicitly chooses which completed take to restore. This list
 // never reveals someone else's account or project recordings on shared phones.
@@ -11,8 +12,10 @@ export default function MobileStudioRecoveries({
   const [rows, setRows] = useState([]);
   const [working, setWorking] = useState(null);
   const [unavailable, setUnavailable] = useState(false);
+  const [storageHealth, setStorageHealth] = useState(null);
   const refresh = async () => {
     if (!ownerId || !scope) { setRows([]); return; }
+    void studioRecoveryStorageHealth().then(setStorageHealth);
     try {
       const items = await listStudioRecoveryTakes(ownerId,scope);
       setRows(items);
@@ -25,6 +28,9 @@ export default function MobileStudioRecoveries({
   useEffect(() => {
     let active = true;
     if (!ownerId || !scope) return undefined;
+    void studioRecoveryStorageHealth().then(health => {
+      if (active) setStorageHealth(health);
+    });
     listStudioRecoveryTakes(ownerId,scope).then(items => {
       if (active) {setRows(items);setUnavailable(false);}
     }).catch(() => {
@@ -39,10 +45,16 @@ export default function MobileStudioRecoveries({
     window.addEventListener('nalichat:mobile-take-recovered',update);
     return () => window.removeEventListener('nalichat:mobile-take-recovered',update);
   });
-  if (!ownerId || unavailable || rows.length === 0) return null;
+  if (!ownerId) return null;
+  const lowStorage = storageHealth?.supported && ['critical','warning'].includes(storageHealth.level);
+  if (!lowStorage && (unavailable || rows.length === 0)) return null;
   return <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 space-y-2" aria-label="Device recording recovery">
-    <p className="font-semibold text-sm">Recover recordings from this device</p>
-    <p className="text-xs text-muted-foreground">Completed takes and available recording checkpoints are stored in this browser, not the NaliChat cloud. An interrupted take may be missing its last few seconds. Restore, listen, then Save for PC.</p>
+    <p className="font-semibold text-sm">Device recording protection</p>
+    {lowStorage && <div role="alert" className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-2 text-xs text-amber-200">
+      <p className="font-semibold">{storageHealth.level === 'critical' ? 'Very low browser storage' : 'Browser storage is getting low'}</p>
+      <p className="mt-1">{storageHealth.detail} Your existing recordings are not automatically deleted.</p>
+    </div>}
+    {rows.length > 0 && <p className="text-xs text-muted-foreground">Completed takes and recording checkpoints are stored on this device, not the NaliChat cloud. Interrupted takes may be missing their last seconds. Restore, listen, then Save for PC.</p>}
     {rows.map(row => <div key={row.id} className="rounded-lg border border-white/10 p-2 space-y-2">
       <div className="text-xs font-medium truncate">{row.name || 'Recovered Vocal'} {row.partial ? '(Interrupted recording checkpoint)' : '(Completed backup)'}</div>
       <div className="text-[11px] text-muted-foreground">{new Date(row.createdAt).toLocaleString()} · {Math.ceil(row.bytes/1024)} KB · {Math.round(row.duration || 0)}s saved</div>

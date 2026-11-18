@@ -624,3 +624,14 @@
   color:hsl(var(--primary));
 }
 
+
+/* Completed device backups are regular Studio content, not warnings.
+   Preserve the existing amber warning treatment whenever storage is low. */
+.studio-mobile-premium [aria-label="Device recording recovery"]:not(:has([role="alert"])) {
+  background:hsl(var(--card));
+  border-color:hsl(var(--primary) / .25);
+}
+.studio-mobile-premium [aria-label="Device recording recovery"] > div:not([role="alert"]) {
+  border-color:hsl(var(--border));
+}
+

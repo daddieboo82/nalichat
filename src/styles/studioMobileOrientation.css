@@ -520,3 +520,68 @@
   border-color:hsl(var(--border)) !important;
 }
 
+
+/* Complete the visual-only theme pass for Studio's mobile entry screen and
+   small accents. Keep all existing spacing, geometry, hit targets and logic. */
+@media (max-width:767px), (orientation:landscape) and (max-width:1024px) and (max-height:540px) {
+  .studio-mobile-welcome {
+    background:radial-gradient(ellipse 88% 58% at 50% 0,hsl(var(--primary) / .14),transparent 72%),
+      radial-gradient(ellipse 70% 40% at 95% 100%,hsl(var(--accent) / .09),transparent),
+      hsl(var(--background));
+    color:hsl(var(--foreground));
+  }
+  .studio-mobile-welcome-card {
+    background:hsl(var(--card) / .96);
+    border-color:hsl(var(--border));
+    box-shadow:0 22px 65px hsl(var(--background) / .65),inset 0 1px hsl(var(--foreground) / .04);
+  }
+  .studio-mobile-welcome-icon {
+    background:hsl(var(--primary) / .13);
+    box-shadow:0 10px 30px hsl(var(--primary) / .12),inset 0 1px hsl(var(--foreground) / .08);
+  }
+  .studio-mobile-welcome-card h1 { color:hsl(var(--foreground)); }
+  .studio-mobile-welcome-description { color:hsl(var(--muted-foreground)); }
+  .studio-mobile-welcome-actions>button {
+    border-color:hsl(var(--border));
+    box-shadow:inset 0 1px hsl(var(--foreground) / .05);
+  }
+  .studio-mobile-welcome-actions>button:first-child {
+    background:hsl(var(--primary));
+    color:hsl(var(--primary-foreground));
+    box-shadow:0 7px 24px hsl(var(--primary) / .17),inset 0 1px hsl(var(--foreground) / .12);
+  }
+  .studio-mobile-welcome-actions>button:not(:first-child) {
+    background:hsl(var(--secondary));
+    color:hsl(var(--secondary-foreground));
+  }
+  .studio-mobile-welcome-actions>button:focus-visible { outline-color:hsl(var(--ring)); }
+}
+.studio-mobile-premium .studio-track-color-dot {
+  background:hsl(var(--primary));
+  box-shadow:0 0 0 3px hsl(var(--primary) / .11);
+}
+.studio-mobile-premium .studio-mobile-track-armed .studio-track-color-dot {
+  background:hsl(var(--destructive));
+  box-shadow:0 0 0 3px hsl(var(--destructive) / .13);
+}
+.studio-mobile-premium .studio-track-type { color:hsl(var(--muted-foreground)); }
+.studio-mobile-premium .studio-mobile-heading-title { color:hsl(var(--foreground)); }
+.studio-mobile-premium .studio-mobile-heading-label {
+  color:hsl(var(--primary));
+  background:hsl(var(--primary) / .1);
+  border-color:hsl(var(--primary) / .22);
+}
+.studio-mobile-premium .studio-mobile-heading-subtitle { color:hsl(var(--muted-foreground)); }
+.studio-mobile-premium .studio-mobile-capture-progress,
+.studio-mobile-premium .studio-mobile-meter-panel,
+.studio-mobile-premium .studio-mobile-coach-panel,
+.studio-mobile-premium .studio-landscape-capture-summary,
+.studio-mobile-premium .studio-mobile-coach-inline {
+  background:hsl(var(--card));
+  border-color:hsl(var(--border));
+}
+.studio-mobile-premium .studio-mobile-waveform:not(.studio-cubasis-lane-waveform) {
+  background:hsl(var(--card));
+  border-color:hsl(var(--border));
+}
+

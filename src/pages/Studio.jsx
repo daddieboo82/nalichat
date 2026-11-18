@@ -3710,7 +3710,7 @@ export default function Studio() {
            </div>
 
            {/* Pro Tools-style Pre-roll / Post-roll */}
-           <PreRollPostRoll preRoll={preRoll} setPreRoll={setPreRoll} postRoll={postRoll} setPostRoll={setPostRoll} />
+           <div className="hidden md:block"><PreRollPostRoll preRoll={preRoll} setPreRoll={setPreRoll} postRoll={postRoll} setPostRoll={setPostRoll} /></div>
 
         {/* Right Tools - Hardware & Export */}
         <div className="hidden md:flex flex-wrap items-center justify-end gap-2 min-w-0">
@@ -3946,7 +3946,7 @@ export default function Studio() {
           onMixer={() => setShowMixerPanel(true)} onPolish={toggleAutoPolishVocals} autoPolish={autoPolishVocals}
           readOnly={!canEditProject || isRecording} />
       </div>
-      <div className={cn("md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19] p-3", mobileStudioTab !== "tools" && "hidden")}>
+      <div className={cn("md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19] p-3 pb-28", mobileStudioTab !== "tools" && "hidden")}>
         <h2 className="mb-3 text-base font-semibold">Studio tools</h2>
         <div className="grid grid-cols-2 gap-2">
           <Button className="min-h-12" variant="outline" onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Session</Button>

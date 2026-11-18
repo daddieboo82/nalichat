@@ -4309,7 +4309,7 @@ export default function Studio() {
         {/* Unified scroll — left pane + waveforms move together in one container */}
         <div className="flex w-fit min-w-full min-h-full">
         {/* Track Headers (Left Sidebar) */}
-        <div className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col sticky left-0 z-10 shrink-0 rounded-l-2xl">
+        <div className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col sticky left-0 z-10 shrink-0 rounded-l-2xl" style={isLandscapePhone?{width:180,minWidth:180}:undefined}>
           {/* Spacer matching the timeline ruler — sticky so it stays aligned at top */}
           <div className="h-8 shrink-0 sticky top-0 z-20 border-b border-white/10 bg-[#12101C]/80 backdrop-blur-md" />
           <DragDropContext onDragStart={handleTrackDragStart} onDragUpdate={handleTrackDragUpdate} onDragEnd={handleReorderTracks}>

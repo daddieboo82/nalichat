@@ -33,7 +33,7 @@ Deno.serve(async (request) => {
       });
       if (!upstream.ok) return reply('Voice Match provider is unavailable.', 503);
       const { modes } = await upstream.json();
-      const available = Array.isArray(modes) ? ['sing', 'convert', 'speech'].filter(mode => modes.includes(mode)) : [];
+      const available = Array.isArray(modes) ? ['sing', 'convert', 'speech', 'enhance'].filter(mode => modes.includes(mode)) : [];
       if (!available.length) return reply('Voice Match provider is unavailable.', 503);
       return statusResponse({ modes: available });
     }
@@ -56,12 +56,12 @@ Deno.serve(async (request) => {
       return await readRenderedAudio(upstream);
     }
 
-    if (!payload || payload.consent !== true || !['speech', 'convert', 'sing'].includes(payload.mode)) {
+    if (!payload || payload.consent !== true || !['speech', 'convert', 'sing', 'enhance'].includes(payload.mode)) {
       return reply('Choose a mode and confirm permission to use the reference voice.', 400);
     }
     const form = new FormData();
     form.set('consent', 'confirmed');
-    for (const field of payload.mode === 'speech' ? ['reference'] : ['reference', 'source']) {
+    for (const field of payload.mode === 'speech' ? ['reference'] : payload.mode === 'enhance' ? ['source'] : ['reference', 'source']) {
       const value = payload[field];
       if (typeof value !== 'string' || value.length > Math.ceil(AUDIO_LIMIT / 3) * 4) {
         return reply('Audio exceeds the Studio voice limit.', 413);

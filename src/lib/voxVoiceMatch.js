@@ -97,7 +97,8 @@ function waitForNextCheck(signal) {
 }
 
 export async function generateVoiceMatch({ profile, mode, text, track, signal, onStatus }) {
-  const payload = { consent: true, mode, reference: await toBase64(profile.wav) };
+  const payload = { consent: true, mode };
+  if (mode !== 'enhance') payload.reference = await toBase64(profile.wav);
   if (mode === 'speech') {
     payload.text = text.trim();
   } else {

@@ -10,13 +10,14 @@ import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from "@/lib/
 import { analyzeSharedStudioRecordedBlob } from "@/lib/sharedStudioCaptureQuality";
 import { studioRecordingExtension } from "@/lib/studioRecorderCodec";
 import { createPreferredStudioRecorder } from "@/lib/studioPcmRecorder";
+import { sessionTrackStart } from "@/lib/sessionTrackTiming";
 
 // BounceDialog and renderMasteredMix key off `audioUrl`, but Track entities
 // store the media under `file_url`. Normalize every track so the studio export
 // pipeline sees the same shape it does in the Studio page.
 function normalizeSessionTrack(track) {
   if (!track) return track;
-  return { ...track, audioUrl: track.audioUrl || track.file_url || "" };
+  return { ...track, audioUrl: track.audioUrl || track.file_url || "", startTime: sessionTrackStart(track) };
 }
 
 // Avoid resetting the multitrack editor (and its audio element refs) on every
@@ -24,7 +25,7 @@ function normalizeSessionTrack(track) {
 function sessionTrackListsEqual(current, next) {
   if (current === next) return true;
   if (!Array.isArray(current) || !Array.isArray(next) || current.length !== next.length) return false;
-  const fields = ["id", "updated_date", "created_date", "file_url", "audioUrl", "name", "type", "volume", "muted", "solo", "pan"];
+  const fields = ["id", "updated_date", "created_date", "file_url", "audioUrl", "name", "type", "volume", "muted", "solo", "pan", "startTime", "start_time"];
   return current.every((track, index) => {
     const candidate = next[index];
     return !!candidate && fields.every((field) => track?.[field] === candidate?.[field]);
@@ -160,6 +161,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
             name: `Track by ${currentUser?.full_name || "Unknown"}`,
             file_url,
             type: "vocal",
+            start_time: 0, // Recorded independently; adjust shared timeline alignment afterward.
           });
           if (created?.data?.error) throw new Error(created.data.error);
           const track = created?.data?.track;

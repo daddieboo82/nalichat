@@ -72,6 +72,7 @@ import { trainPrivateNaliVoiceFromRecording, forgetPrivateNaliVoiceTraining } fr
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
+import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
 import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
 import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
 import { retriggerStudioMidiNote, finalizeStudioMidiNote } from '@/lib/studioMidiRetrigger';
@@ -1581,6 +1582,7 @@ export default function Studio() {
 
         let realWaveform = [];
         let recordedDuration = null;
+        let captureQuality = null;
         let waveformUnavailable = false;
         let waveformAudioCtx = null;
         try {
@@ -1591,6 +1593,7 @@ export default function Studio() {
           const audioBuffer = await waveformAudioCtx.decodeAudioData(arrayBuffer);
           recordedDuration = audioBuffer.duration;
           realWaveform = studioRecordedWaveform(audioBuffer, WAVEFORM_POINTS);
+          captureQuality = analyzeStudioCaptureQuality(audioBuffer);
         } catch (e) {
           waveformUnavailable = true;
           console.error("Unable to decode recorded waveform; keeping original captured audio", e);
@@ -1627,7 +1630,7 @@ export default function Studio() {
                 !['midi', 'instrument'].includes(t.type),
             })),
             {
-              audioUrl, waveform: realWaveform,
+              audioUrl, waveform: realWaveform, captureQuality,
               startTime: stoppedStartTime,
               duration: recordedDuration || Math.max(1, stoppedEndTime - stoppedStartTime),
               nextId: nextTrackId(prev),
@@ -1657,8 +1660,10 @@ export default function Studio() {
           setRecordingStartTime(null);
           if (waveformUnavailable) {
             toast.warning("Recording captured, but its waveform could not be decoded. The original audio was kept.");
+          } else if (captureQuality && ['clipping', 'quiet', 'silent'].includes(captureQuality.status)) {
+            toast.warning(`Recording saved. ${captureQuality.note}`);
           } else {
-            toast.success("Recording saved!");
+            toast.success("Recording saved! Audio level looks healthy.");
           }
         }
         } catch (error) {

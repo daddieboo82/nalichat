@@ -324,11 +324,6 @@ export default function Studio() {
   useEffect(() => {
     if (autoPolishVocals) setTracks(current => setVocalAutoPolish(current, true));
   }, [tracks, autoPolishVocals]);
-  useEffect(() => {
-    if (!autoPolishVocals && tracks.some(t => t.autoPolish === true && isAutoPolishVocalTrack(t))) {
-      setAutoPolishVocals(true);
-    }
-  }, [tracks, autoPolishVocals]);
   const toggleAutoPolishVocals = () => {
     const enabled = !autoPolishVocals;
     setAutoPolishVocals(enabled);
@@ -2936,6 +2931,14 @@ export default function Studio() {
     setVoiceMatch({ owner: user.id, take: selectedPluginTrack, epoch: historyEpochRef.current });
   };
 
+  const openGenerativeReconstruction = () => {
+    if (!user?.id) return toast.info('Sign in to reconstruct a vocal.');
+    if (isRecording) return toast.info('Stop recording before reconstructing a vocal.');
+    const take = tracks.find(track => selectedTrackIds.includes(track.id) && track.audioUrl && isAutoPolishVocalTrack(track));
+    if (!take) return toast.info('Select an audio track labeled as a vocal, voice, or microphone recording first.');
+    setVoiceMatch({ owner: user.id, take, epoch: historyEpochRef.current, initialMode: 'local-rvc' });
+  };
+
   const addVoiceMatchTrack = (result) => {
     if (voiceMatch?.owner !== user?.id || voiceMatch?.epoch !== historyEpochRef.current) {
       toast.error("The Studio session changed. Open Voice Match again.");
@@ -3672,6 +3675,9 @@ export default function Studio() {
             </Button>
             <Button type="button" onClick={toggleAutoPolishVocals} aria-pressed={autoPolishVocals} aria-label="Auto Polish all vocal tracks" title="Automatically polish all vocal tracks during playback and export, including new vocals" variant={autoPolishVocals ? 'default' : 'outline'} size="sm" className={cn('gap-2 rounded-xl', autoPolishVocals ? 'bg-primary text-primary-foreground' : 'border-primary/50')}>
               <Wand2 className="w-4 h-4" /> Auto Polish {autoPolishVocals ? 'ON' : 'OFF'}
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="gap-2 rounded-xl border-violet-500/50 text-violet-400 hover:bg-violet-500/10" onClick={openGenerativeReconstruction} title="Reconstruct a selected vocal using a free local AI voice model (experimental)" aria-label="Generative AI Vocal Reconstruction">
+              <AudioLines className="w-4 h-4" /> AI Reconstruct <span className="text-[10px]">Beta</span>
             </Button>
             <Button onClick={() => setShowQuickMemo(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-primary/50 text-primary hover:bg-primary/10 transition-colors">
                <Mic className="w-4 h-4" /> Quick Memo
@@ -4643,6 +4649,7 @@ export default function Studio() {
         <VoiceMatchDialog
           owner={voiceMatch.owner}
           take={voiceMatch.take}
+          initialMode={voiceMatch.initialMode}
           onClose={() => setVoiceMatch(null)}
           onAdd={addVoiceMatchTrack}
         />

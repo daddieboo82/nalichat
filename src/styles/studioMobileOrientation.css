@@ -606,3 +606,10 @@
   background-image:linear-gradient(to bottom,hsl(var(--card) / .95),hsl(var(--background) / .97));
 }
 
+
+/* Match the Studio entry-screen ambient glow to the application theme.
+   Overrides visual paint only; no changes to click targets or layout. */
+.studio-mobile-welcome > .absolute.inset-0 {
+  background:radial-gradient(ellipse at center,hsl(var(--primary) / .14) 0%,transparent 70%);
+}
+

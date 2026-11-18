@@ -4228,7 +4228,7 @@ export default function Studio() {
             className={cn("min-h-11 flex-1 rounded-xl text-sm font-semibold transition-colors", mobileStudioTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}>{label}</button>
         ))}
       </div>
-      <div className={cn("studio-mobile-record-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]", mobileStudioTab !== "record" && "hidden")} style={{display:isMobile&&mobileStudioTab==="record"?"block":"none"}}>
+      <div className={cn("studio-mobile-record-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]", mobileStudioTab !== "record" && "hidden",isLandscapePhone&&mobileStudioTab==="record"&&"studio-mobile-record-grid")} style={{display:isMobile&&mobileStudioTab==="record"?"block":"none"}}>
         <div className="studio-mobile-record-heading sticky top-0 z-10 border-b border-white/10 bg-[#1D1728]/95 px-4 py-3 backdrop-blur">
           <p className="text-sm font-bold">Record anywhere</p>
           <p className="text-[11px] text-muted-foreground">Capture on your phone. Open this session on a PC for precision editing, mixing, and mastering.</p>

@@ -6,6 +6,8 @@ import MultiTrackEditor from "../studio/MultiTrackEditor";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { sharedStudioCaptureConstraints, inspectSharedStudioCaptureSettings } from "@/lib/sharedStudioCapture";
+import { analyzeSharedStudioRecordedBlob } from "@/lib/sharedStudioCaptureQuality";
 
 function recordingExtension(mimeType = "") {
   if (mimeType.includes("mp4")) return "m4a";
@@ -108,15 +110,15 @@ export default function ChatSessionViewer({ message, currentUser }) {
         throw new Error("Media recording is not supported in this browser");
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
+      const stream = await navigator.mediaDevices.getUserMedia(sharedStudioCaptureConstraints);
       if (!mountedRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         return;
       }
 
       streamRef.current = stream;
+      const microphoneSettings = inspectSharedStudioCaptureSettings(stream.getAudioTracks?.()[0]?.getSettings?.());
+      if (microphoneSettings.warning) toast.warning(microphoneSettings.warning);
       const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
       const mimeType = mimeTypes.find((type) => MediaRecorder.isTypeSupported?.(type)) || "";
       const recorder = mimeType
@@ -146,6 +148,8 @@ export default function ChatSessionViewer({ message, currentUser }) {
           return;
         }
         setUploading(true);
+        // Keep the original take untouched. Codec support varies across devices.
+        const qualityPromise = analyzeSharedStudioRecordedBlob(blob);
         const extension = recordingExtension(recordingMimeType);
         const file = new File([blob], `track-${Date.now()}.${extension}`, { type: recordingMimeType });
         try {
@@ -171,6 +175,9 @@ export default function ChatSessionViewer({ message, currentUser }) {
             track?.uploaded_by !== currentUser?.id
           ) throw new Error("Track was not created");
           if (mountedRef.current) {
+            const quality = await qualityPromise;
+            if (quality && ["clipping", "quiet", "silent"].includes(quality.status)) toast.warning(`Track saved. ${quality.note}`);
+            else toast.success("Studio take saved to this shared session.");
             const normalized = normalizeSessionTrack(track);
             setTracks((current) => [
               ...current.filter((existing) => existing.id !== normalized.id),
@@ -257,6 +264,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
           )}
         </div>
       </div>
+      <p className="px-3 py-1.5 text-[10px] text-muted-foreground border-b border-border/30">For best vocals: wear headphones, record in a quiet room, and keep each performer on a separate track. Your browser records a local take before uploading it to the session.</p>
       <div className="flex-1 relative">
         {tracksError && (
           <div className="absolute inset-x-3 top-3 z-10 rounded-xl border border-destructive/30 bg-background/95 px-3 py-2 text-xs text-destructive shadow-sm" role="alert">

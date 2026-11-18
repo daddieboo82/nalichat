@@ -70,13 +70,19 @@ export async function startSharedSessionGuide({
     await context.resume();
     if (context.state !== 'running') throw new Error('Audio playback was blocked by this device.');
     guide = scheduleSharedSessionGuide(context,{bpm,count});
-    return {
-      durationSeconds: guide.durationSeconds,
-      stop() {
-        guide.stop();
-        void context.close().catch(() => {});
-      },
+    let closed = false;
+    let timer = null;
+    const stop = () => {
+      if (closed) return;
+      closed = true;
+      if (timer !== null) clearTimeout(timer);
+      guide.stop();
+      void context.close().catch(() => {});
     };
+    // Once the four-beat guide finishes, release audio resources even if the
+    // performer keeps recording for a long session.
+    timer = setTimeout(stop, (guide.durationSeconds + 0.25) * 1000);
+    return { durationSeconds: guide.durationSeconds, stop };
   } catch(error) {
     guide?.stop();
     await context.close().catch(() => {});

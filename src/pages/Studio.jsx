@@ -40,6 +40,7 @@ import StudioToolbar2 from '@/components/studio/StudioToolbar2';
 import MobileStudioTracks from '@/components/studio/MobileStudioTracks';
 import { studioDesktopHandoffUrl } from '@/lib/studioDesktopHandoff';
 import { getMobileStudioRecordingStatus } from '@/lib/mobileStudioRecordingStatus';
+import { studioCaptureHealth } from '@/lib/studioCaptureHealth';
 import { saveStudioRecoveryTake, studioRecoveryScope } from '@/lib/studioTakeRecovery';
 import { startMobileRecordingCheckpoints } from '@/lib/mobileRecordingCheckpoints';
 import { startCompressedRecordingCheckpoints } from '@/lib/compressedRecordingCheckpoints';
@@ -179,6 +180,7 @@ export default function Studio() {
   const [mobileHandoffSaving, setMobileHandoffSaving] = useState(false);
   const [mobilePageVisible, setMobilePageVisible] = useState(() => typeof document === 'undefined' || document.visibilityState !== 'hidden');
   const [mobileTakeFinalizing, setMobileTakeFinalizing] = useState(false);
+  const [mobileCaptureProgress, setMobileCaptureProgress] = useState({elapsedSeconds:0,checkpointSeconds:0,capturedBytes:0,pcm:false,checkpointError:false});
   const lastSavedStudioProjectRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -230,6 +232,22 @@ export default function Studio() {
   const audioChunksRef = useRef([]);
   const recordingFinalizeInFlightRef = useRef(false);
   const recordingCheckpointRef = useRef(null);
+  useEffect(() => {
+    if (!isRecording || !isMobile) return undefined;
+    const refresh = () => {
+      const recorder = mediaRecorderRef.current;
+      if (!recorder || recorder.state !== 'recording') return;
+      const elapsed = recordingStartRealRef.current ? (performance.now()-recordingStartRealRef.current)/1000 : 0;
+      const capturedBytes = Number.isFinite(recorder.capturedByteLength)
+        ? recorder.capturedByteLength
+        : audioChunksRef.current.reduce((total,chunk)=>total+(chunk?.size||0),0);
+      setMobileCaptureProgress(prev => ({...prev,elapsedSeconds:Math.max(0,elapsed),capturedBytes,
+        pcm: typeof recorder.snapshot === 'function'}));
+    };
+    refresh();
+    const ticker = window.setInterval(refresh,1000);
+    return () => window.clearInterval(ticker);
+  },[isRecording,isMobile]);
   useEffect(() => {
     const updateVisibility = () => setMobilePageVisible(document.visibilityState !== 'hidden');
     document.addEventListener('visibilitychange', updateVisibility);
@@ -2005,6 +2023,8 @@ export default function Studio() {
           if (e.data.size > 0) captureChunks.push(e.data);
         };
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
+        if (isMobile) setMobileCaptureProgress({elapsedSeconds:0,checkpointSeconds:0,capturedBytes:0,
+          pcm:typeof mediaRecorder.snapshot === 'function',checkpointError:false});
         // On supported PCM recorders, periodically persist complete WAV
         // snapshots locally. A force-closed browser may recover its last
         // successful checkpoint, not necessarily the final few seconds.
@@ -2017,8 +2037,17 @@ export default function Studio() {
               scope: studioRecoveryScope(roomId), id: crypto.randomUUID(),
               name: tracks.find(track => track.armed && !['midi','instrument'].includes(track.type))?.name || 'Mobile vocal',
               startTime: currentTimeRef.current,
-              onSaved: () => window.dispatchEvent(new Event('nalichat:mobile-take-recovered')),
-              onError: error => console.warn('Mobile recording checkpoint unavailable:', error?.message),
+              onSaved: duration => {
+                if (mediaRecorderRef.current === mediaRecorder && studioMountedRef.current) {
+                  setMobileCaptureProgress(prev => ({...prev,checkpointSeconds:Math.max(prev.checkpointSeconds,duration),checkpointError:false}));
+                }
+                window.dispatchEvent(new Event('nalichat:mobile-take-recovered'));
+              },
+              onError: error => {
+                console.warn('Mobile recording checkpoint unavailable:', error?.message);
+                if (mediaRecorderRef.current === mediaRecorder && studioMountedRef.current)
+                  setMobileCaptureProgress(prev => ({...prev,checkpointError:true}));
+              },
             })
           : null;
         // OS device routing can end a microphone track while a user is

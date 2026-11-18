@@ -77,7 +77,6 @@ export async function calibrateNaliStudioLatency({
     const result = estimateStudioRoundTrip({ captured: capture, reference: pulse, pulseFrames: frames, sampleRate: rate });
     return {
       ...result,
-      ...(result.valid ? {} : { diagnosticPeak: Math.max(...Array.from(capture.filter((_, i) => i % 256 === 0)).map(Math.abs)), capturedBatches: chunks }),
       browserOutputLatencyMs: Number.isFinite(context.outputLatency) ? Math.round(context.outputLatency * 1000 * 10) / 10 : null,
       browserBaseLatencyMs: Number.isFinite(context.baseLatency) ? Math.round(context.baseLatency * 1000 * 10) / 10 : null,
       micDeviceId: stream.getAudioTracks?.()[0]?.getSettings?.().deviceId || null,

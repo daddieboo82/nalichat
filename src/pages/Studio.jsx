@@ -1978,7 +1978,7 @@ export default function Studio() {
         gainNode.connect(audioCtx.destination);
         
         // Start actual recording with frequent chunks for memory efficiency
-        const { recorder: mediaRecorder, lossless } = await createPreferredStudioRecorder(stream, { MediaRecorderType: MediaRecorder });
+        const { recorder: mediaRecorder, lossless } = await createPreferredStudioRecorder(stream, { MediaRecorderType: globalThis.MediaRecorder });
         // Lossless AudioWorklet initialization is asynchronous on some phones.
         // Never start a capture belonging to a canceled or replaced session.
         if (!studioMountedRef.current ||

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { deleteVoiceProfile, generateVoiceMatch, getVoiceMatchModes, prepareVoiceAudio, readVoiceProfiles, saveVoiceProfile } from '@/lib/voxVoiceMatch';
 import { checkLocalWebGPU } from '@/lib/voxWebGPU';
+import { validateLocalRvcModels } from '@/lib/voxRvcLocal';
 
 export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
   const [profiles, setProfiles] = useState([]);
@@ -20,10 +21,13 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
   const [providerError, setProviderError] = useState('');
   const [providerCheck, setProviderCheck] = useState(0);
   const [gpuCheck, setGpuCheck] = useState(null);
+  const [localModels, setLocalModels] = useState({ model: null, contentVec: null, rmvpe: null });
+  const [modelPermission, setModelPermission] = useState(false);
   const [checkingGPU, setCheckingGPU] = useState(false);
   const [jobStatus, setJobStatus] = useState('');
   const generation = useRef(null);
   const profile = profiles.find(item => item.id === selected);
+  const localModelError = mode === 'local-rvc' ? validateLocalRvcModels(localModels) : null;
 
   useEffect(() => () => generation.current?.abort(), []);
 
@@ -91,9 +95,9 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
     const controller = new AbortController();
     generation.current = controller;
     try {
-      const audio = await generateVoiceMatch({ profile, mode, text, track: take, signal: controller.signal, onStatus: setJobStatus });
+      const audio = await generateVoiceMatch({ profile, mode, text, track: take, signal: controller.signal, onStatus: setJobStatus, localModels });
       controller.signal.throwIfAborted();
-      setResult({ ...audio, name: mode === 'enhance' ? `${take.name} (Vocal Polish)` : `${profile.name} (Voice Match)`, startTime: mode === 'speech' ? 0 : take.startTime });
+      setResult({ ...audio, name: mode === 'enhance' ? `${take.name} (Vocal Polish)` : mode === 'local-rvc' ? `${take.name} (Local AI Voice)` : `${profile.name} (Voice Match)`, startTime: mode === 'speech' ? 0 : take.startTime });
     } finally {
       generation.current = null;
       setJobStatus('');
@@ -124,7 +128,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
             <Button type="button" variant="outline" size="sm" onClick={() => setProviderCheck(attempt => attempt + 1)}>Check again</Button>
           </div>
         ) : !providerModes && <p role="status" className="text-sm text-muted-foreground">Local Vocal Polish is available. Checking AI voice modes…</p>}
-        {mode !== 'enhance' && providerModes && !providerModes.includes(mode) && <p role="status" className="text-sm text-muted-foreground">This generation mode is unavailable on the connected provider.</p>}
+        {mode !== 'enhance' && mode !== 'local-rvc' && providerModes && !providerModes.includes(mode) && <p role="status" className="text-sm text-muted-foreground">This generation mode is unavailable on the connected provider.</p>}
         <fieldset disabled={busy} className="space-y-4">
           <label className="flex gap-2 text-sm">
             <input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} />
@@ -156,20 +160,46 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
             Generation mode
             <select className="mt-1 block w-full rounded border bg-background p-2" value={mode} onChange={event => { setMode(event.target.value); setResult(null); }}>
               <option value="enhance" disabled={!take?.audioUrl}>Vocal Polish · keep my own voice</option>
+              <option value="local-rvc" disabled={!take?.audioUrl}>Local AI voice conversion · beta (free models)</option>
               <option value="sing" disabled={!take?.audioUrl}>Singing · preserve melody (beta)</option>
               <option value="convert" disabled={!take?.audioUrl}>Convert spoken take</option>
               <option value="speech">Text to speech</option>
             </select>
           </label>
+          {mode === 'local-rvc' && (
+            <div className="rounded border p-3 space-y-2 text-sm">
+              <p className="font-medium">Free AI voice conversion · experimental</p>
+              <p className="text-xs text-muted-foreground">Supply your own legally usable RVC v2 ONNX voice model, ContentVec ONNX, and RMVPE ONNX. These large files stay in this browser session and are never sent to a paid AI provider. The browser may download free ONNX runtime binaries when you generate. Initial processing can be slow.</p>
+              {[
+                ['model', 'RVC v2 voice model (.onnx)'],
+                ['contentVec', 'ContentVec feature model (.onnx)'],
+                ['rmvpe', 'RMVPE pitch model (.onnx)'],
+              ].map(([key, title]) => (
+                <label key={key} className="block text-xs">
+                  {title}
+                  <input type="file" accept=".onnx" className="mt-1 block w-full" onChange={event => {
+                    setLocalModels(current => ({ ...current, [key]: event.target.files?.[0] || null }));
+                    setResult(null);
+                  }} />
+                </label>
+              ))}
+              <label className="flex gap-2 text-xs">
+                <input type="checkbox" checked={modelPermission} onChange={event => setModelPermission(event.target.checked)} />
+                I have permission to use these model weights, including for my intended use.
+              </label>
+              {localModelError && <p className="text-xs text-muted-foreground">{localModelError}</p>}
+              <p className="text-xs text-muted-foreground">The model must already be trained for the authorized voice. Uploading a reference recording does not train it.</p>
+            </div>
+          )}
           {mode !== 'speech' ? (
-            <p className="text-sm text-muted-foreground">Source: {take?.name} · 1–60 seconds of isolated vocal{mode === 'enhance' ? ' · processes locally in your browser, reduces rumble and evens levels' : ''}</p>
+            <p className="text-sm text-muted-foreground">Source: {take?.name} · 1–60 seconds of isolated vocal{mode === 'enhance' ? ' · processes locally in your browser, reduces rumble and evens levels' : mode === 'local-rvc' ? ' · select 1–20 seconds of isolated vocal' : ''}</p>
           ) : (
             <label className="block text-sm">
               Words to speak
               <textarea className="mt-1 block w-full rounded border bg-background p-2" rows={3} maxLength={400} value={text} onChange={event => { setText(event.target.value); setResult(null); }} />
             </label>
           )}
-          <Button type="button" disabled={(mode !== 'enhance' && !providerModes?.includes(mode)) || (mode !== 'enhance' && !profile) || !consent || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
+          <Button type="button" disabled={(mode !== 'enhance' && mode !== 'local-rvc' && !providerModes?.includes(mode)) || (!['enhance', 'local-rvc'].includes(mode) && !profile) || !consent || (mode === 'local-rvc' && (localModelError || !modelPermission)) || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
             Generate audio
           </Button>
           {result && preview && (
@@ -183,7 +213,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
         {busy && (
           <div className="flex items-center gap-2">
             <p role="status" className="text-sm">
-              {jobStatus === 'polishing' ? 'Polishing vocal in your browser…' : jobStatus === 'queued' ? 'Waiting for the voice model…' : jobStatus === 'running' ? 'Generating audio…' : 'Preparing audio…'}
+              {mode === 'local-rvc' && jobStatus ? jobStatus : jobStatus === 'polishing' ? 'Polishing vocal in your browser…' : jobStatus === 'queued' ? 'Waiting for the voice model…' : jobStatus === 'running' ? 'Generating audio…' : 'Preparing audio…'}
             </p>
             {jobStatus && <Button type="button" variant="outline" onClick={onClose}>Close preview</Button>}
           </div>

@@ -3,6 +3,11 @@ import { Mic, VolumeX, Headphones, Plus, AudioLines, SlidersHorizontal, Upload, 
 import TrackWaveformSVG from './TrackWaveformSVG';
 import { cn } from '@/lib/utils';
 
+export function mobilePreviewWaveform(values, maxPoints = 160) {
+  if (!Array.isArray(values) || values.length <= maxPoints) return values || [];
+  return Array.from({ length: maxPoints }, (_, index) => values[Math.floor(index * values.length / maxPoints)] || 0);
+}
+
 // Phone-first track cards: no 2,000px timeline and no precision drag handles
 // required to arm a microphone, select a vocal, or adjust its volume.
 // The full desktop timeline remains reachable through the Timeline tab.
@@ -12,7 +17,7 @@ export default function MobileStudioTracks({
   autoPolish = false, readOnly = false,
 }) {
   return (
-    <section className="flex flex-col gap-3 p-3 pb-8" aria-label="Mobile Studio tracks" data-testid="mobile-studio-tracks">
+    <section className="flex flex-col gap-3 p-3 pb-28" aria-label="Mobile Studio tracks" data-testid="mobile-studio-tracks">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h2 className="font-semibold text-base text-foreground">Your tracks</h2>
@@ -57,7 +62,7 @@ export default function MobileStudioTracks({
             </button>
             <button type="button" onClick={() => onSelect(track.id)} aria-label={`Select ${track.name || 'track'} waveform`}
               className="relative mb-3 block h-16 w-full overflow-hidden rounded-lg border border-white/10 bg-black/35">
-              {audio.waveform?.length ? <TrackWaveformSVG track={audio} /> :
+              {audio.waveform?.length ? <TrackWaveformSVG track={{ ...audio, waveform: mobilePreviewWaveform(audio.waveform) }} /> :
                 <span className="flex h-full items-center justify-center text-xs text-muted-foreground">{audio.audioUrl || audio.file_url ? 'Audio ready · view timeline' : 'No audio recorded yet'}</span>}
             </button>
             <div className="grid grid-cols-3 gap-2">

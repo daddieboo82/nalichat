@@ -61,7 +61,8 @@ export default function ChatSessionViewer({ message, currentUser }) {
     return () => {
       mountedRef.current = false;
       const recorder = mediaRecorderRef.current;
-      if (recorder && recorder.state !== "inactive") {
+      if (recorder?.dispose) recorder.dispose();
+      else if (recorder && recorder.state !== "inactive") {
         try { recorder.stop(); } catch {}
       }
       streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -117,7 +118,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
       if (microphoneSettings.warning) toast.warning(microphoneSettings.warning);
       const { recorder, codec, lossless } = await createPreferredStudioRecorder(stream, { MediaRecorderType: MediaRecorder });
       if (!mountedRef.current) {
-        recorder.stop?.();
+        recorder.dispose?.();
         stream.getTracks().forEach(track => track.stop());
         return;
       }

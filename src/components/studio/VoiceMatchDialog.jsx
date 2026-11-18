@@ -90,7 +90,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
     try {
       const audio = await generateVoiceMatch({ profile, mode, text, track: take, signal: controller.signal, onStatus: setJobStatus });
       controller.signal.throwIfAborted();
-      setResult({ ...audio, name: `${profile.name} (Voice Match)`, startTime: mode === 'speech' ? 0 : take.startTime });
+      setResult({ ...audio, name: mode === 'enhance' ? `${take.name} (Vocal Polish)` : `${profile.name} (Voice Match)`, startTime: mode === 'speech' ? 0 : take.startTime });
     } finally {
       generation.current = null;
       setJobStatus('');
@@ -102,7 +102,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>VoxShift Voice Match</DialogTitle>
-          <DialogDescription>Match a reference voice to a recorded take or generate spoken words from text. Voice profiles are saved in this browser.</DialogDescription>
+          <DialogDescription>Polish your own recorded vocal, match an authorized reference voice, or generate spoken words. Voice profiles are saved in this browser.</DialogDescription>
         </DialogHeader>
         {providerError ? (
           <div className="flex items-center justify-between gap-2">
@@ -141,20 +141,21 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
           <label className="block text-sm">
             Generation mode
             <select className="mt-1 block w-full rounded border bg-background p-2" value={mode} onChange={event => { setMode(event.target.value); setResult(null); }}>
+              <option value="enhance" disabled={!take?.audioUrl}>Vocal Polish · keep my own voice</option>
               <option value="sing" disabled={!take?.audioUrl}>Singing · preserve melody (beta)</option>
               <option value="convert" disabled={!take?.audioUrl}>Convert spoken take</option>
               <option value="speech">Text to speech</option>
             </select>
           </label>
           {mode !== 'speech' ? (
-            <p className="text-sm text-muted-foreground">Source: {take?.name} · 1–60 seconds of isolated vocal</p>
+            <p className="text-sm text-muted-foreground">Source: {take?.name} · 1–60 seconds of isolated vocal{mode === 'enhance' ? ' · cleans rumble, evens levels, preserves your vocal identity' : ''}</p>
           ) : (
             <label className="block text-sm">
               Words to speak
               <textarea className="mt-1 block w-full rounded border bg-background p-2" rows={3} maxLength={400} value={text} onChange={event => { setText(event.target.value); setResult(null); }} />
             </label>
           )}
-          <Button type="button" disabled={!providerModes?.includes(mode) || !profile || !consent || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
+          <Button type="button" disabled={!providerModes?.includes(mode) || (mode !== 'enhance' && !profile) || !consent || (mode === 'speech' ? !text.trim() : !take?.audioUrl)} onClick={generate}>
             Generate audio
           </Button>
           {result && preview && (

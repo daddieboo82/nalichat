@@ -115,3 +115,53 @@
   .studio-mobile-landscape .studio-mobile-tabs button { min-height: 44px; }
   .studio-mobile-landscape .studio-mobile-status { padding-top: 2px; padding-bottom: 2px; }
 }
+
+/* NaliChat mobile studio visual system; scoped, preserves desktop. */
+.studio-mobile-premium{--st-edge:rgba(167,160,218,.22);--st-lavender:#b49aff;--st-cyan:#83dff5;background:radial-gradient(ellipse 70% 42% at 0 0,rgba(120,77,235,.22),transparent 78%),radial-gradient(ellipse 60% 43% at 100% 90%,rgba(43,157,196,.13),transparent),#0a0916;isolation:isolate}
+.studio-mobile-premium .studio-mobile-topbar{background:linear-gradient(120deg,rgba(37,32,63,.96),rgba(17,18,34,.97));border-color:var(--st-edge);box-shadow:0 8px 24px #0003,inset 0 1px #fff1}
+.studio-mobile-premium .studio-mobile-status{border:1px solid rgba(106,218,236,.28);border-left:3px solid #64e4cd;background:linear-gradient(100deg,#13272dcf,#191b30ee);box-shadow:inset 0 1px #fff1}
+.studio-mobile-premium .studio-mobile-tabs{background:#101020eb;border-color:var(--st-edge);padding:4px;gap:4px;box-shadow:0 4px 15px #0004}
+.studio-mobile-premium .studio-mobile-tabs button{letter-spacing:.015em;transition:background-color .15s,color .15s,box-shadow .15s}
+.studio-mobile-premium .studio-mobile-tabs button[aria-selected="true"]{background:linear-gradient(125deg,#bda3ff,#8070ec);color:#100b21;box-shadow:0 5px 18px #9268d74f,inset 0 1px #fff5}
+.studio-mobile-premium .studio-mobile-tabs button[aria-selected="false"]{color:#bab5d2}
+.studio-mobile-premium .studio-mobile-record-view,.studio-mobile-premium .studio-mobile-tools-view,.studio-mobile-premium .studio-mobile-timeline{background:linear-gradient(142deg,#1a182bee,#101120fb);border-color:var(--st-edge);box-shadow:0 6px 25px #0004,inset 0 1px #fff1}
+.studio-mobile-premium .studio-mobile-record-heading{background:linear-gradient(95deg,#32254fe9,#1a2038f5);border-color:#a590de38}
+.studio-mobile-premium .studio-mobile-heading-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12px;font-weight:800;letter-spacing:.12em;color:#f8f4ff}
+.studio-mobile-premium .studio-mobile-heading-light{width:7px;height:7px;border-radius:100%;background:#52e7b6;box-shadow:0 0 10px #52e7b6b0}
+.studio-mobile-premium .studio-mobile-heading-label{font-size:9px;letter-spacing:.07em;border:1px solid #c4a9ff33;background:#9f79df1d;color:#cdbaff;border-radius:100px;padding:3px 7px}
+.studio-mobile-premium .studio-mobile-heading-subtitle{color:#bcb8d2;margin-top:4px}
+.studio-mobile-premium .studio-mobile-track-list{gap:12px}
+.studio-mobile-premium .studio-mobile-track-heading h2{font-size:17px;letter-spacing:-.02em}
+.studio-mobile-premium .studio-track-count{font-size:11px;display:inline-block;color:#80e1f6;background:#4db6d51c;border:1px solid #80e1f63a;border-radius:99px;padding:2px 8px}
+.studio-mobile-premium .studio-mobile-quick-actions button{border-color:var(--st-edge);background:linear-gradient(150deg,#322c4c,#212339);color:#ebe8f7;box-shadow:inset 0 1px #fff1}
+.studio-mobile-premium .studio-mobile-track-card{position:relative;overflow:hidden;border-radius:17px;background:linear-gradient(145deg,#25213f,#151b2d);border-color:#a9a3dd37;box-shadow:0 8px 20px #0004,inset 0 1px #fff1}
+.studio-mobile-premium .studio-mobile-track-card:before{content:"";position:absolute;top:0;bottom:0;left:0;width:3px;background:linear-gradient(#c4a0ff,#5fdcf3);opacity:.45}
+.studio-mobile-premium .studio-mobile-track-selected{border-color:#b9a0f5;box-shadow:0 0 0 1px #bba1f544,0 8px 22px #6b54ba33}
+.studio-mobile-premium .studio-mobile-track-selected:before,.studio-mobile-premium .studio-mobile-track-armed:before{opacity:1}
+.studio-mobile-premium .studio-mobile-track-armed:before{background:linear-gradient(#fb5e83,#ff9c7e)}
+.studio-mobile-premium .studio-track-color-dot{width:9px;height:9px;border-radius:3px;background:linear-gradient(120deg,#bd9eff,#5bdef6);box-shadow:0 0 0 3px #a58aff20}
+.studio-mobile-premium .studio-mobile-track-armed .studio-track-color-dot{background:#fc6981;box-shadow:0 0 0 3px #fc698123}
+.studio-mobile-premium .studio-track-type{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#c0b9d2}
+.studio-mobile-premium .studio-mobile-waveform{height:72px;border-radius:12px;border-color:#a2a0d033;background:radial-gradient(ellipse at center,#55347e33,transparent 80%),#0c0e1d}
+.studio-mobile-premium .studio-mobile-review-button{background:#2a86a825;border-color:#7de4f74d;color:#a9f1ff}
+.studio-mobile-premium .studio-mobile-track-controls button{border-radius:11px;font-weight:700}
+.studio-mobile-premium .studio-mobile-transport{border-top:1px solid #c3abf144;background:linear-gradient(#28233fec,#0d0e1bfa);box-shadow:0 -8px 30px #0008,inset 0 1px #fff2}
+.studio-mobile-premium .studio-mobile-transport button:not(.studio-mobile-record-button){border:1px solid #a1a1bd30;background:#ffffff12;color:#f2effe}
+.studio-mobile-premium .studio-mobile-record-button{background:linear-gradient(120deg,#ff6076,#cb305e);box-shadow:0 5px 18px #f43b6344,inset 0 1px #fff5;letter-spacing:.02em}
+.studio-mobile-premium .studio-mobile-record-button:disabled{box-shadow:none}
+.studio-mobile-premium .studio-tools-title{font-size:19px;letter-spacing:-.025em}
+.studio-mobile-premium .studio-tools-subtitle{display:block;margin-top:4px;font-size:9px;letter-spacing:.15em;color:#a7a2c2}
+.studio-mobile-premium .studio-mobile-side-pane>section,.studio-mobile-premium .studio-mobile-side-pane>div>section{border-color:var(--st-edge);box-shadow:inset 0 1px #fff1}
+@media (orientation:landscape) and (max-height:540px){
+.studio-mobile-premium .studio-mobile-track-list{gap:8px;padding:8px 10px 68px}
+.studio-mobile-premium .studio-mobile-waveform{height:48px;margin-bottom:6px}
+.studio-mobile-premium .studio-mobile-track-card{padding:8px 10px;border-radius:12px}
+.studio-mobile-premium .studio-mobile-track-heading h2{font-size:14px}
+.studio-mobile-premium .studio-mobile-quick-actions{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.studio-mobile-premium .studio-mobile-quick-actions button{padding:0 4px;font-size:10px;gap:3px}
+.studio-mobile-premium .studio-mobile-record-heading{padding:4px 10px}
+.studio-mobile-premium .studio-mobile-heading-title{font-size:11px}
+.studio-mobile-premium .studio-mobile-heading-subtitle,.studio-mobile-premium .studio-mobile-heading-label{display:none}
+}
+@media (prefers-reduced-motion:reduce){.studio-mobile-premium .studio-mobile-tabs button{transition:none}}
+

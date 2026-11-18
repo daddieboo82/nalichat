@@ -202,6 +202,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
         recorder.start(1000);
       } catch (startError) {
         mediaRecorderRef.current = null;
+        recorder.dispose?.();
         stream.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         throw startError;

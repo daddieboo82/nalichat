@@ -73,6 +73,7 @@ import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
+import { fetchAuthorizedStudioVoiceMessage } from '@/lib/studioMessageVoiceImport';
 import { isCurrentStudioHardwareScan } from '@/lib/studioHardwareScan';
 import { releasedStudioMidiSustainNotes } from '@/lib/studioMidiSustain';
 import { retriggerStudioMidiNote, finalizeStudioMidiNote } from '@/lib/studioMidiRetrigger';
@@ -152,6 +153,8 @@ export default function Studio() {
   const [searchParams, setSearchParams] = useSearchParams();
   const roomId = searchParams.get('room');
   const inviteToken = searchParams.get('invite');
+  const voiceMessageId = searchParams.get('voiceMessage');
+  const voiceMessageImportRef = useRef(null);
   const isMobile = useIsMobile();
   const { isLowEnd } = usePerformance();
   const WAVEFORM_POINTS = isMobile ? 2000 : 8000;

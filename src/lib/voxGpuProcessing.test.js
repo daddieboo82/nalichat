@@ -4,7 +4,11 @@ import { cpuVocalGain, gpuVocalGain } from './voxGpuProcessing';
 describe('VoxShift on-device GPU DSP processing', () => {
   it('safely limits output gain using the CPU fallback', () => {
     const input = Float32Array.from([0, 0.5, -0.8, 0.1]);
-    expect(Array.from(cpuVocalGain(input, 2))).toEqual([0, 0.93, -0.93, expect.closeTo(0.2, 5)]);
+    const output = cpuVocalGain(input, 2);
+    expect(output[0]).toBe(0);
+    expect(output[1]).toBeCloseTo(0.93);
+    expect(output[2]).toBeCloseTo(-0.93);
+    expect(output[3]).toBeCloseTo(0.2);
     expect(input[1]).toBe(0.5);
   });
 

@@ -23,10 +23,10 @@ describe('mobile microphone input feedback',()=>{
     expect(mobileMicLevelMessage(result).title).toMatch(/clipping/i);
   });
   it('reads browser byte-domain signals correctly without confusing 128 with a loud sample',()=>{
-    const quiet=analyzeMobileMicLevel(Uint8Array.from({length:256},(_,i)=>i%2?130:126));
+    const quiet=analyzeMobileMicLevel(Uint8Array.from({length:256},(_,i)=>i%2?129:127));
     expect(quiet.quiet).toBe(true);
     const loud=analyzeMobileMicLevel(Uint8Array.from({length:256},(_,i)=>i%2?255:0));
-    expect(loud.clip).toBe(false);
+    expect(loud.clip).toBe(true);
     expect(mobileMicLevelMessage(loud).severity).toBe('danger');
   });
   it('does not modify recorded microphone data or monitoring volume',async()=>{

@@ -6,7 +6,7 @@ import MultiTrackEditor from "../studio/MultiTrackEditor";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { sharedStudioCaptureConstraints, inspectSharedStudioCaptureSettings } from "@/lib/sharedStudioCapture";
+import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from "@/lib/sharedStudioCapture";
 import { analyzeSharedStudioRecordedBlob } from "@/lib/sharedStudioCaptureQuality";
 
 function recordingExtension(mimeType = "") {
@@ -110,7 +110,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
         throw new Error("Media recording is not supported in this browser");
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia(sharedStudioCaptureConstraints);
+      const stream = await openStudioMicrophone(navigator.mediaDevices);
       if (!mountedRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         return;

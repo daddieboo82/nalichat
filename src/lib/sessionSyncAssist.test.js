@@ -48,6 +48,7 @@ describe('non-destructive cross-device session sync', () => {
       target: shifted(guide, 180, 100),
       sampleRate: 1000,
     });
+    console.log('drift-test', result);
     expect(result.valid).toBe(false);
     expect(result.driftDetected).toBe(true);
     expect(Math.abs(result.driftMs)).toBeGreaterThan(15);

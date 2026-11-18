@@ -99,7 +99,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialM
     const controller = new AbortController();
     generation.current = controller;
     try {
-      const audio = await generateVoiceMatch({ profile, mode, text, track: take, signal: controller.signal, onStatus: setJobStatus, localModels });
+      const audio = await generateVoiceMatch({ profile, mode, text, track: take, owner, signal: controller.signal, onStatus: setJobStatus, localModels });
       controller.signal.throwIfAborted();
       setResult({ ...audio, name: mode === 'enhance' ? `${take.name} (Vocal Polish)` : mode === 'nali-voice' ? `${take.name} (NaliVoice Research)` : mode === 'local-rvc' ? `${take.name} (RVC Voice)` : `${profile.name} (Voice Match)`, startTime: mode === 'speech' ? 0 : take.startTime });
     } finally {

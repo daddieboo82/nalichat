@@ -124,6 +124,10 @@ Deno.serve(async (req) => {
     const volume = Number(body?.volume ?? 75);
     const pan = Number(body?.pan ?? 50);
     const duration = body?.duration == null ? undefined : Number(body.duration);
+    const startTime = body?.start_time == null ? 0 : Number(body.start_time);
+    if (!Number.isFinite(startTime) || startTime < 0 || startTime > 24 * 60 * 60) {
+      return Response.json({ error: 'Invalid track timeline position' }, { status: 400 });
+    }
     if (!Number.isFinite(volume) || volume < 0 || volume > 100) {
       return Response.json({ error: 'Track volume must be between 0 and 100' }, { status: 400 });
     }
@@ -272,6 +276,7 @@ Deno.serve(async (req) => {
       muted: body?.muted === true,
       solo: body?.solo === true,
       duration,
+      start_time: startTime,
       waveform_data: Array.isArray(body.waveform_data)
         ? body.waveform_data
         : undefined,

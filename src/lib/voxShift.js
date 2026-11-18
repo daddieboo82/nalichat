@@ -2,6 +2,7 @@
 export const VOX_SHIFT_PRESETS = {
   natural: { name: 'Natural', pitch: 100 },
   polished: { name: 'Polished Vocal', pitch: 100 },
+  warm: { name: 'Warm Lead', pitch: 100, filter: { type: 'highshelf', frequency: 6000, gain: -2 } },
   doubled: { name: 'Vocal Doubler', pitch: 100 },
   octave: { name: 'Lower Octave Harmony', pitch: 100 },
   deep: { name: 'Deep Bass', pitch: 72, filter: { type: 'lowpass', frequency: 3800, Q: 0.7 } },
@@ -63,7 +64,7 @@ function connectPitchShifter(context, input, ratio, nodes) {
 }
 
 // Keep the original performance and pitch while smoothing level and tone.
-function connectVocalPolish(context, input, nodes) {
+function connectVocalPolish(context, input, nodes, warm) {
   const rumble = context.createBiquadFilter();
   rumble.type = 'highpass';
   rumble.frequency.value = 75;
@@ -73,7 +74,7 @@ function connectVocalPolish(context, input, nodes) {
   mud.type = 'peaking';
   mud.frequency.value = 280;
   mud.Q.value = 0.9;
-  mud.gain.value = -2.5;
+  mud.gain.value = warm ? -1 : -2.5;
 
   const compressor = context.createDynamicsCompressor();
   compressor.threshold.value = -21;
@@ -86,7 +87,7 @@ function connectVocalPolish(context, input, nodes) {
   presence.type = 'peaking';
   presence.frequency.value = 3200;
   presence.Q.value = 0.8;
-  presence.gain.value = 2;
+  presence.gain.value = warm ? 0.5 : 2;
 
   const makeup = context.createGain();
   makeup.gain.value = 1.2;
@@ -141,7 +142,9 @@ export function connectVoxShift(context, input, params, nodes) {
   const level = Number.isFinite(params?.Output) ? params.Output : 100;
   let signal = ratio === 1 ? input : connectPitchShifter(context, input, ratio, nodes);
 
-  if (presetId === 'polished') signal = connectVocalPolish(context, signal, nodes);
+  if (presetId === 'polished' || presetId === 'warm') {
+    signal = connectVocalPolish(context, signal, nodes, presetId === 'warm');
+  }
   if (Object.hasOwn(vocalLayers, presetId)) {
     signal = connectVocalLayers(context, signal, vocalLayers[presetId], nodes);
   }

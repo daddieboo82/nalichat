@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from "@/lib/sharedStudioCapture";
 import { analyzeSharedStudioRecordedBlob } from "@/lib/sharedStudioCaptureQuality";
-import { createStudioMediaRecorder, studioRecordingExtension } from "@/lib/studioRecorderCodec";
+import { studioRecordingExtension } from "@/lib/studioRecorderCodec";
+import { createPreferredStudioRecorder } from "@/lib/studioPcmRecorder";
 
 // BounceDialog and renderMasteredMix key off `audioUrl`, but Track entities
 // store the media under `file_url`. Normalize every track so the studio export
@@ -114,9 +115,14 @@ export default function ChatSessionViewer({ message, currentUser }) {
       streamRef.current = stream;
       const microphoneSettings = inspectSharedStudioCaptureSettings(stream.getAudioTracks?.()[0]?.getSettings?.());
       if (microphoneSettings.warning) toast.warning(microphoneSettings.warning);
-      const { recorder, codec, lossless } = createStudioMediaRecorder(stream, MediaRecorder);
+      const { recorder, codec, lossless } = await createPreferredStudioRecorder(stream, { MediaRecorderType: MediaRecorder });
+      if (!mountedRef.current) {
+        recorder.stop?.();
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
       const recordingMimeType = recorder.mimeType || codec || "audio/webm";
-      if (lossless) toast.info("Recording uncompressed/lossless audio on this device.");
+      if (lossless) toast.info("Recording lossless WAV on this device.");
 
       chunksRef.current = [];
       recorder.ondataavailable = (event) => {

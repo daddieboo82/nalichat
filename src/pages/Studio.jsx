@@ -39,6 +39,7 @@ import JamRoomOverlay from '@/components/studio/JamRoomOverlay';
 import StudioToolbar2 from '@/components/studio/StudioToolbar2';
 import MobileStudioTracks from '@/components/studio/MobileStudioTracks';
 import { studioDesktopHandoffUrl } from '@/lib/studioDesktopHandoff';
+import { getMobileStudioRecordingStatus } from '@/lib/mobileStudioRecordingStatus';
 import { copyToClipboard } from '@/lib/clipboard';
 import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
@@ -172,6 +173,8 @@ export default function Studio() {
   const [mobileStudioTab, setMobileStudioTab] = useState('record');
   const [mobileDesktopHandoffUrl, setMobileDesktopHandoffUrl] = useState(null);
   const [mobileHandoffSaving, setMobileHandoffSaving] = useState(false);
+  const [mobilePageVisible, setMobilePageVisible] = useState(() => typeof document === 'undefined' || document.visibilityState !== 'hidden');
+  const [mobileTakeFinalizing, setMobileTakeFinalizing] = useState(false);
   const lastSavedStudioProjectRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -222,6 +225,11 @@ export default function Studio() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const recordingFinalizeInFlightRef = useRef(false);
+  useEffect(() => {
+    const updateVisibility = () => setMobilePageVisible(document.visibilityState !== 'hidden');
+    document.addEventListener('visibilitychange', updateVisibility);
+    return () => document.removeEventListener('visibilitychange', updateVisibility);
+  }, []);
   const recordingOverdubRef = useRef({ hasBackingTrack: false, micDeviceId: null });
   const microphoneStartupRef = useRef({ token: 0, pending: false });
   const studioMountedRef = useRef(true);
@@ -1541,6 +1549,7 @@ export default function Studio() {
       // overwrite the first callback while its bytes are being finalized.
       if (recordingFinalizeInFlightRef.current) return;
       recordingFinalizeInFlightRef.current = true;
+      setMobileTakeFinalizing(true);
       // Capture this take's source and destination before any asynchronous
       // browser callback. A later take must not replace its chunks or targets.
       const stoppedRecorder = mediaRecorderRef.current;
@@ -1716,6 +1725,7 @@ export default function Studio() {
             mediaRecorderRef.current = null;
           }
           recordingFinalizeInFlightRef.current = false;
+          if (studioMountedRef.current) setMobileTakeFinalizing(false);
         }
       };
       try {
@@ -1727,6 +1737,7 @@ export default function Studio() {
           mediaRecorderRef.current = null;
         }
         recordingFinalizeInFlightRef.current = false;
+        if (studioMountedRef.current) setMobileTakeFinalizing(false);
         if (historyEpochRef.current === stoppedSessionEpoch) {
           setTracksWithHistory(prev => {
             if (historyEpochRef.current !== stoppedSessionEpoch) return prev;
@@ -1964,6 +1975,18 @@ export default function Studio() {
           if (e.data.size > 0) captureChunks.push(e.data);
         };
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
+        // OS device routing can end a microphone track while a user is
+        // recording (Bluetooth disconnect, permission revocation, or call).
+        // Finalize the bytes already captured rather than waiting forever
+        // for the user's next tap. Never touch a subsequent recording.
+        const micAudioTrack = stream.getAudioTracks?.()[0];
+        if (micAudioTrack) micAudioTrack.onended = () => {
+          if (!studioMountedRef.current || mediaRecorderRef.current !== mediaRecorder ||
+              mediaRecorder.state !== 'recording' || recordingFinalizeInFlightRef.current) return;
+          toast.warning('Your microphone disconnected. Finishing the audio captured so far.');
+          setIsRecording(false);
+          stopRecordingProcess();
+        };
 
         const hasArmedMidi = tracks.some(t => t.armed && ['midi', 'instrument'].includes(t.type));
         if (hasArmedMidi && midiAccessRef.current?.inputs?.size > 0) {
@@ -3975,6 +3998,20 @@ export default function Studio() {
       />
       </div>
 
+      {/* Honest mobile capture status: temporary takes are not cloud saves. */}
+      <div className="md:hidden mx-2 mt-2 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" role="status" aria-live="polite">
+        {(() => {
+          const status = getMobileStudioRecordingStatus({
+            recording: isRecording, micPending: microphoneStartupRef.current.pending,
+            finalizing: mobileTakeFinalizing, saving: mobileHandoffSaving,
+            tracks, visible: mobilePageVisible,
+          });
+          return <><div className="flex items-center gap-2 text-sm font-semibold">
+            <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", status.level === "recording" ? "bg-red-500 animate-pulse" : status.level === "warning" ? "bg-amber-400" : status.level === "working" ? "bg-blue-400" : "bg-emerald-400")}/>
+            {status.label}
+          </div><p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">{status.detail}</p></>;
+        })()}
+      </div>
       {/* Mobile recording-first workspace: full desktop projects, simpler touch controls. */}
       <div className="md:hidden mx-2 mt-2 flex shrink-0 gap-1 rounded-2xl border border-white/10 bg-white/[0.05] p-1" role="tablist" aria-label="Mobile Studio views">
         {[["record", "Record"], ["timeline", "Timeline"], ["tools", "Tools"]].map(([tab, label]) => (

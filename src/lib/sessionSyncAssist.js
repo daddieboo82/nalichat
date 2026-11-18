@@ -2,7 +2,8 @@
 // Two independently recorded tracks must contain the same audible guide/cue.
 // It estimates fixed offset and checks for clock drift WITHOUT altering audio.
 const RATE = 1000;
-const WINDOW = 0.65;
+// Short windows tolerate moderate device-clock drift within each anchor.
+const WINDOW = 0.16;
 const MAX_OFFSET = 1.8;
 
 export function sampleSyncGuide(audioBuffer, { maxDuration = 150, sampleRate = RATE } = {}) {

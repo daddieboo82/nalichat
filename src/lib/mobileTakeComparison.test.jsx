@@ -41,12 +41,12 @@ describe('safe mobile A/B vocal-take comparison',()=>{
   const track={...original};
   const view=render(<MobileTakeReview track={track} comparisonTakes={takes}
    onChooseTake={onChooseTake} onRetake={onRetake} onSaveForPC={vi.fn()}/>);
-  expect(screen.getAllByRole('audio')).toHaveLength(1);
+  expect(document.querySelectorAll('audio')).toHaveLength(1);
   fireEvent.click(screen.getByRole('button',{name:/Listen to take 2/i}));
   expect(onChooseTake).toHaveBeenCalledWith(14);
   view.rerender(<MobileTakeReview track={{...original,id:14,audioUrl:'blob:second'}}
    comparisonTakes={takes} onChooseTake={onChooseTake} onRetake={onRetake} onSaveForPC={vi.fn()}/>);
   expect(screen.getByLabelText('Playback selected Studio take').getAttribute('src')).toBe('blob:second');
-  expect(screen.getAllByRole('audio')).toHaveLength(1);
+  expect(document.querySelectorAll('audio')).toHaveLength(1);
  });
 });

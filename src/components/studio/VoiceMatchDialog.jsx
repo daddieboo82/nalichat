@@ -8,7 +8,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
   const [selected, setSelected] = useState('');
   const [name, setName] = useState('');
   const [reference, setReference] = useState(null);
-  const [mode, setMode] = useState(take?.audioUrl ? 'sing' : 'speech');
+  const [mode, setMode] = useState(take?.audioUrl ? 'enhance' : 'speech');
   const [text, setText] = useState('');
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -101,7 +101,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
     <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>VoxShift Voice Match</DialogTitle>
+          <DialogTitle>VoxShift Vocal Studio</DialogTitle>
           <DialogDescription>Polish your own recorded vocal, match an authorized reference voice, or generate spoken words. Voice profiles are saved in this browser.</DialogDescription>
         </DialogHeader>
         {providerError ? (
@@ -114,7 +114,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
         <fieldset disabled={busy} className="space-y-4">
           <label className="flex gap-2 text-sm">
             <input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} />
-            I have permission to use this reference voice for AI generation.
+            I own or have permission to process this recording and any reference voice.
           </label>
           <div className="flex flex-wrap items-end gap-2">
             <label className="flex-1 text-sm">

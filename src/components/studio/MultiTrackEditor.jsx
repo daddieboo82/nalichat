@@ -5,13 +5,14 @@ import TrackStrip from "./TrackStrip";
 import Timeline from "./Timeline";
 import BounceDialog from "./BounceDialog";
 import StemQueue from "./StemQueue";
+import SharedSessionSyncAssist from "./SharedSessionSyncAssist";
 import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { sessionTrackLocalTime, sessionTrackShouldPlay, sessionTrackStart, sessionTrackEnd } from "@/lib/sessionTrackTiming";
 
-export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle, canEdit = true, currentUser }) {
+export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle, canEdit = true, currentUser, enableSyncAssist = false }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -310,6 +311,8 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           </Button>
         </div>
       )}
+
+      {enableSyncAssist && <SharedSessionSyncAssist tracks={tracks} canEdit={canEdit} onTrackUpdate={onTrackUpdate} />}
 
       {/* Timeline & Tracks */}
       <div className="flex-1 overflow-hidden flex flex-col">

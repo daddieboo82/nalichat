@@ -65,7 +65,7 @@ import { cutStudioClipAtPointer } from '@/lib/studioClipCut';
 import { getStudioClipLaneId, groupStudioClipLanes, visibleStudioClipLanes, reorderVisibleStudioClipLanes } from '@/lib/studioClipLanes';
 import { isStudioArmedLane } from '@/lib/studioRecordingLanes';
 import { applyStudioRecordedTake, studioNewRecordingLaneCount } from '@/lib/studioRecordingTake';
-import { isAutoPolishVocalTrack, setVocalAutoPolish } from '@/lib/studioAutoPolish';
+import { setVocalAutoPolish } from '@/lib/studioAutoPolish';
 import { selectReconstructionTrack } from '@/lib/studioReconstructionSelection';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';

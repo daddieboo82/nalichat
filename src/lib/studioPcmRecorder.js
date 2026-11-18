@@ -89,6 +89,7 @@ export async function createLosslessStudioRecorder(stream, {
   const finish = async (error) => {
     if (completed) return;
     completed = true;
+    recorder.state = 'inactive';
     clearTimeout(watchdog);
     try {
       source.disconnect(); node.disconnect(); mute.disconnect();

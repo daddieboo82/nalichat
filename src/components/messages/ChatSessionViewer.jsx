@@ -208,9 +208,10 @@ export default function ChatSessionViewer({ message, currentUser }) {
       mediaRecorderRef.current = recorder;
       try {
         if (countInEnabled) {
-          guideRef.current = await startSharedSessionGuide();
+          try { guideRef.current = await startSharedSessionGuide(); }
+          catch { toast.warning("Count-in playback is unavailable on this device. Recording without clicks."); }
           if (!mountedRef.current) {
-            guideRef.current.stop();
+            guideRef.current?.stop();
             guideRef.current = null;
             recorder.dispose?.();
             stream.getTracks().forEach(track => track.stop());
@@ -229,7 +230,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
       }
       if (mountedRef.current) {
         setIsRecording(true);
-        if (countInEnabled) toast.info("4-beat count-in started. Use headphones to prevent click bleed.");
+        if (countInEnabled && guideRef.current) toast.info("4-beat count-in started. Use headphones to prevent click bleed.");
       }
     } catch (e) {
       guideRef.current?.stop();

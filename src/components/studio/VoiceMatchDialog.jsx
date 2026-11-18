@@ -171,7 +171,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
           {mode === 'local-rvc' && (
             <div className="rounded border p-3 space-y-2 text-sm">
               <p className="font-medium">Free AI voice conversion · experimental</p>
-              <p className="text-xs text-muted-foreground">Supply your own legally usable RVC v2 ONNX voice model, ContentVec ONNX, and RMVPE ONNX. These large files stay in this browser session and are never sent to a paid AI provider. The browser may download free ONNX runtime binaries when you generate. Initial processing can be slow.</p>
+              <p className="text-xs text-muted-foreground">Supply an authorized RVC v2 ONNX voice model, ContentVec ONNX, and RMVPE ONNX. Neural conversion currently runs using WebAssembly on your device's CPU (not WebGPU). Model files stay in this browser session. The browser downloads free ONNX runtime binaries when you generate. This may use significant memory and can be slow.</p>
               {[
                 ['model', 'RVC v2 voice model (.onnx)'],
                 ['contentVec', 'ContentVec feature model (.onnx)'],
@@ -208,7 +208,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
             <div className="space-y-2">
               <audio controls src={preview} className="w-full" aria-label="Generated voice preview" />
               {mode === 'enhance' && <p className="text-xs text-muted-foreground" role="status">Processed on this device using {result.processingBackend === 'webgpu' ? 'free WebGPU acceleration' : 'the browser CPU fallback'}. No paid inference credits used.</p>}
-              {mode === 'local-rvc' && <p className="text-xs text-muted-foreground" role="status">Converted locally using browser WebGPU/WebAssembly. Your model files and audio were not uploaded to an inference server.</p>}
+              {mode === 'local-rvc' && <p className="text-xs text-muted-foreground" role="status">Converted locally with WebAssembly (CPU). Your model files and audio were not uploaded to an inference server.</p>}
               <Button type="button" onClick={() => { if (onAdd(result)) onClose(); }}>Add to new track</Button>
             </div>
           )}
@@ -218,7 +218,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
             <p role="status" className="text-sm">
               {mode === 'local-rvc' && jobStatus ? jobStatus : jobStatus === 'polishing' ? 'Polishing vocal in your browser…' : jobStatus === 'queued' ? 'Waiting for the voice model…' : jobStatus === 'running' ? 'Generating audio…' : 'Preparing audio…'}
             </p>
-            {jobStatus && <Button type="button" variant="outline" onClick={onClose}>Close preview</Button>}
+            {jobStatus && <Button type="button" variant="outline" onClick={() => generation.current?.abort()}>Cancel processing</Button>}
           </div>
         )}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}

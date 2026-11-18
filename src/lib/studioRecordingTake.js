@@ -3,7 +3,7 @@ import { getStudioClipLaneId } from './studioClipLanes.js';
 // Keep existing clip material non-destructively when a new microphone take is
 // captured. A blank lane can receive the first take in place; an occupied lane
 // receives a separate take track rather than replacing its source and trims.
-export function applyStudioRecordedTake(tracks, { audioUrl, waveform, startTime, duration, nextId }) {
+export function applyStudioRecordedTake(tracks, { audioUrl, waveform, startTime, duration, nextId, captureQuality }) {
   const result = tracks.map(t => ({ ...t, armed: false }));
   let id = nextId;
   for (const track of tracks) {
@@ -12,6 +12,7 @@ export function applyStudioRecordedTake(tracks, { audioUrl, waveform, startTime,
       Boolean(t.audioUrl || t.file_url));
     const capture = {
       audioUrl, file_url: audioUrl, waveform, startTime, duration,
+      ...(captureQuality ? { captureQuality } : {}),
       fullDuration: duration, clipStart: 0, armed: false, recordedFromMicrophone: true,
     };
     if (occupied) {

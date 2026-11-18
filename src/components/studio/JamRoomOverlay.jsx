@@ -111,7 +111,11 @@ export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultR
               </Button>
             </div>
             
-            <p className="text-[9px] text-muted-foreground mt-3">Collaborators will appear here when they join.</p>
+            <div className="mt-3 w-full rounded-lg border border-border/60 bg-background/50 p-2 text-left">
+              <p className="text-[10px] font-semibold text-foreground">Studio-grade remote session</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">Each singer records a clean take on their own device. Wear headphones and use the new recording-level feedback; share takes into this project so exports use recorded tracks—not a compressed call feed.</p>
+            </div>
+            <p className="text-[9px] text-muted-foreground mt-2">Collaborators will appear here when they join.</p>
           </div>
         </motion.div>
       )}

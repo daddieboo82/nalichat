@@ -6,7 +6,7 @@ self.onmessage = ({ data }) => {
   if (!['RESTORE', 'TRAIN'].includes(data?.type)) return;
   try {
     const samples = new Float32Array(data.samples);
-    const model = data.type === 'TRAIN' ? data.model : createNaliVoiceModel();
+    const model = data.model || createNaliVoiceModel();
     validateNaliVoiceModel(model);
     trainNaliVoiceRestorer(model, samples, { iterations: 2800 });
     if (data.type === 'TRAIN') {

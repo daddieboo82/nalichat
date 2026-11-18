@@ -41,6 +41,10 @@ describe('cancelable local RVC worker', () => {
     expect(message.type).toBe('RUN_PIPELINE');
     expect(message.files.model).toBeInstanceOf(ArrayBuffer);
     expect(message.audio.sampleRate).toBe(16000);
+    const transfers = worker.postMessage.mock.calls[0][1];
+    expect(transfers).toHaveLength(4);
+    expect(transfers.slice(0, 3)).toEqual([message.files.model, message.files.contentVec, message.files.rmvpe]);
+    expect(transfers[3]).toBe(message.audio.data.buffer);
     worker.onmessage({ data: { type: 'EVENT', event: { type: 'stage', stage: 'voice_synthesis' } } });
     worker.onmessage({ data: { type: 'COMPLETE', result: { state: 'success' } } });
     await expect(processing).resolves.toEqual({ state: 'success' });

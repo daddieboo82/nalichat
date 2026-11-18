@@ -439,10 +439,15 @@ export default function Register() {
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => { setConfirmPassword(e.target.value); markEmailRegistrationStarted(); }}
+              aria-describedby={confirmPassword ? "registration-password-match" : undefined}
+              aria-invalid={Boolean(confirmPassword && confirmPassword !== password)}
               className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />
           </div>
+          {confirmPassword && <p id="registration-password-match" className={`text-xs ${confirmPassword === password ? "text-accent" : "text-destructive"}`} role="status">
+            {confirmPassword === password ? "Passwords match." : "Passwords do not match yet."}
+          </p>}
         </div>
         <Button type="submit" className="ui-hover h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10" disabled={loading}>
           {loading ? (

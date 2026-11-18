@@ -4005,6 +4005,7 @@ export default function Studio() {
           <Button className="min-h-12" variant="outline" onClick={() => setShowQuickMemo(true)}><Mic className="mr-2 h-4 w-4"/> Quick Memo</Button>
           <Button className="min-h-12" variant="outline" onClick={() => { if (!selectedTrackIds.length) return toast.info("Select a track first."); setShowAudioSuite(true); }}><Wand2 className="mr-2 h-4 w-4"/> AudioSuite</Button>
           <Button className="min-h-12" variant="outline" onClick={() => sessionImportRef.current?.click()}><FolderOpen className="mr-2 h-4 w-4"/> Restore ZIP</Button>
+          <Button className="min-h-12 col-span-2" variant="outline" onClick={() => navigate("/projects-summary")}><FolderOpen className="mr-2 h-4 w-4"/> My Studio Sessions</Button>
         </div>
         <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
           <p className="text-sm font-semibold">Finish on desktop</p>

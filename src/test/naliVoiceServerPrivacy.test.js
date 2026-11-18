@@ -11,8 +11,8 @@ describe('Private server-stored NaliVoice contracts', () => {
     expect(server).toContain('sdk.auth.me()');
     expect(server).toContain('{ user_id: user.id }');
     expect(server).toContain('user_id: user.id');
-    expect(server).toContain("if (!record || record.consent !== true)");
-    expect(server).toContain("if (action === 'erase')");
+    expect(server).toMatch(/!record\s*\|\|\s*record\.consent\s*!==\s*true/);
+    expect(server).toMatch(/action\s*===\s*['\"]erase['\"]/);
     expect(server).toContain('payload.revision !== record.revision');
   });
 

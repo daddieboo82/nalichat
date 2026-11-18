@@ -6,8 +6,15 @@ vi.mock('./studioClipAudioRange', () => ({
 vi.mock('./audioProcessing', () => ({
   bufferToWaveform: vi.fn(() => [0.1, 0.4]),
 }));
+vi.mock('./rvcWorkerClient', () => ({
+  runCancelableRvcWorker: vi.fn(async (_context, _models, _samples, _rate, callbacks) => {
+    callbacks.onEvent({ type: 'stage', stage: 'voice_synthesis' });
+    return { state: 'success', outputWav: new Blob([new Uint8Array(64)], { type: 'audio/wav' }) };
+  }),
+}));
 
 import { convertRvcLocally, validateLocalRvcModels } from './voxRvcLocal';
+import { runCancelableRvcWorker } from './rvcWorkerClient';
 
 const file = name => ({
   name,
@@ -42,18 +49,10 @@ describe('free browser RVC integration', () => {
   it('runs selected models through the local worker without backend requests', async () => {
     const audioData = new Float32Array(16000).fill(0.2);
     const createRVC = vi.fn(settings => settings);
-    const runPipelineInWorker = vi.fn(async (context, models, samples, rate, callbacks) => {
-      expect(context.assetBaseUrl).toContain('/voxshift/rvc/');
-      expect(models.model.name).toBe('my-authorized-voice.onnx');
-      expect(samples.length).toBe(16000);
-      expect(rate).toBe(16000);
-      callbacks.onEvent({ type: 'stage', stage: 'voice_synthesis' });
-      return { state: 'success', outputWav: new Blob([new Uint8Array(64)], { type: 'audio/wav' }) };
-    });
+    vi.mocked(runCancelableRvcWorker).mockClear();
     const runtimeLoader = vi.fn(async () => ({
       createRVC,
       isWorkerSupported: () => true,
-      runPipelineInWorker,
     }));
     class AudioContext {
       async decodeAudioData() {
@@ -99,7 +98,13 @@ describe('free browser RVC integration', () => {
       runtimeLoader,
     });
     expect(runtimeLoader).toHaveBeenCalledOnce();
-    expect(runPipelineInWorker).toHaveBeenCalledOnce();
+    expect(runCancelableRvcWorker).toHaveBeenCalledOnce();
+    const [context, models, samples, rate, options] = vi.mocked(runCancelableRvcWorker).mock.calls[0];
+    expect(context.assetBaseUrl).toContain('/voxshift/rvc/');
+    expect(models.model.name).toBe('my-authorized-voice.onnx');
+    expect(samples.length).toBe(16000);
+    expect(rate).toBe(16000);
+    expect(options.signal).toBeDefined();
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(fetchMock.mock.calls[0][0]).toBe('blob:recorded-vocal');
     expect(result.processingBackend).toBe('local-rvc');

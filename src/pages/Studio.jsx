@@ -41,6 +41,7 @@ import MobileStudioTracks from '@/components/studio/MobileStudioTracks';
 import { studioDesktopHandoffUrl } from '@/lib/studioDesktopHandoff';
 import { getMobileStudioRecordingStatus } from '@/lib/mobileStudioRecordingStatus';
 import { saveStudioRecoveryTake, studioRecoveryScope } from '@/lib/studioTakeRecovery';
+import { startMobileRecordingCheckpoints } from '@/lib/mobileRecordingCheckpoints';
 import MobileStudioRecoveries from '@/components/studio/MobileStudioRecoveries';
 import { copyToClipboard } from '@/lib/clipboard';
 import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
@@ -227,6 +228,7 @@ export default function Studio() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const recordingFinalizeInFlightRef = useRef(false);
+  const recordingCheckpointRef = useRef(null);
   useEffect(() => {
     const updateVisibility = () => setMobilePageVisible(document.visibilityState !== 'hidden');
     document.addEventListener('visibilitychange', updateVisibility);
@@ -1263,6 +1265,8 @@ export default function Studio() {
       midiRecordingRef.current = false;
       preRollRequestRef.current += 1;
       pendingRecordStartRef.current = null;
+      recordingCheckpointRef.current?.stop();
+      recordingCheckpointRef.current = null;
       mediaRecorderRef.current?.dispose?.();
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(t => t.stop());
@@ -1555,6 +1559,9 @@ export default function Studio() {
       // Capture this take's source and destination before any asynchronous
       // browser callback. A later take must not replace its chunks or targets.
       const stoppedRecorder = mediaRecorderRef.current;
+      const stoppedCheckpoint = recordingCheckpointRef.current;
+      recordingCheckpointRef.current = null;
+      stoppedCheckpoint?.stop();
       const stoppedChunks = audioChunksRef.current;
       const stoppedArmedIds = new Set(tracksRef.current.filter(t => t.armed).map(t => String(t.id)));
       const stoppedOverdub = { ...recordingOverdubRef.current };
@@ -1615,8 +1622,10 @@ export default function Studio() {
         // browser grants storage. Never upload or train from this backup.
         if (isMobile && trainingOwner && captureHadMicTrack) {
           try {
+            await stoppedCheckpoint?.wait();
             await saveStudioRecoveryTake({
               ownerId: trainingOwner, scope: studioRecoveryScope(roomId),
+              ...(stoppedCheckpoint ? { id: stoppedCheckpoint.id, replaceExisting: true } : {}),
               audio: blob, duration: Math.max(0, stoppedEndTime - stoppedStartTime),
               startTime: stoppedStartTime, name: tracksRef.current.find(t => stoppedArmedIds.has(String(t.id)) &&
                 !['midi', 'instrument'].includes(t.type))?.name || 'Mobile vocal',
@@ -1995,6 +2004,20 @@ export default function Studio() {
           if (e.data.size > 0) captureChunks.push(e.data);
         };
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
+        // On supported PCM recorders, periodically persist complete WAV
+        // snapshots locally. A force-closed browser may recover its last
+        // successful checkpoint, not necessarily the final few seconds.
+        recordingCheckpointRef.current?.stop();
+        recordingCheckpointRef.current = isMobile && user?.id
+          ? startMobileRecordingCheckpoints({
+              recorder: mediaRecorder, ownerId: user.id,
+              scope: studioRecoveryScope(roomId), id: crypto.randomUUID(),
+              name: tracks.find(track => track.armed && !['midi','instrument'].includes(track.type))?.name || 'Mobile vocal',
+              startTime: currentTimeRef.current,
+              onSaved: () => window.dispatchEvent(new Event('nalichat:mobile-take-recovered')),
+              onError: error => console.warn('Mobile recording checkpoint unavailable:', error?.message),
+            })
+          : null;
         // OS device routing can end a microphone track while a user is
         // recording (Bluetooth disconnect, permission revocation, or call).
         // Finalize the bytes already captured rather than waiting forever

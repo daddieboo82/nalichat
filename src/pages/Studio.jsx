@@ -3110,6 +3110,36 @@ export default function Studio() {
     }
   };
 
+  // An explicit Open in Studio click from a voice message carries only its ID.
+  // The recording is fetched through the same membership/entitlement check as
+  // message downloads; merely receiving a voice note never trains models.
+  useEffect(() => {
+    if (!voiceMessageId || !user?.id || roomId || projectLoading) return;
+    const key = `${user.id}:${voiceMessageId}`;
+    if (voiceMessageImportRef.current === key) return;
+    voiceMessageImportRef.current = key;
+    let cancelled = false;
+    (async () => {
+      try {
+        const file = await fetchAuthorizedStudioVoiceMessage(voiceMessageId, user.id, {
+          invoke: (name, payload) => base44.functions.invoke(name, payload),
+        });
+        if (cancelled) return;
+        await handleFileChange({ target: { files: [file], value: null } });
+        if (!cancelled) setShowWelcome(false);
+      } catch (error) {
+        if (!cancelled) toast.error(error?.message || 'Could not bring this voice message into Studio.');
+      } finally {
+        if (!cancelled) setSearchParams(previous => {
+          const next = new URLSearchParams(previous);
+          next.delete('voiceMessage');
+          return next;
+        }, { replace: true });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [voiceMessageId, user?.id, roomId, projectLoading]);
+
   // Export a portable archive: never save ephemeral blob: URLs in device backups.
   const handleSaveSessionToDevice = async () => {
     if (studioSaveInFlightRef.current || studioRestoreInFlightRef.current || studioDeviceExportInFlightRef.current) {

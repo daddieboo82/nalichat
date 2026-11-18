@@ -15,6 +15,19 @@ describe('NaliChat mobile Studio portrait and landscape visual design',()=>{
     expect(css).toContain('order:2;flex:0 0 auto');
     expect(css).toContain('.studio-mobile-landscape .studio-mobile-record-grid { display: grid !important; }');
   });
+  it('uses a flat, compact mobile arrangement with accessible track lanes',async()=>{
+    const studio=await readFile('src/pages/Studio.jsx','utf8');
+    const tracks=await readFile('src/components/studio/MobileStudioTracks.jsx','utf8');
+    const css=await readFile('src/styles/studioMobileOrientation.css','utf8');
+    expect(tracks).toContain('studio-cubasis-lane');
+    expect(tracks).toContain('studio-cubasis-lane-waveform');
+    expect(tracks).toContain('studio-cubasis-lane-volume');
+    expect(css).toContain('.studio-mobile-premium .studio-cubasis-lane{');
+    expect(css).toContain('grid-template-columns:minmax(88px,29%) minmax(0,1fr)');
+    expect(css).toContain('.studio-mobile-premium .studio-mobile-quick-actions{');
+    expect(css).toContain('overflow-x:auto');
+    expect(studio).toContain('studio-mobile-record-grid');
+  });
   it('keeps key controls visible, accessible and non-destructive',async()=>{
     const studio=await readFile('src/pages/Studio.jsx','utf8');
     const tracks=await readFile('src/components/studio/MobileStudioTracks.jsx','utf8');

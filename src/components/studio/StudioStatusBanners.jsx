@@ -15,7 +15,7 @@ export default function StudioStatusBanners({
   return (
     <>
       {isLowEnd && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 px-4 py-1.5 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-xs font-medium backdrop-blur-md whitespace-nowrap">
+        <div className="studio-mobile-performance-banner absolute top-2 left-1/2 -translate-x-1/2 z-30 px-4 py-1.5 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-xs font-medium backdrop-blur-md whitespace-nowrap">
           ⚠ Performance Mode: Reduced waveform quality for smoother experience
         </div>
       )}
@@ -33,7 +33,7 @@ export default function StudioStatusBanners({
       )}
 
       {showUpgradeBanner && (
-        <div className="mx-2 sm:mx-3 mt-2 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2 flex items-center justify-between gap-3 relative z-20">
+        <div className="studio-mobile-upgrade-banner mx-2 sm:mx-3 mt-2 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2 flex items-center justify-between gap-3 relative z-20">
           <div className="min-w-0">
             <p className="text-xs sm:text-sm font-semibold text-foreground">Take this session further with Premium</p>
             <p className="hidden sm:block text-xs text-muted-foreground">Unlock more NALI.ai, advanced Studio tools, and the complete creator workflow.</p>

@@ -62,6 +62,11 @@
     "duration": {
       "type": "number"
     },
+    "start_time": {
+      "type": "number",
+      "default": 0,
+      "description": "Non-destructive position in seconds on the collaborative session timeline (0\u201386400)."
+    },
     "uploaded_by": {
       "type": "string",
       "rls": {

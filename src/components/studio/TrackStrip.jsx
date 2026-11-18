@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import TrackVersionHistory from "./TrackVersionHistory";
 import { studioTrackStripWaveformBars } from "@/lib/studioTrackStripWaveform";
 import { toast } from "sonner";
+import { sessionTrackStart, nextSessionTrackStart } from "@/lib/sessionTrackTiming";
 
 const trackTypeColors = {
   vocal: "bg-primary",
@@ -127,6 +128,14 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
         <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", (track.muted || isSoloedAway) ? "bg-muted-foreground/50" : (trackTypeColors[track.type] || "bg-muted"))} />
         <span className="font-medium text-xs flex-1 truncate" title={track.name}>{track.name}</span>
         <span className="text-[9px] text-muted-foreground uppercase">{track.type}</span>
+      </div>
+      <div className="flex items-center gap-2 mb-2 text-[10px] text-muted-foreground" aria-label="Track timing alignment">
+        <span className="shrink-0">Start {sessionTrackStart(track).toFixed(2)}s</span>
+        {canEdit && <>
+          <button type="button" className="rounded border px-2 py-1 hover:bg-secondary" aria-label={`Move ${track.name} 50 milliseconds earlier`} title="Nudge 50 ms earlier" onClick={() => onUpdate({ start_time: nextSessionTrackStart(track, -0.05) })}>−50 ms</button>
+          <button type="button" className="rounded border px-2 py-1 hover:bg-secondary" aria-label={`Move ${track.name} 50 milliseconds later`} title="Nudge 50 ms later" onClick={() => onUpdate({ start_time: nextSessionTrackStart(track, 0.05) })}>+50 ms</button>
+          <button type="button" className="rounded border px-2 py-1 hover:bg-secondary" aria-label={`Reset ${track.name} alignment to zero`} title="Reset to zero" onClick={() => onUpdate({ start_time: 0 })}>Reset</button>
+        </>}
       </div>
 
       {/* Waveform */}

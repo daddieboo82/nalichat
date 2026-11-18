@@ -5,8 +5,9 @@ class NaliPcmCaptureProcessor extends AudioWorkletProcessor {
     super();
     this.frames = new Int16Array(4096);
     this.position = 0;
-    this.enabled = true;
+    this.enabled = false;
     this.port.onmessage = ({data}) => {
+      if (data?.type === 'start') this.enabled = true;
       if (data?.type === 'flush') {
         this.send();
         this.enabled = false;

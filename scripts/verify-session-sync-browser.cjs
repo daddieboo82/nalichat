@@ -1,7 +1,10 @@
 // Real Chromium worker integration for NaliChat original cross-device sync.
 const { chromium } = require('@playwright/test');
+const fs = require('node:fs');
+const localChromium = '/root/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome';
 (async () => {
-  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'],
+    ...(fs.existsSync(localChromium) ? { executablePath: localChromium } : {}) });
   try {
     const page = await browser.newPage();
     await page.goto('http://127.0.0.1:5173/audio/nali-latency-probe.worklet.js');

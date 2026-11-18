@@ -130,4 +130,24 @@ describe('ChatSessionViewer browser recording flow', () => {
     expect(streamTrack.stop).toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
   });
+
+  it('allows plain recording without the shared count-in', async () => {
+    render(<ChatSessionViewer message={{ id: 'message-1', text: 'Session' }} currentUser={{ id: 'user-1' }} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: /four-beat studio count-in/i }));
+    fireEvent.click(screen.getByRole('button', { name: /record track/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /^stop$/i })).toBeTruthy());
+    expect(startSharedSessionGuide).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /^stop$/i }));
+    await waitFor(() => expect(upload).toHaveBeenCalled());
+  });
+
+  it('preserves recording when the mobile browser blocks count-in playback', async () => {
+    startSharedSessionGuide.mockRejectedValueOnce(new Error('Blocked'));
+    render(<ChatSessionViewer message={{ id: 'message-1', text: 'Session' }} currentUser={{ id: 'user-1' }} />);
+    fireEvent.click(screen.getByRole('button', { name: /record track/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /^stop$/i })).toBeTruthy());
+    expect(toast.warning).toHaveBeenCalledWith(expect.stringContaining('Count-in playback is unavailable'));
+    fireEvent.click(screen.getByRole('button', { name: /^stop$/i }));
+    await waitFor(() => expect(upload).toHaveBeenCalled());
+  });
 });

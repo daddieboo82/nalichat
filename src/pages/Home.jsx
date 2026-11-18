@@ -240,6 +240,9 @@ export default function Home() {
               <Button size="lg" variant="outline" className="min-h-12 rounded-xl border-border bg-card/60 px-6 text-base" asChild><Link to="/login">I already have an account</Link></Button>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">Start free. Explore at your own pace.</p>
+            <Link to="/music-collaboration" onClick={() => trackProductEvent("homepage_demo_click", { source: "public_landing_hero", cta: "see_how_it_works" })} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+              See how NaliChat works before joining <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <DonationButton variant="hero" />
               <Button variant="outline" className="min-h-12 rounded-xl border-border bg-card/60 px-5" asChild>

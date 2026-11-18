@@ -16,7 +16,8 @@ describe('NaliVoice original worker integration', () => {
     expect(transfers).toContain(message.samples);
     worker.onmessage({ data: { type: 'COMPLETE', samples: new Float32Array([0.1, 0.2]).buffer } });
     const out = await processing;
-    expect(Array.from(out)).toEqual(expect.arrayContaining([expect.closeTo(0.1), expect.closeTo(0.2)]));
+    expect(out[0]).toBeCloseTo(0.1);
+    expect(out[1]).toBeCloseTo(0.2);
     expect(worker.terminate).toHaveBeenCalled();
   });
 

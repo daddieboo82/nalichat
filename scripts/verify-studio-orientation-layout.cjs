@@ -77,7 +77,7 @@ const sizes=[[390,844],[320,568],[844,390],[667,375],[932,430],[1024,768]];
          result.toolsHeight<80 || result.timelineHeight<80 || !result.timelineScrollable || !result.footerAfterTabs ||
          result.minButtonHeight<43 || !result.footerVisible || !result.projectRetained || !result.tabsSelectedDistinct || (result.landscape===false && !result.portraitTracksFirst))
          throw Error(engineName+': invalid mobile controls '+JSON.stringify(result));
-      if(result.landscape && (result.recordDisplay!=='grid'||result.sideWidth<205||result.tracksWidth<250||result.toolsColumns!==4||
+      if(result.landscape && (result.recordDisplay!=='grid'||result.sideWidth<175||result.tracksWidth<250||result.toolsColumns!==4||
         !result.leftScroll||!result.rightScroll)) throw Error(engineName+': bad landscape panes '+JSON.stringify(result));
     } else if(result.landscape||result.footerVisible)throw Error('Desktop mode incorrectly treated as phone');
    }

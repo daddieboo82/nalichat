@@ -716,8 +716,8 @@ export default function Studio() {
       toast.error("Finish saving or restoring before starting a blank session.");
       return;
     }
-    if (isRecording || isPlaying) {
-      toast.error("Stop recording and playback before starting a blank session.");
+    if (isRecording || isPlaying || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current) {
+      toast.error("Finish recording, take finalization, and playback before starting a blank session.");
       return;
     }
     // Starting a new session must not inherit Undo/Redo from the last one.
@@ -740,8 +740,8 @@ export default function Studio() {
       toast.error("Finish saving or restoring before loading a local session.");
       return;
     }
-    if (isRecording || isPlaying) {
-      toast.error("Stop recording and playback before loading a local session.");
+    if (isRecording || isPlaying || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current) {
+      toast.error("Finish recording, take finalization, and playback before loading a local session.");
       return;
     }
     if (!autosaveStorageKey) {
@@ -780,8 +780,8 @@ export default function Studio() {
       toast.error("Finish saving or restoring before loading the demo.");
       return;
     }
-    if (isRecording || isPlaying) {
-      toast.error("Stop recording and playback before loading the demo.");
+    if (isRecording || isPlaying || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current) {
+      toast.error("Finish recording, take finalization, and playback before loading the demo.");
       return;
     }
     const toastId = toast.loading("Preparing demo session...");
@@ -3428,8 +3428,8 @@ export default function Studio() {
       toast.error("Finish the current Studio save, backup, or restore first.");
       return;
     }
-    if (isPlaying || isRecording) {
-      toast.error("Stop recording and playback before backing up the session.");
+    if (isPlaying || isRecording || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current) {
+      toast.error("Finish recording, take finalization, and playback before backing up the session.");
       return;
     }
     studioDeviceExportInFlightRef.current = true;
@@ -3589,8 +3589,8 @@ export default function Studio() {
       toast.error("Leave the shared Jam Room before restoring a device session.");
       return;
     }
-    if (isRecording || isPlaying) {
-      toast.error("Stop playback and recording before restoring a Studio backup.");
+    if (isRecording || isPlaying || microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current) {
+      toast.error("Finish recording, take finalization, and playback before restoring a Studio backup.");
       return;
     }
     if (tracks.length > 0 && !window.confirm("Restoring a backup will replace the tracks currently open in Studio. Save your current session first. Continue?")) {

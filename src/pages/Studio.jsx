@@ -324,16 +324,21 @@ export default function Studio() {
   const [autoPolishVocals, setAutoPolishVocals] = useState(false);
   const [trainMyVoice, setTrainMyVoice] = useState(false);
   useEffect(() => {
-    setTrainMyVoice(isPrivateVoiceTrainingEnabled(user?.id));
+    let active = true;
+    setTrainMyVoice(false);
+    if (user?.id) isPrivateVoiceTrainingEnabled(user.id)
+      .then(enabled => { if (active) setTrainMyVoice(enabled); })
+      .catch(() => { if (active) toast.warning('Could not load private voice training settings.'); });
+    return () => { active = false; };
   }, [user?.id]);
-  const togglePrivateVoiceTraining = () => {
+  const togglePrivateVoiceTraining = async () => {
     if (!user?.id) return toast.error('Sign in to manage private voice training.');
-    const next = !isPrivateVoiceTrainingEnabled(user.id);
+    const next = !trainMyVoice;
     if (next && !window.confirm('Allow future microphone recordings you own or have permission to use to train your private NaliVoice model on this device? Other speakers must have consented. Nothing will be uploaded to a shared training model.')) return;
     try {
-      setPrivateVoiceTrainingEnabled(user.id, next);
+      await setPrivateVoiceTrainingEnabled(user.id, next);
       setTrainMyVoice(next);
-      toast.success(next ? 'Private voice training enabled for new recordings on this device.' : 'Private voice training disabled. Existing learned model kept until erased.');
+      toast.success(next ? 'Private NaliVoice training enabled for future microphone recordings.' : 'Private NaliVoice training disabled. Server checkpoint retained until erased.');
     } catch { toast.error('Could not save training preference on this device.'); }
   };
   const erasePrivateVoiceModel = async () => {
@@ -342,7 +347,7 @@ export default function Studio() {
     try {
       await forgetPrivateNaliVoiceTraining(user.id);
       setTrainMyVoice(false);
-      toast.success('Private NaliVoice learning erased on this device.');
+      toast.success('Private NaliVoice model erased from NaliChat storage.');
     } catch { toast.error('Could not erase the private voice model. Please retry.'); }
   };
   // Existing sessions can persist each track's Auto Polish flag in the track data.
@@ -1527,6 +1532,7 @@ export default function Studio() {
       const stoppedSessionEpoch = historyEpochRef.current;
       const stoppedMidiEnabled = midiRecordingRef.current;
       const trainingOwner = user?.id || null;
+      const trainingOptedInAtStart = trainMyVoice;
       const captureHadMicTrack = tracksRef.current.some(track => track.armed && !['midi', 'instrument'].includes(track.type));
       const stoppedMidiNotes = stoppedMidiEnabled ? [...midiActiveNotesRef.current.values()] : [];
       const stoppedBpm = bpmRef.current;
@@ -1633,7 +1639,7 @@ export default function Studio() {
         // recordings or share model weights across accounts. Recording save is
         // already complete, so training errors cannot destroy the captured take.
         if (shouldTrainNaliVoiceTake({
-          optedIn: isPrivateVoiceTrainingEnabled(trainingOwner),
+          optedIn: trainingOptedInAtStart,
           owner: trainingOwner, recordingBytes: blob.size, hadMicrophoneTrack: captureHadMicTrack,
         })) {
           void trainPrivateNaliVoiceFromRecording(trainingOwner, blob).then(result => {
@@ -3722,10 +3728,10 @@ export default function Studio() {
             <Button type="button" onClick={toggleAutoPolishVocals} aria-pressed={autoPolishVocals} aria-label="Auto Polish all vocal tracks" title="Automatically polish all vocal tracks during playback and export, including new vocals" variant={autoPolishVocals ? 'default' : 'outline'} size="sm" className={cn('gap-2 rounded-xl', autoPolishVocals ? 'bg-primary text-primary-foreground' : 'border-primary/50')}>
               <Wand2 className="w-4 h-4" /> Auto Polish {autoPolishVocals ? 'ON' : 'OFF'}
             </Button>
-            <Button type="button" onClick={togglePrivateVoiceTraining} aria-pressed={trainMyVoice} aria-label="Train my private NaliVoice from future microphone takes" title="Opt in to train only your local NaliVoice model from future microphone recordings with permission; OFF by default" variant={trainMyVoice ? 'default' : 'outline'} size="sm" className="gap-2 rounded-xl border-violet-500/50">
+            <Button type="button" onClick={togglePrivateVoiceTraining} aria-pressed={trainMyVoice} aria-label="Train my private NaliVoice from future microphone takes" title="Opt in to train your private NaliVoice model saved under your account on NaliChat; OFF by default" variant={trainMyVoice ? 'default' : 'outline'} size="sm" className="gap-2 rounded-xl border-violet-500/50">
               <Mic className="w-4 h-4" /> Train My Voice {trainMyVoice ? 'ON' : 'OFF'}
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={erasePrivateVoiceModel} title="Erase my locally learned NaliVoice model and disable training" className="gap-2 rounded-xl border-border/50">Erase Voice Learning</Button>
+            <Button type="button" variant="outline" size="sm" onClick={erasePrivateVoiceModel} title="Erase my private NaliVoice server checkpoint and disable training" className="gap-2 rounded-xl border-border/50">Erase Voice Learning</Button>
             <Button type="button" variant="outline" size="sm" className="gap-2 rounded-xl border-violet-500/50 text-violet-400 hover:bg-violet-500/10" onClick={openGenerativeReconstruction} title="Open NaliVoice's automatic local neural restoration prototype (experimental; not yet generative singing)" aria-label="Generative AI Vocal Reconstruction">
               <AudioLines className="w-4 h-4" /> AI Reconstruct <span className="text-[10px]">Beta</span>
             </Button>

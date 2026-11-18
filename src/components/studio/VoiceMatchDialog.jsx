@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { deleteVoiceProfile, generateVoiceMatch, prepareVoiceAudio, readVoiceProfiles, saveVoiceProfile } from '@/lib/voxVoiceMatch';
@@ -15,7 +15,11 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [preview, setPreview] = useState('');
+  const [jobStatus, setJobStatus] = useState('');
+  const generation = useRef(null);
   const profile = profiles.find(item => item.id === selected);
+
+  useEffect(() => () => generation.current?.abort(), []);
 
   useEffect(() => {
     let active = true;
@@ -41,7 +45,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
     setBusy(true);
     setError('');
     try { await action(); }
-    catch (failure) { setError(failure.message || 'Could not complete this action.'); }
+    catch (failure) { if (failure.name !== 'AbortError') setError(failure.message || 'Could not complete this action.'); }
     finally { setBusy(false); }
   };
 
@@ -65,8 +69,17 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
 
   const generate = () => perform(async () => {
     setResult(null);
-    const audio = await generateVoiceMatch({ profile, mode, text, track: take });
-    setResult({ ...audio, name: `${profile.name} (Voice Match)`, startTime: mode === 'convert' ? take.startTime : 0 });
+    setJobStatus('preparing');
+    const controller = new AbortController();
+    generation.current = controller;
+    try {
+      const audio = await generateVoiceMatch({ profile, mode, text, track: take, signal: controller.signal, onStatus: setJobStatus });
+      controller.signal.throwIfAborted();
+      setResult({ ...audio, name: `${profile.name} (Voice Match)`, startTime: mode === 'convert' ? take.startTime : 0 });
+    } finally {
+      generation.current = null;
+      setJobStatus('');
+    }
   });
 
   return (
@@ -128,7 +141,14 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
             </div>
           )}
         </fieldset>
-        {busy && <p role="status" className="text-sm">Working…</p>}
+        {busy && (
+          <div className="flex items-center gap-2">
+            <p role="status" className="text-sm">
+              {jobStatus === 'queued' ? 'Waiting for the voice model…' : jobStatus === 'running' ? 'Generating audio…' : 'Preparing audio…'}
+            </p>
+            {jobStatus && <Button type="button" variant="outline" onClick={onClose}>Close preview</Button>}
+          </div>
+        )}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       </DialogContent>
     </Dialog>

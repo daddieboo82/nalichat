@@ -62,7 +62,34 @@ function toBase64(blob) {
   });
 }
 
-export async function generateVoiceMatch({ profile, mode, text, track }) {
+async function invokeVoiceMatch(payload) {
+  try {
+    const { data } = await base44.functions.invoke('voxShiftGenerate', payload);
+    return data;
+  } catch (error) {
+    const message = error.response?.data?.error;
+    const failure = new Error(typeof message === 'string' ? message : 'VoxShift AI is unavailable right now.');
+    failure.status = error.response?.status;
+    throw failure;
+  }
+}
+
+function waitForNextCheck(signal) {
+  signal.throwIfAborted();
+  return new Promise((resolve, reject) => {
+    const cancel = () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', cancel);
+      resolve();
+    }, 5000);
+    signal.addEventListener('abort', cancel, { once: true });
+  });
+}
+
+export async function generateVoiceMatch({ profile, mode, text, track, signal, onStatus }) {
   const payload = { consent: true, mode, reference: await toBase64(profile.wav) };
   if (mode === 'speech') {
     payload.text = text.trim();
@@ -73,13 +100,33 @@ export async function generateVoiceMatch({ profile, mode, text, track }) {
     payload.source = await toBase64(source);
   }
 
-  let data;
-  try {
-    ({ data } = await base44.functions.invoke('voxShiftGenerate', payload));
-  } catch (error) {
-    const message = error.response?.data?.error;
-    throw new Error(typeof message === 'string' ? message : 'VoxShift AI is unavailable right now.');
+  signal.throwIfAborted();
+  const { jobId } = await invokeVoiceMatch(payload);
+  if (typeof jobId !== 'string' || !/^[a-f0-9]{32}$/.test(jobId)) {
+    throw new Error('The provider did not return a valid job.');
   }
+  signal.throwIfAborted();
+  onStatus('queued');
+  const deadline = Date.now() + 8 * 60_000;
+  let data;
+  let transientFailures = 0;
+  while (Date.now() < deadline) {
+    await waitForNextCheck(signal);
+    try {
+      data = await invokeVoiceMatch({ action: 'status', jobId });
+      transientFailures = 0;
+    } catch (error) {
+      signal.throwIfAborted();
+      if (error.status !== 502 || ++transientFailures >= 3) throw error;
+      continue;
+    }
+    signal.throwIfAborted();
+    if (data?.status === 'complete') break;
+    if (data?.status === 'failed') throw new Error('The voice provider could not generate audio.');
+    if (!['queued', 'running'].includes(data?.status)) throw new Error('The provider returned an invalid job status.');
+    onStatus(data.status);
+  }
+  if (data?.status !== 'complete') throw new Error('This voice job took too long to finish.');
   if (typeof data?.wav !== 'string' || data.wav.length > 2_666_668) {
     throw new Error('The provider returned invalid audio.');
   }

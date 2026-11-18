@@ -5,6 +5,7 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 
 const AUDIO_LIMIT = 2_000_000;
 const REQUEST_LIMIT = 5_500_000;
+const statusResponse = (data: unknown) => Response.json(data, { headers: { 'Cache-Control': 'no-store' } });
 const reply = (error: string, status: number) => Response.json({ error }, { status });
 
 Deno.serve(async (request) => {
@@ -23,6 +24,26 @@ Deno.serve(async (request) => {
     }
 
     const payload = await readJsonBodyLimited(request, REQUEST_LIMIT);
+    const headers = { Authorization: `Bearer ${key}`, 'X-VoxShift-Owner': user.id };
+    if (payload?.action === 'status') {
+      if (typeof payload.jobId !== 'string' || !/^[a-f0-9]{32}$/.test(payload.jobId)) {
+        return reply('Invalid voice job.', 400);
+      }
+      const upstream = await fetch(new URL(`/v1/jobs/${payload.jobId}`, origin), {
+        headers,
+        redirect: 'error',
+        signal: AbortSignal.timeout(12_000),
+      });
+      if (upstream.status === 404) return reply('The voice job expired or the provider restarted.', 404);
+      if (!upstream.ok) return reply('Voice job status is temporarily unavailable.', 502);
+      if (upstream.headers.get('content-type')?.split(';')[0] === 'application/json') {
+        const { status } = await upstream.json();
+        if (!['queued', 'running', 'failed'].includes(status)) return reply('Invalid voice job status.', 502);
+        return statusResponse({ status });
+      }
+      return await readRenderedAudio(upstream);
+    }
+
     if (!payload || payload.consent !== true || !['speech', 'convert'].includes(payload.mode)) {
       return reply('Choose a mode and confirm permission to use the reference voice.', 400);
     }
@@ -46,26 +67,32 @@ Deno.serve(async (request) => {
 
     const rate = await consumeHourlyLimit(client.asServiceRole.entities, user.id, 'voxshift_generate', 8);
     if (!rate.allowed) return reply('Hourly generation limit reached. Try again later.', 429);
-    const upstream = await fetch(new URL(`/v1/${payload.mode}`, origin), {
+    const upstream = await fetch(new URL(`/v1/jobs/${payload.mode}`, origin), {
       method: 'POST',
-      headers: { Authorization: `Bearer ${key}` },
+      headers,
       body: form,
       redirect: 'error',
-      signal: AbortSignal.timeout(45_000),
+      signal: AbortSignal.timeout(15_000),
     });
     if (upstream.status === 503) return reply('VoxShift AI is busy. Try again in a moment.', 503);
-    if (!upstream.ok || upstream.headers.get('content-type')?.split(';')[0] !== 'audio/wav') {
-      return reply('The voice provider could not generate audio.', 502);
-    }
-    const length = Number(upstream.headers.get('content-length'));
-    if (!Number.isSafeInteger(length) || length < 44 || length > AUDIO_LIMIT) {
-      await upstream.body?.cancel();
-      return reply('The provider returned an invalid audio file.', 502);
-    }
-    const audio = await upstream.arrayBuffer();
-    if (audio.byteLength !== length) return reply('The provider returned incomplete audio.', 502);
-    return Response.json({ wav: encodeBase64(audio) }, { headers: { 'Cache-Control': 'no-store' } });
+    if (upstream.status === 422) return reply('The provider rejected the audio or text.', 422);
+    if (upstream.status !== 202) return reply('The provider could not start the voice job.', 502);
+    const { jobId } = await upstream.json();
+    if (typeof jobId !== 'string' || !/^[a-f0-9]{32}$/.test(jobId)) return reply('Invalid voice job.', 502);
+    return statusResponse({ status: 'queued', jobId });
   } catch (error) {
     return requestBodyErrorResponse(error) ?? reply('VoxShift AI could not complete the request.', 502);
   }
 });
+
+async function readRenderedAudio(upstream: Response) {
+  const length = Number(upstream.headers.get('content-length'));
+  if (upstream.headers.get('content-type')?.split(';')[0] !== 'audio/wav'
+    || !Number.isSafeInteger(length) || length < 44 || length > AUDIO_LIMIT) {
+    await upstream.body?.cancel();
+    return reply('The provider returned an invalid audio file.', 502);
+  }
+  const audio = await upstream.arrayBuffer();
+  if (audio.byteLength !== length) return reply('The provider returned incomplete audio.', 502);
+  return statusResponse({ status: 'complete', wav: encodeBase64(audio) });
+}

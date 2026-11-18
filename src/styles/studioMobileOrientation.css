@@ -1,0 +1,80 @@
+/* Studio is recording-first on narrow portrait phones AND short landscape phones.
+   Full tablets and PC editors are unaffected. */
+.studio-mobile-workspace { min-width: 0; }
+.studio-mobile-workspace .studio-mobile-record-view,
+.studio-mobile-workspace .studio-mobile-tools-view,
+.studio-mobile-workspace .studio-mobile-timeline { min-height: 0; min-width: 0; }
+.studio-mobile-workspace .studio-mobile-record-view,
+.studio-mobile-workspace .studio-mobile-tools-view { overscroll-behavior: contain; }
+.studio-mobile-workspace .studio-mobile-transport { padding-left: max(10px,env(safe-area-inset-left)); padding-right: max(10px,env(safe-area-inset-right)); }
+.studio-mobile-workspace .studio-mobile-transport button { touch-action: manipulation; }
+.studio-mobile-workspace .studio-mobile-record-view,
+.studio-mobile-workspace .studio-mobile-tools-view { scrollbar-width: thin; }
+.studio-mobile-workspace .studio-landscape-live { display: none; }
+
+.studio-mobile-landscape .studio-mobile-topbar {
+  min-height: 40px; height: 40px; padding-top: 2px; padding-bottom: 2px;
+  margin-top: 3px; margin-left: 8px; margin-right: 8px;
+  flex-wrap: nowrap; overflow: hidden; border-radius: 12px;
+}
+.studio-mobile-landscape .studio-mobile-topbar > div:first-child { gap: 7px; min-width: 0; }
+.studio-mobile-landscape .studio-mobile-topbar .font-heading { font-size: 14px; }
+.studio-mobile-landscape .studio-mobile-status {
+  margin-top: 3px; padding: 4px 10px; border-radius: 10px;
+}
+.studio-mobile-landscape .studio-mobile-status > p,
+.studio-mobile-landscape .studio-mobile-status p { display: none; }
+.studio-mobile-landscape .studio-mobile-status > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.studio-mobile-landscape .studio-landscape-live { display: inline; white-space: nowrap; }
+.studio-mobile-landscape .studio-mobile-recording-extended { display: none !important; }
+.studio-mobile-landscape .studio-mobile-tabs {
+  margin-top: 3px; margin-left: 8px; margin-right: 8px;
+  border-radius: 12px; padding: 2px;
+}
+.studio-mobile-landscape .studio-mobile-tabs button { min-height: 34px; border-radius: 9px; }
+.studio-mobile-landscape .studio-mobile-record-view {
+  margin: 4px 8px 0; border-radius: 12px; overflow: hidden;
+  grid-template-columns: minmax(210px, 38%) minmax(0, 1fr);
+  grid-template-rows: 28px minmax(0, 1fr);
+}
+.studio-mobile-landscape .studio-mobile-record-view[style*="display: block"] { display: grid !important; }
+.studio-mobile-landscape .studio-mobile-record-heading {
+  grid-column: 1 / -1; grid-row: 1;
+  position: static; overflow: hidden; padding: 3px 10px;
+}
+.studio-mobile-landscape .studio-mobile-record-heading p { display: none; }
+.studio-mobile-landscape .studio-mobile-record-heading > p:first-child { font-size: 12px; }
+.studio-mobile-landscape .studio-mobile-side-pane {
+  grid-column: 1; grid-row: 2; overflow-y: auto; overscroll-behavior: contain;
+  min-width: 0; min-height: 0; padding: 8px; padding-bottom: 36px;
+  border-right: 1px solid rgba(255,255,255,.1);
+}
+.studio-mobile-landscape .studio-mobile-tracks-pane {
+  grid-column: 2; grid-row: 2; overflow-y: auto; overscroll-behavior: contain;
+  min-height: 0; min-width: 0;
+}
+.studio-mobile-landscape .studio-mobile-tracks-pane [data-testid="mobile-studio-tracks"] {
+  padding: 8px; gap: 8px;
+}
+.studio-mobile-landscape .studio-mobile-tools-view {
+  margin: 4px 8px 0; padding: 8px 10px 62px;
+  border-radius: 12px;
+}
+.studio-mobile-landscape .studio-mobile-tools-view .grid-cols-2 { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.studio-mobile-landscape .studio-mobile-tools-view .col-span-2 { grid-column: span 2 / span 2; }
+.studio-mobile-landscape .studio-mobile-timeline { margin: 4px 8px 0; }
+.studio-mobile-landscape .studio-mobile-timeline > div > div:first-child { max-width: 210px; }
+.studio-mobile-landscape .studio-mobile-transport {
+  padding-top: 3px; padding-bottom: max(3px,env(safe-area-inset-bottom)) !important;
+}
+.studio-mobile-landscape .studio-mobile-transport > div {
+  max-width: none; justify-content: center; gap: 8px;
+}
+.studio-mobile-landscape .studio-mobile-transport button {
+  min-height: 44px; border-radius: 10px;
+}
+@media (max-height: 350px) and (orientation: landscape) {
+  .studio-mobile-landscape .studio-mobile-topbar { min-height: 33px; height: 33px; }
+  .studio-mobile-landscape .studio-mobile-tabs button { min-height: 32px; }
+  .studio-mobile-landscape .studio-mobile-status { padding-top: 2px; padding-bottom: 2px; }
+}

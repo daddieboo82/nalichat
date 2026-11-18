@@ -208,7 +208,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
             <div className="space-y-2">
               <audio controls src={preview} className="w-full" aria-label="Generated voice preview" />
               {mode === 'enhance' && <p className="text-xs text-muted-foreground" role="status">Processed on this device using {result.processingBackend === 'webgpu' ? 'free WebGPU acceleration' : 'the browser CPU fallback'}. No paid inference credits used.</p>}
-              {mode === 'local-rvc' && <p className="text-xs text-muted-foreground" role="status">Converted locally using browser WebGPU/WebAssembly. Your model files and audio were not uploaded to an inference server.</p>
+              {mode === 'local-rvc' && <p className="text-xs text-muted-foreground" role="status">Converted locally using browser WebGPU/WebAssembly. Your model files and audio were not uploaded to an inference server.</p>}
               <Button type="button" onClick={() => { if (onAdd(result)) onClose(); }}>Add to new track</Button>
             </div>
           )}

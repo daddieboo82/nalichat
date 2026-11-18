@@ -181,6 +181,7 @@ export default function Studio() {
   waveformPointsRef.current = WAVEFORM_POINTS;
   const [mobileStudioTab, setMobileStudioTab] = useState('record');
   const [mobileReviewedTakeId, setMobileReviewedTakeId] = useState(null);
+  const mobileReviewPanelRef = useRef(null);
   const [mobileDesktopHandoffUrl, setMobileDesktopHandoffUrl] = useState(null);
   const [mobileHandoffSaving, setMobileHandoffSaving] = useState(false);
   const [mobilePageVisible, setMobilePageVisible] = useState(() => typeof document === 'undefined' || document.visibilityState !== 'hidden');
@@ -4230,14 +4231,20 @@ export default function Studio() {
         <div className="p-3 pb-0 space-y-3">
           <MobileStudioPreflight disabled={isRecording || mobileTakeFinalizing || microphoneStartupRef.current.pending} />
           <MobileStudioRecoveries ownerId={user?.id} scope={studioRecoveryScope(roomId)} onRestore={restoreMobileTake} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving || !canEditProject} />
-          <MobileTakeReview track={tracks.find(t=>String(t.id)===String(mobileReviewedTakeId))}
-            onRetake={prepareMobileRetake} onSaveForPC={saveMobileForDesktop}
-            recording={isRecording || mobileTakeFinalizing} saving={mobileHandoffSaving} readOnly={!canEditProject} />
+          <div ref={mobileReviewPanelRef}>
+            <MobileTakeReview track={tracks.find(t=>String(t.id)===String(mobileReviewedTakeId))}
+              onRetake={prepareMobileRetake} onSaveForPC={saveMobileForDesktop}
+              recording={isRecording || mobileTakeFinalizing} saving={mobileHandoffSaving} readOnly={!canEditProject} />
+          </div>
         </div>
         <MobileStudioTracks lanes={visibleStudioClipLanes(tracks)} selectedTrackIds={selectedTrackIds}
           onSelect={id => setSelectedTrackIds([id])} onArm={toggleArm} onMute={toggleMute} onSolo={toggleSolo}
           onVolume={updateVolume} onAdd={addMobileVocalTrack} onImport={handleImportClick} onReconstruct={openGenerativeReconstruction}
-          onReview={id=>{setMobileReviewedTakeId(id);setSelectedTrackIds([id]);}}
+          onReview={id=>{
+            setMobileReviewedTakeId(id);
+            setSelectedTrackIds([id]);
+            window.requestAnimationFrame(()=>mobileReviewPanelRef.current?.scrollIntoView?.({behavior:'smooth',block:'nearest'}));
+          }}
           onMixer={() => setShowMixerPanel(true)} onPolish={toggleAutoPolishVocals} autoPolish={autoPolishVocals}
           readOnly={!canEditProject || isRecording} />
       </div>

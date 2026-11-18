@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ChatSessionViewer from '@/components/messages/ChatSessionViewer';
 import { sharedStudioCaptureConstraints } from '@/lib/sharedStudioCapture';
+import { startSharedSessionGuide } from '@/lib/sharedSessionGuide';
 
 const base44 = vi.hoisted(() => ({
   entities: { Track: { filter: vi.fn() } },
@@ -15,6 +16,11 @@ const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 
 vi.mock('@/api/base44Client', () => ({ base44 }));
 vi.mock('@/lib/secureUpload', () => ({ secureUploadFile: upload }));
+vi.mock('@/lib/sharedSessionGuide', () => ({
+  startSharedSessionGuide: vi.fn(async () => ({ stop: vi.fn() })),
+  SHARED_GUIDE_BPM: 120,
+  SHARED_GUIDE_COUNT: 4,
+}));
 vi.mock('@/lib/uploadValidation', () => ({ validateUpload: validate }));
 vi.mock('sonner', () => ({ toast }));
 vi.mock('@/components/ui/button', () => ({
@@ -100,6 +106,8 @@ describe('ChatSessionViewer browser recording flow', () => {
     fireEvent.click(screen.getByRole('button', { name: /record track/i }));
 
     await waitFor(() => expect(screen.getByRole('button', { name: /^stop$/i })).toBeTruthy());
+    expect(screen.getByRole('checkbox', { name: /four-beat studio count-in/i }).checked).toBe(true);
+    expect(startSharedSessionGuide).toHaveBeenCalledOnce();
     expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith(sharedStudioCaptureConstraints);
     expect(sharedStudioCaptureConstraints.audio.echoCancellation).toBe(false);
     expect(sharedStudioCaptureConstraints.audio.noiseSuppression).toBe(false);

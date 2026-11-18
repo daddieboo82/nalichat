@@ -1,6 +1,6 @@
-// Studio-style microphone capture for shared Messaging recording sessions.
-// Avoid browser call-processing on isolated tracks, retaining the dry source
-// for non-destructive mastering. Constraints are best-effort by the browser.
+// Shared Studio microphone negotiation for Android, iOS and desktop.
+// Every browser can ignore ideal constraints; never claim hardware-level
+// quality or a lossless recording based only on the requested settings.
 export const sharedStudioCaptureConstraints = Object.freeze({
   audio: {
     echoCancellation: false,
@@ -10,6 +10,29 @@ export const sharedStudioCaptureConstraints = Object.freeze({
     sampleRate: { ideal: 48000 },
   },
 });
+
+// Overconstrained and unsupported optional properties must never prevent
+// a user from recording on their built-in microphone.
+export async function openStudioMicrophone(mediaDevices, constraints = sharedStudioCaptureConstraints) {
+  if (!mediaDevices?.getUserMedia) throw new Error('This browser cannot access a microphone.');
+  try {
+    return await mediaDevices.getUserMedia(constraints);
+  } catch (error) {
+    if (!['OverconstrainedError', 'ConstraintNotSatisfiedError', 'TypeError'].includes(error?.name)) {
+      throw error; // No retry after an explicit permission denial.
+    }
+    // Keep the anti-call-processing flags when possible but drop ideal
+    // sample-rate/channel requests unsupported by some mobile browsers.
+    try {
+      return await mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      });
+    } catch (fallbackError) {
+      if (!['OverconstrainedError', 'ConstraintNotSatisfiedError', 'TypeError'].includes(fallbackError?.name)) throw fallbackError;
+      return mediaDevices.getUserMedia({ audio: true });
+    }
+  }
+}
 
 export function inspectSharedStudioCaptureSettings(settings) {
   if (!settings || typeof settings !== 'object') {
@@ -21,7 +44,7 @@ export function inspectSharedStudioCaptureSettings(settings) {
     processingEnabled,
     actualSampleRate: Number.isFinite(settings.sampleRate) ? settings.sampleRate : null,
     warning: processingEnabled
-      ? 'Your browser enabled microphone processing despite the Studio request. For an unprocessed take, try a USB mic or audio interface.'
+      ? 'Your device has microphone processing enabled. The recording is kept intact, and Studio can polish it non-destructively. Headphones and a quieter room can help.'
       : null,
   };
 }

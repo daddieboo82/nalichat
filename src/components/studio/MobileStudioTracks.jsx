@@ -65,11 +65,6 @@ export default function MobileStudioTracks({
               {audio.waveform?.length ? <TrackWaveformSVG track={{ ...audio, waveform: mobilePreviewWaveform(audio.waveform) }} /> :
                 <span className="flex h-full items-center justify-center text-xs text-muted-foreground">{audio.audioUrl || audio.file_url ? 'Audio ready · view timeline' : 'No audio recorded yet'}</span>}
             </button>
-            {(audio.audioUrl || audio.file_url) && <button type="button"
-              onClick={() => onReview?.(audio.id)} aria-label={`Review ${audio.name || 'recorded track'}`}
-              className="studio-mobile-review-button mb-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 text-xs font-semibold text-primary">
-              <PlayCircle className="h-4 w-4"/>Listen & review take
-            </button>}
             <div className="studio-mobile-track-controls grid grid-cols-3 gap-2">
               <button type="button" onClick={() => onArm(track.id)} disabled={!canRecord}
                 aria-label={`Arm ${track.name || 'track'} for recording`} aria-pressed={Boolean(track.armed)}
@@ -87,6 +82,11 @@ export default function MobileStudioTracks({
                 <Headphones className="mr-1 inline h-4 w-4" />Solo
               </button>
             </div>
+            {(audio.audioUrl || audio.file_url) && <button type="button"
+              onClick={() => onReview?.(audio.id)} aria-label={`Review ${audio.name || 'recorded track'}`}
+              className="studio-mobile-review-button mb-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 text-xs font-semibold text-primary">
+              <PlayCircle className="h-4 w-4"/>Listen & review take
+            </button>}
             <label className="studio-cubasis-lane-volume mt-3 flex min-h-9 items-center gap-3 text-xs text-muted-foreground">
               <span className="w-12 shrink-0">Volume</span>
               <input type="range" min="0" max="100" step="1" value={Math.min(100, Math.max(0, Number(track.volume ?? 100)))}

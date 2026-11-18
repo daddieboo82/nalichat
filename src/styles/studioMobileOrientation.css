@@ -69,7 +69,6 @@
 .studio-mobile-landscape .studio-mobile-tools-view .grid-cols-2 { grid-template-columns: repeat(4,minmax(0,1fr)); }
 .studio-mobile-landscape .studio-mobile-tools-view .col-span-2 { grid-column: span 2 / span 2; }
 .studio-mobile-landscape .studio-mobile-timeline { margin: 4px 8px 0; }
-.studio-mobile-landscape .studio-mobile-timeline > div > div:first-child { max-width: 210px; }
 .studio-mobile-landscape .studio-mobile-transport {
   padding-top: 3px; padding-bottom: max(3px,env(safe-area-inset-bottom)) !important;
 }
@@ -78,6 +77,18 @@
 }
 .studio-mobile-landscape .studio-mobile-transport button {
   min-height: 44px; border-radius: 10px;
+}
+/* A short portrait screen must not lose its track view behind recording HUD. */
+@media (max-height: 700px) and (orientation: portrait) {
+  .studio-mobile-workspace .studio-mobile-recording-extended {
+    margin-top: 2px; padding: 4px 8px; border-radius: 9px;
+  }
+  .studio-mobile-workspace .studio-mobile-coach-panel { display: none !important; }
+  .studio-mobile-workspace .studio-mobile-capture-progress > p { display: none; }
+  .studio-mobile-workspace .studio-mobile-capture-progress [role="progressbar"] { display: none; }
+  .studio-mobile-workspace .studio-mobile-meter-panel > p:last-child { display: none; }
+  .studio-mobile-workspace .studio-mobile-record-heading > p:last-child { display: none; }
+  .studio-mobile-workspace .studio-mobile-coach-inline { display: block !important; }
 }
 @media (max-height: 350px) and (orientation: landscape) {
   .studio-mobile-landscape .studio-mobile-topbar { min-height: 33px; height: 33px; }

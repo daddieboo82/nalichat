@@ -41,6 +41,7 @@ import MobileStudioTracks from '@/components/studio/MobileStudioTracks';
 import { studioDesktopHandoffUrl } from '@/lib/studioDesktopHandoff';
 import { getMobileStudioRecordingStatus } from '@/lib/mobileStudioRecordingStatus';
 import { studioCaptureHealth, shouldFinalizeMobilePcm } from '@/lib/studioCaptureHealth';
+import { analyzeMobileMicLevel, mobileMicLevelMessage } from '@/lib/mobileMicLevel';
 import { saveStudioRecoveryTake, studioRecoveryScope } from '@/lib/studioTakeRecovery';
 import { startMobileRecordingCheckpoints } from '@/lib/mobileRecordingCheckpoints';
 import { startCompressedRecordingCheckpoints } from '@/lib/compressedRecordingCheckpoints';
@@ -181,6 +182,7 @@ export default function Studio() {
   const [mobileHandoffSaving, setMobileHandoffSaving] = useState(false);
   const [mobilePageVisible, setMobilePageVisible] = useState(() => typeof document === 'undefined' || document.visibilityState !== 'hidden');
   const [mobileTakeFinalizing, setMobileTakeFinalizing] = useState(false);
+  const [mobileMicLevel, setMobileMicLevel] = useState(null);
   const [mobileCaptureProgress, setMobileCaptureProgress] = useState({elapsedSeconds:0,checkpointSeconds:0,capturedBytes:0,pcm:false,checkpointError:false});
   const lastSavedStudioProjectRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -233,6 +235,21 @@ export default function Studio() {
   const audioChunksRef = useRef([]);
   const recordingFinalizeInFlightRef = useRef(false);
   const recordingCheckpointRef = useRef(null);
+  // Read the existing muted-monitor analyser; no additional microphone
+  // stream, audio processing, gain changes, or cloud transfer is involved.
+  useEffect(() => {
+    if (!isMobile || !isRecording) {setMobileMicLevel(null);return undefined;}
+    const samples = new Uint8Array(1024);
+    const update = () => {
+      const analyser = analyserRef.current;
+      if (!analyser || !mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
+      analyser.getByteTimeDomainData(samples);
+      setMobileMicLevel(analyzeMobileMicLevel(samples));
+    };
+    update();
+    const timer = window.setInterval(update,150);
+    return () => window.clearInterval(timer);
+  }, [isMobile,isRecording]);
   const mobileCaptureAutoFinishRef = useRef(false);
   useEffect(() => {
     if (!isRecording || !isMobile) return undefined;
@@ -4140,6 +4157,23 @@ export default function Studio() {
           {progress.memoryPercent !== null && <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Local recording memory use" aria-valuenow={progress.memoryPercent} aria-valuemin={0} aria-valuemax={100}>
             <div className={cn('h-full rounded-full',progress.memoryWarning?'bg-amber-400':'bg-primary')} style={{width:`${progress.memoryPercent}%`}} />
           </div>}
+        </div>;
+      })()}
+      {isRecording && isMobile && mobileMicLevel && (() => {
+        const guidance = mobileMicLevelMessage(mobileMicLevel);
+        return <div className="mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Live microphone input meter">
+          <div className="flex items-center justify-between gap-2 text-xs font-semibold">
+            <span>Live microphone input</span>
+            <span className="tabular-nums text-muted-foreground">Peak {mobileMicLevel.peakDb} dBFS</span>
+          </div>
+          <div className="mt-2 h-3 overflow-hidden rounded-full bg-black/50" role="meter" aria-label="Microphone input level" aria-valuenow={mobileMicLevel.level} aria-valuemin={0} aria-valuemax={100}>
+            <div className={cn('h-full rounded-full transition-[width] duration-150',guidance.severity==='danger'?'bg-red-500':guidance.severity==='warning'?'bg-amber-400':'bg-emerald-500')}
+              style={{width:`${mobileMicLevel.level}%`}}/>
+          </div>
+          <p className={cn('mt-1 text-xs font-semibold',guidance.severity==='danger'?'text-red-300':guidance.severity==='warning'?'text-amber-300':'text-emerald-300')}>
+            {guidance.title}
+          </p>
+          <p className="text-[11px] leading-4 text-muted-foreground">{guidance.help} The meter does not change or process your recording.</p>
         </div>;
       })()}
       {/* Mobile recording-first workspace: full desktop projects, simpler touch controls. */}

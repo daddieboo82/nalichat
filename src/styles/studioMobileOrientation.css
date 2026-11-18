@@ -585,3 +585,24 @@
   border-color:hsl(var(--border));
 }
 
+
+/* Remaining mobile Studio surfaces — same app tokens, visual-only. */
+.studio-mobile-premium [aria-label="Mobile recording setup"],
+.studio-mobile-premium [data-testid="mobile-take-review"] {
+  background:hsl(var(--card));
+  border-color:hsl(var(--primary) / .25);
+}
+.studio-mobile-premium [data-testid="mobile-take-review"] button:not([aria-pressed="true"]):not(.bg-primary) {
+  border-color:hsl(var(--border));
+}
+.studio-mobile-premium .studio-mobile-timeline > div > div:first-child {
+  border-color:hsl(var(--border));
+}
+.studio-mobile-premium .studio-mobile-timeline .sticky.top-0 {
+  background-color:hsl(var(--secondary) / .88);
+  border-color:hsl(var(--border));
+}
+.studio-mobile-premium .studio-mobile-timeline .bg-gradient-to-b {
+  background-image:linear-gradient(to bottom,hsl(var(--card) / .95),hsl(var(--background) / .97));
+}
+

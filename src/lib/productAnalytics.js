@@ -201,9 +201,9 @@ export function initProductAnalytics(userId = null) {
   session = null;
   lastRoute = null;
   foregroundSince = document.visibilityState === "visible" ? now() : null;
-  lastIosCheckpointEngagedMs = 0;
   initialized = true;
   const s = ensureSession();
+  lastIosCheckpointEngagedMs = s.engagedMs;
   track("product_session_started", { route: window.location.pathname, returning_tab_session: s.startedAt !== s.lastActiveAt });
   try {
     const today = new Date().toISOString().slice(0, 10);

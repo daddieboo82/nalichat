@@ -12,6 +12,11 @@
 .studio-mobile-workspace .studio-mobile-tools-view { scrollbar-width: thin; }
 .studio-mobile-workspace .studio-landscape-live { display: none; }
 
+.studio-mobile-landscape .studio-mobile-upgrade-banner { display: none; }
+.studio-mobile-landscape .studio-mobile-performance-banner {
+  position: static; transform: none; margin: 2px 8px 0; text-align: center;
+  font-size: 10px; border-radius: 8px; white-space: normal;
+}
 .studio-mobile-landscape .studio-mobile-topbar {
   min-height: 40px; height: 40px; padding-top: 2px; padding-bottom: 2px;
   margin-top: 3px; margin-left: 8px; margin-right: 8px;
@@ -31,7 +36,7 @@
   margin-top: 3px; margin-left: 8px; margin-right: 8px;
   border-radius: 12px; padding: 2px;
 }
-.studio-mobile-landscape .studio-mobile-tabs button { min-height: 34px; border-radius: 9px; }
+.studio-mobile-landscape .studio-mobile-tabs button { min-height: 44px; border-radius: 9px; }
 .studio-mobile-landscape .studio-mobile-record-view {
   margin: 4px 8px 0; border-radius: 12px; overflow: hidden;
   grid-template-columns: minmax(210px, 38%) minmax(0, 1fr);
@@ -75,6 +80,6 @@
 }
 @media (max-height: 350px) and (orientation: landscape) {
   .studio-mobile-landscape .studio-mobile-topbar { min-height: 33px; height: 33px; }
-  .studio-mobile-landscape .studio-mobile-tabs button { min-height: 32px; }
+  .studio-mobile-landscape .studio-mobile-tabs button { min-height: 44px; }
   .studio-mobile-landscape .studio-mobile-status { padding-top: 2px; padding-bottom: 2px; }
 }

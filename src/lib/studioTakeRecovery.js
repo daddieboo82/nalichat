@@ -3,6 +3,8 @@
 // account cloud storage. Data is private to the browser origin, NOT encrypted
 // against another script running on that same origin. Browser storage can be
 // cleared by the OS, user, or private browsing policies.
+import { studioRecoveryStorageHealth, isStudioStorageQuotaError } from './studioRecoveryStorageHealth';
+
 const DB_NAME = 'nalichat-studio-take-recovery-v1';
 const STORE = 'takes';
 const MAX_BYTES = 60 * 1024 * 1024;
@@ -96,6 +98,18 @@ export async function saveStudioRecoveryTake({
         !(replaceExisting && (existing || []).some(row => row.id === id))) {
       throw new Error('Device recovery is full. Recover or delete older takes before recording more.');
     }
+    // Browser quotas are origin-wide. Account for the size of the previous
+    // checkpoint when replacing a recording (do not double-count it).
+    const previous = replaceExisting
+      ? await runTransaction(db,'readonly', store => store.get(id)) : null;
+    const previousBytes = previous?.ownerScope === ownerScope ? Number(previous.bytes) || 0 : 0;
+    const growth = Math.max(0,audio.size - previousBytes);
+    const storage = await studioRecoveryStorageHealth({expectedAdditionalBytes:growth});
+    if (storage.supported && storage.freeBytes < growth + 2*1024*1024) {
+      const quotaError = new Error('Not enough device storage for a recording recovery backup. Save your Studio session to the cloud.');
+      quotaError.name = 'QuotaExceededError';
+      throw quotaError;
+    }
     const record = {
       id, ownerScope, ownerId, scope, name: String(name).slice(0,90),
       audio, bytes: audio.size, mimeType: audio.type,
@@ -104,6 +118,7 @@ export async function saveStudioRecoveryTake({
     try {
       await runTransaction(db,'readwrite', store => replaceExisting ? store.put(record) : store.add(record));
     } catch (blobError) {
+      if (isStudioStorageQuotaError(blobError)) throw blobError;
       // WebKit/Safari implementations may abort transactions when serializing
       // a Blob even though IndexedDB itself is available. Retry using a
       // standard ArrayBuffer; this preserves bytes and MIME without cloud IO.

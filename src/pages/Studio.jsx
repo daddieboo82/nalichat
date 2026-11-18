@@ -3137,7 +3137,12 @@ export default function Studio() {
         }, { replace: true });
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      // A cancelled navigation or development StrictMode remount must not
+      // permanently block a legitimate retry of this authorized import.
+      if (voiceMessageImportRef.current === key) voiceMessageImportRef.current = null;
+    };
   }, [voiceMessageId, user?.id, roomId, projectLoading]);
 
   // Export a portable archive: never save ephemeral blob: URLs in device backups.

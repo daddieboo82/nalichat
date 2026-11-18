@@ -3124,7 +3124,7 @@ export default function Studio() {
         // The prior snapshot was committed, but its PC link must not be
         // advertised as containing edits made during the upload. This also
         // prevents Exit Studio from navigating away with unsaved changes.
-        toast.warning('Saved the earlier Studio snapshot. Newer edits are not yet in My Sessions. Save again before leaving or continuing on PC.', { id: toastId, duration: 9000 });
+        toast.warning('Saved the earlier Studio snapshot. Newer edits are not yet saved to My Sessions; save again before leaving or continuing on PC.', { id: toastId, duration: 9000 });
         return false;
       }
       toast.success(

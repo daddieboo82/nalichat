@@ -7,6 +7,9 @@ describe('NaliChat mobile Studio portrait and landscape visual design',()=>{
     const studio=await readFile('src/pages/Studio.jsx','utf8');
     expect(studio).toContain('studio-mobile-workspace studio-mobile-premium');
     expect(studio).toContain('studio-mobile-heading-title');
+    expect(studio).toContain('isMobile&&mobileStudioTab==="record"&&"studio-mobile-record-active"');
+    expect(css).toContain('.studio-mobile-premium:not(.studio-mobile-landscape) .studio-mobile-record-active{');
+    expect(css).not.toContain('.studio-mobile-premium:not(.studio-mobile-landscape) .studio-mobile-record-view{\n  display:flex !important');
     expect(css).toContain('.studio-mobile-premium:not(.studio-mobile-landscape) .studio-mobile-tracks-pane{order:1');
     expect(css).toContain('.studio-mobile-premium:not(.studio-mobile-landscape) .studio-mobile-side-pane{');
     expect(css).toContain('order:2;flex:0 0 auto');

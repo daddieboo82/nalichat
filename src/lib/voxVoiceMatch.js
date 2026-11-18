@@ -2,6 +2,7 @@ import { base44 } from '@/api/base44Client';
 import { audioBufferToWav, bufferToWaveform } from './audioProcessing';
 import { studioClipAudioRange } from './studioClipAudioRange';
 import { polishVocalLocally } from './localVocalPolish';
+import { convertRvcLocally } from './voxRvcLocal';
 
 async function useProfiles(mode, operation) {
   const database = await new Promise((resolve, reject) => {
@@ -97,7 +98,10 @@ function waitForNextCheck(signal) {
   });
 }
 
-export async function generateVoiceMatch({ profile, mode, text, track, signal, onStatus }) {
+export async function generateVoiceMatch({ profile, mode, text, track, signal, onStatus, localModels }) {
+  if (mode === 'local-rvc') {
+    return convertRvcLocally({ track, files: localModels, signal, onStatus });
+  }
   if (mode === 'enhance') {
     if (!track?.audioUrl) throw new Error('Select a recorded vocal track to polish.');
     const response = await fetch(track.audioUrl, { signal });

@@ -1243,6 +1243,7 @@ export default function Studio() {
       midiRecordingRef.current = false;
       preRollRequestRef.current += 1;
       pendingRecordStartRef.current = null;
+      mediaRecorderRef.current?.dispose?.();
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(t => t.stop());
       }
@@ -1920,7 +1921,7 @@ export default function Studio() {
         if (!studioMountedRef.current ||
             microphoneStartupRef.current.token !== startupToken ||
             historyEpochRef.current !== startupEpoch) {
-          mediaRecorder.stop?.();
+          mediaRecorder.dispose?.();
           stream.getTracks().forEach(track => track.stop());
           return;
         }
@@ -1952,6 +1953,7 @@ export default function Studio() {
         // initialization failed. Release every resource acquired for THIS
         // startup without touching a newer capture.
         if (startupRecorder) {
+          startupRecorder.dispose?.();
           startupRecorder.ondataavailable = null;
           if (startupRecorder.state !== 'inactive') {
             try { startupRecorder.stop(); } catch { /* invalid recorder state */ }

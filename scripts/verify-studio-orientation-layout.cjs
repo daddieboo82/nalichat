@@ -25,7 +25,7 @@ const sizes=[[390,844],[320,568],[844,390],[667,375],[932,430],[1024,768]];
        '<section class="studio-mobile-recording-extended studio-mobile-meter-panel mx-2 mt-1 shrink-0 rounded-xl border border-white/10 px-3 py-2" style="display:'+(mobile?'block':'none')+'"><strong>Live input · Peak -9 dBFS</strong><div class="mt-2 h-3 bg-emerald-500"></div><p>Input level is healthy</p><p>Monitor peaks</p></section>'+
        '<section class="studio-mobile-recording-extended studio-mobile-coach-panel mx-2 mt-1 shrink-0 rounded-xl border border-white/10 px-3 py-2" style="display:'+(mobile?'block':'none')+'"><strong>Vocal assistant</strong><p>Recording signal looks healthy.</p></section>'+
        '<nav class="studio-mobile-tabs mx-2 mt-2 flex shrink-0 gap-1 rounded-2xl border border-white/10 p-1" style="display:'+(mobile?'flex':'none')+'">'+['Record','Timeline','Tools'].map(x=>'<button aria-selected="'+(x==='Record'?'true':'false')+'" class="flex-1 min-h-11 rounded-xl bg-white/10 text-sm">'+x+'</button>').join('')+'</nav>'+
-       '<section class="studio-mobile-record-view '+(landscape?'studio-mobile-record-grid ':'')+'min-h-0 flex-1 overflow-y-auto mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]" style="display:'+(mobile?'block':'none')+'">'+
+       '<section class="studio-mobile-record-view '+(landscape?'studio-mobile-record-grid ':'')+(mobile?'studio-mobile-record-active ':'')+'min-h-0 flex-1 overflow-y-auto mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]" style="display:'+(mobile?'block':'none')+'">'+
          '<div class="studio-mobile-record-heading sticky top-0 z-10 border-b border-white/10 px-4 py-3"><p>Record anywhere</p><p>Record on your phone and finish on PC</p></div>'+
          '<div class="studio-mobile-side-pane p-3 pb-0 space-y-3"><div class="h-16 rounded-lg border border-white/10">Mic readiness</div><div class="h-24 rounded-lg border border-white/10">Review take · 1 / 2</div><button class="min-h-12 w-full rounded-xl bg-violet-800">Save for PC</button></div>'+
          '<div class="studio-mobile-tracks-pane min-h-0"><div data-testid="mobile-studio-tracks" class="flex flex-col gap-3 p-3 pb-28"><button class="min-h-11 rounded-xl bg-violet-800">Add Track</button>'+
@@ -55,7 +55,7 @@ const sizes=[[390,844],[320,568],[844,390],[667,375],[932,430],[1024,768]];
         sideWidth:Math.round(rect(main.querySelector('.studio-mobile-side-pane')).width),
         tracksWidth:Math.round(rect(main.querySelector('.studio-mobile-tracks-pane')).width),
         projectRetained:main.querySelector('header').textContent.includes(window.__studioTestProjectName),
-        tabsSelectedGradient:getComputedStyle(tabs.querySelector('button')).backgroundImage.includes('gradient'),
+        tabsSelectedDistinct:getComputedStyle(tabs.querySelector('button')).backgroundColor!==getComputedStyle(tabs.querySelectorAll('button')[1]).backgroundColor,
         portraitTracksFirst: !landscape && mobile ? Number.parseInt(getComputedStyle(main.querySelector('.studio-mobile-tracks-pane')).order) < Number.parseInt(getComputedStyle(main.querySelector('.studio-mobile-side-pane')).order) : null,
       };
       if(mobile){
@@ -75,7 +75,7 @@ const sizes=[[390,844],[320,568],[844,390],[667,375],[932,430],[1024,768]];
     if(result.mobile){
       if(result.docWidth>width+2 || result.recordHeight<90 || result.recordTop>=result.footerTop ||
          result.toolsHeight<80 || result.timelineHeight<80 || !result.timelineScrollable || !result.footerAfterTabs ||
-         result.minButtonHeight<43 || !result.footerVisible || !result.projectRetained || !result.tabsSelectedGradient || (result.landscape===false && !result.portraitTracksFirst))
+         result.minButtonHeight<43 || !result.footerVisible || !result.projectRetained || !result.tabsSelectedDistinct || (result.landscape===false && !result.portraitTracksFirst))
          throw Error(engineName+': invalid mobile controls '+JSON.stringify(result));
       if(result.landscape && (result.recordDisplay!=='grid'||result.sideWidth<205||result.tracksWidth<250||result.toolsColumns!==4||
         !result.leftScroll||!result.rightScroll)) throw Error(engineName+': bad landscape panes '+JSON.stringify(result));

@@ -175,6 +175,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
           {result && preview && (
             <div className="space-y-2">
               <audio controls src={preview} className="w-full" aria-label="Generated voice preview" />
+              {mode === 'enhance' && <p className="text-xs text-muted-foreground" role="status">Processed on this device using {result.processingBackend === 'webgpu' ? 'free WebGPU acceleration' : 'the browser CPU fallback'}. No paid inference credits used.</p>}
               <Button type="button" onClick={() => { if (onAdd(result)) onClose(); }}>Add to new track</Button>
             </div>
           )}

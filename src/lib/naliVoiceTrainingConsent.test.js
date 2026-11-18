@@ -1,29 +1,31 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+
+const state = vi.hoisted(() => ({ consent: false }));
+vi.mock('./naliVoiceModelStore', () => ({
+  getPrivateNaliVoiceStatus: vi.fn(async () => ({ consent: state.consent })),
+  updatePrivateNaliVoiceConsent: vi.fn(async enabled => {
+    state.consent = enabled;
+    return { success: true, consent: enabled };
+  }),
+}));
+
 import {
   isPrivateVoiceTrainingEnabled, setPrivateVoiceTrainingEnabled, shouldTrainNaliVoiceTake,
 } from './naliVoiceTrainingConsent';
 
-function memoryStorage() {
-  const entries = new Map();
-  return {
-    getItem(key) { return entries.get(key) ?? null; },
-    setItem(key, value) { entries.set(key, value); },
-    removeItem(key) { entries.delete(key); },
-  };
-}
+describe('NaliVoice server-backed training consent', () => {
+  beforeEach(() => { state.consent = false; });
 
-describe('NaliVoice personal training consent', () => {
-  it('is always off before explicit opt-in, and is account-scoped', () => {
-    const storage = memoryStorage();
-    expect(isPrivateVoiceTrainingEnabled('owner-a', storage)).toBe(false);
-    setPrivateVoiceTrainingEnabled('owner-a', true, storage);
-    expect(isPrivateVoiceTrainingEnabled('owner-a', storage)).toBe(true);
-    expect(isPrivateVoiceTrainingEnabled('owner-b', storage)).toBe(false);
-    setPrivateVoiceTrainingEnabled('owner-a', false, storage);
-    expect(isPrivateVoiceTrainingEnabled('owner-a', storage)).toBe(false);
+  it('defaults off and requires an explicit server-side opt in', async () => {
+    expect(await isPrivateVoiceTrainingEnabled('owner-a')).toBe(false);
+    await setPrivateVoiceTrainingEnabled('owner-a', true);
+    expect(await isPrivateVoiceTrainingEnabled('owner-a')).toBe(true);
+    await setPrivateVoiceTrainingEnabled('owner-a', false);
+    expect(await isPrivateVoiceTrainingEnabled('owner-a')).toBe(false);
   });
 
-  it('rejects unknown accounts, MIDI-only recordings and empty microphone takes', () => {
+  it('requires authentication and allows only nonempty microphone captures', async () => {
+    await expect(setPrivateVoiceTrainingEnabled('', true)).rejects.toThrow();
     const props = { optedIn: true, owner: 'owner-a', recordingBytes: 1024, hadMicrophoneTrack: true };
     expect(shouldTrainNaliVoiceTake(props)).toBe(true);
     expect(shouldTrainNaliVoiceTake({ ...props, optedIn: false })).toBe(false);

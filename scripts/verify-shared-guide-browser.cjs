@@ -16,6 +16,7 @@ const { chromium } = require('@playwright/test');
             resolve({ seconds, schedule:sharedGuideSchedule().map(x=>x.seconds) });
           } catch(error) { reject(error); }
         };
+        document.querySelector('#guide').click();
       });
     }).catch(error=>({failure:String(error)}));
     if (result.failure) throw new Error(result.failure);

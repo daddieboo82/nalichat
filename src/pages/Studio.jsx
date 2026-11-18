@@ -40,6 +40,7 @@ import StudioToolbar2 from '@/components/studio/StudioToolbar2';
 import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
 const PluginRack = lazy(() => import('@/components/studio/PluginRack'));
+const VoiceMatchDialog = lazy(() => import('@/components/studio/VoiceMatchDialog'));
 import TransportCounter from '@/components/studio/TransportCounter';
 import CpuMeter from '@/components/studio/CpuMeter';
 import CountInIndicator from '@/components/studio/CountInIndicator';
@@ -2908,6 +2909,38 @@ export default function Studio() {
     }
   };
 
+  const [voiceMatch, setVoiceMatch] = useState(null);
+  const openVoiceMatch = () => {
+    if (!user?.id) {
+      toast.info("Sign in to use VoxShift Voice Match.");
+      return;
+    }
+    setVoiceMatch({ owner: user.id, take: selectedPluginTrack, epoch: historyEpochRef.current });
+  };
+
+  const addVoiceMatchTrack = (result) => {
+    if (voiceMatch?.owner !== user?.id || voiceMatch?.epoch !== historyEpochRef.current) {
+      toast.error("The Studio session changed. Open Voice Match again.");
+      return false;
+    }
+    if (isRecording || tracksRef.current.length >= maxTracks) {
+      toast.error("Stop recording or free a track slot before adding the vocal.");
+      return false;
+    }
+    const id = nextTrackId(tracksRef.current);
+    const audioUrl = URL.createObjectURL(result.blob);
+    setTracksWithHistory(prev => [...prev, {
+      id, name: result.name, color: "bg-violet-500",
+      volume: 75, pan: 50, muted: false, solo: false, armed: false,
+      startTime: result.startTime ?? 0, clipStart: 0, fullDuration: result.duration,
+      duration: result.duration, waveform: result.waveform, audioUrl,
+    }]);
+    setSelectedTrackIds([id]);
+    setFxTarget(id);
+    toast.success("Voice Match added to a new track.");
+    return true;
+  };
+
   const handleImportClick = () => {
     setShowImportDialog(true);
   };
@@ -4583,7 +4616,16 @@ export default function Studio() {
         isTuningVocal={isTuningVocal}
         tuningDisabled={isPlaying || isRecording}
         songKey={songKey}
+        onVoiceMatch={openVoiceMatch}
       />
+      {voiceMatch && voiceMatch.owner === user?.id && (
+        <VoiceMatchDialog
+          owner={voiceMatch.owner}
+          take={voiceMatch.take}
+          onClose={() => setVoiceMatch(null)}
+          onAdd={addVoiceMatchTrack}
+        />
+      )}
       </Suspense>
 
       {/* Bottom Mixer / Status Bar */}

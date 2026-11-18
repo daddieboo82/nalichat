@@ -32,7 +32,7 @@ const PLUGINS = [
   ]},
 ];
 
-export default function PluginRack({ open, onToggle, trackName, tracks, plugins, onPluginsChange, isMaster = false, onTargetChange, onTuneVocal, isTuningVocal, tuningDisabled, songKey }) {
+export default function PluginRack({ open, onToggle, trackName, tracks, plugins, onPluginsChange, isMaster = false, onTargetChange, onTuneVocal, isTuningVocal, tuningDisabled, songKey, onVoiceMatch }) {
   const [activePlugins, setActivePlugins] = useState({});
 
   useEffect(() => {
@@ -166,6 +166,14 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                     {isTuningVocal ? 'Tuning vocal…' : 'Tune Vocal to New Track'}
                   </button>
                   <span className="text-xs text-muted-foreground">Project key {songKey} · Isolated vocal</span>
+                </div>
+              )}
+
+              {onVoiceMatch && !isMaster && (
+                <div className="px-4 py-2 border-b border-white/10">
+                  <button type="button" onClick={onVoiceMatch} className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary">
+                    Voice Match
+                  </button>
                 </div>
               )}
 

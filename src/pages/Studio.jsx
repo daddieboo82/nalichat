@@ -42,6 +42,7 @@ import { studioDesktopHandoffUrl } from '@/lib/studioDesktopHandoff';
 import { getMobileStudioRecordingStatus } from '@/lib/mobileStudioRecordingStatus';
 import { studioCaptureHealth, shouldFinalizeMobilePcm } from '@/lib/studioCaptureHealth';
 import { analyzeMobileMicLevel, mobileMicLevelMessage } from '@/lib/mobileMicLevel';
+import { createMobileVocalCoach } from '@/lib/mobileVocalCoach';
 import { saveStudioRecoveryTake, studioRecoveryScope } from '@/lib/studioTakeRecovery';
 import { startMobileRecordingCheckpoints } from '@/lib/mobileRecordingCheckpoints';
 import { startCompressedRecordingCheckpoints } from '@/lib/compressedRecordingCheckpoints';
@@ -183,6 +184,8 @@ export default function Studio() {
   const [mobilePageVisible, setMobilePageVisible] = useState(() => typeof document === 'undefined' || document.visibilityState !== 'hidden');
   const [mobileTakeFinalizing, setMobileTakeFinalizing] = useState(false);
   const [mobileMicLevel, setMobileMicLevel] = useState(null);
+  const [mobileCoachGuidance, setMobileCoachGuidance] = useState(null);
+  const [mobileCoachEnabled, setMobileCoachEnabled] = useState(true);
   const [mobileCaptureProgress, setMobileCaptureProgress] = useState({elapsedSeconds:0,checkpointSeconds:0,capturedBytes:0,pcm:false,checkpointError:false});
   const lastSavedStudioProjectRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -235,16 +238,22 @@ export default function Studio() {
   const audioChunksRef = useRef([]);
   const recordingFinalizeInFlightRef = useRef(false);
   const recordingCheckpointRef = useRef(null);
+  const mobileCoachRef = useRef(createMobileVocalCoach());
   // Read the existing muted-monitor analyser; no additional microphone
   // stream, audio processing, gain changes, or cloud transfer is involved.
   useEffect(() => {
-    if (!isMobile || !isRecording) {setMobileMicLevel(null);return undefined;}
+    if (!isMobile || !isRecording) {setMobileMicLevel(null);setMobileCoachGuidance(null);return undefined;}
+    mobileCoachRef.current.reset();
     const samples = new Uint8Array(1024);
+    let frames = 0;
     const update = () => {
       const analyser = analyserRef.current;
       if (!analyser || !mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
       analyser.getByteTimeDomainData(samples);
-      setMobileMicLevel(analyzeMobileMicLevel(samples));
+      const level = analyzeMobileMicLevel(samples);
+      setMobileMicLevel(level);
+      mobileCoachRef.current.push(level);
+      if(++frames % 12 === 0) setMobileCoachGuidance(mobileCoachRef.current.analyze());
     };
     update();
     const timer = window.setInterval(update,150);
@@ -4176,6 +4185,18 @@ export default function Studio() {
           <p className="text-[11px] leading-4 text-muted-foreground">{guidance.help} The meter does not change or process your recording.</p>
         </div>;
       })()}
+      {isMobile && isRecording && <section className="mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Mobile vocal recording assistant">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-xs font-semibold">Vocal recording assistant</h3>
+          <button type="button" aria-pressed={mobileCoachEnabled} onClick={()=>setMobileCoachEnabled(value=>!value)}
+            className="min-h-9 rounded-lg border border-white/20 px-3 text-xs">{mobileCoachEnabled?'Hide tips':'Show tips'}</button>
+        </div>
+        {mobileCoachEnabled && mobileCoachGuidance && <div className="mt-1 space-y-1">
+          <p className={cn('text-xs font-semibold',mobileCoachGuidance.severity==='danger'?'text-red-300':mobileCoachGuidance.severity==='warning'?'text-amber-300':'text-emerald-300')}>{mobileCoachGuidance.title}</p>
+          <p className="text-[11px] leading-4 text-muted-foreground">{mobileCoachGuidance.help}</p>
+          <p className="text-[10px] text-muted-foreground">Advisory only · microphone distance and actual noise sources cannot be measured here.</p>
+        </div>}
+      </section>}
       {/* Mobile recording-first workspace: full desktop projects, simpler touch controls. */}
       <div className="md:hidden mx-2 mt-2 flex shrink-0 gap-1 rounded-2xl border border-white/10 bg-white/[0.05] p-1" role="tablist" aria-label="Mobile Studio views">
         {[["record", "Record"], ["timeline", "Timeline"], ["tools", "Tools"]].map(([tab, label]) => (

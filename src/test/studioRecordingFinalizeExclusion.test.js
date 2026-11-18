@@ -26,7 +26,7 @@ describe('Studio recording finalization exclusion', () => {
 
   it('uses a dedicated chunk array in each recorder callback instead of mutable shared ref', async () => {
     const source = await readFile('src/pages/Studio.jsx','utf8');
-    const start = source.indexOf('const { recorder: mediaRecorder, lossless } = await createPreferredStudioRecorder(stream, { MediaRecorderType: MediaRecorder })');
+    const start = source.indexOf('const { recorder: mediaRecorder, lossless } = await createPreferredStudioRecorder(stream, { MediaRecorderType: globalThis.MediaRecorder })');
     expect(start).toBeGreaterThan(-1);
     const end = source.indexOf('mediaRecorder.start(200)',start);
     const setup = source.slice(start,end);

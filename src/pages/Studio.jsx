@@ -49,6 +49,7 @@ import { startCompressedRecordingCheckpoints } from '@/lib/compressedRecordingCh
 import MobileStudioRecoveries from '@/components/studio/MobileStudioRecoveries';
 import MobileStudioPreflight from '@/components/studio/MobileStudioPreflight';
 import MobileTakeReview from '@/components/studio/MobileTakeReview';
+import { relatedMobileTakes } from '@/lib/mobileTakeComparison';
 import { copyToClipboard } from '@/lib/clipboard';
 import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
@@ -4233,6 +4234,8 @@ export default function Studio() {
           <MobileStudioRecoveries ownerId={user?.id} scope={studioRecoveryScope(roomId)} onRestore={restoreMobileTake} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving || !canEditProject} />
           <div ref={mobileReviewPanelRef}>
             <MobileTakeReview track={tracks.find(t=>String(t.id)===String(mobileReviewedTakeId))}
+              comparisonTakes={relatedMobileTakes(tracks,tracks.find(t=>String(t.id)===String(mobileReviewedTakeId)))}
+              onChooseTake={id=>{setMobileReviewedTakeId(id);setSelectedTrackIds([id]);}}
               onRetake={prepareMobileRetake} onSaveForPC={saveMobileForDesktop}
               recording={isRecording || mobileTakeFinalizing} saving={mobileHandoffSaving} readOnly={!canEditProject} />
           </div>

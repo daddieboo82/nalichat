@@ -2,6 +2,7 @@
 // never uploaded to Base44 or a paid inference service. No automatic model download.
 import { bufferToWaveform } from './audioProcessing';
 import { studioClipAudioRange } from './studioClipAudioRange';
+import { runCancelableRvcWorker } from './rvcWorkerClient';
 
 const MAX_MODEL_BYTES = 512 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 1024 * 1024 * 1024;
@@ -72,7 +73,7 @@ export async function convertRvcLocally({ track, files, signal, onStatus, runtim
   const audio = await prepareRvcSource(await response.blob(), track, signal);
   signal?.throwIfAborted();
   onStatus?.('Loading free browser conversion engine…');
-  const { createRVC, isWorkerSupported, runPipelineInWorker } =
+  const { createRVC, isWorkerSupported } =
     await (runtimeLoader ? runtimeLoader() : import('rvc-web-runtime'));
   if (!isWorkerSupported()) throw new Error('This browser cannot start the local voice worker.');
   // Serve the MIT-licensed engine worker from this Base44 site. Only ONNX
@@ -82,19 +83,21 @@ export async function convertRvcLocally({ track, files, signal, onStatus, runtim
     assetBaseUrl: `${origin}/voxshift/rvc/`,
     wasmBaseUrl: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/',
   });
-  onStatus?.('Converting locally · WebGPU/WASM…');
-  const result = await runPipelineInWorker(
+  onStatus?.('Converting locally with WebAssembly (CPU)…');
+  const result = await runCancelableRvcWorker(
     context,
     { model: files.model, contentVec: files.contentVec, rmvpe: files.rmvpe },
     audio,
     16000,
     {
+      signal,
       onEvent: event => {
-        if (event.type === 'stage') onStatus?.(`Voice model: ${String(event.stage).replace(/_/g, ' ')}…`);
-        if (event.type === 'chunk') onStatus?.(`Converting audio chunk ${event.current}/${event.total}…`);
+        if (event?.type === 'stage') onStatus?.(`Voice model: ${String(event.stage).replace(/_/g, ' ')}…`);
+        if (event?.type === 'chunk') onStatus?.(`Converting audio chunk ${event.current}/${event.total}…`);
       },
+      timeout: 300000,
+      options: { medianFilter: true },
     },
-    { timeout: 300000, medianFilter: true },
   );
   signal?.throwIfAborted();
   if (result?.state !== 'success' || !(result.outputWav instanceof Blob)

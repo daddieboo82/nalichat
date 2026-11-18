@@ -27,7 +27,9 @@ export default function AppLayout() {
   const [showHelp, setShowHelp] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
-  const { user } = useAuth();
+  const { user, authChecked } = useAuth();
+  // The public homepage already provides its own header and signup controls.
+  const isPublicHome = location.pathname === '/' && authChecked && !user;
   const { subscription, hasPaidAccess, isLoading: subscriptionLoading, isError: subscriptionError } = useSubscription();
   const billingReviewNeeded = subscriptionError || subscription.hasPending;
   const lastUserIdRef = useRef(user?.id || null);
@@ -56,7 +58,7 @@ export default function AppLayout() {
       <WorldAtmosphere />
       <StorefrontEntryTransition />
       {/* Mobile Header */}
-      {!isDesktop && <MobileHeader />}
+      {!isDesktop && !isPublicHome && <MobileHeader />}
 
       {/* Storefront continuity — users remain visibly inside their selected NaliBase mall. */}
       <WorldContinuityBar />
@@ -83,7 +85,7 @@ export default function AppLayout() {
       )}
 
       {/* Main Content */}
-      <main className={`relative z-10 flex-1 overflow-hidden flex flex-col min-h-0 ${hasAudioPlayer ? 'pb-[calc(7.75rem+env(safe-area-inset-bottom))] lg:pb-[5rem]' : 'pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0'}`}>
+      <main className={`relative z-10 flex-1 overflow-hidden flex flex-col min-h-0 ${isPublicHome ? 'pb-0' : hasAudioPlayer ? 'pb-[calc(7.75rem+env(safe-area-inset-bottom))] lg:pb-[5rem]' : 'pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0'}`}>
         <AnimatePresence initial={false} mode="wait">
           <PageTransition key={location.pathname} scroll={!location.pathname.startsWith('/messages')}>
             <Outlet />
@@ -92,8 +94,8 @@ export default function AppLayout() {
       </main>
 
       {/* Navigation Bars */}
-      {!isDesktop && <MobileNav />}
-      {isDesktop && (
+      {!isDesktop && !isPublicHome && <MobileNav />}
+      {isDesktop && !isPublicHome && (
         <DesktopNav
           onMessageClick={() => setShowMessage(true)}
           onInviteClick={() => setShowInvite(true)}

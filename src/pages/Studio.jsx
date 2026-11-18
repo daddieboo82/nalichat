@@ -4178,7 +4178,7 @@ export default function Studio() {
       </div>
       {isRecording && isMobile && (() => {
         const progress = studioCaptureHealth(mobileCaptureProgress);
-        return <div className="studio-mobile-recording-extended mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2 text-xs" aria-live="polite" aria-label="Mobile recording progress">
+        return <div className="studio-mobile-recording-extended studio-mobile-capture-progress mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2 text-xs" aria-live="polite" aria-label="Mobile recording progress">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-semibold tabular-nums">Recording {progress.elapsedLabel}</span>
             <span className="text-muted-foreground tabular-nums">{progress.checkpointLabel ? `Protected through ${progress.checkpointLabel}` : 'No checkpoint yet'}</span>
@@ -4193,7 +4193,7 @@ export default function Studio() {
       })()}
       {isRecording && isMobile && mobileMicLevel && (() => {
         const guidance = mobileMicLevelMessage(mobileMicLevel);
-        return <div className="studio-mobile-recording-extended mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Live microphone input meter">
+        return <div className="studio-mobile-recording-extended studio-mobile-meter-panel mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Live microphone input meter">
           <div className="flex items-center justify-between gap-2 text-xs font-semibold">
             <span>Live microphone input</span>
             <span className="tabular-nums text-muted-foreground">Peak {mobileMicLevel.peakDb} dBFS</span>
@@ -4208,7 +4208,7 @@ export default function Studio() {
           <p className="text-[11px] leading-4 text-muted-foreground">{guidance.help} The meter does not change or process your recording.</p>
         </div>;
       })()}
-      {isMobile && isRecording && <section className="studio-mobile-recording-extended mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Mobile vocal recording assistant">
+      {isMobile && isRecording && <section className="studio-mobile-recording-extended studio-mobile-coach-panel mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Mobile vocal recording assistant">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-xs font-semibold">Vocal recording assistant</h3>
           <button type="button" aria-pressed={mobileCoachEnabled} onClick={()=>setMobileCoachEnabled(value=>!value)}
@@ -4245,6 +4245,10 @@ export default function Studio() {
             <p className="mt-1 text-[11px] text-muted-foreground">{mobileCaptureProgress.checkpointSeconds > 0 ? `Device recovery protected through ${Math.floor(mobileCaptureProgress.checkpointSeconds)}s` : "Waiting for device recovery checkpoint"}</p>
             {mobileCoachEnabled && mobileCoachGuidance && <p className="mt-1 text-[11px] text-amber-300">{mobileCoachGuidance.title}</p>}
           </section>}
+          {isRecording && mobileCoachEnabled && mobileCoachGuidance && <div className="studio-mobile-coach-inline hidden rounded-lg border border-white/10 bg-[#191526] px-3 py-2" role="status">
+            <p className="text-xs font-semibold">{mobileCoachGuidance.title}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{mobileCoachGuidance.help}</p>
+          </div>}
           <MobileStudioPreflight disabled={isRecording || mobileTakeFinalizing || microphoneStartupRef.current.pending} />
           <MobileStudioRecoveries ownerId={user?.id} scope={studioRecoveryScope(roomId)} onRestore={restoreMobileTake} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving || !canEditProject} />
           <div ref={mobileReviewPanelRef}>

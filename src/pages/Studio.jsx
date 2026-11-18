@@ -3120,14 +3120,19 @@ export default function Studio() {
       }));
 
       lastSavedStudioProjectRef.current = targetProjectId;
+      if (editsDuringSave) {
+        // The prior snapshot was committed, but its PC link must not be
+        // advertised as containing edits made during the upload. This also
+        // prevents Exit Studio from navigating away with unsaved changes.
+        toast.warning('Saved the earlier Studio snapshot. Newer edits are not yet in My Sessions. Save again before leaving or continuing on PC.', { id: toastId, duration: 9000 });
+        return false;
+      }
       toast.success(
         localPersistenceFailed
           ? "Studio project saved to My Sessions. Local autosave is unavailable on this device."
-          : editsDuringSave
-            ? "Saved the earlier Studio snapshot. Newer edits are not yet saved to My Sessions; save again."
-            : createdNewProject
-              ? "Studio session saved to My Sessions!"
-              : "Project saved successfully!",
+          : createdNewProject
+            ? "Studio session saved to My Sessions!"
+            : "Project saved successfully!",
         { id: toastId },
       );
       return true;

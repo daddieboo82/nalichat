@@ -6,12 +6,12 @@ import { checkLocalWebGPU } from '@/lib/voxWebGPU';
 import { validateLocalRvcModels } from '@/lib/voxRvcLocal';
 import { checkLocalRvcReadiness } from '@/lib/voxLocalReadiness';
 
-export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
+export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialMode }) {
   const [profiles, setProfiles] = useState([]);
   const [selected, setSelected] = useState('');
   const [name, setName] = useState('');
   const [reference, setReference] = useState(null);
-  const [mode, setMode] = useState(take?.audioUrl ? 'enhance' : 'speech');
+  const [mode, setMode] = useState(initialMode === 'local-rvc' && take?.audioUrl ? 'local-rvc' : take?.audioUrl ? 'enhance' : 'speech');
   const [text, setText] = useState('');
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -113,7 +113,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>VoxShift Vocal Studio</DialogTitle>
-          <DialogDescription>Polish your own recorded vocal, match an authorized reference voice, or generate spoken words. Voice profiles are saved in this browser.</DialogDescription>
+          <DialogDescription>Polish your original vocal or optionally reconstruct its vocal timbre with an authorized, pre-trained AI voice model. Model selection is required for generative reconstruction; it never starts automatically.</DialogDescription>
         </DialogHeader>
         {mode === 'enhance' && (
           <div className="rounded-md border p-3 space-y-2">
@@ -172,7 +172,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
             Generation mode
             <select className="mt-1 block w-full rounded border bg-background p-2" value={mode} onChange={event => { setMode(event.target.value); setResult(null); }}>
               <option value="enhance" disabled={!take?.audioUrl}>Vocal Polish · keep my own voice</option>
-              <option value="local-rvc" disabled={!take?.audioUrl}>Local AI voice conversion · beta (free models)</option>
+              <option value="local-rvc" disabled={!take?.audioUrl}>Generative AI Vocal Reconstruction · beta (local RVC)</option>
               <option value="sing" disabled={!take?.audioUrl}>Singing · preserve melody (beta)</option>
               <option value="convert" disabled={!take?.audioUrl}>Convert spoken take</option>
               <option value="speech">Text to speech</option>
@@ -180,7 +180,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
           </label>
           {mode === 'local-rvc' && (
             <div className="rounded border p-3 space-y-2 text-sm">
-              <p className="font-medium">Free AI voice conversion · experimental</p>
+              <p className="font-medium">Generative AI Vocal Reconstruction · Experimental</p>
               <p className="text-xs text-muted-foreground">Supply an authorized RVC v2 ONNX voice model, ContentVec ONNX, and RMVPE ONNX. Neural conversion currently runs using WebAssembly on your device's CPU (not WebGPU). Model files stay in this browser session. The browser downloads free ONNX runtime binaries when you generate. This may use significant memory and can be slow.</p>
               {[
                 ['model', 'RVC v2 voice model (.onnx)'],
@@ -200,7 +200,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd }) {
                 I have permission to use these model weights, including for my intended use.
               </label>
               {localModelError && <p className="text-xs text-muted-foreground">{localModelError}</p>}
-              <p className="text-xs text-muted-foreground">The model must already be trained for the authorized voice. Uploading a reference recording does not train it.</p>
+              <p className="text-xs text-muted-foreground">This option reconstructs vocal timbre using a pre-trained RVC model. It does not learn a new voice from one reference recording, repair all defects, or guarantee Suno-like results. It requires 1–20 seconds of source vocal audio and uses your browser CPU, without paid inference.</p>
             </div>
           )}
           {mode !== 'speech' ? (

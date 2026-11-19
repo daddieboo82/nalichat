@@ -5,7 +5,7 @@ import { polishVocalLocally } from './localVocalPolish';
 import { convertRvcLocally } from './voxRvcLocal';
 import { restoreWithNaliVoice } from './naliVoiceRestoration';
 
-async function useProfiles(mode, operation) {
+async function withProfileStore(mode, operation) {
   const database = await new Promise((resolve, reject) => {
     const request = indexedDB.open('nalichat-voxshift', 1);
     request.onupgradeneeded = () => request.result.createObjectStore('profiles', { keyPath: ['owner', 'id'] });
@@ -24,10 +24,10 @@ async function useProfiles(mode, operation) {
   }
 }
 
-export const readVoiceProfiles = (owner) => useProfiles('readonly', store =>
+export const readVoiceProfiles = (owner) => withProfileStore('readonly', store =>
   store.getAll(IDBKeyRange.bound([owner, ''], [owner, '\uffff'])));
-export const saveVoiceProfile = (profile) => useProfiles('readwrite', store => store.put(profile));
-export const deleteVoiceProfile = (owner, id) => useProfiles('readwrite', store => store.delete([owner, id]));
+export const saveVoiceProfile = (profile) => withProfileStore('readwrite', store => store.put(profile));
+export const deleteVoiceProfile = (owner, id) => withProfileStore('readwrite', store => store.delete([owner, id]));
 
 async function decodeAudio(blob) {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;

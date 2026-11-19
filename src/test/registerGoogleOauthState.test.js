@@ -8,7 +8,7 @@ describe('Google registration launch state', () => {
     expect(source).toContain('const [googleLoading, setGoogleLoading] = useState(false);');
     expect(source).toContain('if (googleLoading) return;');
     expect(source).toContain('setGoogleLoading(true);');
-    expect(source).toContain('await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()))');
+    expect(source).toContain('await Promise.resolve(signInWithProvider("google", safeReturnTo()))');
     expect(source).toContain('googleLoginErrorMessage(err)');
     expect(source).toContain('disabled={googleLoading || loading}');
     expect(source).toContain('Connecting to Google...');

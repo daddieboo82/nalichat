@@ -47,7 +47,12 @@ const mockToast = vi.hoisted(() => ({
 
 const mockToastObject = vi.hoisted(() => vi.fn());
 
+const mockLoginWithMfa = vi.hoisted(() => vi.fn());
+const mockSignInWithProvider = vi.hoisted(() => vi.fn());
+
 vi.mock('@/api/base44Client', () => ({ base44: mockBase44 }));
+vi.mock('@/lib/authMfa', () => ({ loginWithMfa: mockLoginWithMfa }));
+vi.mock('@/lib/authMfaFlow', () => ({ signInWithProvider: mockSignInWithProvider }));
 vi.mock('@/components/AuthLayout', () => ({
   default: ({ title, subtitle, footer, children }) => (
     <div>
@@ -116,7 +121,7 @@ describe('auth and onboarding flows', () => {
   });
 
   it('persists a successful email/password login before redirecting', async () => {
-    mockBase44.auth.loginViaEmailPassword.mockResolvedValueOnce({ access_token: 'session-token' });
+    mockLoginWithMfa.mockResolvedValueOnce({ access_token: 'session-token' });
     localStorage.setItem('last_activity', '1');
 
     renderInRouter(<Login />);
@@ -132,7 +137,7 @@ describe('auth and onboarding flows', () => {
   });
 
   it('shows login errors and guidance for invalid credentials', async () => {
-    mockBase44.auth.loginViaEmailPassword.mockRejectedValueOnce(new Error('Invalid email or password'));
+    mockLoginWithMfa.mockRejectedValueOnce(new Error('Invalid email or password'));
 
     renderInRouter(<Login />);
 
@@ -156,14 +161,14 @@ describe('auth and onboarding flows', () => {
     expect(localStorage.getItem('base44_access_token')).toBeNull();
     expect(Number(localStorage.getItem('last_activity'))).toBeGreaterThan(1);
     expect(sessionStorage.getItem('base44_token')).toBeNull();
-    expect(mockBase44.auth.loginWithProvider).toHaveBeenCalledWith('google', '/');
+    expect(mockSignInWithProvider).toHaveBeenCalledWith('google', '/');
 
     unmount();
     renderInRouter(<Register />);
 
     fireEvent.click(screen.getByRole('button', { name: /Join free with Google/i }));
     expect(sessionStorage.getItem('is_new_user')).toBe('true');
-    expect(mockBase44.auth.loginWithProvider).toHaveBeenLastCalledWith('google', '/');
+    expect(mockSignInWithProvider).toHaveBeenLastCalledWith('google', '/');
   });
 
   it('offers only email account access inside the iOS app', () => {

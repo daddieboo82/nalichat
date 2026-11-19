@@ -80,7 +80,13 @@ export async function startSubscriptionCheckout({
 }) {
   let response;
   try {
-    response = await invokeBillingFunction(invoke, "createPayPalSubscription", { sku, idempotencyKey });
+    response = await invokeBillingFunction(invoke, "createPayPalSubscription", {
+      sku,
+      idempotencyKey,
+      // PayPal must return the buyer to the origin they started from, so the
+      // session that opened the checkout is still there to confirm the payment.
+      returnOrigin: typeof window !== 'undefined' ? window.location.origin : undefined,
+    });
   } catch (error) {
     recordCheckoutFailure(error, sku);
     throw error;

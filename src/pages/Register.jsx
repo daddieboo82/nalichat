@@ -14,6 +14,9 @@ import { clearPersistedAuthTokens, markAuthActivity, persistAuthResult } from "@
 import { captureMarketingAttribution, getMarketingAttribution } from "@/lib/adAttribution";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
 import { trackProductEvent } from "@/lib/productAnalytics";
+import { signInWithProvider } from "@/lib/authMfaFlow";
+import MfaFlow from "@/components/MfaFlow";
+import { MfaScreen } from "@/components/MfaParts";
 import {
   otpErrorMessage,
   registrationErrorMessage,
@@ -41,6 +44,7 @@ export default function Register() {
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [mfaChallenge, setMfaChallenge] = useState(null);
   const [emailStartedTracked, setEmailStartedTracked] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
@@ -139,10 +143,20 @@ export default function Register() {
       const normalizedEmail = email.trim().toLowerCase();
       const normalizedOtp = otpCode.trim();
       const result = await base44.auth.verifyOtp({ email: normalizedEmail, otpCode: normalizedOtp });
-      const token = persistAuthResult(result);
-      if (token) {
-        base44.auth.setToken(token);
+      // Two-factor accounts finish the second step before any redirect.
+      if (result?.mfa_required) {
+        setMfaChallenge(result);
+        setLoading(false);
+        return;
       }
+      const token = persistAuthResult(result);
+      // Never redirect without a session: that lands the new user in a logged-out app.
+      if (!token) {
+        setError("Your email is verified, but the session could not be started. Log in to continue.");
+        setLoading(false);
+        return;
+      }
+      base44.auth.setToken(token);
       markAuthActivity();
       const attribution = getMarketingAttribution();
       trackPaywallEvent("registration_completed", {
@@ -242,7 +256,7 @@ export default function Register() {
       } catch {}
       clearPersistedAuthTokens();
       markAuthActivity();
-      await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()));
+      await Promise.resolve(signInWithProvider("google", safeReturnTo()));
     } catch (err) {
       const attribution = getMarketingAttribution();
       const msg = googleLoginErrorMessage(err);
@@ -263,6 +277,10 @@ export default function Register() {
       setGoogleLoading(false);
     }
   };
+
+  if (mfaChallenge) {
+    return <MfaScreen><MfaFlow challenge={mfaChallenge} returnTo={safeReturnTo()} /></MfaScreen>;
+  }
 
   if (showOtp) {
     return (

@@ -10,7 +10,7 @@ describe('Google login session recovery', () => {
   it('clears stale bearer tokens before launching Google OAuth', async () => {
     const login = await readText('src/pages/Login.jsx');
     const clearIndex = login.indexOf('clearPersistedAuthTokens();');
-    const oauthIndex = login.indexOf('base44.auth.loginWithProvider("google", safeReturnTo())');
+    const oauthIndex = login.indexOf('signInWithProvider("google", safeReturnTo())');
 
     expect(clearIndex).toBeGreaterThan(-1);
     expect(oauthIndex).toBeGreaterThan(clearIndex);

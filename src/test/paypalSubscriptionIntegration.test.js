@@ -95,10 +95,11 @@ describe('PayPal subscription integration contracts', () => {
     expect(ui).toContain('await startSubscriptionCheckout({');
   });
 
-  it('returns PayPal buyers to the canonical domain instead of the request host', async () => {
+  it('returns PayPal buyers to the origin they started from, limited to this app', async () => {
     const createSource = await read('base44/functions/createPayPalSubscription/entry.ts');
-    expect(createSource).toContain("new URL('/ThankYou?subscription=1', APP_BASE_URL)");
-    expect(createSource).toContain("new URL('/pricing?checkout=paypal_canceled', APP_BASE_URL)");
+    expect(createSource).toContain('allowedCheckoutOrigins().has(requestedOrigin) ? requestedOrigin : APP_BASE_URL');
+    expect(createSource).toContain("new URL('/ThankYou?subscription=1', checkoutOrigin)");
+    expect(createSource).toContain("new URL('/pricing?checkout=paypal_canceled', checkoutOrigin)");
     expect(createSource).not.toContain("req.headers.get('X-Base44-App-Url')");
   });
 

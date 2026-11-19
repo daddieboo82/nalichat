@@ -12,6 +12,10 @@ import { safeReturnTo } from "@/lib/authReturnTo";
 import { clearPersistedAuthTokens, markAuthActivity, persistAuthResult } from "@/lib/authSession";
 import { googleLoginErrorMessage, loginErrorMessage } from "@/lib/authErrorMessages";
 import { trackProductEvent } from "@/lib/productAnalytics";
+import { loginWithMfa } from "@/lib/authMfa";
+import { signInWithProvider } from "@/lib/authMfaFlow";
+import MfaFlow from "@/components/MfaFlow";
+import { MfaScreen } from "@/components/MfaParts";
 
 export default function Login() {
   const isNativeIos = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === "ios";
@@ -20,6 +24,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [mfaChallenge, setMfaChallenge] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +37,14 @@ export default function Login() {
         sessionStorage.setItem("login_pending_started_at", String(startedAt));
       } catch {}
       trackProductEvent("login_started", { source: "email_password", route: window.location.pathname });
-      const result = await base44.auth.loginViaEmailPassword(email, password);
+      const result = await loginWithMfa(email, password);
+      // Two-factor accounts get a challenge instead of a session: finish the
+      // second step here rather than redirecting without a session.
+      if (result?.mfa_required) {
+        setMfaChallenge(result);
+        setLoading(false);
+        return;
+      }
       const token = persistAuthResult(result);
       if (token) {
         base44.auth.setToken(token);
@@ -81,7 +93,7 @@ export default function Login() {
       // on the callback and make auth.me() report the user as logged out.
       clearPersistedAuthTokens();
       markAuthActivity();
-      await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()));
+      await Promise.resolve(signInWithProvider("google", safeReturnTo()));
     } catch (err) {
       const durationMs = Math.max(0, Date.now() - startedAt);
       try {
@@ -101,6 +113,10 @@ export default function Login() {
       setGoogleLoading(false);
     }
   };
+
+  if (mfaChallenge) {
+    return <MfaScreen><MfaFlow challenge={mfaChallenge} returnTo={safeReturnTo()} /></MfaScreen>;
+  }
 
   return (
     <AuthLayout

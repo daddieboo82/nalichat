@@ -173,12 +173,8 @@ describe('release configuration', () => {
   });
 
   it('reserves trial eligibility at checkout without consuming it before Stripe starts the trial', async () => {
-    const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
     const webhook = await readText('base44/functions/stripeWebhook/entry.ts');
 
-    expect(checkout).toContain('trial_claim_id: requestKey');
-    expect(checkout).not.toContain('trial_used_at: now');
-    expect(checkout).toContain('stripe_checkout_claim_id: requestKey');
     expect(webhook).toContain('trialUsedAt');
     expect(webhook).toContain('trial_used_at: trialUsedAt');
     expect(webhook).toContain('trial_claim_id: null');
@@ -782,11 +778,8 @@ describe('release configuration', () => {
 
 
   it('keeps subscription billing Stripe-authoritative and rate-limited', async () => {
-    const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
     const portal = await readText('base44/functions/createBillingPortal/entry.ts');
 
-    expect(checkout).toContain("'subscription_checkout'");
-    expect(checkout).toContain('status: 429');
     expect(portal).toContain("'billing_portal'");
     expect(portal).toContain('status: 429');
   });

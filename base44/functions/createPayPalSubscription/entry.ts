@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
+import { allowedCheckoutOrigins } from '../../shared/checkoutHelpers.ts';
 import { paypalPeriodEndForStatus, resolvePayPalSubscriptionStatus } from '../../shared/paypalSubscription.ts';
 import { hasLiveSubscription, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
 import { paypalSubscriptionRequestId } from '../../shared/paypalCheckoutRequest.ts';
@@ -226,11 +227,13 @@ Deno.serve(async (req) => {
     }
     // This claim is intentionally NOT released in catch or after a timeout.
     // The provider may have created an agreement even if the response fails.
-    // Always return buyers to the canonical site. The platform app URL can still
-    // be the old Base44 host, and a session on nalichat.org cannot confirm a
-    // payment that lands on a different origin.
-    const successUrl = new URL('/ThankYou?subscription=1', APP_BASE_URL).toString();
-    const cancelUrl = new URL('/pricing?checkout=paypal_canceled', APP_BASE_URL).toString();
+    // Return buyers to the origin they started from, so the session that opened
+    // the checkout is still there to confirm the payment. Only this app's own
+    // origins are accepted; anything else falls back to the canonical site.
+    const requestedOrigin = typeof body?.returnOrigin === 'string' ? body.returnOrigin.trim() : '';
+    const checkoutOrigin = allowedCheckoutOrigins().has(requestedOrigin) ? requestedOrigin : APP_BASE_URL;
+    const successUrl = new URL('/ThankYou?subscription=1', checkoutOrigin).toString();
+    const cancelUrl = new URL('/pricing?checkout=paypal_canceled', checkoutOrigin).toString();
     checkoutStage = 'paypal_create_subscription';
     const res = await fetch(apiBase() + '/v1/billing/subscriptions', {
       method: 'POST',

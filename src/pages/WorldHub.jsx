@@ -85,15 +85,15 @@ const worlds = {
 function WorldSplash({world,onComplete}) {
   const Icon=world.icon;
   useEffect(()=>{ const t=setTimeout(onComplete,2200); return()=>clearTimeout(t); },[onComplete]);
-  return <motion.div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black" initial={{opacity:1}} exit={{opacity:0,scale:1.05}} transition={{duration:.55}}>
+  return <motion.div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-background" initial={{opacity:1}} exit={{opacity:0,scale:1.05}} transition={{duration:.55}}>
     <div className={`absolute inset-0 bg-gradient-to-br ${world.glow}`} />
     <motion.div className={`absolute h-[65vmax] w-[65vmax] rounded-full bg-gradient-to-br ${world.orb} opacity-20 blur-[90px]`} initial={{scale:.4}} animate={{scale:1.1,rotate:25}} transition={{duration:2.1,ease:'easeOut'}}/>
     <div className="relative text-center">
-      <motion.div initial={{scale:.35,opacity:0,rotate:-20}} animate={{scale:1,opacity:1,rotate:0}} transition={{type:'spring',duration:1}} className="mx-auto flex h-28 w-28 items-center justify-center rounded-[2.5rem] border border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl"><Icon className="h-14 w-14"/></motion.div>
-      <motion.p initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:.35}} className="mt-8 text-xs font-black uppercase tracking-[.45em] text-white/60">NaliBase Portal</motion.p>
+      <motion.div initial={{scale:.35,opacity:0,rotate:-20}} animate={{scale:1,opacity:1,rotate:0}} transition={{type:'spring',duration:1}} className="mx-auto flex h-28 w-28 items-center justify-center rounded-[2.5rem] border border-border bg-foreground/10 shadow-2xl backdrop-blur-xl"><Icon className="h-14 w-14"/></motion.div>
+      <motion.p initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:.35}} className="mt-8 text-xs font-black uppercase tracking-[.45em] text-foreground/60">NaliBase Portal</motion.p>
       <motion.h1 initial={{opacity:0,scale:.85}} animate={{opacity:1,scale:1}} transition={{delay:.5}} className="mt-3 font-heading text-5xl font-black tracking-tight sm:text-8xl">{world.title}</motion.h1>
-      <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:.8}} className="mt-4 text-sm font-bold uppercase tracking-[.25em] text-white/70">{world.splash}</motion.p>
-      <motion.div className="mx-auto mt-8 h-1 w-48 overflow-hidden rounded-full bg-white/10"><motion.div className="h-full bg-white" initial={{x:'-100%'}} animate={{x:'0%'}} transition={{duration:1.8,ease:'easeInOut'}}/></motion.div>
+      <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:.8}} className="mt-4 text-sm font-bold uppercase tracking-[.25em] text-foreground/70">{world.splash}</motion.p>
+      <motion.div className="mx-auto mt-8 h-1 w-48 overflow-hidden rounded-full bg-foreground/10"><motion.div className="h-full bg-foreground" initial={{x:'-100%'}} animate={{x:'0%'}} transition={{duration:1.8,ease:'easeInOut'}}/></motion.div>
     </div>
   </motion.div>
 }
@@ -109,65 +109,65 @@ export default function WorldHub(){
   const WorldIcon=world.icon;
   return <>
     <AnimatePresence>{splash&&<WorldSplash key={worldId} world={world} onComplete={finishSplash}/>}</AnimatePresence>
-    <main className="relative min-h-[100dvh] overflow-hidden bg-black px-4 pb-28 pt-20 sm:px-6 lg:px-8">
+    <main className="relative min-h-[100dvh] overflow-hidden bg-background px-4 pb-28 pt-20 sm:px-6 lg:px-8">
       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${world.glow}`}/>
       <div className="pointer-events-none absolute inset-0 opacity-40 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:5rem_5rem] [mask-image:linear-gradient(to_bottom,black,transparent_80%)]"/>
       <motion.div className={`pointer-events-none absolute left-1/2 top-40 h-[48rem] w-[48rem] -translate-x-1/2 rounded-full bg-gradient-to-br ${world.orb} opacity-15 blur-[120px]`} animate={{scale:[1,1.12,1],rotate:[0,15,0]}} transition={{duration:14,repeat:Infinity}}/>
       <div className="relative mx-auto max-w-7xl">
-        <div className="flex items-center justify-between"><Link to="/" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-sm text-white/70 backdrop-blur-xl hover:text-white"><ArrowLeft className="h-4 w-4"/>NaliBase Hub</Link><span className="hidden text-xs font-bold uppercase tracking-[.2em] text-white/40 sm:block">Mall open · {world.title}</span></div>
+        <div className="flex items-center justify-between"><Link to="/" className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-4 py-2 text-sm text-foreground/70 backdrop-blur-xl hover:text-foreground"><ArrowLeft className="h-4 w-4"/>NaliBase Hub</Link><span className="hidden text-xs font-bold uppercase tracking-[.2em] text-foreground/40 sm:block">Mall open · {world.title}</span></div>
         <section className="relative flex min-h-[72vh] items-center justify-center py-16 text-center">
           <div className="w-full">
-            <motion.div initial={{scale:.8,opacity:0}} animate={{scale:1,opacity:1}} className="mx-auto flex h-24 w-24 items-center justify-center rounded-[2.25rem] border border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl"><WorldIcon className="h-11 w-11"/></motion.div>
-            <p className="mt-7 text-xs font-black uppercase tracking-[.34em] text-white/50">{world.eyebrow}</p>
+            <motion.div initial={{scale:.8,opacity:0}} animate={{scale:1,opacity:1}} className="mx-auto flex h-24 w-24 items-center justify-center rounded-[2.25rem] border border-border bg-foreground/10 shadow-2xl backdrop-blur-xl"><WorldIcon className="h-11 w-11"/></motion.div>
+            <p className="mt-7 text-xs font-black uppercase tracking-[.34em] text-foreground/50">{world.eyebrow}</p>
             <h1 className="mt-3 font-heading text-6xl font-black tracking-[-.05em] sm:text-8xl lg:text-9xl">{world.title}</h1>
-            <p className="mx-auto mt-5 max-w-3xl text-lg text-white/75 sm:text-2xl">{world.tagline}</p>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-white/45 sm:text-base">{world.atmosphere}</p>
-            <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-2 sm:grid-cols-4">{world.landmarks.map((x,i)=><motion.div key={x} initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:.15+i*.08}} className="rounded-2xl border border-white/10 bg-white/[.04] p-4 backdrop-blur-xl"><Map className="mx-auto h-4 w-4 text-white/50"/><p className="mt-2 text-xs font-bold text-white/70">{x}</p></motion.div>)}</div>
+            <p className="mx-auto mt-5 max-w-3xl text-lg text-foreground/75 sm:text-2xl">{world.tagline}</p>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-foreground/45 sm:text-base">{world.atmosphere}</p>
+            <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-2 sm:grid-cols-4">{world.landmarks.map((x,i)=><motion.div key={x} initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:.15+i*.08}} className="rounded-2xl border border-border/70 bg-foreground/[.04] p-4 backdrop-blur-xl"><Map className="mx-auto h-4 w-4 text-foreground/50"/><p className="mt-2 text-xs font-bold text-foreground/70">{x}</p></motion.div>)}</div>
           </div>
         </section>
         <section className="relative py-6 sm:py-10">
           <div className="grid gap-4 lg:grid-cols-[1.4fr_.6fr]">
-            <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[.035] p-6 backdrop-blur-xl">
-              <div className="flex items-center gap-2 text-white/45"><Radio className="h-4 w-4"/><p className="text-[10px] font-black uppercase tracking-[.28em]">World atmosphere</p></div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">{world.scene.map((item,i)=><motion.div key={item} initial={{opacity:0,y:12}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*.08}} className="rounded-2xl border border-white/[.07] bg-black/25 p-4"><div className="mb-3 flex items-center gap-2"><span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-30"/><span className="relative inline-flex h-2 w-2 rounded-full bg-white/70"/></span><span className="text-[9px] font-black uppercase tracking-[.2em] text-white/35">World signal</span></div><p className="text-xs leading-relaxed text-white/60">{item}</p></motion.div>)}</div>
+            <div className="overflow-hidden rounded-[2rem] border border-border/70 bg-foreground/[.035] p-6 backdrop-blur-xl">
+              <div className="flex items-center gap-2 text-foreground/45"><Radio className="h-4 w-4"/><p className="text-[10px] font-black uppercase tracking-[.28em]">World atmosphere</p></div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">{world.scene.map((item,i)=><motion.div key={item} initial={{opacity:0,y:12}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*.08}} className="rounded-2xl border border-border/50 bg-background/60 p-4"><div className="mb-3 flex items-center gap-2"><span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-foreground opacity-30"/><span className="relative inline-flex h-2 w-2 rounded-full bg-foreground/70"/></span><span className="text-[9px] font-black uppercase tracking-[.2em] text-foreground/35">World signal</span></div><p className="text-xs leading-relaxed text-foreground/60">{item}</p></motion.div>)}</div>
             </div>
-            <div className="rounded-[2rem] border border-white/10 bg-white/[.035] p-6 backdrop-blur-xl">
-              <div className="flex items-center gap-2 text-white/45"><Clock3 className="h-4 w-4"/><p className="text-[10px] font-black uppercase tracking-[.28em]">Always evolving</p></div>
-              <p className="mt-5 font-heading text-xl font-black">This world grows from within.</p><p className="mt-2 text-xs leading-relaxed text-white/50">Nali AI can add subtle improvements to this environment while preserving the mall, its storefronts and your creative flow.</p>
+            <div className="rounded-[2rem] border border-border/70 bg-foreground/[.035] p-6 backdrop-blur-xl">
+              <div className="flex items-center gap-2 text-foreground/45"><Clock3 className="h-4 w-4"/><p className="text-[10px] font-black uppercase tracking-[.28em]">Always evolving</p></div>
+              <p className="mt-5 font-heading text-xl font-black">This world grows from within.</p><p className="mt-2 text-xs leading-relaxed text-foreground/50">Nali AI can add subtle improvements to this environment while preserving the mall, its storefronts and your creative flow.</p>
             </div>
           </div>
         </section>
         <section className="relative py-10 sm:py-16">
-          <div className="mb-8 overflow-hidden rounded-[2rem] border border-white/10 bg-black/25 p-4 backdrop-blur-xl sm:p-6">
+          <div className="mb-8 overflow-hidden rounded-[2rem] border border-border/70 bg-background/60 p-4 backdrop-blur-xl sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div><div className="flex items-center gap-2 text-white/45"><Navigation className="h-4 w-4"/><p className="text-[10px] font-black uppercase tracking-[.25em]">Mall directory</p></div><p className="mt-2 text-sm text-white/60">You are in <strong className="text-white">{world.title}</strong>. Follow the concourse to a storefront.</p></div>
-              <div className="flex flex-wrap gap-2">{world.districts.map(([name],i)=><a key={name} href={'#storefront-'+i} className="rounded-full border border-white/10 bg-white/[.05] px-3 py-2 text-[10px] font-bold text-white/55 transition hover:bg-white/10 hover:text-white">{String(i+1).padStart(2,'0')} {name}</a>)}</div>
+              <div><div className="flex items-center gap-2 text-foreground/45"><Navigation className="h-4 w-4"/><p className="text-[10px] font-black uppercase tracking-[.25em]">Mall directory</p></div><p className="mt-2 text-sm text-foreground/60">You are in <strong className="text-foreground">{world.title}</strong>. Follow the concourse to a storefront.</p></div>
+              <div className="flex flex-wrap gap-2">{world.districts.map(([name],i)=><a key={name} href={'#storefront-'+i} className="rounded-full border border-border/70 bg-foreground/5 px-3 py-2 text-[10px] font-bold text-foreground/55 transition hover:bg-foreground/10 hover:text-foreground">{String(i+1).padStart(2,'0')} {name}</a>)}</div>
             </div>
           </div>
-          <div className="relative mb-10 hidden h-24 overflow-hidden rounded-[2rem] border border-white/[.07] bg-white/[.025] md:block">
-            <div className="absolute left-10 right-10 top-1/2 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent"/>
-            <motion.div className="absolute left-[8%] top-1/2 -translate-y-1/2" animate={{left:['8%','88%','8%']}} transition={{duration:18,repeat:Infinity,ease:'linear'}}><div className={'h-3 w-3 rounded-full bg-gradient-to-br '+world.orb+' shadow-[0_0_24px_rgba(255,255,255,.45)]'}/></motion.div>
-            <div className="absolute inset-0 flex items-center justify-around">{world.landmarks.map(x=><div key={x} className="flex flex-col items-center gap-2"><MapPin className="h-4 w-4 text-white/30"/><span className="rounded-full bg-black/70 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-white/40">{x}</span></div>)}</div>
+          <div className="relative mb-10 hidden h-24 overflow-hidden rounded-[2rem] border border-border/50 bg-foreground/[.025] md:block">
+            <div className="absolute left-10 right-10 top-1/2 h-px bg-gradient-to-r from-transparent via-foreground/25 to-transparent"/>
+            <motion.div className="absolute left-[8%] top-1/2 -translate-y-1/2" animate={{left:['8%','88%','8%']}} transition={{duration:18,repeat:Infinity,ease:'linear'}}><div className={'h-3 w-3 rounded-full bg-gradient-to-br '+world.orb+' shadow-[0_0_24px_hsl(var(--foreground)/0.45)]'}/></motion.div>
+            <div className="absolute inset-0 flex items-center justify-around">{world.landmarks.map(x=><div key={x} className="flex flex-col items-center gap-2"><MapPin className="h-4 w-4 text-foreground/30"/><span className="rounded-full bg-background/70 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-foreground/40">{x}</span></div>)}</div>
           </div>
-          <div className="mb-8"><div className="flex items-center gap-2 text-white/40"><Building2 className="h-4 w-4"/><p className="text-xs font-black uppercase tracking-[.28em]">Inside the mall</p></div><h2 className="mt-2 font-heading text-3xl font-black sm:text-5xl">Walk the concourse. Choose a storefront.</h2><p className="mt-3 max-w-2xl text-sm text-white/50">Every storefront opens into a complete NaliBase experience while keeping you connected to this world.</p></div>
+          <div className="mb-8"><div className="flex items-center gap-2 text-foreground/40"><Building2 className="h-4 w-4"/><p className="text-xs font-black uppercase tracking-[.28em]">Inside the mall</p></div><h2 className="mt-2 font-heading text-3xl font-black sm:text-5xl">Walk the concourse. Choose a storefront.</h2><p className="mt-3 max-w-2xl text-sm text-foreground/50">Every storefront opens into a complete NaliBase experience while keeping you connected to this world.</p></div>
           {!subscriptionLoading && !hasPaidAccess && (
             <div className="mb-8 flex flex-col gap-4 rounded-[2rem] border border-amber-300/25 bg-gradient-to-r from-amber-400/10 via-orange-500/10 to-pink-500/10 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:p-6">
               <div>
                 <div className="flex items-center gap-2 text-amber-300"><Sparkles className="h-4 w-4"/><p className="text-[10px] font-black uppercase tracking-[.25em]">Premium creator pass</p></div>
-                <p className="mt-2 font-heading text-xl font-black text-white">Get more power inside every NaliBase world.</p>
-                <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/55">Upgrade for more NALI.ai, deeper Studio tools, larger creative transfers and premium workflow features. Premium starts at $7.99/month.</p>
+                <p className="mt-2 font-heading text-xl font-black text-foreground">Get more power inside every NaliBase world.</p>
+                <p className="mt-1 max-w-2xl text-xs leading-relaxed text-foreground/55">Upgrade for more NALI.ai, deeper Studio tools, larger creative transfers and premium workflow features. Premium starts at $7.99/month.</p>
               </div>
               <Link to={"/pricing?source="+worldId+"_world_upgrade"} onClick={()=>trackProductEvent('upgrade_click',{source:worldId+'_world_upgrade',cta:'unlock_premium'})} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-300 px-5 text-sm font-black text-black transition hover:bg-amber-200">Unlock Premium <ArrowRight className="h-4 w-4"/></Link>
             </div>
           )}
           <div className="grid gap-5 md:grid-cols-2">{world.districts.map(([name,description,Icon],index)=><motion.div key={name} initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:index*.06}} whileHover={{y:-7,scale:1.01}}>
-            <Link id={"storefront-"+index} to={canonicalWorld.storefronts[index].path} state={{fromWorld:worldId}} onClick={()=>trackProductEvent('post_login_action',{source:`${worldId}_world`,action:`open_${name.toLowerCase().replace(/\s+/g,'_')}`})} className="group relative flex min-h-64 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[.055] p-7 shadow-2xl backdrop-blur-2xl transition hover:border-white/25">
+            <Link id={"storefront-"+index} to={canonicalWorld.storefronts[index].path} state={{fromWorld:worldId}} onClick={()=>trackProductEvent('post_login_action',{source:`${worldId}_world`,action:`open_${name.toLowerCase().replace(/\s+/g,'_')}`})} className="group relative flex min-h-64 overflow-hidden rounded-[2rem] border border-border/70 bg-foreground/[.055] p-7 shadow-2xl backdrop-blur-2xl transition hover:border-border">
               <div className={`absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-br ${world.orb} opacity-10 blur-3xl transition group-hover:opacity-25`}/>
-              <div className="relative z-10 flex w-full flex-col"><div className="flex items-start justify-between"><div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/15 bg-black/30"><Icon className="h-7 w-7"/></div><ArrowRight className="h-6 w-6 text-white/35 transition group-hover:translate-x-2 group-hover:text-white"/></div><div className="mt-auto pt-12"><div className="flex items-center gap-2 text-white/35"><Store className="h-3.5 w-3.5"/><p className="text-[10px] font-black uppercase tracking-[.22em]">Storefront {String(index+1).padStart(2,'0')}</p></div><h3 className="mt-2 font-heading text-3xl font-black">{name}</h3><p className="mt-2 max-w-md text-sm leading-relaxed text-white/55">{description}</p></div></div>
+              <div className="relative z-10 flex w-full flex-col"><div className="flex items-start justify-between"><div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-background/60"><Icon className="h-7 w-7"/></div><ArrowRight className="h-6 w-6 text-foreground/35 transition group-hover:translate-x-2 group-hover:text-foreground"/></div><div className="mt-auto pt-12"><div className="flex items-center gap-2 text-foreground/35"><Store className="h-3.5 w-3.5"/><p className="text-[10px] font-black uppercase tracking-[.22em]">Storefront {String(index+1).padStart(2,'0')}</p></div><h3 className="mt-2 font-heading text-3xl font-black">{name}</h3><p className="mt-2 max-w-md text-sm leading-relaxed text-foreground/55">{description}</p></div></div>
             </Link>
           </motion.div>)}</div>
         </section>
-        <section className="mt-12 overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[.04] p-8 text-center backdrop-blur-2xl sm:p-12"><Sparkles className="mx-auto h-7 w-7 text-white/60"/><p className="mt-4 text-xs font-black uppercase tracking-[.3em] text-white/40">NaliBase Portal Network</p><h2 className="mx-auto mt-3 max-w-3xl font-heading text-3xl font-black sm:text-5xl">This mall is one destination inside a much larger universe.</h2><p className="mx-auto mt-4 max-w-2xl text-sm text-white/55">Your identity, projects and creative momentum move with you. Return to the Hub whenever you want to enter another environment.</p><Link to="/" className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 font-bold text-black">Return to NaliBase <ArrowRight className="h-4 w-4"/></Link></section>
+        <section className="mt-12 overflow-hidden rounded-[2.5rem] border border-border/70 bg-foreground/[.04] p-8 text-center backdrop-blur-2xl sm:p-12"><Sparkles className="mx-auto h-7 w-7 text-foreground/60"/><p className="mt-4 text-xs font-black uppercase tracking-[.3em] text-foreground/40">NaliBase Portal Network</p><h2 className="mx-auto mt-3 max-w-3xl font-heading text-3xl font-black sm:text-5xl">This mall is one destination inside a much larger universe.</h2><p className="mx-auto mt-4 max-w-2xl text-sm text-foreground/55">Your identity, projects and creative momentum move with you. Return to the Hub whenever you want to enter another environment.</p><Link to="/" className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-foreground px-6 py-3 font-bold text-background">Return to NaliBase <ArrowRight className="h-4 w-4"/></Link></section>
       </div>
     </main>
   </>;

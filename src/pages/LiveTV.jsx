@@ -150,7 +150,7 @@ export default function LiveTV() {
       const response = await base44.functions.invoke("liveTvChannels", {});
       const live = response?.data?.channels;
       if (sourceRef.current !== "free" || !Array.isArray(live) || !live.length) return;
-      setChannels(live);
+      setChannels(live.map((channel) => ({ ...channel, verified: true })));
       setSelected((current) => (current && !live.some((channel) => channel.url === current.url) ? null : current));
     } catch {}
   };
@@ -237,7 +237,13 @@ export default function LiveTV() {
             <button key={channel.url + index} type="button" onClick={() => chooseChannel(channel)}
               className="flex min-h-14 w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-secondary">
               {channel.logo ? <img src={channel.logo} alt="" className="h-9 w-9 rounded-lg object-cover" /> : <Play className="h-5 w-5 text-primary" />}
-              <span className="min-w-0"><span className="block truncate text-sm font-medium">{channel.name}</span><span className="block truncate text-xs text-muted-foreground">{channel.group}</span></span>
+              <span className="min-w-0">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate text-sm font-medium">{channel.name}</span>
+                  {channel.verified && <span className="shrink-0 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">Live</span>}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">{channel.group}</span>
+              </span>
             </button>
           ))}
         </aside>

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Hls from "hls.js";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Heart, ListVideo, PictureInPicture2, Play, Upload, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -53,21 +52,42 @@ export default function LiveTV() {
     if (!video || !selected?.url) return undefined;
     const isHls = /\.m3u8(?:$|[?#])/i.test(selected.url);
     if (!isHls) return undefined;
+
+    const url = selected.url;
+    let disposed = false;
+    let hls = null;
+    let usingNative = false;
+
     const nativeHls = video.canPlayType("application/vnd.apple.mpegurl") || video.canPlayType("application/x-mpegURL");
     if (nativeHls) {
-      video.src = selected.url;
+      usingNative = true;
+      video.src = url;
       video.load();
-      return () => { video.removeAttribute("src"); video.load(); };
+    } else {
+      // The HLS player library is ~600 kB. Importing it with the page made the
+      // first visit blank while that chunk downloaded, so it is fetched only
+      // once a channel actually needs it — browsers with native HLS never pay
+      // for it at all.
+      import("hls.js")
+        .then(({ default: Hls }) => {
+          if (disposed) return;
+          if (!Hls.isSupported()) {
+            setError("This browser cannot play this HLS stream.");
+            return;
+          }
+          hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+          hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(url));
+          hls.attachMedia(video);
+          hls.on(Hls.Events.ERROR, (_event, data) => { if (data?.fatal) setError("This channel could not be played. Check that the stream is online and permits browser playback."); });
+        })
+        .catch(() => { if (!disposed) setError("This channel could not be played in this browser."); });
     }
-    if (!Hls.isSupported()) {
-      setError("This browser cannot play this HLS stream.");
-      return undefined;
-    }
-    const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
-    hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(selected.url));
-    hls.attachMedia(video);
-    hls.on(Hls.Events.ERROR, (_event, data) => { if (data?.fatal) setError("This channel could not be played. Check that the stream is online and permits browser playback."); });
-    return () => hls.destroy();
+
+    return () => {
+      disposed = true;
+      if (hls) hls.destroy();
+      if (usingNative) { video.removeAttribute("src"); video.load(); }
+    };
   }, [selected?.url]);
 
   const chooseChannel = (channel) => {

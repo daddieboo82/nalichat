@@ -110,7 +110,7 @@ export default function VoiceMatchDialog({ owner, take, onClose, onAdd, initialM
 
   return (
     <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg bg-studio-surface border-foreground/10">
         <DialogHeader>
           <DialogTitle>VoxShift Vocal Studio</DialogTitle>
           <DialogDescription>NaliVoice is a custom NaliBase neural audio research engine. No model files or paid AI services are needed. It does not yet provide full generative singing or voice cloning.</DialogDescription>

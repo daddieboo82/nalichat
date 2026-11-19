@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 const ROLE_COLORS = {
   editor: "bg-primary/20 text-primary",
-  viewer: "bg-secondary text-muted-foreground",
+  viewer: "bg-studio-raised text-muted-foreground",
 };
 
 export default function ProjectSettingsDialog({ project, open, onOpenChange, onDelete }) {
@@ -109,7 +109,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent className="bg-studio-surface border-foreground/10 max-w-md">
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2">
             <Settings className="w-4 h-4 text-primary" />
@@ -138,7 +138,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
 
           {/* Owner row */}
           {!usersLoading && !usersError && owner && (
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-studio-raised/60">
               <Avatar className="w-8 h-8 shrink-0">
                 <AvatarImage src={owner.avatar_url} />
                 <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
@@ -166,7 +166,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
               {collaborators.map(user => {
                 const role = project.collaborator_roles?.[user.id] || "viewer";
                 return (
-                  <div key={user.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50">
+                  <div key={user.id} className="flex items-center gap-3 p-3 rounded-xl bg-studio-raised/50 border border-foreground/10">
                     <Avatar className="w-8 h-8 shrink-0">
                       <AvatarImage src={user.avatar_url} />
                       <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
@@ -214,7 +214,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
           </div>
 
           <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
-          <AlertDialogContent className="bg-card border-border">
+          <AlertDialogContent className="bg-studio-surface border-foreground/10">
             <AlertDialogHeader>
               <AlertDialogTitle>Delete "{project.title}"?</AlertDialogTitle>
               <AlertDialogDescription>

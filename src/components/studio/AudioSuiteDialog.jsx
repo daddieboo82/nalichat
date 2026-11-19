@@ -148,7 +148,7 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent className="bg-studio-surface border-foreground/10 max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-primary" />
@@ -173,7 +173,7 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
                     "flex flex-col items-center gap-1 p-3 rounded-lg border transition-all text-center",
                     processType === p.id
                       ? "bg-primary/20 border-primary text-primary"
-                      : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                      : "bg-studio-raised/40 border-foreground/10 text-muted-foreground hover:bg-studio-raised hover:text-foreground"
                   )}
                 >
                   <Icon className="w-5 h-5" />

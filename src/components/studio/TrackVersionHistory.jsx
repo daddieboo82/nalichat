@@ -144,7 +144,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
       if (!v && audioEl) { audioEl.pause(); setAudioEl(null); setPlayingId(null); }
       onOpenChange(v);
     }}>
-      <DialogContent className="bg-card border-border max-w-md max-h-[80dvh] flex flex-col">
+      <DialogContent className="bg-studio-surface border-foreground/10 max-w-md max-h-[80dvh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2">
             <History className="w-4 h-4 text-primary" />
@@ -158,7 +158,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
               placeholder="Label (optional)..."
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              className="bg-secondary/50 border-0 rounded-xl text-sm h-9 flex-1"
+              className="bg-studio-raised/60 border-0 rounded-xl text-sm h-9 flex-1"
             />
             <Button
               size="sm"
@@ -190,7 +190,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
             versions.map((v) => (
               <div
                 key={v.id}
-                className="flex items-center gap-2 bg-secondary/30 rounded-xl p-3 border border-border/50"
+                className="flex items-center gap-2 bg-studio-raised/50 rounded-xl p-3 border border-foreground/10"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -217,7 +217,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
                     onClick={() => handlePlay(v)}
                     className={cn(
                       "w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
-                      playingId === v.id ? "bg-accent/20 text-accent" : "bg-secondary hover:bg-secondary/80"
+                      playingId === v.id ? "bg-accent/20 text-accent" : "bg-studio-raised hover:bg-studio-overlay"
                     )}
                     title="Preview"
                   >

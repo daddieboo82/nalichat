@@ -80,7 +80,7 @@ export default function SpotDialog({ open, onOpenChange, clip, onSpot, bpm = 120
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] bg-card border-border">
+      <DialogContent className="sm:max-w-[400px] bg-studio-surface border-foreground/10">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-primary" />

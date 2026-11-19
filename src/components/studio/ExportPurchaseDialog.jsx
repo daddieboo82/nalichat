@@ -50,7 +50,7 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent className="bg-studio-surface border-foreground/10 max-w-md">
         <DialogHeader>
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center mx-auto mb-4">
             <Download className="w-6 h-6 text-white" />

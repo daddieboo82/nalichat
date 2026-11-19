@@ -156,7 +156,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
           </Button>
         </div>
 
-        <DialogContent className="bg-card border-border shadow-2xl max-w-md">
+        <DialogContent className="bg-studio-surface border-foreground/10 shadow-2xl max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading text-lg">Import Audio Tracks</DialogTitle>
           </DialogHeader>
@@ -173,7 +173,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
               className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
                 dragActive
                   ? "border-primary/60 bg-primary/10"
-                  : "border-border/50 hover:border-primary/40 bg-secondary/20"
+                  : "border-foreground/10 hover:border-primary/40 bg-studio-raised/40"
               }`}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -205,7 +205,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="flex items-start gap-3 p-3 rounded-xl bg-secondary/40 border border-border/50"
+                    className="flex items-start gap-3 p-3 rounded-xl bg-studio-raised/60 border border-foreground/10"
                   >
                     <div className="mt-0.5 flex-shrink-0">
                       {item.status === "pending" && (
@@ -227,7 +227,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
                         <p className="text-xs text-destructive mt-1">{item.error}</p>
                       )}
                       {item.status === "uploading" && (
-                        <div className="w-full h-1 bg-secondary rounded-full mt-2 overflow-hidden">
+                        <div className="w-full h-1 bg-studio-raised rounded-full mt-2 overflow-hidden">
                           <div className="h-full bg-primary/50 animate-pulse w-1/3" />
                         </div>
                       )}

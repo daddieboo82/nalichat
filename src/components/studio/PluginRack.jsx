@@ -109,9 +109,9 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="overflow-hidden shrink-0 relative z-10"
           >
-            <div className="mx-2 sm:mx-3 mt-2 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] overflow-hidden">
+            <div className="mx-2 sm:mx-3 mt-2 rounded-2xl border border-foreground/10 bg-studio-raised/60 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/[0.02]">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-foreground/10 bg-studio-raised/40">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="w-4 h-4 text-primary" />
                   <span className="font-heading font-bold text-sm">Plugin Rack</span>
@@ -126,7 +126,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                         onClick={() => onTargetChange(null)}
                         className={cn(
                           'px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-colors',
-                          !isMaster ? 'border-primary/50 bg-primary/10 text-primary' : 'border-white/10 text-muted-foreground hover:text-foreground'
+                          !isMaster ? 'border-primary/50 bg-primary/10 text-primary' : 'border-foreground/10 text-muted-foreground hover:text-foreground'
                         )}
                         title="Edit the selected track's FX chain"
                       >
@@ -136,7 +136,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                         onClick={() => onTargetChange('master')}
                         className={cn(
                           'px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-colors',
-                          isMaster ? 'border-primary/50 bg-primary/10 text-primary' : 'border-white/10 text-muted-foreground hover:text-foreground'
+                          isMaster ? 'border-primary/50 bg-primary/10 text-primary' : 'border-foreground/10 text-muted-foreground hover:text-foreground'
                         )}
                         title="Edit the master bus FX chain"
                       >
@@ -147,7 +147,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                 </div>
                 <button
                   onClick={onToggle}
-                  className="w-7 h-7 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                  className="w-7 h-7 rounded-lg hover:bg-studio-raised flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                   title="Close Plugin Rack"
                   aria-label="Close Plugin Rack"
                 >
@@ -156,7 +156,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
               </div>
 
               {onTuneVocal && !isMaster && (
-                <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-white/10">
+                <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-foreground/10">
                   <button
                     type="button"
                     onClick={onTuneVocal}
@@ -170,7 +170,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
               )}
 
               {onVoiceMatch && !isMaster && (
-                <div className="px-4 py-2 border-b border-white/10">
+                <div className="px-4 py-2 border-b border-foreground/10">
                   <button type="button" onClick={onVoiceMatch} className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary">
                     Voice Match
                   </button>
@@ -189,7 +189,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                     <div
                       key={plugin.id}
                       className={cn(
-                        "w-[220px] shrink-0 border-r border-white/10 p-3 flex flex-col gap-2 transition-all",
+                        "w-[220px] shrink-0 border-r border-foreground/10 p-3 flex flex-col gap-2 transition-all",
                         !isActive && "opacity-50",
                         !isEnabled && isActive && "opacity-40"
                       )}
@@ -197,7 +197,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                       {/* Plugin Header */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center bg-secondary/60", isActive && "bg-secondary/80")}>
+                          <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center bg-studio-raised", isActive && "bg-studio-overlay")}>
                             <Icon className={cn("w-3.5 h-3.5", isActive ? plugin.color : "text-muted-foreground")} />
                           </div>
                           <span className="text-xs font-semibold truncate">{plugin.name}</span>
@@ -209,7 +209,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                               "w-7 h-7 rounded-lg flex items-center justify-center transition-all shrink-0 min-w-[28px] min-h-[28px]",
                               isEnabled
                                 ? "bg-primary/20 text-primary hover:bg-primary/30"
-                                : "bg-secondary text-muted-foreground hover:text-foreground"
+                                : "bg-studio-raised text-muted-foreground hover:text-foreground"
                             )}
                             title={isEnabled ? "Disable" : "Enable"}
                             aria-label={isEnabled ? "Disable plugin" : "Enable plugin"}
@@ -237,7 +237,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                               <select
                                 value={state.params?.Preset ?? 'natural'}
                                 onChange={event => selectVoxShiftPreset(event.target.value)}
-                                className="min-w-0 flex-1 rounded bg-secondary px-2 py-1 text-foreground"
+                                className="min-w-0 flex-1 rounded bg-studio-overlay px-2 py-1 text-foreground"
                               >
                                 {Object.entries(VOX_SHIFT_PRESETS).map(([id, preset]) => (
                                   <option key={id} value={id}>{preset.name}</option>
@@ -280,13 +280,13 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
               </div>
 
               {!hasTracks && !isMaster && (
-                <div className="px-4 py-3 text-xs text-muted-foreground text-center bg-white/[0.02]">
+                <div className="px-4 py-3 text-xs text-muted-foreground text-center bg-studio-raised/40">
                   Add tracks to your session to start using effects and plugins.
                 </div>
               )}
 
               {hasTracks && !hasTarget && (
-                <div className="px-4 py-3 text-xs text-muted-foreground text-center bg-white/[0.02]">
+                <div className="px-4 py-3 text-xs text-muted-foreground text-center bg-studio-raised/40">
                   Select a track (or hit <span className="text-primary/80">FX</span> in the mixer) to edit its chain — or switch to <span className="text-primary/80">Master</span>.
                 </div>
               )}

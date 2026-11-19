@@ -90,9 +90,9 @@ export default function ExportBounce({ postId, title, disabled }) {
           {subscriptionLoading ? "Checking access..." : canMaster ? "Mastering Analysis" : billingReviewNeeded ? "Verify Premium" : "Premium Analysis"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-card border-border shadow-2xl max-w-md">
+      <DialogContent className="bg-studio-surface border-foreground/10 shadow-2xl max-w-md">
         {!canMaster && !subscriptionLoading && billingReviewNeeded && (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3" role="status">
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-foreground/10 p-3" role="status">
             <span className="w-full text-sm text-muted-foreground">Premium verification needs attention. Paid access remains locked until confirmation.</span>
             <Button size="sm" variant="outline" onClick={() => refetch()}>Retry verification</Button>
             <Button size="sm" variant="outline" asChild><Link to="/settings">Review billing</Link></Button>
@@ -121,7 +121,7 @@ export default function ExportBounce({ postId, title, disabled }) {
               Loudness Standard
             </label>
             <Select value={loudnessStandard} onValueChange={setLoudnessStandard}>
-              <SelectTrigger className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border/50 text-sm focus:border-primary/50 outline-none cursor-pointer h-auto">
+              <SelectTrigger className="w-full px-3 py-2 rounded-lg bg-studio-raised/60 border border-foreground/10 text-sm focus:border-primary/50 outline-none cursor-pointer h-auto">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

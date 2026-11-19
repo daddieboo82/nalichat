@@ -44,7 +44,7 @@ export default function MasterPresets({ onSelect }) {
             type="button"
             key={preset.id}
             onClick={() => onSelect(preset.settings)}
-            className="group relative p-3 rounded-lg border border-border/50 bg-secondary/30 hover:border-accent/50 hover:bg-accent/10 transition-all text-left"
+            className="group relative p-3 rounded-lg border border-foreground/10 bg-studio-raised/50 hover:border-accent/50 hover:bg-accent/10 transition-all text-left"
           >
             <div className="text-xl mb-2">{preset.icon}</div>
             <div className="text-xs font-semibold text-foreground group-hover:text-accent transition-colors">

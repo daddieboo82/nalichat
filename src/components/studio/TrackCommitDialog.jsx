@@ -68,7 +68,7 @@ export default function TrackCommitDialog({ open, onOpenChange, track, onCommit 
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[400px] bg-card border-border">
+      <DialogContent className="sm:max-w-[400px] bg-studio-surface border-foreground/10">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-heading">
             <Snowflake className="w-5 h-5 text-accent" />
@@ -81,7 +81,7 @@ export default function TrackCommitDialog({ open, onOpenChange, track, onCommit 
             Committing renders this track's current settings — volume, pan, clip gain, and fades — into a new audio file.
             This frees up CPU by removing the need for real-time processing.
           </p>
-          <div className="bg-secondary/30 rounded-lg px-3 py-2 text-xs">
+          <div className="bg-studio-raised/50 rounded-lg px-3 py-2 text-xs">
             <span className="text-muted-foreground">Track: </span>
             <span className="font-semibold text-foreground">{track?.name}</span>
           </div>

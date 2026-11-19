@@ -53,7 +53,7 @@ export default function FadePresetsDialog({ open, onOpenChange, tracks, selected
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent className="bg-studio-surface border-foreground/10 max-w-md">
         <DialogHeader>
           <DialogTitle>Fade Presets</DialogTitle>
         </DialogHeader>
@@ -73,7 +73,7 @@ export default function FadePresetsDialog({ open, onOpenChange, tracks, selected
                   "flex items-center gap-3 p-3 rounded-lg border transition-all text-left",
                   preset === p.id
                     ? "bg-primary/20 border-primary"
-                    : "bg-secondary/30 border-border hover:bg-secondary/50"
+                    : "bg-studio-raised/50 border-foreground/10 hover:bg-studio-raised"
                 )}
               >
                 {renderCurve(p.curve)}

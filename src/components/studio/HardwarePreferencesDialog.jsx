@@ -23,7 +23,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-card border-border text-foreground z-[200]">
+      <DialogContent className="max-w-md bg-studio-surface border-foreground/10 text-foreground z-[200]">
         <DialogHeader>
           <DialogTitle>Hardware Preferences</DialogTitle>
         </DialogHeader>
@@ -34,7 +34,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
               value={localSettings?.driverType || "ASIO (Recommended)"}
               onValueChange={(val) => setLocalSettings(prev => ({...prev, driverType: val}))}
             >
-              <SelectTrigger aria-label="Driver Type" className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+              <SelectTrigger aria-label="Driver Type" className="bg-studio-raised/60 border border-foreground/10 rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                 <SelectValue placeholder="Driver Type" />
               </SelectTrigger>
               <SelectContent className="z-[300]">
@@ -52,7 +52,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
               value={localSettings?.audioInput || "System Default"}
               onValueChange={(val) => setLocalSettings(prev => ({...prev, audioInput: val}))}
             >
-              <SelectTrigger aria-label="Audio Input" className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+              <SelectTrigger aria-label="Audio Input" className="bg-studio-raised/60 border border-foreground/10 rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                 <SelectValue placeholder="Audio Input" />
               </SelectTrigger>
               <SelectContent className="z-[300]">
@@ -68,7 +68,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
                 value={localSettings?.audioOutput || "System Default"}
                 onValueChange={(val) => setLocalSettings(prev => ({...prev, audioOutput: val}))}
               >
-                <SelectTrigger aria-label="Audio Output" className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <SelectTrigger aria-label="Audio Output" className="bg-studio-raised/60 border border-foreground/10 rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                   <SelectValue placeholder="Audio Output" />
                 </SelectTrigger>
                 <SelectContent className="z-[300]">
@@ -86,7 +86,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
                 value={localSettings?.clockSource || "Internal"}
                 onValueChange={(val) => setLocalSettings(prev => ({...prev, clockSource: val}))}
               >
-                <SelectTrigger aria-label="Clock Source" className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <SelectTrigger aria-label="Clock Source" className="bg-studio-raised/60 border border-foreground/10 rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                   <SelectValue placeholder="Clock Source" />
                 </SelectTrigger>
                 <SelectContent className="z-[300]">
@@ -103,7 +103,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
                 value={localSettings?.directMonitoring || "Off"}
                 onValueChange={(val) => setLocalSettings(prev => ({...prev, directMonitoring: val}))}
               >
-                <SelectTrigger aria-label="Direct Monitoring" className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <SelectTrigger aria-label="Direct Monitoring" className="bg-studio-raised/60 border border-foreground/10 rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                   <SelectValue placeholder="Direct Monitoring" />
                 </SelectTrigger>
                 <SelectContent className="z-[300]">
@@ -121,7 +121,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
                 value={localSettings?.noiseCancellation || "Off"}
                 onValueChange={(val) => setLocalSettings(prev => ({...prev, noiseCancellation: val}))}
               >
-                <SelectTrigger aria-label="Noise Cancellation" className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <SelectTrigger aria-label="Noise Cancellation" className="bg-studio-raised/60 border border-foreground/10 rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                   <SelectValue placeholder="Noise Cancellation" />
                 </SelectTrigger>
                 <SelectContent className="z-[300]">
@@ -138,7 +138,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
                 value={localSettings?.channelConfig || "Stereo (2.0)"}
                 onValueChange={(val) => setLocalSettings(prev => ({...prev, channelConfig: val}))}
               >
-                <SelectTrigger aria-label="Channel Config" className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <SelectTrigger aria-label="Channel Config" className="bg-studio-raised/60 border border-foreground/10 rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                   <SelectValue placeholder="Channel Config" />
                 </SelectTrigger>
                 <SelectContent className="z-[300]">
@@ -156,7 +156,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
               value={localSettings?.sampleRate || "44.1 kHz"}
               onValueChange={(val) => setLocalSettings(prev => ({...prev, sampleRate: val}))}
             >
-              <SelectTrigger aria-label="Sample Rate" className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+              <SelectTrigger aria-label="Sample Rate" className="bg-studio-raised/60 border border-foreground/10 rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                 <SelectValue placeholder="Sample Rate" />
               </SelectTrigger>
               <SelectContent className="z-[300]">
@@ -174,7 +174,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
               value={String(localSettings?.bufferSize || "256")}
               onValueChange={(val) => setLocalSettings(prev => ({...prev, bufferSize: val}))}
             >
-              <SelectTrigger aria-label="Buffer Size" className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+              <SelectTrigger aria-label="Buffer Size" className="bg-studio-raised/60 border border-foreground/10 rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                 <SelectValue placeholder="Buffer Size" />
               </SelectTrigger>
               <SelectContent className="z-[300]">
@@ -199,7 +199,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
             </div>
           </div>
           {!hardware.midi && (
-            <p className="text-[10px] text-muted-foreground bg-secondary/30 p-2 rounded border border-border/50">
+            <p className="text-[10px] text-muted-foreground bg-studio-raised/50 p-2 rounded border border-foreground/10">
               <strong>Note:</strong> MIDI detection requires a browser with WebMIDI API support (like Chrome or Edge) and allowed site permissions. If using Safari or Firefox, MIDI devices may not be detected natively.
             </p>
           )}

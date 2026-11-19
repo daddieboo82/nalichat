@@ -13,7 +13,7 @@ export default function StudioExtras({
   return (
     <>
       <Dialog open={showQuickMemo} onOpenChange={setShowQuickMemo}>
-        <DialogContent className="max-w-4xl bg-background border-border overflow-y-auto h-[650px] p-0">
+        <DialogContent className="max-w-4xl bg-studio-bg border-foreground/10 overflow-y-auto h-[650px] p-0">
           <DialogHeader className="px-4 py-3 border-b border-border">
             <DialogTitle className="font-heading text-lg">Quick Memo</DialogTitle>
           </DialogHeader>
@@ -22,11 +22,11 @@ export default function StudioExtras({
       </Dialog>
 
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="bg-card border-border shadow-2xl max-w-md">
+        <DialogContent className="bg-studio-surface border-foreground/10 shadow-2xl max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading text-lg">Import Audio Tracks</DialogTitle>
           </DialogHeader>
-          <div className="border-2 border-dashed rounded-2xl p-8 text-center transition-colors border-border/50 hover:border-primary/40 bg-secondary/20">
+          <div className="border-2 border-dashed rounded-2xl p-8 text-center transition-colors border-foreground/10 hover:border-primary/40 bg-studio-raised/40">
             <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
               <Upload className="w-7 h-7 text-primary/70" />
             </div>
@@ -45,7 +45,7 @@ export default function StudioExtras({
       </Dialog>
 
       <Dialog open={showMilestones} onOpenChange={setShowMilestones}>
-        <DialogContent className="max-w-xl h-[600px] p-0 border-border bg-background flex flex-col overflow-hidden">
+        <DialogContent className="max-w-xl h-[600px] p-0 border-foreground/10 bg-studio-bg flex flex-col overflow-hidden">
           <DialogHeader className="sr-only">
             <DialogTitle>Milestones</DialogTitle>
           </DialogHeader>

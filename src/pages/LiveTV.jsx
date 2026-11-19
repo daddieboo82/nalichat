@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Heart, ListVideo, PictureInPicture2, Play, Upload, Tv } from "lucide-react";
+import { ArrowLeft, Heart, ListVideo, Maximize, Minimize, PictureInPicture2, Play, Upload, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";
@@ -44,10 +44,12 @@ export default function LiveTV() {
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [favorites, setFavorites] = useState(() => { try { return JSON.parse(localStorage.getItem("nalichat:live-tv:favorites") || "[]"); } catch { return []; } });
   const [recent, setRecent] = useState(() => { try { return JSON.parse(localStorage.getItem("nalichat:live-tv:recent") || "[]"); } catch { return []; } });
   const fileRef = useRef(null);
   const videoRef = useRef(null);
+  const playerRef = useRef(null);
   // Which list is on screen: the built-in Free TV list or an imported playlist.
   const sourceRef = useRef("free");
 
@@ -101,6 +103,14 @@ export default function LiveTV() {
     };
   }, [selected?.url]);
 
+  // Keep the button's icon in step with the browser, including when the viewer
+  // leaves full screen with Esc or the system gesture.
+  useEffect(() => {
+    const sync = () => setIsFullscreen(document.fullscreenElement === playerRef.current);
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+
   const chooseChannel = (channel) => {
     setError("");
     setSelected(channel);
@@ -131,6 +141,28 @@ export default function LiveTV() {
     else if (!parsed.length) setSelected(null);
     setError(parsed.length ? "" : "No playable HTTP/HTTPS channels were found in this playlist.");
     return parsed;
+  };
+
+  // iPhone Safari has no element full screen, but its video element has its own
+  // player, so fall back to that there.
+  const toggleFullscreen = async () => {
+    const player = playerRef.current;
+    const video = videoRef.current;
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if (typeof player?.requestFullscreen === "function") {
+        await player.requestFullscreen();
+      } else if (typeof video?.webkitEnterFullscreen === "function") {
+        video.webkitEnterFullscreen();
+      } else {
+        setError("Full screen is not available in this browser.");
+        return;
+      }
+      setError("");
+    } catch {
+      setError("Full screen could not be started.");
+    }
   };
 
   const openPictureInPicture = async () => {
@@ -216,10 +248,10 @@ export default function LiveTV() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="overflow-hidden rounded-2xl border bg-black">
           {selected ? (
-            <div>
+            <div ref={playerRef} className="flex flex-col justify-center bg-black [&:fullscreen]:h-full">
               <video ref={videoRef} key={selected.url} src={/\.m3u8(?:$|[?#])/i.test(selected.url) ? undefined : selected.url} controls playsInline className="aspect-video w-full bg-black" onError={() => setError("This channel is offline right now. Pick another channel from the list.")} />
               <div className="bg-card p-4">
-                <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><div className="flex items-center gap-1"><Button type="button" variant="secondary" onClick={playSelectedChannel}><Play className="mr-2 h-4 w-4" />Play</Button><Button type="button" size="icon" variant="ghost" aria-label="Picture in picture" onClick={openPictureInPicture}><PictureInPicture2 className="h-5 w-5" /></Button><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div></div>
+                <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><div className="flex items-center gap-1"><Button type="button" variant="secondary" onClick={playSelectedChannel}><Play className="mr-2 h-4 w-4" />Play</Button><Button type="button" size="icon" variant="ghost" aria-label="Picture in picture" onClick={openPictureInPicture}><PictureInPicture2 className="h-5 w-5" /></Button><Button type="button" size="icon" variant="ghost" aria-label={isFullscreen ? "Exit full screen" : "Full screen"} onClick={toggleFullscreen}>{isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}</Button><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div></div>
               </div>
             </div>
           ) : (

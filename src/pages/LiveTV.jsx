@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Heart, ListVideo, PictureInPicture2, Play, Upload, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { base44 } from "@/api/base44Client";
 
 function parseM3u(text) {
   const lines = String(text || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
@@ -47,6 +48,8 @@ export default function LiveTV() {
   const [recent, setRecent] = useState(() => { try { return JSON.parse(localStorage.getItem("nalichat:live-tv:recent") || "[]"); } catch { return []; } });
   const fileRef = useRef(null);
   const videoRef = useRef(null);
+  // Which list is on screen: the built-in Free TV list or an imported playlist.
+  const sourceRef = useRef("free");
 
   useEffect(() => { try { localStorage.setItem("nalichat:live-tv:favorites", JSON.stringify(favorites)); } catch {} }, [favorites]);
   useEffect(() => { try { localStorage.setItem("nalichat:live-tv:recent", JSON.stringify(recent)); } catch {} }, [recent]);
@@ -67,6 +70,10 @@ export default function LiveTV() {
       usingNative = true;
       video.src = url;
       video.load();
+    } else if (selected.cors === false) {
+      // The channel's host sends no CORS headers, so the fetch-based player
+      // cannot read its playlists. Only browsers with native HLS can play it.
+      setError("This channel only plays in Safari. Pick another channel, or open NaliChat in Safari.");
     } else {
       // The HLS player library is ~600 kB. Importing it with the page made the
       // first visit blank while that chunk downloaded, so it is fetched only
@@ -82,7 +89,7 @@ export default function LiveTV() {
           hls = new Hls({ enableWorker: true, lowLatencyMode: true });
           hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(url));
           hls.attachMedia(video);
-          hls.on(Hls.Events.ERROR, (_event, data) => { if (data?.fatal) setError("This channel could not be played. Check that the stream is online and permits browser playback."); });
+          hls.on(Hls.Events.ERROR, (_event, data) => { if (data?.fatal) setError("This channel is offline right now. Pick another channel from the list."); });
         })
         .catch(() => { if (!disposed) setError("This channel could not be played in this browser."); });
     }
@@ -135,13 +142,28 @@ export default function LiveTV() {
     try { await video.requestPictureInPicture(); setError(""); } catch { setError("Picture-in-picture could not be started."); }
   };
 
+  // The public playlist still lists channels whose streams have gone dark, and
+  // browsers cannot check most of those hosts directly. The probe runs
+  // server-side and swaps in only the channels that play right now.
+  const loadVerifiedChannels = async () => {
+    try {
+      const response = await base44.functions.invoke("liveTvChannels", {});
+      const live = response?.data?.channels;
+      if (sourceRef.current !== "free" || !Array.isArray(live) || !live.length) return;
+      setChannels(live);
+      setSelected((current) => (current && !live.some((channel) => channel.url === current.url) ? null : current));
+    } catch {}
+  };
+
   const loadFreeTv = async ({ selectFirst = true } = {}) => {
     setError("");
     setLoading(true);
+    sourceRef.current = "free";
     try {
       const response = await fetch(FREE_TV_USA_PLAYLIST);
       if (!response.ok) throw new Error("Playlist unavailable");
       loadText(await response.text(), { selectFirst });
+      loadVerifiedChannels();
     } catch {
       setError("Free TV could not be loaded right now. You can still import an M3U/M3U8 playlist.");
     } finally {
@@ -163,6 +185,7 @@ export default function LiveTV() {
       setError("Playlist is too large. Choose an M3U/M3U8 file under 5 MB.");
       return;
     }
+    sourceRef.current = "import";
     loadText(await file.text());
   };
 
@@ -194,7 +217,7 @@ export default function LiveTV() {
         <section className="overflow-hidden rounded-2xl border bg-black">
           {selected ? (
             <div>
-              <video ref={videoRef} key={selected.url} src={/\.m3u8(?:$|[?#])/i.test(selected.url) ? undefined : selected.url} controls playsInline className="aspect-video w-full bg-black" onError={() => setError("This channel could not play in the browser. Some sources require a compatible CORS-enabled provider.")} />
+              <video ref={videoRef} key={selected.url} src={/\.m3u8(?:$|[?#])/i.test(selected.url) ? undefined : selected.url} controls playsInline className="aspect-video w-full bg-black" onError={() => setError("This channel is offline right now. Pick another channel from the list.")} />
               <div className="bg-card p-4">
                 <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><div className="flex items-center gap-1"><Button type="button" variant="secondary" onClick={playSelectedChannel}><Play className="mr-2 h-4 w-4" />Play</Button><Button type="button" size="icon" variant="ghost" aria-label="Picture in picture" onClick={openPictureInPicture}><PictureInPicture2 className="h-5 w-5" /></Button><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div></div>
               </div>

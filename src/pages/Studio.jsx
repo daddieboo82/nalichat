@@ -4098,7 +4098,7 @@ export default function Studio() {
               <Keyboard className="w-4 h-4" /> Piano Roll
             </Button>
             <DropdownMenu modal={false}>
-              <DropdownMenuTrigger asChild><Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary"><Download className="w-4 h-4" /> Export</Button></DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild><Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 glow-primary"><Download className="w-4 h-4" /> Export</Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={() => { setExportFormat('wav'); setExportDialogOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Download Mix (WAV)</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setExportFormat('mp3'); setExportDialogOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Download Mix (MP3)</DropdownMenuItem>
@@ -4134,7 +4134,7 @@ export default function Studio() {
             <button
               onClick={() => window.dispatchEvent(new Event('open-ai-assistant'))}
               title="NALI.ai Assistant"
-              className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center text-white bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20 transition-all active:scale-95"
+              className="h-11 w-11 shrink-0 rounded-xl flex items-center justify-center text-primary-foreground bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20 transition-all active:scale-95"
             >
               <AudioLines className="w-4 h-4 animate-pulse" />
             </button>
@@ -4224,7 +4224,7 @@ export default function Studio() {
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-xs font-semibold">Vocal recording assistant</h3>
           <button type="button" aria-pressed={mobileCoachEnabled} onClick={()=>setMobileCoachEnabled(value=>!value)}
-            className="min-h-9 rounded-lg border border-white/20 px-3 text-xs">{mobileCoachEnabled?'Hide tips':'Show tips'}</button>
+            className="min-h-11 rounded-lg border border-white/20 px-3 text-xs">{mobileCoachEnabled?'Hide tips':'Show tips'}</button>
         </div>
         {mobileCoachEnabled && mobileCoachGuidance && <div className="mt-1 space-y-1">
           <p className={cn('text-xs font-semibold',mobileCoachGuidance.severity==='danger'?'text-red-300':mobileCoachGuidance.severity==='warning'?'text-amber-300':'text-emerald-300')}>{mobileCoachGuidance.title}</p>
@@ -5193,10 +5193,10 @@ export default function Studio() {
       {/* Bottom Mixer / Status Bar */}
       <div style={isMobile ? {display:"none"} : undefined} className="relative z-10 mx-2 mb-[4.5rem] mt-2 hidden md:flex min-h-[2.75rem] shrink-0 flex-wrap items-center justify-between gap-2 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl sm:mx-3 sm:mb-3 sm:mt-3 sm:px-4 lg:mb-3">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-          <Button variant="ghost" size="sm" onClick={() => setShowMixerPanel(!showMixerPanel)} className={cn("ui-hover min-h-10 rounded-xl text-xs gap-1.5", showMixerPanel && "bg-secondary text-foreground")}>
+          <Button variant="ghost" size="sm" onClick={() => setShowMixerPanel(!showMixerPanel)} className={cn("ui-hover min-h-11 rounded-xl text-xs gap-1.5", showMixerPanel && "bg-secondary text-foreground")}>
             <SlidersHorizontal className="w-3 h-3" /> Mixer
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setShowPluginRack(!showPluginRack)} className={cn("ui-hover min-h-10 rounded-xl text-xs gap-1.5 transition-colors", showPluginRack && "bg-secondary text-foreground")}>
+          <Button variant="ghost" size="sm" onClick={() => setShowPluginRack(!showPluginRack)} className={cn("ui-hover min-h-11 rounded-xl text-xs gap-1.5 transition-colors", showPluginRack && "bg-secondary text-foreground")}>
             <SlidersHorizontal className="w-3 h-3" /> Plugins
           </Button>
           <div className="hidden md:flex items-center gap-2 border-l border-r border-border/50 px-3 mx-1" title="Master Output Level (Scales all track volumes)">

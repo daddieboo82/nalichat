@@ -172,7 +172,7 @@ export default function Explore() {
     >
       {/* Hero */}
       <div className="relative overflow-hidden border-b border-border/60 bg-gradient-to-br from-primary/25 via-background to-accent/15 px-4 pb-6 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8 sm:pt-8">
-        <div className="absolute -top-24 right-10 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-float-blob pointer-events-none" />
+        <div className="absolute -top-24 right-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float-blob pointer-events-none" />
         <div className="absolute -bottom-24 left-10 w-72 h-72 bg-accent/20 rounded-full blur-3xl animate-float-blob pointer-events-none" style={{ animationDelay: "-7s" }} />
         <div className="relative mx-auto max-w-5xl">
           <div className="mb-4 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -196,7 +196,7 @@ export default function Explore() {
               }}
               title="Release Track"
               aria-label="Release Track"
-              className="ui-hover flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 glow-primary shimmer-hover focus-visible:ring-2 focus-visible:ring-primary/50 sm:w-auto"
+              className="ui-hover flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 glow-primary shimmer-hover focus-visible:ring-2 focus-visible:ring-primary/50 sm:w-auto"
             >
               <Plus className="w-4 h-4" />
               Release Track
@@ -233,8 +233,8 @@ export default function Explore() {
               title={`Filter by ${m}`}
               aria-label={`Filter by ${m}`}
               className={cn(
-                "ui-hover min-h-10 shrink-0 whitespace-nowrap rounded-xl px-4 py-2 text-xs font-semibold capitalize transition-colors focus-visible:ring-2 focus-visible:ring-primary/40",
-                filter === m ? "bg-gradient-to-r from-primary to-pink-500 text-white shadow-md shadow-primary/30" : "bg-secondary text-muted-foreground hover:text-foreground"
+                "ui-hover min-h-11 shrink-0 whitespace-nowrap rounded-xl px-4 py-2 text-xs font-semibold capitalize transition-colors focus-visible:ring-2 focus-visible:ring-primary/40",
+                filter === m ? "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-md shadow-primary/30" : "bg-secondary text-muted-foreground hover:text-foreground"
               )}
             >
               {m === "all" ? "✨ All" : m}
@@ -268,7 +268,7 @@ export default function Explore() {
               <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
             </div>
           ) : isError ? (
-            <div className="ui-surface rounded-3xl border border-dashed border-border px-5 py-14 text-center text-muted-foreground sm:py-20" role="alert">
+            <div className="ui-surface rounded-2xl border border-dashed border-border px-5 py-14 text-center text-muted-foreground sm:py-20" role="alert">
               <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="font-heading font-semibold text-foreground">Couldn&apos;t load tracks</p>
               <p className="text-sm mt-1">Check your connection and try again.</p>
@@ -280,7 +280,7 @@ export default function Explore() {
               </button>
             </div>
           ) : recent.length === 0 ? (
-            <div className="ui-surface rounded-3xl border border-dashed border-border px-5 py-14 text-center text-muted-foreground sm:py-20">
+            <div className="ui-surface rounded-2xl border border-dashed border-border px-5 py-14 text-center text-muted-foreground sm:py-20">
               <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="font-heading font-semibold">No tracks yet</p>
               <p className="text-sm mt-1">Be the first to release your music!</p>

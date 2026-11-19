@@ -23,7 +23,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { useSubscription } from '@/hooks/useSubscription';
 import StudioStatusBanners from '@/components/studio/StudioStatusBanners';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderMixToMp3, renderTunedVocal, audioBufferToWav } from '@/lib/audioProcessing';
+import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderTunedVocal, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -368,7 +368,6 @@ export default function Studio() {
   const bpmRef = useRef(120);
   const [bpmInput, setBpmInput] = useState('120');
   useEffect(() => { bpmRef.current = bpm; }, [bpm]);
-  const [isEditingBpm, setIsEditingBpm] = useState(false);
   const [timeSignature, setTimeSignature] = useState('4/4');
   const [songKey, setSongKey] = useState('C Maj');
   const [audioSettings, setAudioSettings] = useState({ sampleRate: "44.1 kHz", bitDepth: "24-bit", bufferSize: "256" });
@@ -3764,40 +3763,6 @@ export default function Studio() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState('wav');
-
-  const handleDownloadMix = async (format = 'wav') => {
-    if (!tracks.some(t => t.audioUrl)) {
-      toast.error("No audio to export. Record or import a track first.");
-      return;
-    }
-    setIsDownloading(true);
-    toast.info(`Rendering your mix to ${format.toUpperCase()}...`);
-    try {
-      const mixOptions = { masterVolume, masterFx };
-      const blob = format === 'mp3' ? await renderMixToMp3(tracks, mixOptions) : await renderMixToWav(tracks, mixOptions);
-      if (!blob) {
-        toast.error("Nothing to export (all tracks muted or empty).");
-        return;
-      }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `NaliStudio Mix ${new Date().toISOString().slice(0, 10)}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      sounds.success();
-      toast.success("Mix downloaded to your device!");
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to export mix.");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  // handleExport removed in favor of BounceDialog
 
   // Render each audible track and package the stems in one browser download.
   // Multiple programmatic downloads can be blocked by mobile/desktop browsers.

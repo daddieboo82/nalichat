@@ -470,7 +470,7 @@ export default function Analytics() {
             <span className="sr-only">Loading analytics</span>
           </div>
         ) : isError ? (
-          <div className="ui-surface rounded-3xl border border-destructive/40 bg-card/60 p-6 text-center" role="alert">
+          <div className="ui-surface rounded-2xl border border-destructive/40 bg-card/60 p-6 text-center" role="alert">
             <h2 className="font-heading text-lg font-semibold">Analytics unavailable</h2>
             <p className="mt-2 text-sm text-muted-foreground">We couldn't load your release data, so the app won't show misleading zero totals.</p>
             <button
@@ -484,7 +484,7 @@ export default function Analytics() {
         ) : (
           <>
         {isAdmin && (
-          <Card className="ui-surface rounded-3xl border border-primary/20 bg-card/60 p-4 sm:p-5">
+          <Card className="ui-surface rounded-2xl border border-primary/20 bg-card/60 p-4 sm:p-5">
             <h2 className="font-heading text-lg font-semibold">Visitor Retention — Recorded Sessions</h2>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Each session contributes its highest recorded foreground duration when a page-hide, visibility change, or cleanup event captures that duration. Historical periods may include automated test visits.</p>
             {visitorRetention.checkpointOnly > 0 && (
@@ -516,7 +516,7 @@ export default function Analytics() {
           </Card>
         )}
         {isAdmin && (
-          <Card className="ui-surface rounded-3xl border border-primary/20 bg-card/60 p-4 backdrop-blur-xl sm:p-5">
+          <Card className="ui-surface rounded-2xl border border-primary/20 bg-card/60 p-4 backdrop-blur-xl sm:p-5">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="font-heading text-lg font-semibold tracking-tight">Visitor Activation Funnel</h2>
@@ -528,7 +528,7 @@ export default function Analytics() {
                     key={value}
                     type="button"
                     onClick={() => setFunnelWindow(value)}
-                    className={`min-h-9 rounded-lg border px-3 text-xs font-semibold transition-colors ${funnelWindow === value ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background/50 text-muted-foreground hover:text-foreground'}`}
+                    className={`min-h-11 rounded-lg border px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${funnelWindow === value ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background/50 text-muted-foreground hover:text-foreground'}`}
                   >
                     {label}
                   </button>
@@ -720,7 +720,7 @@ export default function Analytics() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
               >
-                <Card className="ui-surface ui-hover h-full rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl hover:border-white/[0.12] hover:bg-card/70 sm:p-5">
+                <Card className="ui-surface ui-hover h-full rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl hover:border-border hover:bg-card/70 sm:p-5">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
@@ -737,7 +737,7 @@ export default function Analytics() {
         {/* Charts */}
         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
           {/* Top Tracks */}
-          <Card className="ui-surface overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl sm:p-5">
+          <Card className="ui-surface overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl sm:p-5">
             <h2 className="mb-4 font-heading font-semibold tracking-tight">Top Tracks by Views</h2>
             {trackData.length > 0 ? (
               <div className="-mx-2 overflow-x-auto px-2"><div className="min-w-[520px]"><ResponsiveContainer width="100%" height={300}>
@@ -755,7 +755,7 @@ export default function Analytics() {
           </Card>
 
           {/* Catalog totals by release */}
-          <Card className="ui-surface overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl sm:p-5">
+          <Card className="ui-surface overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl sm:p-5">
             <h2 className="mb-4 font-heading font-semibold tracking-tight">Catalog Totals by Release</h2>
             {growthData.length > 0 ? (
               <div className="-mx-2 overflow-x-auto px-2"><div className="min-w-[520px]"><ResponsiveContainer width="100%" height={300}>
@@ -777,7 +777,7 @@ export default function Analytics() {
 
         {/* Detailed Track List */}
         {userPosts.length > 0 && (
-          <Card className="ui-surface overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl sm:p-5">
+          <Card className="ui-surface overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl sm:p-5">
             <h2 className="mb-4 font-heading font-semibold tracking-tight">Track Performance</h2>
             <div className="no-scrollbar -mx-1 overflow-x-auto rounded-xl px-1">
               <table className="w-full min-w-[560px] text-sm tabular-nums">

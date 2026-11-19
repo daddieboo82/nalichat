@@ -241,7 +241,7 @@ export default function AdminDashboard() {
               Server-authoritative account and subscription health metrics for NaliBase. User totals refresh automatically every 30 seconds.
             </p>
           </div>
-          <Button type="button" variant="outline" onClick={() => refetch()} disabled={isFetchingStats} className="shrink-0">
+          <Button type="button" variant="outline" onClick={() => refetch()} disabled={isFetchingStats} className="min-h-11 shrink-0">
             <RefreshCw className={`mr-2 h-4 w-4 ${isFetchingStats ? "animate-spin" : ""}`} />
             {isFetchingStats ? "Refreshing…" : "Refresh user count"}
           </Button>
@@ -252,7 +252,7 @@ export default function AdminDashboard() {
         {statsError && (
           <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 mb-6">
             <p className="font-semibold text-destructive">Could not load dashboard metrics.</p>
-            <Button variant="outline" className="mt-3" onClick={() => refetch()}>
+            <Button variant="outline" className="mt-3 min-h-11" onClick={() => refetch()}>
               Retry
             </Button>
           </div>
@@ -262,7 +262,7 @@ export default function AdminDashboard() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {cards.map(({ label, value, icon: Icon }) => (
-                <div key={label} className="bg-card border border-border rounded-xl p-6">
+                <div key={label} className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-6">
                   <Icon className="w-8 h-8 text-primary mb-4" />
                   <h3 className="text-sm font-bold text-muted-foreground">{label}</h3>
                   <p className="text-4xl font-black mt-2">{value ?? 0}</p>
@@ -272,18 +272,18 @@ export default function AdminDashboard() {
 
             <p className="mb-4 text-sm text-muted-foreground">Active subscription records by provider: {stats.activePayPalRecords ?? 0} PayPal · {stats.activeManualRecords ?? 0} manual · {stats.activeOtherRecords ?? 0} other. These are database statuses, not verified payments or unique customers.</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-              <div className="bg-card border border-border rounded-xl p-5">
+              <div className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-5">
                 <p className="text-sm text-muted-foreground">Premium</p>
                 <p className="text-2xl font-bold">{stats.premiumSubscriptions ?? 0}</p>
               </div>
-              <div className="bg-card border border-border rounded-xl p-5">
+              <div className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-5">
                 <p className="text-sm text-muted-foreground">Pending checkout attempts</p>
                 <p className="text-2xl font-bold">{stats.pendingSubscriptions ?? 0}</p>
                 <p className="text-xs text-muted-foreground mt-2">{stats.pendingPayPalAttempts ?? 0} PayPal · {stats.pendingStripeAttempts ?? 0} Stripe · {stats.pendingLegacyAttempts ?? 0} legacy · {stats.pendingAccounts ?? 0} accounts</p>
                 <p className="text-xs text-muted-foreground mt-1">Created before payment approval. Repeat attempts are counted; this is not revenue.</p>
                 <a href="#pending-paypal-audit" className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline underline-offset-4">Check live PayPal agreement statuses</a>
               </div>
-              <div className="bg-card border border-border rounded-xl p-5">
+              <div className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-5">
                 <p className="text-sm text-muted-foreground">Canceled / ended</p>
                 <p className="text-2xl font-bold">{stats.canceledSubscriptions ?? 0}</p>
               </div>
@@ -291,10 +291,10 @@ export default function AdminDashboard() {
           </>
         )}
 
-        <div className="bg-card border border-border rounded-xl p-6 mb-8">
+        <div className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-6 mb-8">
           <h2 className="text-xl font-bold mb-3">Live PayPal webhook verification</h2>
           <p className="mb-4 text-sm text-muted-foreground">Read-only check against PayPal's live registered webhook URL and subscribed events. Does not charge customers or create another webhook.</p>
-          <Button type="button" variant="outline" onClick={verifyLivePayPalWebhook} disabled={webhookVerificationLoading}>
+          <Button type="button" variant="outline" onClick={verifyLivePayPalWebhook} disabled={webhookVerificationLoading} className="min-h-11">
             {webhookVerificationLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Verify webhook with PayPal
           </Button>
@@ -309,12 +309,12 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div id="pending-paypal-audit" className="bg-card border border-border rounded-xl p-6 mb-8">
+        <div id="pending-paypal-audit" className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-6 mb-8">
           <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-primary" /> Pending PayPal status
           </h2>
           <p className="text-sm text-muted-foreground mb-4">Check PayPal directly for approval status. This check does not charge customers or change their access.</p>
-          <Button type="button" variant="outline" onClick={checkPendingPayPal} disabled={paypalAuditLoading}>
+          <Button type="button" variant="outline" onClick={checkPendingPayPal} disabled={paypalAuditLoading} className="min-h-11">
             {paypalAuditLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Check pending attempts
           </Button>
           {paypalAuditError && <p role="alert" className="mt-3 text-sm text-destructive">{paypalAuditError}</p>}
@@ -322,7 +322,7 @@ export default function AdminDashboard() {
             <div className="mt-4">
               <p className="text-sm font-medium">Checked {paypalAudit.checked} PayPal attempts in {paypalAudit.environment} mode.</p>
               {paypalAudit.webhookCheck && (
-                <div className="mt-3 rounded-lg border border-border p-3 text-sm" role="status">
+                <div className="mt-3 rounded-xl border border-border/60 p-3 text-sm" role="status">
                   <p className="font-semibold">Live PayPal webhook registration</p>
                   <p className="mt-1">Merchant lookup: {paypalAudit.webhookCheck.status}</p>
                   {paypalAudit.webhookCheck.status === "registered" && (
@@ -346,7 +346,7 @@ export default function AdminDashboard() {
                 <span>Ended: {paypalAudit.results.filter((row) => ["CANCELLED", "EXPIRED"].includes(row.status)).length}</span>
                 <span>Needs investigation: {paypalAudit.results.filter((row) => !["APPROVAL_PENDING", "ACTIVE", "CANCELLED", "EXPIRED"].includes(row.status)).length}</span>
               </div>
-              <div className="mt-3 rounded-lg border border-border p-3 text-sm">
+              <div className="mt-3 rounded-xl border border-border/60 p-3 text-sm">
                 <p className="font-semibold mb-2">Why pending attempts need investigation</p>
                 {Object.entries(paypalAudit.results.filter((row) => !["APPROVAL_PENDING", "ACTIVE", "CANCELLED", "EXPIRED"].includes(row.status)).reduce((counts, row) => {
                   const key = row.status === "environment_mismatch" ? "Missing agreement ID or PayPal environment mismatch"
@@ -405,7 +405,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-6 mb-8">
+        <div className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-6 mb-8">
           <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-primary" />
             Make a Test Purchase
@@ -422,7 +422,7 @@ export default function AdminDashboard() {
           ) : billingTestStatusError ? (
             <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
               <p className="text-sm font-semibold text-destructive">Could not verify billing test mode.</p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => refetchBillingTestStatus()}>
+              <Button variant="outline" size="sm" className="mt-3 min-h-11" onClick={() => refetchBillingTestStatus()}>
                 Retry
               </Button>
             </div>
@@ -479,7 +479,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-6">
+        <div className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-6">
           <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
             User Management
@@ -495,7 +495,7 @@ export default function AdminDashboard() {
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
               />
-              <Button onClick={handleMakeAdmin} disabled={isMakingAdmin || !adminEmail.trim()}>
+              <Button onClick={handleMakeAdmin} disabled={isMakingAdmin || !adminEmail.trim()} className="min-h-11">
                 {isMakingAdmin
                   ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   : <UserPlus className="w-4 h-4 mr-2" />}

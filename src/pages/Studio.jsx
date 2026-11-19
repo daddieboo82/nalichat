@@ -5438,10 +5438,10 @@ export default function Studio() {
       <div className="studio-mobile-transport fixed bottom-0 left-0 right-0 z-50 border-t border-foreground/10 bg-studio-bar/95 px-3 pt-2 backdrop-blur-xl md:hidden"
         style={{ display:isMobile?"block":"none",paddingBottom:"max(env(safe-area-inset-bottom), 10px)" }} aria-label="Mobile Studio transport">
         <div className="mx-auto flex max-w-md items-center justify-between gap-2">
-          <button type="button" onClick={() => stop()} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-foreground/10" aria-label="Stop"><Square className="h-5 w-5"/></button>
-          <button type="button" onClick={togglePlay} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-foreground/10 font-semibold" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}{isPlaying ? "Pause" : "Play"}</button>
+          <button type="button" onClick={() => stop()} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-studio-raised" aria-label="Stop"><Square className="h-5 w-5"/></button>
+          <button type="button" onClick={togglePlay} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-studio-raised font-semibold" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}{isPlaying ? "Pause" : "Play"}</button>
           <button type="button" onClick={toggleRecord} disabled={!canEditProject || mobileTakeFinalizing} className={cn("studio-mobile-record-button flex min-h-14 flex-[1.2] items-center justify-center gap-2 rounded-2xl font-bold text-white disabled:opacity-40", isRecording ? "bg-red-700" : "bg-red-600")} aria-label={isRecording ? "Stop recording" : "Record"}><Circle className="h-5 w-5 fill-current"/>{isRecording ? "Finish" : "Record"}</button>
-          <button type="button" onClick={handleSave} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-foreground/10 disabled:opacity-40" aria-label="Save session"><Save className="h-5 w-5"/></button>
+          <button type="button" onClick={handleSave} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-studio-raised disabled:opacity-40" aria-label="Save session"><Save className="h-5 w-5"/></button>
         </div>
       </div>
     </div>

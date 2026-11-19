@@ -504,13 +504,13 @@
   accent-color:hsl(var(--primary));
 }
 .studio-mobile-premium .studio-mobile-transport {
-  background:hsl(var(--card) / .98);
-  border-color:hsl(var(--border));
+  background:hsl(var(--studio-bar) / .97);
+  border-color:hsl(var(--foreground) / .1);
 }
 .studio-mobile-premium .studio-mobile-transport button:not(.studio-mobile-record-button) {
-  background:hsl(var(--secondary));
-  border-color:hsl(var(--border));
-  color:hsl(var(--secondary-foreground));
+  background:hsl(var(--studio-raised));
+  border-color:hsl(var(--foreground) / .12);
+  color:hsl(var(--foreground));
 }
 .studio-mobile-premium .studio-mobile-record-button {
   background:hsl(var(--destructive));
@@ -642,4 +642,3 @@
   border-color:hsl(var(--border));
   color:hsl(var(--muted-foreground));
 }
-

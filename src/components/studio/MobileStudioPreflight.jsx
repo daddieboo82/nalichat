@@ -27,7 +27,7 @@ export default function MobileStudioPreflight({ disabled = false }) {
       }
     }
   };
-  return <section className="rounded-xl border border-white/10 bg-[#191526] p-3 space-y-2" aria-label="Mobile recording setup">
+  return <section className="rounded-xl border border-foreground/10 bg-studio-raised p-3 space-y-2" aria-label="Mobile recording setup">
     <div className="flex items-center justify-between gap-3">
       <div>
         <h3 className="text-sm font-semibold">Microphone readiness</h3>

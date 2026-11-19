@@ -3913,7 +3913,7 @@ export default function Studio() {
       />
 
       {/* Top Toolbar */}
-      <div className="studio-mobile-topbar min-h-[4rem] py-2 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center justify-between gap-2 pl-2 sm:pl-4 pr-2 shrink-0 relative z-10">
+      <div className="studio-mobile-topbar min-h-[4rem] py-2 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-foreground/10 bg-foreground/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center justify-between gap-2 pl-2 sm:pl-4 pr-2 shrink-0 relative z-10">
         <div className="flex items-center gap-4 shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip>
@@ -4172,7 +4172,7 @@ export default function Studio() {
       </div>
 
       {/* Honest mobile capture status: temporary takes are not cloud saves. */}
-      <div className={cn("studio-mobile-status md:hidden mx-2 mt-2 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2",isRecording&&"studio-mobile-active-status")} style={{display:isMobile?"block":"none"}} role="status" aria-live="polite">
+      <div className={cn("studio-mobile-status md:hidden mx-2 mt-2 shrink-0 rounded-xl border border-foreground/10 bg-studio-raised px-3 py-2",isRecording&&"studio-mobile-active-status")} style={{display:isMobile?"block":"none"}} role="status" aria-live="polite">
         {(() => {
           const status = getMobileStudioRecordingStatus({
             recording: isRecording, micPending: microphoneStartupRef.current.pending,
@@ -4190,7 +4190,7 @@ export default function Studio() {
       </div>
       {isRecording && isMobile && (() => {
         const progress = studioCaptureHealth(mobileCaptureProgress);
-        return <div className="studio-mobile-recording-extended studio-mobile-capture-progress mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2 text-xs" aria-live="polite" aria-label="Mobile recording progress">
+        return <div className="studio-mobile-recording-extended studio-mobile-capture-progress mx-2 mt-1 shrink-0 rounded-xl border border-foreground/10 bg-studio-raised px-3 py-2 text-xs" aria-live="polite" aria-label="Mobile recording progress">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-semibold tabular-nums">Recording {progress.elapsedLabel}</span>
             <span className="text-muted-foreground tabular-nums">{progress.checkpointLabel ? `Protected through ${progress.checkpointLabel}` : 'No checkpoint yet'}</span>
@@ -4198,14 +4198,14 @@ export default function Studio() {
           <p className={cn('mt-1 leading-4', progress.memoryWarning || mobileCaptureProgress.checkpointError ? 'text-amber-300' : 'text-muted-foreground')}>
             {progress.detail}
           </p>
-          {progress.memoryPercent !== null && <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Local recording memory use" aria-valuenow={progress.memoryPercent} aria-valuemin={0} aria-valuemax={100}>
+          {progress.memoryPercent !== null && <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-foreground/10" role="progressbar" aria-label="Local recording memory use" aria-valuenow={progress.memoryPercent} aria-valuemin={0} aria-valuemax={100}>
             <div className={cn('h-full rounded-full',progress.memoryWarning?'bg-amber-400':'bg-primary')} style={{width:`${progress.memoryPercent}%`}} />
           </div>}
         </div>;
       })()}
       {isRecording && isMobile && mobileMicLevel && (() => {
         const guidance = mobileMicLevelMessage(mobileMicLevel);
-        return <div className="studio-mobile-recording-extended studio-mobile-meter-panel mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Live microphone input meter">
+        return <div className="studio-mobile-recording-extended studio-mobile-meter-panel mx-2 mt-1 shrink-0 rounded-xl border border-foreground/10 bg-studio-raised px-3 py-2" aria-label="Live microphone input meter">
           <div className="flex items-center justify-between gap-2 text-xs font-semibold">
             <span>Live microphone input</span>
             <span className="tabular-nums text-muted-foreground">Peak {mobileMicLevel.peakDb} dBFS</span>
@@ -4220,7 +4220,7 @@ export default function Studio() {
           <p className="text-[11px] leading-4 text-muted-foreground">{guidance.help} The meter does not change or process your recording.</p>
         </div>;
       })()}
-      {isMobile && isRecording && <section className="studio-mobile-recording-extended studio-mobile-coach-panel mx-2 mt-1 shrink-0 rounded-xl border border-white/10 bg-[#191526] px-3 py-2" aria-label="Mobile vocal recording assistant">
+      {isMobile && isRecording && <section className="studio-mobile-recording-extended studio-mobile-coach-panel mx-2 mt-1 shrink-0 rounded-xl border border-foreground/10 bg-studio-raised px-3 py-2" aria-label="Mobile vocal recording assistant">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-xs font-semibold">Vocal recording assistant</h3>
           <button type="button" aria-pressed={mobileCoachEnabled} onClick={()=>setMobileCoachEnabled(value=>!value)}
@@ -4233,31 +4233,31 @@ export default function Studio() {
         </div>}
       </section>}
       {/* Mobile recording-first workspace: full desktop projects, simpler touch controls. */}
-      <div className="studio-mobile-tabs md:hidden mx-2 mt-2 flex shrink-0 gap-1 rounded-2xl border border-white/10 bg-white/[0.05] p-1" style={{display:isMobile?"flex":"none"}} role="tablist" aria-label="Mobile Studio views">
+      <div className="studio-mobile-tabs md:hidden mx-2 mt-2 flex shrink-0 gap-1 rounded-2xl border border-foreground/10 bg-white/[0.05] p-1" style={{display:isMobile?"flex":"none"}} role="tablist" aria-label="Mobile Studio views">
         {[["record", "Record"], ["timeline", "Timeline"], ["tools", "Tools"]].map(([tab, label]) => (
           <button key={tab} type="button" role="tab" aria-selected={mobileStudioTab === tab}
             onClick={() => setMobileStudioTab(tab)}
             className={cn("min-h-11 flex-1 rounded-xl text-sm font-semibold transition-colors", mobileStudioTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}>{label}</button>
         ))}
       </div>
-      <div className={cn("studio-mobile-record-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19]", mobileStudioTab !== "record" && "hidden",isLandscapePhone&&mobileStudioTab==="record"&&"studio-mobile-record-grid",isMobile&&mobileStudioTab==="record"&&"studio-mobile-record-active")} style={{display:isMobile&&mobileStudioTab==="record"?"block":"none"}}>
-        <div className="studio-mobile-record-heading sticky top-0 z-10 border-b border-white/10 bg-[#1D1728]/95 px-4 py-3 backdrop-blur">
+      <div className={cn("studio-mobile-record-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-foreground/10 bg-studio-surface", mobileStudioTab !== "record" && "hidden",isLandscapePhone&&mobileStudioTab==="record"&&"studio-mobile-record-grid",isMobile&&mobileStudioTab==="record"&&"studio-mobile-record-active")} style={{display:isMobile&&mobileStudioTab==="record"?"block":"none"}}>
+        <div className="studio-mobile-record-heading sticky top-0 z-10 border-b border-foreground/10 bg-studio-overlay/95 px-4 py-3 backdrop-blur">
           <p className="studio-mobile-heading-title text-sm font-bold"><span className="studio-mobile-heading-light" aria-hidden="true"/>THE VOCAL ROOM <span className="studio-mobile-heading-label">MOBILE STUDIO</span></p>
           <p className="studio-mobile-heading-subtitle text-[11px] text-muted-foreground">Capture the moment. Shape the sound. Finish anywhere.</p>
         </div>
         <div className="studio-mobile-side-pane p-3 pb-0 space-y-3" aria-label="Capture and take review">
-          {isLandscapePhone && isRecording && <section className="studio-landscape-capture-summary rounded-xl border border-white/10 bg-[#191526] px-3 py-2 text-xs" aria-label="Landscape recording levels">
+          {isLandscapePhone && isRecording && <section className="studio-landscape-capture-summary rounded-xl border border-foreground/10 bg-studio-raised px-3 py-2 text-xs" aria-label="Landscape recording levels">
             <div className="flex items-center justify-between gap-2 font-semibold">
               <span>Recording {Math.floor(mobileCaptureProgress.elapsedSeconds/60).toString().padStart(2,"0")}:{Math.floor(mobileCaptureProgress.elapsedSeconds%60).toString().padStart(2,"0")}</span>
               <span>{mobileMicLevel ? `Peak ${mobileMicLevel.peakDb} dBFS` : "Mic starting…"}</span>
             </div>
-            {mobileMicLevel && <div className="mt-1 h-2 rounded-full bg-white/10 overflow-hidden" role="meter" aria-label="Landscape microphone level" aria-valuemin={0} aria-valuemax={100} aria-valuenow={mobileMicLevel.level}>
+            {mobileMicLevel && <div className="mt-1 h-2 rounded-full bg-foreground/10 overflow-hidden" role="meter" aria-label="Landscape microphone level" aria-valuemin={0} aria-valuemax={100} aria-valuenow={mobileMicLevel.level}>
               <div className={cn("h-full rounded-full",mobileMicLevel.clip?"bg-red-500":mobileMicLevel.quiet?"bg-amber-400":"bg-emerald-400")} style={{width:`${mobileMicLevel.level}%`}}/>
             </div>}
             <p className="mt-1 text-[11px] text-muted-foreground">{mobileCaptureProgress.checkpointSeconds > 0 ? `Device recovery protected through ${Math.floor(mobileCaptureProgress.checkpointSeconds)}s` : "Waiting for device recovery checkpoint"}</p>
             {mobileCoachEnabled && mobileCoachGuidance && <p className="mt-1 text-[11px] text-amber-300">{mobileCoachGuidance.title}</p>}
           </section>}
-          {isRecording && mobileCoachEnabled && mobileCoachGuidance && <div className="studio-mobile-coach-inline hidden rounded-lg border border-white/10 bg-[#191526] px-3 py-2" role="status">
+          {isRecording && mobileCoachEnabled && mobileCoachGuidance && <div className="studio-mobile-coach-inline hidden rounded-lg border border-foreground/10 bg-studio-raised px-3 py-2" role="status">
             <p className="text-xs font-semibold">{mobileCoachGuidance.title}</p>
             <p className="mt-1 text-[11px] text-muted-foreground">{mobileCoachGuidance.help}</p>
           </div>}
@@ -4284,7 +4284,7 @@ export default function Studio() {
           readOnly={!canEditProject || isRecording} />
         </div>
       </div>
-      <div className={cn("studio-mobile-tools-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-white/10 bg-[#100E19] p-3 pb-28", mobileStudioTab !== "tools" && "hidden")} style={{display:isMobile&&mobileStudioTab==="tools"?"block":"none"}}>
+      <div className={cn("studio-mobile-tools-view md:hidden min-h-0 flex-1 overflow-y-auto overscroll-contain mx-2 mt-2 rounded-2xl border border-foreground/10 bg-studio-surface p-3 pb-28", mobileStudioTab !== "tools" && "hidden")} style={{display:isMobile&&mobileStudioTab==="tools"?"block":"none"}}>
         <h2 className="studio-tools-title mb-3 text-base font-semibold">Studio tools <span className="studio-tools-subtitle">YOUR CREATIVE CONTROL CENTER</span></h2>
         <div className="grid grid-cols-2 gap-2">
           <Button className="min-h-12" variant="outline" disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving} onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Session</Button>
@@ -4315,15 +4315,15 @@ export default function Studio() {
       </div>
 
       {/* Main Workspace */}
-      <div ref={workspaceRef} className={cn("studio-mobile-timeline flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]", mobileStudioTab !== "timeline" && "max-md:hidden")} style={isMobile?{display:mobileStudioTab==="timeline"?"block":"none"}:undefined}> 
+      <div ref={workspaceRef} className={cn("studio-mobile-timeline flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-foreground/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]", mobileStudioTab !== "timeline" && "max-md:hidden")} style={isMobile?{display:mobileStudioTab==="timeline"?"block":"none"}:undefined}> 
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} roomId={roomId} />
         {/* Unified scroll — left pane + waveforms move together in one container */}
         <div className="flex w-fit min-w-full min-h-full">
         {/* Track Headers (Left Sidebar) */}
-        <div className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col sticky left-0 z-10 shrink-0 rounded-l-2xl" style={isLandscapePhone?{width:180,minWidth:180}:undefined}>
+        <div className="w-44 sm:w-72 md:w-96 border-r border-foreground/10 bg-white/[0.03] backdrop-blur-md flex flex-col sticky left-0 z-10 shrink-0 rounded-l-2xl" style={isLandscapePhone?{width:180,minWidth:180}:undefined}>
           {/* Spacer matching the timeline ruler — sticky so it stays aligned at top */}
-          <div className="h-8 shrink-0 sticky top-0 z-20 border-b border-white/10 bg-[#12101C]/80 backdrop-blur-md" />
+          <div className="h-8 shrink-0 sticky top-0 z-20 border-b border-foreground/10 bg-studio-header/80 backdrop-blur-md" />
           <DragDropContext onDragStart={handleTrackDragStart} onDragUpdate={handleTrackDragUpdate} onDragEnd={handleReorderTracks}>
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
@@ -4383,9 +4383,9 @@ export default function Studio() {
         </div>
 
         {/* Timeline & Waveforms (Right Area) */}
-        <div className="flex-1 relative flex flex-col bg-gradient-to-b from-[#12101C]/80 to-[#0B0912]/90 rounded-r-2xl">
+        <div className="flex-1 relative flex flex-col bg-gradient-to-b from-studio-header/80 to-studio-bg/90 rounded-r-2xl">
           {/* Timeline Header */}
-          <div className="h-8 shrink-0 border-b border-white/10 bg-white/[0.04] backdrop-blur-md sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
+          <div className="h-8 shrink-0 border-b border-foreground/10 bg-foreground/[0.04] backdrop-blur-md sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
             {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[2px] bg-red-500/50 z-10 pointer-events-none" style={{ left: `${projectEnd * 20 * zoom}px` }}><div className="absolute top-0 -translate-x-1/2 bg-red-500/80 text-white text-[8px] px-1 rounded-b shadow-md font-bold">END</div></div>; })()}
             <div className="h-full relative cursor-pointer select-none" style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}
               onPointerDown={(e) => {
@@ -4906,7 +4906,7 @@ export default function Studio() {
                       data-testid={`studio-audio-clip-${track.id}`}
                       data-track-id={String(track.id)}
                       className={cn(
-                        "audio-clip absolute top-2 bottom-2 rounded-r-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-[border-color,box-shadow,filter,opacity] duration-100 shadow-sm touch-none select-none",
+                        "audio-clip absolute top-2 bottom-2 rounded-r-lg border border-foreground/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-[border-color,box-shadow,filter,opacity] duration-100 shadow-sm touch-none select-none",
                         selectedTrackIds.includes(track.id) && "border-primary/60 ring-1 ring-primary/30 shadow-[0_0_18px_hsl(var(--primary)/0.18)]",
                         track.locked && "cursor-not-allowed opacity-80"
                       )}
@@ -5058,7 +5058,7 @@ export default function Studio() {
                         style={{ width: `${(track.fadeIn || 0) * 100}%` }}
                       />
                       {(activeTool === 'fade' || activeTool === 'smart') && (
-                        <div className={cn("absolute w-6 hover:bg-white/10 flex justify-center group z-20 pointer-events-auto",
+                        <div className={cn("absolute w-6 hover:bg-foreground/10 flex justify-center group z-20 pointer-events-auto",
                             activeTool === 'smart' ? "top-0 bottom-[50%] items-start cursor-crosshair" : "top-0 bottom-0 items-center cursor-ew-resize"
                           )}
                           style={{ left: `calc(${(track.fadeIn || 0) * 100}% - 12px)` }}
@@ -5101,7 +5101,7 @@ export default function Studio() {
 
                       <div className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" style={{ width: `${(track.fadeOut || 0) * 100}%` }} />
                       {(activeTool === 'fade' || activeTool === 'smart') && (
-                        <div className={cn("absolute w-6 hover:bg-white/10 flex justify-center group z-20 pointer-events-auto", activeTool === 'smart' ? "top-0 bottom-[50%] items-start cursor-crosshair" : "top-0 bottom-0 items-center cursor-ew-resize")}
+                        <div className={cn("absolute w-6 hover:bg-foreground/10 flex justify-center group z-20 pointer-events-auto", activeTool === 'smart' ? "top-0 bottom-[50%] items-start cursor-crosshair" : "top-0 bottom-0 items-center cursor-ew-resize")}
                           style={{ right: `calc(${(track.fadeOut || 0) * 100}% - 12px)` }}
                           onPointerDown={(e) => {
                             e.stopPropagation();
@@ -5191,7 +5191,7 @@ export default function Studio() {
       </Suspense>
 
       {/* Bottom Mixer / Status Bar */}
-      <div style={isMobile ? {display:"none"} : undefined} className="relative z-10 mx-2 mb-[4.5rem] mt-2 hidden md:flex min-h-[2.75rem] shrink-0 flex-wrap items-center justify-between gap-2 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl sm:mx-3 sm:mb-3 sm:mt-3 sm:px-4 lg:mb-3">
+      <div style={isMobile ? {display:"none"} : undefined} className="relative z-10 mx-2 mb-[4.5rem] mt-2 hidden md:flex min-h-[2.75rem] shrink-0 flex-wrap items-center justify-between gap-2 overflow-hidden rounded-2xl border border-foreground/10 bg-foreground/[0.04] px-3 py-2 text-xs text-muted-foreground shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl sm:mx-3 sm:mb-3 sm:mt-3 sm:px-4 lg:mb-3">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Button variant="ghost" size="sm" onClick={() => setShowMixerPanel(!showMixerPanel)} className={cn("ui-hover min-h-11 rounded-xl text-xs gap-1.5", showMixerPanel && "bg-secondary text-foreground")}>
             <SlidersHorizontal className="w-3 h-3" /> Mixer
@@ -5435,13 +5435,13 @@ export default function Studio() {
       />
 
       {/* Persistent phone transport: core recording actions stay reachable. */}
-      <div className="studio-mobile-transport fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#171321]/95 px-3 pt-2 backdrop-blur-xl md:hidden"
+      <div className="studio-mobile-transport fixed bottom-0 left-0 right-0 z-50 border-t border-foreground/10 bg-studio-bar/95 px-3 pt-2 backdrop-blur-xl md:hidden"
         style={{ display:isMobile?"block":"none",paddingBottom:"max(env(safe-area-inset-bottom), 10px)" }} aria-label="Mobile Studio transport">
         <div className="mx-auto flex max-w-md items-center justify-between gap-2">
-          <button type="button" onClick={() => stop()} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10" aria-label="Stop"><Square className="h-5 w-5"/></button>
-          <button type="button" onClick={togglePlay} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-white/10 font-semibold" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}{isPlaying ? "Pause" : "Play"}</button>
+          <button type="button" onClick={() => stop()} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-foreground/10" aria-label="Stop"><Square className="h-5 w-5"/></button>
+          <button type="button" onClick={togglePlay} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-foreground/10 font-semibold" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}{isPlaying ? "Pause" : "Play"}</button>
           <button type="button" onClick={toggleRecord} disabled={!canEditProject || mobileTakeFinalizing} className={cn("studio-mobile-record-button flex min-h-14 flex-[1.2] items-center justify-center gap-2 rounded-2xl font-bold text-white disabled:opacity-40", isRecording ? "bg-red-700" : "bg-red-600")} aria-label={isRecording ? "Stop recording" : "Record"}><Circle className="h-5 w-5 fill-current"/>{isRecording ? "Finish" : "Record"}</button>
-          <button type="button" onClick={handleSave} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-white/10 disabled:opacity-40" aria-label="Save session"><Save className="h-5 w-5"/></button>
+          <button type="button" onClick={handleSave} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-foreground/10 disabled:opacity-40" aria-label="Save session"><Save className="h-5 w-5"/></button>
         </div>
       </div>
     </div>

@@ -50,6 +50,14 @@ module.exports = {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			},
+  			studio: {
+  				bg: 'hsl(var(--studio-bg) / <alpha-value>)',
+  				surface: 'hsl(var(--studio-surface) / <alpha-value>)',
+  				header: 'hsl(var(--studio-header) / <alpha-value>)',
+  				bar: 'hsl(var(--studio-bar) / <alpha-value>)',
+  				raised: 'hsl(var(--studio-raised) / <alpha-value>)',
+  				overlay: 'hsl(var(--studio-overlay) / <alpha-value>)'
+  			},
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
   				foreground: 'hsl(var(--sidebar-foreground))',

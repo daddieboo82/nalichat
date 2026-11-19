@@ -200,7 +200,7 @@ export default function ProjectsSummary() {
         <div className="max-w-md text-center">
           <h2 className="text-xl font-bold">Projects unavailable</h2>
           <p className="mt-2 text-sm text-muted-foreground">We couldn't load your projects. Refresh and try again.</p>
-          <Button className="mt-4" variant="outline" onClick={() => window.location.reload()}>
+          <Button className="mt-4 min-h-11" variant="outline" onClick={() => window.location.reload()}>
             Refresh
           </Button>
         </div>
@@ -234,7 +234,7 @@ export default function ProjectsSummary() {
       )}
 
       {data.projects.length === 0 ? (
-        <div className="ui-surface rounded-3xl border border-white/[0.06] bg-card/50 px-5 py-12 text-center backdrop-blur-xl">
+        <div className="ui-surface rounded-2xl border border-border/60 bg-card/50 px-5 py-12 text-center backdrop-blur-xl">
           <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">No Active Projects</h2>
           <p className="text-muted-foreground">You are not collaborating on any projects yet.</p>
@@ -242,7 +242,7 @@ export default function ProjectsSummary() {
       ) : (
         <div className="space-y-6 pb-12">
           {visibleProjects.length === 0 && (
-            <div className="rounded-3xl border border-border/60 bg-card/50 px-5 py-10 text-center">
+            <div className="rounded-2xl border border-border/60 bg-card/50 px-5 py-10 text-center">
               <Search className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
               <p className="font-semibold">No sessions match “{projectSearch}”</p>
               <p className="mt-1 text-sm text-muted-foreground">Try another project name, description, or status.</p>
@@ -260,7 +260,7 @@ export default function ProjectsSummary() {
                 transition={{ delay: idx * 0.1 }}
               >
                 <Card 
-                  className="ui-surface ui-hover group cursor-pointer overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 shadow-sm backdrop-blur-xl hover:border-white/[0.12] hover:bg-card/70"
+                  className="ui-surface ui-hover group cursor-pointer overflow-hidden rounded-2xl border border-border/60 bg-card/50 shadow-sm backdrop-blur-xl hover:border-border hover:bg-card/70"
                   onClick={() => navigate(`/studio?room=${project.id}`)}
                 >
                   <CardHeader className="border-b border-border/50 bg-secondary/30 p-4 sm:p-5">
@@ -286,7 +286,7 @@ export default function ProjectsSummary() {
                           <div onClick={e => e.stopPropagation()}>
                             <Popover>
                               <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm" className="ui-hover min-h-9 gap-1.5 rounded-xl border-primary/50 px-3 text-xs text-primary transition-colors hover:bg-primary/10">
+                                <Button variant="outline" size="sm" className="ui-hover min-h-11 gap-1.5 rounded-xl border-primary/50 px-3 text-xs text-primary transition-colors hover:bg-primary/10">
                                   <Link2 className="w-3 h-3" /> Invite
                                 </Button>
                               </PopoverTrigger>
@@ -305,7 +305,7 @@ export default function ProjectsSummary() {
                                       />
                                       <Button
                                         size="sm"
-                                        className="h-8 px-3 shrink-0 bg-primary hover:bg-primary/90 text-white"
+                                        className="min-h-11 px-3 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
                                         onClick={async () => {
                                           const copied = await copyToClipboard(inviteLinks[project.id]);
                                           if (copied) toast.success("Invite link copied to clipboard!");
@@ -318,7 +318,7 @@ export default function ProjectsSummary() {
                                   ) : (
                                     <Button
                                       size="sm"
-                                      className="w-full"
+                                      className="min-h-11 w-full"
                                       disabled={creatingInviteId === project.id}
                                       onClick={() => handleCreateInvite(project.id)}
                                     >
@@ -450,10 +450,10 @@ export default function ProjectsSummary() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewProject(false)} disabled={isCreating}>
+            <Button variant="outline" className="min-h-11" onClick={() => setShowNewProject(false)} disabled={isCreating}>
               Cancel
             </Button>
-            <Button onClick={handleCreateProject} disabled={isCreating || !newProjectTitle.trim()}>
+            <Button className="min-h-11" onClick={handleCreateProject} disabled={isCreating || !newProjectTitle.trim()}>
               {isCreating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Create Project
             </Button>

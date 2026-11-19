@@ -52,7 +52,7 @@ const features = [
     label: "Unlimited Messages",
     path: "/messages",
     description: "Real-time messaging, unlimited voice notes & high-res file sharing",
-    gradient: "from-primary to-pink-500",
+    gradient: "from-primary to-accent",
     badge: "Included",
   },
   {
@@ -143,7 +143,7 @@ const creatorBenefits = [
     name: "Create",
     role: "Studio workflow",
     avatar: "C",
-    color: "from-primary to-pink-500",
+    color: "from-primary to-accent",
     quote: "Record, arrange, mix, master, and export from one connected workspace.",
     metric: "All-in-one",
   },
@@ -277,7 +277,7 @@ export default function Home() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary/30 rounded-full blur-[100px] animate-float-blob" />
           <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-accent/30 rounded-full blur-[100px] animate-float-blob" style={{ animationDelay: "-5s" }} />
-          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-pink-500/20 rounded-full blur-[100px] animate-float-blob" style={{ animationDelay: "-9s" }} />
+          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-accent/20 rounded-full blur-[100px] animate-float-blob" style={{ animationDelay: "-9s" }} />
           <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-yellow-500/20 rounded-full blur-[80px] animate-float-blob" style={{ animationDelay: "-3s" }} />
         </div>
 
@@ -389,7 +389,7 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
-              className="mb-6 inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary/40 bg-gradient-to-r from-primary/20 to-pink-500/20 px-4 py-2 text-xs font-bold text-foreground backdrop-blur-md sm:px-5"
+              className="mb-6 inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary/40 bg-gradient-to-r from-primary/20 to-accent/20 px-4 py-2 text-xs font-bold text-foreground backdrop-blur-md sm:px-5"
             >
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
@@ -411,7 +411,7 @@ export default function Home() {
               <p className="mx-auto mb-5 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base md:mb-6">
                 Create your account with email. No card. No payment. Start creating immediately.
               </p>
-              <div className="mx-auto mb-5 hidden max-w-3xl rounded-3xl border border-primary/25 bg-card/55 p-4 text-left shadow-2xl backdrop-blur-xl sm:block sm:p-5">
+              <div className="mx-auto mb-5 hidden max-w-3xl rounded-2xl border border-primary/25 bg-card/55 p-4 text-left shadow-2xl backdrop-blur-xl sm:block sm:p-5">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 rounded-xl bg-primary/15 p-2"><Music className="h-5 w-5 text-primary" /></div>
                   <div>
@@ -432,7 +432,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
             {user ? null : (
               <>
-                <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-7 text-base font-semibold glow-primary shimmer-hover hover:opacity-90 sm:w-auto" asChild>
+                <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-accent px-7 text-base font-semibold glow-primary shimmer-hover hover:opacity-90 sm:w-auto" asChild>
                   <Link
                     to="/register"
                     className="w-full sm:w-auto"
@@ -483,13 +483,13 @@ export default function Home() {
       )}
 
       {!user && authChecked && (
-        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-background/90 px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(0,0,0,.28)] backdrop-blur-xl sm:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border/60 bg-background/90 px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(0,0,0,.28)] backdrop-blur-xl sm:hidden">
           <div className="mx-auto flex max-w-md items-center gap-3">
             <div className="min-w-0 flex-1 text-left">
               <p className="truncate text-xs font-black text-foreground">Start creating free</p>
               <p className="truncate text-[11px] text-muted-foreground">No card · Sign up with email</p>
             </div>
-            <Button size="sm" className="min-h-11 shrink-0 rounded-xl bg-gradient-to-r from-primary to-pink-500 px-5 font-bold glow-primary" asChild>
+            <Button size="sm" className="min-h-11 shrink-0 rounded-xl bg-gradient-to-r from-primary to-accent px-5 font-bold glow-primary" asChild>
               <Link
                 to="/register"
                 onClick={() => trackProductEvent("signup_click", { source: "home_mobile_sticky", cta: "start_creating_free" })}
@@ -516,7 +516,7 @@ export default function Home() {
                 <Video className="mr-2 h-4 w-4" /> Watch Studio Demo
               </a>
             </Button>
-            <Button className="min-h-11 rounded-xl bg-gradient-to-r from-primary to-pink-500" asChild>
+            <Button className="min-h-11 rounded-xl bg-gradient-to-r from-primary to-accent" asChild>
               <Link to="/register" onClick={() => trackProductEvent("signup_click", { source: "home_reassurance", cta: "start_free" })}>
                 Start Free <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -551,7 +551,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="ui-surface relative w-full overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:p-8 md:p-12"
+          className="ui-surface relative w-full overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-5 backdrop-blur-xl sm:p-8 md:p-12"
         >
           <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-2xl pointer-events-none" />
           <div className="relative z-10">
@@ -598,7 +598,7 @@ export default function Home() {
                   linkLabel: "View Profile"
                 }
               ].map((block) => (
-                <div key={block.title} className="ui-surface ui-hover group flex h-full min-w-0 flex-col break-words rounded-3xl border border-white/[0.06] bg-card/40 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/60 focus-within:ring-2 focus-within:ring-primary/30 sm:p-6">
+                <div key={block.title} className="ui-surface ui-hover group flex h-full min-w-0 flex-col break-words rounded-2xl border border-border/60 bg-card/40 p-5 backdrop-blur-xl transition-all duration-300 hover:border-border hover:bg-card/60 focus-within:ring-2 focus-within:ring-primary/30 sm:p-6">
                   <h3 className="font-heading font-bold text-xl mb-4">{block.title}</h3>
                   <ul className="space-y-2 flex-1 mb-6">
                     {block.items.map((item) => (
@@ -609,7 +609,7 @@ export default function Home() {
                     ))}
                   </ul>
                   {block.link && (
-                    <Link to={block.link} className="ui-hover mt-auto inline-flex min-h-10 w-fit items-center gap-2 rounded-xl px-2 text-sm font-semibold text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
+                    <Link to={block.link} className="ui-hover mt-auto inline-flex min-h-11 w-fit items-center gap-2 rounded-xl px-2 text-sm font-semibold text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
                       {block.linkLabel} <ArrowRight className="w-4 h-4" />
                     </Link>
                   )}
@@ -643,7 +643,7 @@ export default function Home() {
           transition={{ duration: 0.6 }}
         >
           <Link to={user ? "/messages" : "/register"} onClick={() => { if (!user) trackProductEvent("signup_click", { source: "home_messaging_card", cta: "open_messages" }); }}>
-            <div className="ui-surface ui-hover group relative cursor-pointer overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40 sm:p-8 md:p-12">
+            <div className="ui-surface ui-hover group relative cursor-pointer overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-5 backdrop-blur-xl transition-all duration-300 hover:border-border hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40 sm:p-8 md:p-12">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/8 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors duration-500" />
 
@@ -689,7 +689,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="ui-surface relative overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] sm:p-8 md:p-10">
+          <div className="ui-surface relative overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-5 backdrop-blur-xl transition-all duration-300 hover:border-border sm:p-8 md:p-10">
             <div className="absolute -top-20 -right-20 w-72 h-72 bg-primary/15 rounded-full blur-3xl" />
             <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-yellow-500/10 rounded-full blur-2xl" />
 
@@ -730,7 +730,7 @@ export default function Home() {
                return (
                  <motion.div key={feature.label} variants={itemVariants} className="h-full">
                    <Link to={feature.path} onClick={() => sounds.click()} className="block h-full">
-                     <div className="ui-surface ui-hover group relative h-full overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/70 hover:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] focus-visible:ring-2 focus-visible:ring-primary/40">
+                     <div className="ui-surface ui-hover group relative h-full overflow-hidden rounded-2xl border border-border/60 bg-card/50 backdrop-blur-xl transition-all duration-300 hover:border-border hover:bg-card/70 hover:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] focus-visible:ring-2 focus-visible:ring-primary/40">
                        <div className={`absolute -inset-20 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-[0.08] blur-3xl transition-opacity duration-500 pointer-events-none`} />
                        <div className="relative h-full p-6 flex flex-col justify-between">
                          <div className="flex-1">
@@ -764,13 +764,13 @@ export default function Home() {
           transition={{ duration: 0.6 }}
           className="mb-10"
         >
-          <div className="ui-surface flex flex-col items-start justify-between gap-6 rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] sm:p-8 md:flex-row md:items-center">
+          <div className="ui-surface flex flex-col items-start justify-between gap-6 rounded-2xl border border-border/60 bg-card/50 p-5 backdrop-blur-xl transition-all duration-300 hover:border-border sm:p-8 md:flex-row md:items-center">
             <div>
               <h3 className="font-heading font-bold text-2xl mb-2 text-foreground">Interactive Tutorial</h3>
               <p className="text-muted-foreground text-lg">New to NaliBase? Take our interactive onboarding wizard to get up to speed in seconds.</p>
             </div>
             <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
-              <Button onClick={() => setShowWizard(true)} size="lg" className="ui-hover h-12 w-full rounded-xl bg-indigo-500 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 focus-visible:ring-2 focus-visible:ring-indigo-400/50 sm:h-14 sm:w-auto sm:px-8 sm:text-base">
+              <Button onClick={() => setShowWizard(true)} size="lg" className="ui-hover h-12 w-full rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/50 sm:h-14 sm:w-auto sm:px-8 sm:text-base">
                 Start Onboarding Wizard
               </Button>
               {user && (
@@ -803,7 +803,7 @@ export default function Home() {
           >
             {creatorBenefits.map((t) => (
               <motion.div key={t.name} variants={itemVariants}>
-                <div className="bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-6 h-full hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300">
+                <div className="bg-card/50 backdrop-blur-xl border border-border/60 rounded-2xl p-6 h-full hover:border-border hover:bg-card/70 transition-all duration-300">
                   <div className="flex items-center gap-1 mb-4">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
@@ -846,7 +846,7 @@ export default function Home() {
           ].map((stat) => (
             <div
               key={stat.label}
-              className={`bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-6 md:p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.12] hover:bg-card/70 group overflow-hidden relative`}
+              className={`bg-card/50 backdrop-blur-xl border border-border/60 rounded-2xl p-6 md:p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:border-border hover:bg-card/70 group overflow-hidden relative`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.from} ${stat.to} opacity-0 group-hover:opacity-10 transition-opacity duration-500 blur-xl`} />
               <div className="relative z-10">
@@ -864,7 +864,7 @@ export default function Home() {
           transition={{ duration: 0.6, type: "spring" }}
           className="mb-24"
         >
-          <div className="ui-surface relative overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 text-center backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] sm:p-12 md:p-16">
+          <div className="ui-surface relative overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-5 text-center backdrop-blur-xl transition-all duration-300 hover:border-border sm:p-12 md:p-16">
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
               <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/40 rounded-full blur-[100px] animate-pulse" />
               <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/40 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
@@ -872,7 +872,7 @@ export default function Home() {
             </div>
             
             <div className="relative z-10">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto mb-6 md:mb-8 rounded-[2rem] bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center glow-primary shadow-2xl animate-float-blob border border-white/20">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto mb-6 md:mb-8 rounded-[2rem] bg-gradient-to-br from-primary via-accent/60 to-accent flex items-center justify-center glow-primary shadow-2xl animate-float-blob border border-border/60">
                 <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" />
               </div>
               <h3 className="font-heading font-black text-4xl sm:text-5xl md:text-7xl mb-4 md:mb-6 text-gradient-animate drop-shadow-xl tracking-tight">
@@ -886,7 +886,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
                 {user ? (
                     <>
-                      <Button size="lg" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105" asChild>
+                      <Button size="lg" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-accent hover:opacity-90 glow-primary transition-all hover:scale-105" asChild>
                         <Link to="/messages" className="w-full sm:w-auto">
                           <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                           Open Messages
@@ -896,7 +896,7 @@ export default function Home() {
                     </>
                   ) : (
                   <>
-                    <Button size="lg" className="w-full sm:w-auto rounded-xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30" asChild>
+                    <Button size="lg" className="w-full sm:w-auto rounded-xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-accent hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30" asChild>
                       <Link
                         to="/register"
                         className="w-full sm:w-auto"
@@ -937,13 +937,13 @@ export default function Home() {
       {!user && (
           <footer className="pb-4 text-center text-sm text-muted-foreground">
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
-              <Link to="/privacy" className="min-h-10 inline-flex items-center hover:text-foreground">Privacy Policy</Link>
-              <Link to="/terms" className="min-h-10 inline-flex items-center hover:text-foreground">Terms of Service</Link>
-              <Link to="/login" className="min-h-10 inline-flex items-center hover:text-foreground">Sign In</Link>
-              <Link to="/register" className="min-h-10 inline-flex items-center hover:text-foreground" onClick={() => trackProductEvent("signup_click", { source: "public_footer", cta: "create_account" })}>Create Account</Link>
-              <Link to="/pricing" className="min-h-10 inline-flex items-center hover:text-foreground">Compare Plans</Link>
-              <Link to="/download" className="min-h-10 inline-flex items-center hover:text-foreground">Download Apps</Link>
-              <a href="mailto:support@nalichat.org" className="min-h-10 inline-flex items-center hover:text-foreground">Contact Support</a>
+              <Link to="/privacy" className="min-h-11 inline-flex items-center hover:text-foreground">Privacy Policy</Link>
+              <Link to="/terms" className="min-h-11 inline-flex items-center hover:text-foreground">Terms of Service</Link>
+              <Link to="/login" className="min-h-11 inline-flex items-center hover:text-foreground">Sign In</Link>
+              <Link to="/register" className="min-h-11 inline-flex items-center hover:text-foreground" onClick={() => trackProductEvent("signup_click", { source: "public_footer", cta: "create_account" })}>Create Account</Link>
+              <Link to="/pricing" className="min-h-11 inline-flex items-center hover:text-foreground">Compare Plans</Link>
+              <Link to="/download" className="min-h-11 inline-flex items-center hover:text-foreground">Download Apps</Link>
+              <a href="mailto:support@nalichat.org" className="min-h-11 inline-flex items-center hover:text-foreground">Contact Support</a>
             </div>
             <p className="mt-2">NaliBase · Six connected worlds for creativity, entertainment, collaboration, and discovery</p>
           </footer>

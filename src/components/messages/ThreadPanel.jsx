@@ -163,7 +163,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
           <MessageSquareQuote className="w-4 h-4 text-primary" />
           <span className="font-heading font-semibold text-sm">Thread</span>
         </div>
-        <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors" title="Close Thread" aria-label="Close Thread">
+        <button onClick={onClose} className="h-11 w-11 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors" title="Close Thread" aria-label="Close Thread">
           <X className="w-4 h-4" />
         </button>
       </div>

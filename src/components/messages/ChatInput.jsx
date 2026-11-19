@@ -563,7 +563,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             disabled={disabled}
             whileTap={{ scale: 0.88 }}
             whileHover={{ scale: 1.08 }}
-            className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-primary/40"
+            className="h-11 w-11 rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-primary/40"
             title="Send Message"
             aria-label="Send Message"
           >
@@ -574,7 +574,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             type="button"
             onClick={(e) => { e.preventDefault(); stopRecording(); }}
             whileTap={{ scale: 0.88 }}
-            className="w-10 h-10 rounded-full bg-destructive flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-destructive/40"
+            className="h-11 w-11 rounded-full bg-destructive flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-destructive/40"
             animate={{ boxShadow: ["0 0 8px hsl(0 72% 51% / 0.4)", "0 0 20px hsl(0 72% 51% / 0.7)", "0 0 8px hsl(0 72% 51% / 0.4)"] }}
             transition={{ repeat: Infinity, duration: 1 }}
             title="Stop Recording"
@@ -589,7 +589,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             disabled={anyUploading || disabled}
             whileTap={{ scale: 0.88 }}
             whileHover={{ scale: 1.1 }}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 mb-0.5 touch-manipulation"
+            className="h-11 w-11 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 mb-0.5 touch-manipulation"
             title="Record Audio"
             aria-label="Record Audio"
           >

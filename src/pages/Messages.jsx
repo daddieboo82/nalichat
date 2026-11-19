@@ -859,12 +859,12 @@ export default function Messages() {
           <div className="px-4 pt-5 pb-3 sm:px-6 sm:pt-7 flex flex-col shrink-0 bg-gradient-to-b from-primary/[0.07] to-transparent">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-[26px] font-heading font-bold tracking-tight leading-none">Messages</h1>
+                <h1 className="text-2xl font-heading font-bold tracking-tight">Messages</h1>
                 <div className="mt-1.5 flex items-center gap-2"><p className="text-xs font-medium text-muted-foreground">Connect, collaborate, create.</p><button type="button" onClick={() => navigate('/files')} className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary transition hover:bg-primary/20">Files</button></div>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20" title="New Conversation Options" aria-label="New Conversation Options">
+                  <button className="h-11 w-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20" title="New Conversation Options" aria-label="New Conversation Options">
                     <Plus className="w-5 h-5" />
                   </button>
                 </DropdownMenuTrigger>
@@ -901,17 +901,17 @@ export default function Messages() {
             </div>
             
             {/* Tabs */}
-            <div className="grid grid-cols-2 gap-1 rounded-2xl border border-border/40 bg-secondary/40 p-1">
+            <div className="grid grid-cols-2 gap-1 rounded-2xl bg-secondary/50 p-1.5">
               <button 
                 onClick={() => setSidebarTab("chats")}
-                className={cn("relative min-h-10 rounded-xl px-4 text-sm font-semibold transition-all", sidebarTab === "chats" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+                className={cn("relative min-h-11 rounded-xl px-4 text-sm font-semibold transition-all", sidebarTab === "chats" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
               >
                 Chats
                 {sidebarTab === "chats" && <motion.div layoutId="activeTabMsg" className="absolute inset-x-4 bottom-0 h-0.5 rounded-full bg-primary" />}
               </button>
               <button 
                 onClick={() => setSidebarTab("contacts")}
-                className={cn("relative min-h-10 rounded-xl px-4 text-sm font-semibold transition-all", sidebarTab === "contacts" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+                className={cn("relative min-h-11 rounded-xl px-4 text-sm font-semibold transition-all", sidebarTab === "contacts" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
               >
                 Network
                 {sidebarTab === "contacts" && <motion.div layoutId="activeTabMsg" className="absolute inset-x-4 bottom-0 h-0.5 rounded-full bg-primary" />}

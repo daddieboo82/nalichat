@@ -96,7 +96,7 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border/50 shrink-0">
         <span className="font-heading font-semibold text-sm">Group Info</span>
-        <button onClick={onClose} title="Close Group Info" aria-label="Close Group Info" className="w-7 h-7 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground transition-colors">
+        <button onClick={onClose} title="Close Group Info" aria-label="Close Group Info" className="h-11 w-11 rounded-xl hover:bg-secondary flex items-center justify-center text-muted-foreground transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -116,7 +116,7 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
                 className="bg-secondary/50 border-0 rounded-xl h-8 text-sm text-center font-semibold"
                 autoFocus
               />
-              <button onClick={saveName} disabled={isSavingName} title="Save Group Name" aria-label="Save Group Name" className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors shrink-0 disabled:opacity-60">
+              <button onClick={saveName} disabled={isSavingName} title="Save Group Name" aria-label="Save Group Name" className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors shrink-0 disabled:opacity-60">
                 <Check className="w-3.5 h-3.5" />
               </button>
             </div>

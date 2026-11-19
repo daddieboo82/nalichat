@@ -114,7 +114,7 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
     return (
       <div className="relative group">
         <img src={message.file_url} alt={message.file_name} loading="lazy" decoding="async" className="rounded-xl w-full min-w-0 max-w-full sm:max-w-[300px] max-h-[220px] object-cover block cursor-pointer hover:brightness-90 transition-all" onClick={() => onOpenViewer(message)} />
-        <button onClick={() => onOpenViewer(message)} className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity hover:bg-black/60" title="Expand Image" aria-label="Expand Image">
+        <button onClick={() => onOpenViewer(message)} className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl bg-black/50 text-white opacity-100 transition-opacity hover:bg-black/70 focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" title="Expand Image" aria-label="Expand Image">
           <Maximize2 className="w-4 h-4 text-white" />
         </button>
         {message.text && <p className="text-sm mt-2">{message.text}</p>}

@@ -229,7 +229,7 @@ export default function Profile() {
     const uploadOwnerId = currentUser?.id;
     if (!file || !uploadOwnerId || formOwnerId !== uploadOwnerId) return;
     const validation = validateUpload(file);
-    if (!validation.valid) {
+    if (!validation.ok) {
       toast.error(validation.error);
       return;
     }
@@ -305,7 +305,7 @@ export default function Profile() {
         <div className="absolute inset-0 bg-black/20" />
         {isMe && (
           <>
-            <button onClick={() => coverRef.current?.click()} className="ui-hover absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-xl bg-black/55 text-white backdrop-blur-sm transition-colors hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Change profile cover">
+            <button onClick={() => coverRef.current?.click()} disabled={uploading} className="ui-hover absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-xl bg-black/55 text-white backdrop-blur-sm transition-colors hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-white/60 disabled:opacity-60" aria-label="Change profile cover">
               <Camera className="w-4 h-4" />
             </button>
             <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={uploadCover} />
@@ -323,8 +323,8 @@ export default function Profile() {
             </Avatar>
             {isMe && (
               <>
-                <button onClick={() => avatarRef.current?.click()} className="ui-hover absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-primary shadow-lg transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label="Change profile photo">
-                  <Camera className="w-3 h-3 text-white" />
+                <button onClick={() => avatarRef.current?.click()} disabled={uploading} className="ui-hover absolute bottom-0 right-0 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60" aria-label="Change profile photo">
+                  <Camera className="w-4 h-4" />
                 </button>
                 <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
               </>
@@ -340,10 +340,11 @@ export default function Profile() {
           {isMe && (
             <button
               onClick={() => editing ? save() : setEditing(true)}
-              className="ui-hover flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/10 transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-auto"
+              disabled={saving}
+              className="ui-hover flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/10 transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60 sm:w-auto"
             >
               {editing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-              {editing ? "Save" : "Edit"}
+              {saving ? "Saving..." : editing ? "Save" : "Edit"}
             </button>
           )}
           {!isMe && user && (
@@ -356,7 +357,7 @@ export default function Profile() {
         </div>
 
         {/* XP Bar */}
-        <div className="ui-surface mb-4 rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl">
+        <div className="ui-surface mb-4 rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl">
           <div className="mb-2 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-yellow-400" />
@@ -376,7 +377,7 @@ export default function Profile() {
             { label: "Plays", value: totalPlays, icon: Eye },
             { label: "Awards", value: achievements.length, icon: Award },
           ].map(({ label, value, icon: Icon }) => (
-            <div key={label} className="ui-surface rounded-2xl border border-white/[0.06] bg-card/50 p-3 text-center backdrop-blur-xl sm:p-4">
+            <div key={label} className="ui-surface rounded-2xl border border-border/60 bg-card/50 p-3 text-center backdrop-blur-xl sm:p-4">
               <Icon className="w-4 h-4 text-primary mx-auto mb-1" />
               <p className="font-bold text-lg font-heading">{value}</p>
               <p className="text-xs text-muted-foreground">{label}</p>
@@ -386,7 +387,7 @@ export default function Profile() {
 
         {/* Edit form */}
         {editing && (
-          <div className="ui-surface mb-6 space-y-4 rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl sm:p-5">
+          <div className="ui-surface mb-6 space-y-4 rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl sm:p-5">
             <h3 className="font-heading font-semibold">Edit Profile</h3>
             <input value={form.display_name || form.full_name || ""} onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))} placeholder="Display name" className="min-h-11 w-full rounded-xl border border-border/70 bg-secondary/40 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20" />
             <textarea value={form.bio || ""} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell your story..." rows={3} className="min-h-[96px] w-full resize-y rounded-xl border border-border/70 bg-secondary/40 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20" />
@@ -401,7 +402,7 @@ export default function Profile() {
                   <button
                     key={value}
                     onClick={() => setForm(f => ({ ...f, artist_role: value }))}
-                    className={cn("ui-hover min-h-9 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/40", form.artist_role === value ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}
+                    className={cn("ui-hover min-h-11 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/40", form.artist_role === value ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}
                   >
                     {label}
                   </button>
@@ -412,7 +413,7 @@ export default function Profile() {
               <label className="text-xs text-muted-foreground mb-2 block">Genres / Styles</label>
               <div className="flex flex-wrap gap-2">
                 {GENRES.map(g => (
-                  <button key={g} onClick={() => toggleGenre(g)} className={cn("ui-hover min-h-9 px-3 py-1.5 rounded-full text-xs transition-colors", (form.genres || []).includes(g) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>{g}</button>
+                  <button key={g} onClick={() => toggleGenre(g)} className={cn("ui-hover min-h-11 px-3 py-1.5 rounded-full text-xs transition-colors", (form.genres || []).includes(g) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>{g}</button>
                 ))}
               </div>
             </div>
@@ -436,7 +437,7 @@ export default function Profile() {
         {/* Tabs */}
         <div className="no-scrollbar mb-6 flex gap-1 overflow-x-auto rounded-2xl bg-secondary/50 p-1.5">
           {["featured", "posts", "achievements"].map(t => (
-            <button key={t} onClick={() => setTab(t)} className={cn("ui-hover min-h-10 shrink-0 flex-1 rounded-xl px-3 py-2 text-sm font-semibold capitalize transition-colors", tab === t ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground")}>
+            <button key={t} onClick={() => setTab(t)} className={cn("ui-hover min-h-11 shrink-0 flex-1 rounded-xl px-3 py-2 text-sm font-semibold capitalize transition-colors", tab === t ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground")}>
               {t === "featured" ? "⭐ Featured" : t === "posts" ? "🎨 All Tracks" : "🏆 Achievements"}
             </button>
           ))}

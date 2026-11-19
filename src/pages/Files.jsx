@@ -546,7 +546,7 @@ export default function Files() {
             <div className="flex flex-wrap items-center gap-2">
               {uploading && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
               <Button
-                className="ui-hover min-h-11 flex-1 rounded-xl bg-primary font-semibold text-white shadow-lg shadow-primary/10 hover:bg-primary/90 sm:flex-none"
+                className="ui-hover min-h-11 flex-1 rounded-xl bg-primary font-semibold text-primary-foreground shadow-lg shadow-primary/10 hover:bg-primary/90 sm:flex-none"
                 onClick={() => setShowUploadModal(true)}
                 disabled={uploading}
               >
@@ -556,7 +556,7 @@ export default function Files() {
               <Button
                 variant="default"
                 size="sm"
-                className="ui-hover min-h-11 flex-1 rounded-xl bg-gradient-to-r from-primary to-pink-500 font-semibold text-white transition-all hover:opacity-90 sm:flex-none"
+                className="ui-hover min-h-11 flex-1 rounded-xl bg-gradient-to-r from-primary to-accent font-semibold text-primary-foreground transition-all hover:opacity-90 sm:flex-none"
                 onClick={() => navigate('/explore?upload=true')}
                 title="Publish Track to Explore"
               >
@@ -720,7 +720,7 @@ export default function Files() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className="ui-surface ui-hover group cursor-pointer rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl hover:border-white/[0.12] hover:bg-card/70"
+                    className="ui-surface ui-hover group cursor-pointer rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl hover:border-border hover:bg-card/70"
                     onClick={() => setCurrentFolderId(folder.id)}
                   >
                     <div className="flex items-start gap-3">
@@ -752,7 +752,7 @@ export default function Files() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.03 }}
-                      className={`ui-surface group rounded-3xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
+                      className={`ui-surface group rounded-2xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-border/60 hover:border-border hover:bg-card/70"}`}
                     >
                       <div className="flex items-start gap-3">
                         <Checkbox
@@ -836,7 +836,7 @@ export default function Files() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className={`ui-surface group rounded-3xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
+                  className={`ui-surface group rounded-2xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-border/60 hover:border-border hover:bg-card/70"}`}
                 >
                   <div className="flex items-start gap-3">
                     <Checkbox

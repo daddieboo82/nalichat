@@ -107,7 +107,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
              <button
                 key={topic}
                 onClick={() => setSearch(topic.toLowerCase())}
-                className="ui-hover min-h-9 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap"
+                className="ui-hover min-h-11 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap"
              >
                 {topic}
              </button>

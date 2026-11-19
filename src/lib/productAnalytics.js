@@ -4,6 +4,7 @@ const LEGACY_SESSION_KEY = "nali_product_session";
 const sessionKeyFor = (userId) => `nali_product_session:${userId || "anonymous"}`;
 let sessionStorageKey = sessionKeyFor(null);
 const FLUSH_INTERVAL_MS = 15_000;
+const EARLY_CHECKPOINT_MS = 5_000;
 const RETURN_VISIT_KEY = "nali_product_last_visit_date";
 const ACQUISITION_KEY = "nali_product_acquisition";
 let initialized = false;
@@ -29,6 +30,15 @@ function supportsCredentialedAnalyticsTransport() {
   return !/iPad|iPhone|iPod/.test(navigator.userAgent || "") &&
     !(navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
+function getDeviceType() {
+  const { userAgent = "", platform, maxTouchPoints, userAgentData } = navigator;
+  if (/iPad|Tablet|PlayBook/i.test(userAgent) ||
+    (platform === "MacIntel" && maxTouchPoints > 1) ||
+    (/Android/i.test(userAgent) && !/Mobile/i.test(userAgent))) return "Tablet";
+  if (userAgentData?.mobile || /Mobile|iPhone|iPod/i.test(userAgent)) return "Mobile";
+  if (/Windows|Macintosh|X11|CrOS/i.test(userAgent)) return "Desktop";
+  return "Unknown";
+}
 function safeGet() {
   try {
     const saved = sessionStorage.getItem(sessionStorageKey);
@@ -47,7 +57,7 @@ function safeGet() {
 function safeSet(value) { try { sessionStorage.setItem(sessionStorageKey, JSON.stringify(value)); } catch {} }
 function newSession() {
   const startedAt = now();
-  return { id: crypto.randomUUID?.() || `${startedAt}-${Math.random().toString(36).slice(2)}`, startedAt, lastActiveAt: startedAt, engagedMs: 0 };
+  return { id: crypto.randomUUID?.() || `${startedAt}-${Math.random().toString(36).slice(2)}`, startedAt, lastActiveAt: startedAt, engagedMs: 0, landingPath: window.location.pathname };
 }
 function ensureSession() {
   session = safeGet() || newSession();
@@ -93,21 +103,26 @@ function track(name, properties = {}) {
   if (isAutomatedBrowser()) return;
   if (
     name === "product_page_view" ||
-    (name === "product_session_engagement" && properties.reason !== "heartbeat")
+    (name === "product_session_engagement" && !["heartbeat", "early_checkpoint"].includes(properties.reason))
   ) {
     logDashboardActivity(properties.route);
   }
   const currentSession = ensureSession();
   const acquisition = getAcquisition();
+  const isSessionEvent = name === "product_session_started" || name === "product_session_engagement";
   const enrichedProperties = {
     ...acquisition,
     user_id: properties.user_id || analyticsUserId || "",
     ...properties,
+    ...(isSessionEvent && {
+      device_type: getDeviceType(),
+      landing_path: currentSession.landingPath || acquisition.landing_path,
+    }),
     campaign_source: properties.campaign_source || acquisition.campaign_source || "",
     campaign_medium: properties.campaign_medium || acquisition.campaign_medium || "",
     campaign_name: properties.campaign_name || acquisition.campaign_name || "",
   };
-  if (supportsCredentialedAnalyticsTransport()) {
+  if (supportsCredentialedAnalyticsTransport() && properties.reason !== "early_checkpoint") {
     try {
       const result = base44.analytics?.track?.({ eventName: name, properties: { ...enrichedProperties, product_session_id: currentSession.id } });
       if (result?.catch) result.catch(() => {});
@@ -165,6 +180,10 @@ function markActive() {
 function flush(reason = "heartbeat") {
   accrueForegroundUntil();
   const s = ensureSession();
+  if (reason === "early_checkpoint") {
+    s.earlyCheckpointSaved = true;
+    safeSet(s);
+  }
   // Safari can discard a pending pagehide request. Persist occasional progress
   // through our existing first-party funnel entity on iOS/iPadOS instead of
   // retrying the credentialed analytics endpoint that WebKit rejects.
@@ -233,8 +252,18 @@ export function initProductAnalytics(userId = null) {
   history.replaceState = function(...args) { const r = originalReplace.apply(this, args); routeCheck(); return r; };
   const onPop = () => routeCheck();
   const onActivity = () => markActive();
+  let earlyCheckpointTimer;
+  const scheduleEarlyCheckpoint = () => {
+    const current = ensureSession();
+    if (current.earlyCheckpointSaved || document.visibilityState !== "visible") return;
+    const remaining = Math.max(0, EARLY_CHECKPOINT_MS - current.engagedMs);
+    earlyCheckpointTimer = window.setTimeout(() => {
+      if (document.visibilityState === "visible") flush("early_checkpoint");
+    }, remaining);
+  };
   const onVisibility = () => {
     if (document.visibilityState === "hidden") {
+      window.clearTimeout(earlyCheckpointTimer);
       // visibilitychange fires after the state flips, so close the foreground
       // interval explicitly instead of relying on the current visibility state.
       const t = now();
@@ -253,6 +282,8 @@ export function initProductAnalytics(userId = null) {
     } else {
       foregroundSince = now();
       markActive();
+      window.clearTimeout(earlyCheckpointTimer);
+      scheduleEarlyCheckpoint();
     }
   };
   const onPageHide = () => flush("pagehide");
@@ -262,6 +293,7 @@ export function initProductAnalytics(userId = null) {
   window.addEventListener("scroll", onActivity, { passive: true });
   document.addEventListener("visibilitychange", onVisibility);
   window.addEventListener("pagehide", onPageHide);
+  scheduleEarlyCheckpoint();
   flushTimer = window.setInterval(() => flush("heartbeat"), FLUSH_INTERVAL_MS);
   return () => {
     // Skip flushing for very short sessions (< 3s) — these are almost always
@@ -271,6 +303,7 @@ export function initProductAnalytics(userId = null) {
     if (s.engagedMs > 1000 || (now() - s.startedAt) > 3000) {
       flush("cleanup");
     }
+    window.clearTimeout(earlyCheckpointTimer);
     clearInterval(flushTimer);
     window.removeEventListener("popstate", onPop);
     window.removeEventListener("pointerdown", onActivity);

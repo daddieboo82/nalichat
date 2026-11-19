@@ -495,7 +495,7 @@ function RecordingItem({ recording, saving, onSave, onDelete, onRename }) {
   };
 
   return (
-    <div className="ui-surface flex flex-wrap items-center gap-3 rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl sm:flex-nowrap">
+    <div className="ui-surface flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card/50 p-4 backdrop-blur-xl sm:flex-nowrap">
       <audio ref={audioRef} src={recording.url} onEnded={() => setPlaying(false)} />
       <button onClick={togglePlay} className="ui-hover flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/20 transition-colors hover:bg-primary/30 focus-visible:ring-2 focus-visible:ring-primary/40" aria-label={playing ? "Pause recording playback" : "Play recording"}>
         {playing ? <Pause className="w-4 h-4 text-primary" /> : <Play className="w-4 h-4 text-primary ml-0.5" />}

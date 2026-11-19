@@ -429,7 +429,7 @@ export default function CoverArt() {
 
       <div className="flex flex-1 flex-col gap-4 sm:gap-6 md:flex-row md:gap-8">
         {/* Left: Track Selection */}
-        <div className="ui-surface custom-scrollbar flex max-h-[320px] w-full flex-col gap-3 overflow-y-auto overscroll-contain rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl md:max-h-none md:w-1/3">
+        <div className="ui-surface custom-scrollbar flex max-h-[320px] w-full flex-col gap-3 overflow-y-auto overscroll-contain rounded-3xl border border-border bg-card/50 p-4 backdrop-blur-xl md:max-h-none md:w-1/3">
           <h2 className="font-semibold uppercase text-xs tracking-wider text-muted-foreground">Your Tracks</h2>
           {isLoading ? (
             <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
@@ -490,7 +490,7 @@ export default function CoverArt() {
                 role="button"
                 tabIndex={0}
                 onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && !generateArtMutation.isPending) { event.preventDefault(); setSelectedPost(post); setGeneratedImage(null); } }}
-                className={`ui-hover min-h-14 cursor-pointer rounded-2xl border p-3 text-left transition-all focus-visible:ring-2 focus-visible:ring-primary/40 ${selectedPost?.id === post.id ? 'border-primary bg-primary/10 ring-1 ring-primary/20' : 'border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70'}`}
+                className={`ui-hover min-h-14 cursor-pointer rounded-2xl border p-3 text-left transition-all focus-visible:ring-2 focus-visible:ring-primary/40 ${selectedPost?.id === post.id ? 'border-primary bg-primary/10 ring-1 ring-primary/20' : 'border-border hover:border-border hover:bg-card/70'}`}
               >
                 <p className="font-semibold text-sm truncate">{post.title}</p>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{post.genre || 'No genre'} • {post.medium}</p>
@@ -779,7 +779,7 @@ export default function CoverArt() {
         </Dialog>
 
         {/* Right: Generation Area */}
-        <div className="ui-surface custom-scrollbar relative flex min-h-[400px] w-full flex-col items-center overflow-y-auto rounded-3xl border border-white/[0.06] bg-card/50 p-4 pb-8 backdrop-blur-xl sm:min-h-[500px] sm:p-8 md:w-2/3 md:pb-12">
+        <div className="ui-surface custom-scrollbar relative flex min-h-[400px] w-full flex-col items-center overflow-y-auto rounded-3xl border border-border bg-card/50 p-4 pb-8 backdrop-blur-xl sm:min-h-[500px] sm:p-8 md:w-2/3 md:pb-12">
           <div className="flex flex-col items-center w-full max-w-md my-auto">
             <div className="relative mb-5 flex aspect-square w-full items-center justify-center overflow-hidden rounded-3xl border border-border bg-black/50 shadow-2xl sm:mb-6">
               {generatedImage ? (

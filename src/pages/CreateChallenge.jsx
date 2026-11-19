@@ -143,7 +143,7 @@ export default function CreateChallenge() {
         <p className="text-muted-foreground text-sm mt-1">Upload a source track and let the community remix it.</p>
       </div>
 
-      <div className="ui-surface space-y-4 rounded-3xl border border-white/[0.06] bg-card/40 p-4 sm:p-5">
+      <div className="ui-surface space-y-4 rounded-3xl border border-border bg-card/40 p-4 sm:p-5">
         <div>
           <label className="text-xs text-muted-foreground mb-2 block">Cover Image</label>
           <div

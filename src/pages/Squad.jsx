@@ -197,7 +197,7 @@ export default function Squad() {
       </div>
 
       {/* Credits */}
-      <div className="ui-surface flex items-center justify-between rounded-2xl border border-white/[0.06] bg-secondary/40 px-4 py-3">
+      <div className="ui-surface flex items-center justify-between rounded-2xl border border-border bg-secondary/40 px-4 py-3">
         <div className="flex items-center gap-2 text-sm font-medium">
           <Sparkles className="w-4 h-4 text-primary" /> Squad Credits
         </div>
@@ -219,7 +219,7 @@ export default function Squad() {
       )}
 
       {squad && squad.status === "pending" && (
-        <div className="ui-surface space-y-4 rounded-3xl border border-white/[0.06] bg-secondary/40 p-5 sm:p-6">
+        <div className="ui-surface space-y-4 rounded-3xl border border-border bg-secondary/40 p-5 sm:p-6">
           <h2 className="font-heading font-bold text-lg">Waiting for your partner</h2>
           <p className="text-sm text-muted-foreground">Share this link — as soon as they join, your squad goes active.</p>
           <div className="flex items-stretch gap-2">

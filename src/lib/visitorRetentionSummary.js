@@ -9,20 +9,23 @@ export function summarizeVisitorRetention(events = []) {
     if (event?.event_name !== 'product_session_engagement') continue;
     const properties = event.metadata || {};
     const key = properties.product_session_id || event.session_id;
+    if (properties.engaged_seconds == null) continue;
     const seconds = Number(properties.engaged_seconds);
+    const checkpoint = ['heartbeat', 'early_checkpoint'].includes(properties.reason);
     if (!key || !Number.isFinite(seconds) || seconds < 0) continue;
     const old = sessions.get(key);
-    if (old && old.seconds >= seconds) continue;
+    if (old && (old.seconds > seconds || (old.seconds === seconds && (!old.checkpoint || checkpoint)))) continue;
     sessions.set(key, {
       seconds,
+      checkpoint,
       landing: normalize(properties.landing_path),
       source: normalize(event.campaign_source || properties.campaign_source),
-      // Stored first-party funnel records currently have no trustworthy device field.
-      // Do not infer mobile/desktop from their absence.
+      // Historical records without a device category remain unknown.
       device: normalize(properties.device_type),
     });
   }
-  const rows = [...sessions.values()];
+  const rows = [...sessions.values()].filter(row => !row.checkpoint);
+  const checkpointOnly = sessions.size - rows.length;
   const summary = input => {
     if (!input.length) return { sessions: 0, median: null, average: null, under10: null, under10Count: 0 };
     const durations = input.map(row => row.seconds).sort((a, b) => a - b);
@@ -41,5 +44,5 @@ export function summarizeVisitorRetention(events = []) {
     return [...buckets.entries()].map(([label, entries]) => ({ label, ...summary(entries) }))
       .sort((a, b) => b.sessions - a.sessions).slice(0, 8);
   };
-  return { ...summary(rows), byLanding: groups('landing'), bySource: groups('source'), byDevice: groups('device') };
+  return { ...summary(rows), checkpointOnly, byLanding: groups('landing'), bySource: groups('source'), byDevice: groups('device') };
 }

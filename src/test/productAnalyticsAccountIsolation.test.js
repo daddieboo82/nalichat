@@ -17,7 +17,7 @@ describe("product analytics account isolation", () => {
     expect(analytics).toContain("sessionStorage.removeItem(LEGACY_SESSION_KEY)");
     expect(analytics).toContain('return !/iPad|iPhone|iPod/.test(navigator.userAgent || "") &&');
     expect(analytics).toContain('navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1');
-    expect(analytics).toContain("if (supportsCredentialedAnalyticsTransport())");
+    expect(analytics).toContain('if (supportsCredentialedAnalyticsTransport() && properties.reason !== "early_checkpoint")');
     expect(analytics).toContain('"product_session_started", "product_session_engagement"');
     expect(analytics).toContain('"login_started", "login_completed", "login_failed"');
     expect(analytics).toContain('user_id: properties.user_id || analyticsUserId || ""');

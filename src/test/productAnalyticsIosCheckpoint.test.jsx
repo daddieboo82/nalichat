@@ -15,8 +15,8 @@ const setDevice = (userAgent, platform, maxTouchPoints) => {
   Object.defineProperty(window.navigator, 'platform', { value: platform, configurable: true });
   Object.defineProperty(window.navigator, 'maxTouchPoints', { value: maxTouchPoints, configurable: true });
 };
-const engagementRecords = () => mocks.create.mock.calls.map(([record]) => record)
-  .filter(record => record.event_name === 'product_session_engagement');
+const engagementRecords = (reason = 'heartbeat') => mocks.create.mock.calls.map(([record]) => record)
+  .filter(record => record.event_name === 'product_session_engagement' && record.metadata.reason === reason);
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -59,5 +59,25 @@ describe('first-party iOS session checkpoints', () => {
     vi.advanceTimersByTime(61_000);
     expect(engagementRecords()).toHaveLength(0);
     expect(mocks.track).toHaveBeenCalled();
+  });
+});
+
+describe('early session checkpoint', () => {
+  it('records five foreground seconds once and categorizes a desktop without tracking background time', () => {
+    setDevice('Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Win32', 0);
+    cleanup = initProductAnalytics();
+    vi.advanceTimersByTime(2_000);
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    vi.advanceTimersByTime(30_000);
+    expect(engagementRecords('early_checkpoint')).toHaveLength(0);
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    vi.advanceTimersByTime(3_000);
+    expect(engagementRecords('early_checkpoint')[0]?.metadata).toMatchObject({
+      device_type: 'Desktop', landing_path: '/', engaged_seconds: 5,
+    });
+    vi.advanceTimersByTime(10_000);
+    expect(engagementRecords('early_checkpoint')).toHaveLength(1);
   });
 });

@@ -486,7 +486,10 @@ export default function Analytics() {
         {isAdmin && (
           <Card className="ui-surface rounded-3xl border border-primary/20 bg-card/60 p-4 sm:p-5">
             <h2 className="font-heading text-lg font-semibold">Visitor Retention — Recorded Sessions</h2>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Each session is counted once using its highest recorded foreground engagement. This is observed engagement, not total time on site. Missing exit events may undercount visits; historical test activity may remain in older data.</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Each session contributes its highest recorded foreground duration when a page-hide, visibility change, or cleanup event captures that duration. Historical periods may include automated test visits.</p>
+            {visitorRetention.checkpointOnly > 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">Only checkpoints were captured at the longest observed duration for {visitorRetention.checkpointOnly} sessions. The duration statistics exclude those sessions.</p>
+            )}
             {visitorRetention.sessions === 0 ? (
               <p className="mt-4 rounded-xl border border-border/60 bg-background/40 p-3 text-sm text-muted-foreground">No recorded session durations in the selected period. Retention cannot be measured yet.</p>
             ) : (
@@ -501,7 +504,7 @@ export default function Analytics() {
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">{visitorRetention.sessions < 30 ? 'Small sample: avoid conclusions until more real visitor sessions are recorded.' : 'Compare with the 7-day and 30-day filters above. Older periods may include automated test traffic.'}</p>
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  {[["Landing page", visitorRetention.byLanding], ["Traffic source", visitorRetention.bySource]].map(([title, groups]) => (
+                  {[["Landing page", visitorRetention.byLanding], ["Traffic source", visitorRetention.bySource], ["Device", visitorRetention.byDevice]].map(([title, groups]) => (
                     <div key={title} className="overflow-hidden rounded-xl border border-border/60">
                       <h3 className="border-b border-border/60 p-3 text-sm font-semibold">{title}</h3>
                       <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead className="text-muted-foreground"><tr><th className="p-2">{title}</th><th className="p-2">Sessions</th><th className="p-2">Median</th><th className="p-2">Under 10s</th></tr></thead><tbody>{groups.map(row => <tr key={row.label} className="border-t border-border/40"><td className="max-w-[160px] truncate p-2" title={row.label}>{row.label}</td><td className="p-2 tabular-nums">{row.sessions}</td><td className="p-2 tabular-nums">{row.median}s</td><td className="p-2 tabular-nums">{row.under10}%</td></tr>)}</tbody></table></div>

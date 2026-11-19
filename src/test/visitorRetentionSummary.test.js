@@ -16,6 +16,18 @@ describe('visitor retention summary', () => {
     const result = summarizeVisitorRetention([{event_name: 'product_session_engagement',metadata:{engaged_seconds: 9}}, event('bad', -2), {event_name: 'homepage_view'}]);
     expect(result).toMatchObject({sessions:0,median:null,average:null,under10:null});
   });
+  it('keeps partial checkpoints out of duration statistics and prefers a matching exit', () => {
+    const partial = event('a', 5);
+    partial.metadata.reason = 'early_checkpoint';
+    const tiedCheckpoint = event('b', 7);
+    tiedCheckpoint.metadata.reason = 'heartbeat';
+    const exit = event('b', 7);
+    exit.metadata.reason = 'pagehide';
+    exit.metadata.device_type = 'Mobile';
+    const result = summarizeVisitorRetention([exit, partial, tiedCheckpoint]);
+    expect(result).toMatchObject({ sessions: 1, checkpointOnly: 1, median: 7, under10: 100 });
+    expect(result.byDevice).toMatchObject([{ label: 'Mobile', sessions: 1 }]);
+  });
   it('does not infer device from missing funnel metadata', () => {
     const result = summarizeVisitorRetention([event('a', 9)]);
     expect(result.byDevice).toMatchObject([{label:'Unknown',sessions:1}]);

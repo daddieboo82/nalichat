@@ -28,7 +28,7 @@ export default function StudioToolbar2({
 
   const toolbarContent = (
     <>
-        <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
+        <div className="flex items-center gap-1 bg-studio-raised/60 border border-foreground/10 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild>
               <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
@@ -42,26 +42,26 @@ export default function StudioToolbar2({
           </TooltipProvider>
         </div>
         
-        <div className="hidden sm:block w-px h-6 bg-border/50 shrink-0" />
+        <div className="hidden sm:block w-px h-6 bg-foreground/10 shrink-0" />
         
-        <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
+        <div className="flex items-center gap-1 bg-studio-raised/60 border border-foreground/10 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" onClick={undo} disabled={historyIndex <= 0} aria-label="Undo" className="min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5 relative disabled:opacity-35 disabled:cursor-not-allowed"><Undo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Undo</span>{historyIndex > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyIndex}</span>}</Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Undo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" onClick={redo} disabled={historyIndex >= historyLength - 1} aria-label="Redo" className="min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5 relative disabled:opacity-35 disabled:cursor-not-allowed"><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span>{(historyLength-1-historyIndex) > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyLength-1-historyIndex}</span>}</Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Redo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
-        <div className="hidden sm:block w-px h-6 bg-border/50 shrink-0" />
+        <div className="hidden sm:block w-px h-6 bg-foreground/10 shrink-0" />
 
-        <div className="flex items-stretch gap-px bg-background/50 rounded-xl border border-border/50 shadow-inner overflow-hidden shrink-0">
+        <div className="flex items-stretch gap-px bg-studio-surface/60 rounded-xl border border-foreground/10 shadow-inner overflow-hidden shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild>
               <div className="flex flex-col items-center justify-center px-3 py-1 hover:bg-secondary/40 transition-colors">
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground leading-none mb-1 flex items-center gap-1 pointer-events-none"><Edit2 className="w-2.5 h-2.5" /> BPM</span>
                 <div className="flex items-center gap-1 relative">
-                  <button type="button" onClick={() => { const c = Math.max(20, bpm - 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-7 h-7 md:w-6 md:h-6 shrink-0 flex items-center justify-center bg-secondary/50 hover:bg-secondary rounded border border-border text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer touch-manipulation">-</button>
-                  <input type="text" inputMode="numeric" value={bpmInput} onChange={(e) => { const val = e.target.value.replace(/[^0-9]/g, ''); setBpmInput(val); const num = Number(val); if(num >= 20 && num <= 300) setBpm(num); }} onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} className={cn("w-10 shrink-0 bg-secondary/50 border rounded px-1 text-center font-mono text-xs font-bold text-foreground focus:outline-none focus:ring-1 py-0.5 leading-tight transition-all cursor-text", (Number(bpmInput)<20||Number(bpmInput)>300)?"border-red-500 text-red-500 focus:ring-red-500":"border-border focus:ring-primary focus:border-primary")} />
-                  <button type="button" onClick={() => { const c = Math.min(300, bpm + 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-7 h-7 md:w-6 md:h-6 shrink-0 flex items-center justify-center bg-secondary/50 hover:bg-secondary rounded border border-border text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer touch-manipulation">+</button>
+                  <button type="button" onClick={() => { const c = Math.max(20, bpm - 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-7 h-7 md:w-6 md:h-6 shrink-0 flex items-center justify-center bg-studio-raised hover:bg-studio-overlay rounded border border-foreground/10 text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer touch-manipulation">-</button>
+                  <input type="text" inputMode="numeric" value={bpmInput} onChange={(e) => { const val = e.target.value.replace(/[^0-9]/g, ''); setBpmInput(val); const num = Number(val); if(num >= 20 && num <= 300) setBpm(num); }} onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} className={cn("w-10 shrink-0 bg-studio-raised border rounded px-1 text-center font-mono text-xs font-bold text-foreground focus:outline-none focus:ring-1 py-0.5 leading-tight transition-all cursor-text", (Number(bpmInput)<20||Number(bpmInput)>300)?"border-destructive text-destructive focus:ring-destructive":"border-foreground/10 focus:ring-primary focus:border-primary")} />
+                  <button type="button" onClick={() => { const c = Math.min(300, bpm + 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-7 h-7 md:w-6 md:h-6 shrink-0 flex items-center justify-center bg-studio-raised hover:bg-studio-overlay rounded border border-foreground/10 text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer touch-manipulation">+</button>
                 </div>
               </div>
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Tempo (beats per minute)</TooltipContent></Tooltip>
@@ -104,9 +104,9 @@ export default function StudioToolbar2({
           </TooltipProvider>
         </div>
 
-        <div className="hidden md:block w-px h-6 bg-border/50 shrink-0" />
+        <div className="hidden md:block w-px h-6 bg-foreground/10 shrink-0" />
 
-        <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
+        <div className="flex items-center gap-1 bg-studio-raised/60 border border-foreground/10 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild>
               <div><Button variant="ghost" size="sm" aria-label="Shuffle" onClick={() => setEditMode('shuffle')} aria-pressed={editMode === 'shuffle'} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'shuffle' && "bg-primary/20 text-primary")}>
@@ -135,7 +135,7 @@ export default function StudioToolbar2({
 
         {/* Grid Value Selector — Pro Tools shows the current grid/nudge resolution */}
         {setGridSize && (
-          <div className="hidden md:flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
+          <div className="hidden md:flex items-center gap-1 bg-studio-raised/60 border border-foreground/10 p-1 rounded-xl shadow-sm shrink-0">
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -159,7 +159,7 @@ export default function StudioToolbar2({
           </div>
         )}
 
-        <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
+        <div className="flex items-center gap-1 bg-studio-raised/60 border border-foreground/10 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Zoomer Tool (F5)" onClick={() => setActiveTool('zoomer')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'zoomer' && "bg-primary/20 text-primary")}><ZoomIn className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Zoomer</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Zoomer Tool — click or drag a range <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">F5</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Trim Tool (F6)" onClick={() => setActiveTool('trim')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'trim' && "bg-primary/20 text-primary")}><MoveHorizontal className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Trim</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Trim Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">F6</kbd></TooltipContent></Tooltip>
@@ -178,9 +178,9 @@ export default function StudioToolbar2({
           </TooltipProvider>
         </div>
 
-        <div className="hidden xl:block w-px h-6 bg-border/50 shrink-0" />
+        <div className="hidden xl:block w-px h-6 bg-foreground/10 shrink-0" />
 
-        <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
+        <div className="flex items-center gap-1 bg-studio-raised/60 border border-foreground/10 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Lock/Unlock Clip (L)" onClick={() => {
               const allLocked = selectedTrackIds.every(id => tracks.find(t => t.id === id)?.locked);
@@ -188,20 +188,20 @@ export default function StudioToolbar2({
             }} disabled={selectedTrackIds.length === 0} className="min-w-[44px] min-h-[44px] px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5">{tracks.find(t => t.id === selectedTrackIds[0])?.locked ? <Unlock className="w-3.5 h-3.5"/> : <Link2 className="w-3.5 h-3.5"/>}<span className="text-xs hidden lg:inline">Lock</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Lock/Unlock Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">L</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Separate Clip (Ctrl+E)" onClick={splitSelectedTracks} disabled={selectedTrackIds.length === 0} className="min-w-[44px] min-h-[44px] px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5"><Scissors className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Split</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Separate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+E</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Duplicate Clip (Ctrl+D)" onClick={duplicateSelectedTracks} disabled={selectedTrackIds.length === 0} className="min-w-[44px] min-h-[44px] px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5"><Copy className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Copy</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Duplicate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+D</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Clear Clip (Del)" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="min-w-[44px] min-h-[44px] px-2 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50 gap-1.5"><Trash2 className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Del</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Clear Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Del</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Clear Clip (Del)" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="min-w-[44px] min-h-[44px] px-2 rounded-md text-muted-foreground hover:text-destructive disabled:opacity-50 gap-1.5"><Trash2 className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Del</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Clear Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Del</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
         
         <div className="flex-1" />
         <div className="flex items-center gap-3 ml-auto text-sm text-muted-foreground shrink-0 pl-4">
           <TooltipProvider delayDuration={200}>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={() => { const maxD = Math.max(...tracks.map(t => (t.startTime||0)+(t.duration||40))); if (maxD>0) setZoom(Math.max(0.5, 40/maxD)); }} className="h-7 px-2 text-xs rounded text-muted-foreground hover:text-foreground hover:bg-secondary"><Maximize2 className="w-3.5 h-3.5 mr-1.5" /> <span className="hidden lg:inline">Fit</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Zoom to fit all tracks</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={() => { const maxD = Math.max(...tracks.map(t => (t.startTime||0)+(t.duration||40))); if (maxD>0) setZoom(Math.max(0.5, 40/maxD)); }} className="h-7 px-2 text-xs rounded text-muted-foreground hover:text-foreground hover:bg-studio-raised"><Maximize2 className="w-3.5 h-3.5 mr-1.5" /> <span className="hidden lg:inline">Fit</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Zoom to fit all tracks</TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div className="flex items-center gap-1 cursor-help ml-2"><span className="hidden lg:inline">Zoom</span></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Adjust horizontal zoom (Ctrl+Scroll)</TooltipContent></Tooltip>
           </TooltipProvider>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary rounded text-xs">−</Button>
+            <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-studio-raised rounded text-xs">−</Button>
             <Slider value={[zoom]} min={0.5} max={5000} step={0.5} onValueChange={(v) => setZoom(v[0])} className="w-28" />
-            <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.min(5000, z * 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary rounded text-xs">+</Button>
+            <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.min(5000, z * 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-studio-raised rounded text-xs">+</Button>
           </div>
           <span className="w-12 text-right font-mono text-[10px] text-primary/80">{zoom >= 50 ? `${(1/(20*zoom)*1000).toFixed(1)}ms/px` : `${Math.round(zoom * 100)}%`}</span>
         </div>
@@ -210,7 +210,7 @@ export default function StudioToolbar2({
 
   if (isMobile) {
     return (
-      <div className="relative z-10 mx-2 mt-2 flex min-h-[3.75rem] shrink-0 items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+      <div className="relative z-10 mx-2 mt-2 flex min-h-[3.75rem] shrink-0 items-center justify-between gap-2 rounded-2xl border border-foreground/10 bg-studio-header/90 px-3 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
         <Button onClick={addTrack} variant="secondary" size="sm" className="ui-hover min-h-11 gap-2 rounded-xl bg-primary/10 px-4 text-primary hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-primary/40">
           <Plus className="w-4 h-4" /> Add Track
         </Button>
@@ -234,7 +234,7 @@ export default function StudioToolbar2({
   }
 
   return (
-    <div className="min-h-[3.5rem] py-1.5 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative z-10">
+    <div className="min-h-[3.5rem] py-1.5 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-foreground/10 bg-studio-header/90 backdrop-blur-xl shadow-[0_8px_32px_-12px_hsl(var(--studio-bg)/0.85),inset_0_1px_0_0_hsl(var(--foreground)/0.06)] flex flex-wrap items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative z-10">
       {toolbarContent}
     </div>
   );

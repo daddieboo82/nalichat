@@ -110,7 +110,7 @@ export default function Playlists() {
   if (isError) {
     return (
       <div className="h-full flex items-center justify-center p-6">
-        <div className="ui-surface w-full max-w-sm rounded-3xl border border-border bg-card/70 p-6 text-center">
+        <div className="ui-surface w-full max-w-sm rounded-2xl border border-border bg-card/70 p-6 text-center">
           <h2 className="font-heading text-xl font-bold">Playlists unavailable</h2>
           <p className="mt-2 text-sm text-muted-foreground">We couldn't load your playlists. Your saved playlists have not been removed.</p>
           <Button className="ui-hover mt-4 min-h-11 rounded-xl" variant="outline" onClick={() => void refetch()}>
@@ -135,7 +135,7 @@ export default function Playlists() {
       <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
         <PullToRefresh onRefresh={handleRefresh}>
         {playlists.length === 0 ? (
-          <div className="ui-surface flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-3xl border border-white/[0.06] bg-card/40 p-6 text-muted-foreground">
+          <div className="ui-surface flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-2xl border border-border/60 bg-card/40 p-6 text-muted-foreground">
             <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
               <Music className="w-10 h-10 text-primary/40" />
             </div>
@@ -149,7 +149,7 @@ export default function Playlists() {
               <Link
                 key={playlist.id}
                 to={`/playlist/${playlist.id}`}
-                className="ui-surface ui-hover group cursor-pointer rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl hover:border-white/[0.12] hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="ui-surface ui-hover group cursor-pointer rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl hover:border-border hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <div className="mb-4 flex aspect-[16/10] items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 transition-colors group-hover:from-primary/30 group-hover:to-accent/30">
                   <Music className="w-8 h-8 text-primary/60" />
@@ -171,7 +171,7 @@ export default function Playlists() {
                       e.preventDefault();
                       deletePlaylistMutation.mutate(playlist.id);
                     }}
-                    className="ui-hover flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30" aria-label="Delete playlist"
+                    className="ui-hover flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30" aria-label="Delete playlist"
                     title="Delete playlist"
                   >
                     <Trash2 className="w-4 h-4" />

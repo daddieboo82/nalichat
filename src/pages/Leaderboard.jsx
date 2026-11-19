@@ -176,7 +176,7 @@ export default function Leaderboard() {
         )}
 
         {leaderboardLoadProblem && !leaderboardLoading && (
-          <div className="ui-surface rounded-3xl border border-destructive/40 bg-card/60 p-6 text-center" role="alert">
+          <div className="ui-surface rounded-2xl border border-destructive/40 bg-card/60 p-6 text-center" role="alert">
             <p className="font-heading font-semibold">Leaderboard unavailable</p>
             <p className="mt-1 text-sm text-muted-foreground">We couldn't load the data needed for this ranking.</p>
             <button
@@ -244,8 +244,8 @@ export default function Leaderboard() {
               key={user.id}
               onClick={() => navigate(`/profile?id=${user.id}`)}
               className={cn(
-                "ui-surface ui-hover flex min-h-[72px] w-full cursor-pointer items-center gap-3 rounded-3xl border p-3 text-left transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary/40",
-                user.id === currentUser?.id ? "border-primary/40 bg-primary/5" : "border-white/[0.06] bg-card/50 backdrop-blur-xl hover:bg-card/70 hover:border-white/[0.12]"
+                "ui-surface ui-hover flex min-h-[72px] w-full cursor-pointer items-center gap-3 rounded-2xl border p-3 text-left transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary/40",
+                user.id === currentUser?.id ? "border-primary/40 bg-primary/5" : "border-border/60 bg-card/50 backdrop-blur-xl hover:bg-card/70 hover:border-border"
               )}
             >
               <div className="w-7 text-center shrink-0">
@@ -284,7 +284,7 @@ export default function Leaderboard() {
                   key={t}
                   onClick={() => setContentTab(t)}
                   className={cn(
-                    "ui-hover flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-semibold capitalize transition-colors focus-visible:ring-2 focus-visible:ring-primary/40",
+                    "ui-hover flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-semibold capitalize transition-colors focus-visible:ring-2 focus-visible:ring-primary/40",
                     contentTab === t ? "bg-card text-foreground shadow-sm border border-border/50" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -298,7 +298,7 @@ export default function Leaderboard() {
 
             <div className="space-y-3">
               {currentContent.length === 0 ? (
-                <div className="ui-surface rounded-3xl border border-dashed border-border bg-secondary/20 px-4 py-10 text-center text-muted-foreground">
+                <div className="ui-surface rounded-2xl border border-dashed border-border bg-secondary/20 px-4 py-10 text-center text-muted-foreground">
                   <p className="font-semibold">No {contentTab} uploaded yet.</p>
                   <p className="text-sm">Be the first to upload one!</p>
                 </div>
@@ -308,7 +308,7 @@ export default function Leaderboard() {
                     type="button"
                     key={item.id}
                     onClick={() => handleItemClick(item)}
-                    className="ui-surface ui-hover flex min-h-[76px] w-full cursor-pointer items-center gap-3 rounded-3xl border border-white/[0.06] bg-card/50 p-3 text-left backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40 sm:gap-4"
+                    className="ui-surface ui-hover flex min-h-[76px] w-full cursor-pointer items-center gap-3 rounded-2xl border border-border/60 bg-card/50 p-3 text-left backdrop-blur-xl transition-all duration-300 hover:border-border hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40 sm:gap-4"
                   >
                     <div className="w-8 text-center shrink-0 flex flex-col items-center">
                       {i < 3 ? RANK_ICONS[i] : <span className="text-sm text-muted-foreground font-bold">#{i + 1}</span>}

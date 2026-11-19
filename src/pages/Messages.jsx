@@ -88,16 +88,6 @@ async function filterAll(entity, query, sort, pageSize = 200) {
   }
 }
 
-async function listAll(entity, sort, pageSize = 200) {
-  const rows = [];
-  for (let skip = 0; skip < 5000; skip += pageSize) {
-    const page = await entity.list(sort, pageSize, skip);
-    rows.push(...page);
-    if (page.length < pageSize) return rows;
-  }
-  return rows;
-}
-
 function updateMessageHistory(cache, updater) {
   if (Array.isArray(cache)) return updater(cache);
   const current = cache && typeof cache === "object"
@@ -287,15 +277,14 @@ export default function Messages() {
     isFetched: conversationsFetched,
   } = useQuery({
     queryKey: ["conversations", currentUser?.id],
-    queryFn: async () => {
-      const rows = await listAll(
-        base44.entities.Conversation,
-        "-last_message_at",
-      );
-      return rows.filter((conversation) =>
-        conversation?.participant_ids?.includes(currentUser.id)
-      );
-    },
+    // Scope the read to this member's conversations on the server. Loading every
+    // conversation and filtering in the browser made each 5-second poll grow with
+    // the whole table instead of with the user's own chats.
+    queryFn: () => filterAll(
+      base44.entities.Conversation,
+      { participant_ids: currentUser.id },
+      "-last_message_at",
+    ),
     enabled: !!currentUser?.id,
     refetchInterval: 5000,
     staleTime: 3000,

@@ -3,13 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 
 describe('member-scoped conversation reads', () => {
-  it('loads and locally scopes the private Messages list through user-mode entity reads', async () => {
+  it('scopes the private Messages list to the member through a user-mode entity read', async () => {
     const source = await readFile('src/pages/Messages.jsx', 'utf8');
 
-    expect(source).toContain('async function listAll(entity, sort, pageSize = 200)');
+    // The member scope belongs in the query so each poll costs the user's own
+    // conversations, not the whole table plus a browser-side filter.
     expect(source).toContain('base44.entities.Conversation,');
+    expect(source).toContain('{ participant_ids: currentUser.id }');
     expect(source).toContain('"-last_message_at"');
-    expect(source).toContain('conversation?.participant_ids?.includes(currentUser.id)');
+    expect(source).not.toContain('async function listAll(');
     expect(source).not.toContain('action: "list_member_conversations"');
   });
 

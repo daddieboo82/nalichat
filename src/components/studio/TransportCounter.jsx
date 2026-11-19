@@ -76,7 +76,7 @@ export default function TransportCounter({ currentTimeRef, isRecording, bpm, sam
         <TooltipTrigger asChild>
           <button
             onClick={cycleFormat}
-            className="relative group flex flex-col items-center justify-center bg-[#0a0a0c] px-2 sm:px-4 py-1 rounded-lg border border-border hover:border-primary/50 transition-colors shrink-0 min-w-[120px] sm:min-w-[160px]"
+            className="relative group flex flex-col items-center justify-center bg-studio-bg px-2 sm:px-4 py-1 rounded-lg border border-foreground/10 hover:border-primary/50 transition-colors shrink-0 min-w-[120px] sm:min-w-[160px]"
             aria-label={`Time display — ${FORMAT_LABELS[format]}. Click to switch format.`}
           >
             <div className="flex items-center gap-1.5">

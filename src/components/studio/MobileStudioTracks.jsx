@@ -53,7 +53,7 @@ export default function MobileStudioTracks({
         const canRecord = !readOnly && !['folder', 'vca'].includes(track.trackType) &&
           !['midi', 'instrument'].includes(track.type);
         return (
-          <div key={track.id} className={cn('studio-mobile-track-card studio-cubasis-lane rounded-2xl border bg-[#171421] p-3 shadow-md', selected ? 'studio-mobile-track-selected border-primary ring-1 ring-primary/50' : 'border-white/10', track.armed && 'studio-mobile-track-armed')}
+          <div key={track.id} className={cn('studio-mobile-track-card studio-cubasis-lane rounded-2xl border bg-studio-raised p-3 shadow-md', selected ? 'studio-mobile-track-selected border-primary ring-1 ring-primary/50' : 'border-foreground/10', track.armed && 'studio-mobile-track-armed')}
             data-testid={`mobile-track-${track.id}`}>
             <button type="button" onClick={() => onSelect(track.id)} aria-pressed={selected}
               className="studio-cubasis-lane-header flex min-h-11 w-full items-center justify-between gap-2 text-left">

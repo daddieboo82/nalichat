@@ -27,7 +27,7 @@ export default function MobileTakeReview({
       : state === 'good'
         ? 'Recorded levels look healthy. Listen for the performance, room noise, and pronunciation.'
         : 'Automatic quality measurements are unavailable for this take. Listen before deciding.';
-  return <section aria-label="Review recorded take" className="rounded-2xl border border-primary/25 bg-[#1d1728] p-3 space-y-3" data-testid="mobile-take-review">
+  return <section aria-label="Review recorded take" className="rounded-2xl border border-primary/25 bg-studio-raised p-3 space-y-3" data-testid="mobile-take-review">
     <div className="flex items-start gap-2">
       <Headphones className="mt-1 h-5 w-5 text-primary"/>
       <div className="min-w-0">

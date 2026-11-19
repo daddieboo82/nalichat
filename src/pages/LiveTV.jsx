@@ -34,11 +34,15 @@ function parseM3u(text) {
   return channels;
 }
 
+// Public Free TV playlist of United States channels.
+const FREE_TV_USA_PLAYLIST = "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_usa.m3u8";
+
 export default function LiveTV() {
   const [channels, setChannels] = useState([]);
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [favorites, setFavorites] = useState(() => { try { return JSON.parse(localStorage.getItem("nalichat:live-tv:favorites") || "[]"); } catch { return []; } });
   const [recent, setRecent] = useState(() => { try { return JSON.parse(localStorage.getItem("nalichat:live-tv:recent") || "[]"); } catch { return []; } });
   const fileRef = useRef(null);
@@ -113,11 +117,13 @@ export default function LiveTV() {
     (c.name + " " + c.group).toLowerCase().includes(query.toLowerCase())
   ), [channels, query]);
 
-  const loadText = (text) => {
+  const loadText = (text, { selectFirst = true } = {}) => {
     const parsed = parseM3u(text);
     setChannels(parsed);
-    if (parsed[0]) chooseChannel(parsed[0]); else setSelected(null);
+    if (selectFirst && parsed[0]) chooseChannel(parsed[0]);
+    else if (!parsed.length) setSelected(null);
     setError(parsed.length ? "" : "No playable HTTP/HTTPS channels were found in this playlist.");
+    return parsed;
   };
 
   const openPictureInPicture = async () => {
@@ -129,16 +135,27 @@ export default function LiveTV() {
     try { await video.requestPictureInPicture(); setError(""); } catch { setError("Picture-in-picture could not be started."); }
   };
 
-  const loadFreeTv = async () => {
+  const loadFreeTv = async ({ selectFirst = true } = {}) => {
     setError("");
+    setLoading(true);
     try {
-      const response = await fetch("https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8");
+      const response = await fetch(FREE_TV_USA_PLAYLIST);
       if (!response.ok) throw new Error("Playlist unavailable");
-      loadText(await response.text());
+      loadText(await response.text(), { selectFirst });
     } catch {
       setError("Free TV could not be loaded right now. You can still import an M3U/M3U8 playlist.");
+    } finally {
+      setLoading(false);
     }
   };
+
+  // The USA channel list is what the page is for, so load it on open. It is not
+  // auto-selected: browsers block unprompted playback, and pulling a stream
+  // would download the HLS player before the visitor asks for a channel.
+  useEffect(() => {
+    loadFreeTv({ selectFirst: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadFile = async (file) => {
     if (!file) return;
@@ -164,12 +181,12 @@ export default function LiveTV() {
 
       <section className="rounded-2xl border bg-card p-4">
         <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={loadFreeTv}><Tv className="mr-2 h-4 w-4" />Free TV</Button>
+          <Button type="button" onClick={() => loadFreeTv()} disabled={loading}><Tv className="mr-2 h-4 w-4" />{loading ? "Loading…" : "Free TV"}</Button>
           <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import M3U</Button>
           <input ref={fileRef} className="hidden" type="file" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl" onChange={(e) => loadFile(e.target.files?.[0])} />
-          <Input className="min-w-52 flex-1" placeholder="Search imported channels" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <Input className="min-w-52 flex-1" placeholder="Search channels" value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">Import playlists you own or have permission to use. NaliChat does not supply unauthorized TV streams.</p>
+        <p className="mt-2 text-xs text-muted-foreground">Free TV loads the public USA channel list. Import playlists you own or have permission to use. NaliChat does not supply unauthorized TV streams.</p>
         {error && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
       </section>
 
@@ -184,13 +201,14 @@ export default function LiveTV() {
             </div>
           ) : (
             <div className="flex aspect-video items-center justify-center p-8 text-center text-sm text-white/60">
-              Choose Free TV or import an authorized M3U playlist to start your inspiration break.
+              Choose a channel from the list, or import an authorized M3U playlist, to start your inspiration break.
             </div>
           )}
         </section>
 
         <aside className="max-h-[70vh] overflow-y-auto rounded-2xl border bg-card p-2">
           <div className="flex items-center gap-2 px-2 py-2 text-sm font-semibold"><ListVideo className="h-4 w-4" />Channels ({filtered.length})</div>
+          {loading && <p className="px-2 pb-2 text-xs text-muted-foreground">Loading USA channels…</p>}
           {favorites.length > 0 && <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Favorites: {favorites.length} · Recent: {recent.length}</p>}
           {filtered.map((channel, index) => (
             <button key={channel.url + index} type="button" onClick={() => chooseChannel(channel)}

@@ -54,7 +54,7 @@ export default function VcaTrackHeader({
       onClick={(e) => handleTrackClick(e, track.id)}
       style={{ ...dragProvided.draggableProps.style, height: '96px' }}
       className={cn(
-        "border-b border-border/40 p-3 flex flex-col justify-between transition-none cursor-pointer border-l-4 relative group/header",
+        "border-b border-foreground/10 p-3 flex flex-col justify-between transition-none cursor-pointer border-l-4 relative group/header",
         "bg-accent/10 border-l-accent",
         selectedTrackIds.includes(track.id) && "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]",
         dragSnapshot.isDragging && "shadow-xl ring-1 ring-accent/40",
@@ -103,7 +103,7 @@ export default function VcaTrackHeader({
                       onClick={(e) => { e.stopPropagation(); toggleMember(t.id); }}
                       className={cn(
                         "flex items-center gap-2 px-2 py-1 rounded text-xs text-left transition-colors",
-                        (track.vcaMembers || []).includes(t.id) ? "bg-accent/20 text-accent" : "hover:bg-secondary text-muted-foreground"
+                        (track.vcaMembers || []).includes(t.id) ? "bg-accent/20 text-accent" : "hover:bg-studio-overlay text-muted-foreground"
                       )}
                     >
                       <div className={cn("w-2 h-2 rounded-full", (track.vcaMembers || []).includes(t.id) ? "bg-accent" : "bg-muted-foreground/30")} />
@@ -119,7 +119,7 @@ export default function VcaTrackHeader({
               <DropdownMenuItem onClick={() => duplicateTrack(track)}>
                 <Copy className="w-4 h-4 mr-2" /> Duplicate
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={() => deleteTrack(track.id)}>
+              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => deleteTrack(track.id)}>
                 <Trash2 className="w-4 h-4 mr-2" /> Delete VCA
               </DropdownMenuItem>
             </DropdownMenuContent>

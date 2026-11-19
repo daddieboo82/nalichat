@@ -57,14 +57,14 @@ function WaveformVuMeter({ track, isPlaying, currentTimeRef, isMaster = false, m
   const peakPct = Math.round(peakRef.current * 100);
 
   return (
-    <div className="w-2 h-full bg-black/60 rounded-full overflow-hidden flex flex-col justify-end border border-white/5 shadow-inner relative">
+    <div className="w-2 h-full bg-studio-bg rounded-full overflow-hidden flex flex-col justify-end border border-foreground/10 shadow-inner relative">
       <div
         className={cn('w-full transition-all duration-75', pct > 85 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : pct > 60 ? 'bg-yellow-400' : 'bg-green-500')}
         style={{ height: `${pct}%` }}
       />
       {peakPct > 5 && (
         <div
-          className="absolute left-0 right-0 h-0.5 bg-white/60 pointer-events-none"
+          className="absolute left-0 right-0 h-0.5 bg-foreground/60 pointer-events-none"
           style={{ bottom: `${peakPct}%` }}
         />
       )}
@@ -101,7 +101,7 @@ export default function MixerPanel({
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 320, opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          className="border-t border-border/50 bg-card/90 backdrop-blur shrink-0 flex overflow-x-auto custom-scrollbar relative w-full"
+          className="border-t border-foreground/10 bg-studio-header/95 backdrop-blur shrink-0 flex overflow-x-auto custom-scrollbar relative w-full"
         >
           <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
             <span className="text-xs font-bold text-muted-foreground mr-2">MIXER & FX</span>
@@ -116,11 +116,11 @@ export default function MixerPanel({
               const send3Level = Math.max(0, Math.min(100, track.send3 || 0));
               const isFxOpen = fxTarget === track.id;
               return (
-              <div key={track.id} className="w-36 h-full bg-background/50 border border-border/50 rounded-lg p-2.5 flex flex-col justify-between shrink-0 shadow-sm relative">
+              <div key={track.id} className="w-36 h-full bg-studio-surface/70 border border-foreground/10 rounded-lg p-2.5 flex flex-col justify-between shrink-0 shadow-sm relative">
                 <div className="text-[10px] text-center font-bold text-foreground/90 truncate w-full mb-1" title={track.name}>{track.name}</div>
 
                 {/* Sends Routing */}
-                <div className="flex flex-col gap-1 w-full bg-black/20 p-1.5 rounded-md border border-white/5 mb-1">
+                <div className="flex flex-col gap-1 w-full bg-studio-bg/70 p-1.5 rounded-md border border-foreground/10 mb-1">
                   <div className="text-[8px] text-muted-foreground font-semibold flex justify-between">
                     <span className={cn(sendLevel > 0 && 'text-primary/90')}>Send 1 (Rev)</span>
                     <span className="font-mono text-[8px] text-primary/80">{sendLevel}%</span>
@@ -146,7 +146,7 @@ export default function MixerPanel({
                 </div>
 
                 {/* Panning */}
-                <div className="flex flex-col gap-1 w-full bg-black/20 p-1.5 rounded-md border border-white/5 mb-1">
+                <div className="flex flex-col gap-1 w-full bg-studio-bg/70 p-1.5 rounded-md border border-foreground/10 mb-1">
                   <div className="text-[8px] text-muted-foreground font-semibold flex justify-between">
                     <span>Pan</span>
                     <span className="font-mono text-[8px]">{track.pan !== undefined ? (track.pan < 50 ? `L${50 - track.pan}` : track.pan > 50 ? `R${track.pan - 50}` : 'C') : 'C'}</span>
@@ -182,8 +182,9 @@ export default function MixerPanel({
                 <div className="text-[10px] font-mono text-center font-semibold mb-2">{track.volume === 0 ? '-∞' : (20 * Math.log10(track.volume / 100)).toFixed(1)} dB</div>
 
                 <div className="flex gap-1 w-full mb-2">
-                  <Button type="button" size="icon" variant="outline" className={cn('w-full h-7 text-[10px] font-bold border-border/50', track.muted && 'bg-red-500 text-white border-red-500')} onClick={() => toggleMute(track.id)}>M</Button>
-                  <Button type="button" size="icon" variant="outline" className={cn('w-full h-7 text-[10px] font-bold border-border/50', track.solo && 'bg-yellow-500 text-white border-yellow-500')} onClick={() => toggleSolo(track.id)}>S</Button>
+                  <Button type="button" size="icon" variant="outline" className={cn('w-full h-7 text-[10px] font-bold border-foreground/10', track.muted && 'bg-destructive text-destructive-foreground border-destructive')} onClick={() => toggleMute(track.id)}>M</Button>
+                  <Button type="button" size="icon" variant="outline" className={cn('w-full h-7 text-[10px] font-bold border-foreground/10', track.solo && 'bg-yellow-500 text-white border-yellow-500')} onClick={() => toggleSolo(track.id)}>S</Button>
+
                 </div>
 
                 <Button
@@ -192,7 +193,7 @@ export default function MixerPanel({
                   aria-pressed={isFxOpen}
                   title={fxCount > 0 ? `${fxCount} active insert${fxCount > 1 ? 's' : ''} — open FX chain` : 'Open FX chain'}
                   className={cn(
-                    'w-full h-7 text-[10px] gap-1.5 border-border/50 hover:bg-secondary',
+                    'w-full h-7 text-[10px] gap-1.5 border-foreground/10 hover:bg-studio-raised',
                     isFxOpen && 'border-primary/60 bg-primary/10 text-primary',
                     fxCount > 0 && !isFxOpen && 'border-primary/30 text-primary/90'
                   )}
@@ -207,9 +208,9 @@ export default function MixerPanel({
               );
             })}
 
-            <div className="w-px h-[80%] bg-border/50 mx-2 self-center" />
+            <div className="w-px h-[80%] bg-foreground/10 mx-2 self-center" />
 
-            <div className="w-36 h-full bg-card border border-primary/20 rounded-lg p-2.5 flex flex-col justify-between shrink-0 shadow-[0_0_15px_rgba(0,0,0,0.4)] relative">
+            <div className="w-36 h-full bg-studio-raised border border-primary/20 rounded-lg p-2.5 flex flex-col justify-between shrink-0 shadow-[0_0_15px_hsl(var(--studio-bg)/0.5)] relative">
               <div className="text-[10px] text-center font-black text-primary truncate w-full tracking-wider mb-2">MASTER</div>
 
               {/* Master Fader & Real VU Meters */}

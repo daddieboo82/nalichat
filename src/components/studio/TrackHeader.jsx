@@ -33,10 +33,10 @@ export default function TrackHeader({
       data-track-id={String(track.id)}
       style={{ ...dragProvided.draggableProps.style, height: track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px') }}
       className={cn(
-        "border-b border-border/40 p-3 flex flex-col justify-between transition-none cursor-pointer border-l-4 relative group/header",
-        track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
+        "border-b border-foreground/10 p-3 flex flex-col justify-between transition-none cursor-pointer border-l-4 relative group/header",
+        track.muted ? "bg-studio-surface/40 opacity-70" : "bg-studio-surface/80 hover:bg-studio-raised/70",
         selectedTrackIds.includes(track.id) ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : (track.groupId ? "border-l-accent" : "border-l-transparent"),
-        dragSnapshot.isDragging && "shadow-xl ring-1 ring-primary/40 bg-secondary/60"
+        dragSnapshot.isDragging && "shadow-xl ring-1 ring-primary/40 bg-studio-raised"
       )}
     >
       <div className="flex items-start justify-between">
@@ -144,7 +144,7 @@ export default function TrackHeader({
               <DropdownMenuItem onClick={() => duplicateTrack(track)}>
                 <Copy className="w-4 h-4 mr-2" /> Duplicate
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={() => deleteTrack(track.id)}>
+              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => deleteTrack(track.id)}>
                 <Trash2 className="w-4 h-4 mr-2" /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -156,17 +156,17 @@ export default function TrackHeader({
         <TooltipProvider delayDuration={200}>
           <Tooltip><TooltipTrigger asChild>
             <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
-              <button onClick={() => toggleMute(track.id)} className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.muted ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}>M</button>
+              <button onClick={() => toggleMute(track.id)} className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.muted ? "bg-destructive text-destructive-foreground border-destructive" : "bg-studio-raised text-muted-foreground border-foreground/10 hover:bg-studio-overlay hover:text-foreground")}>M</button>
             </div>
           </TooltipTrigger><TooltipContent side="top" className="text-xs flex items-center gap-1">Mute Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+M</kbd></TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild>
             <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
-              <button onClick={() => toggleSolo(track.id)} className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.solo ? "bg-yellow-500 text-white border-yellow-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}>S</button>
+              <button onClick={() => toggleSolo(track.id)} className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.solo ? "bg-yellow-500 text-white border-yellow-500" : "bg-studio-raised text-muted-foreground border-foreground/10 hover:bg-studio-overlay hover:text-foreground")}>S</button>
             </div>
           </TooltipTrigger><TooltipContent side="top" className="text-xs flex items-center gap-1">Solo Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+S</kbd></TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild>
             <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
-              <button onClick={() => { if (inputType === 'Internal Audio') { toast.error("Cannot arm a track set to Internal Audio"); return; } toggleArm(track.id); }} aria-label={`Arm ${track.name} for recording`} aria-pressed={Boolean(track.armed)} className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center border focus:outline-none", track.armed ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground", inputType === 'Internal Audio' && "opacity-30 cursor-not-allowed")}>
+              <button onClick={() => { if (inputType === 'Internal Audio') { toast.error("Cannot arm a track set to Internal Audio"); return; } toggleArm(track.id); }} aria-label={`Arm ${track.name} for recording`} aria-pressed={Boolean(track.armed)} className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center border focus:outline-none", track.armed ? "bg-destructive text-destructive-foreground border-destructive" : "bg-studio-raised text-muted-foreground border-foreground/10 hover:bg-studio-overlay hover:text-foreground", inputType === 'Internal Audio' && "opacity-30 cursor-not-allowed")}>
                 <Circle className="w-3 h-3 fill-current" />
               </button>
             </div>

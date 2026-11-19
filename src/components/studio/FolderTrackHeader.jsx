@@ -43,8 +43,8 @@ export default function FolderTrackHeader({
       onClick={(e) => handleTrackClick(e, track.id)}
       style={{ ...dragProvided.draggableProps.style, height: '48px' }}
       className={cn(
-        "border-b border-border/40 px-3 flex items-center transition-none cursor-pointer border-l-4 relative group/header",
-        "bg-secondary/60 border-l-primary/60",
+        "border-b border-foreground/10 px-3 flex items-center transition-none cursor-pointer border-l-4 relative group/header",
+        "bg-studio-raised/70 border-l-primary/60",
         selectedTrackIds.includes(track.id) && "border-l-primary bg-primary/20",
         dragSnapshot.isDragging && "shadow-xl ring-1 ring-primary/40",
       )}
@@ -60,7 +60,7 @@ export default function FolderTrackHeader({
       {/* Collapse toggle */}
       <button
         onClick={(e) => { e.stopPropagation(); toggleFolderCollapse(track.id); }}
-        className="shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+        className="shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-studio-overlay text-muted-foreground hover:text-foreground transition-colors"
         title={collapsed ? "Expand folder" : "Collapse folder"}
       >
         {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -77,7 +77,7 @@ export default function FolderTrackHeader({
       {members.length > 0 && !collapsed && (
         <div className="flex flex-wrap gap-1 ml-3 flex-1 overflow-hidden">
           {members.slice(0, 6).map(m => (
-            <span key={m.id} className="text-[8px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground border border-border/40 truncate max-w-[70px]">
+            <span key={m.id} className="text-[8px] px-1.5 py-0.5 rounded bg-studio-surface text-muted-foreground border border-foreground/10 truncate max-w-[70px]">
               {m.name}
             </span>
           ))}
@@ -109,7 +109,7 @@ export default function FolderTrackHeader({
                     onClick={(e) => { e.stopPropagation(); toggleMember(t.id); }}
                     className={cn(
                       "flex items-center gap-2 px-2 py-1 rounded text-xs text-left transition-colors",
-                      (track.folderMembers || []).includes(t.id) ? "bg-primary/20 text-primary" : "hover:bg-secondary text-muted-foreground"
+                      (track.folderMembers || []).includes(t.id) ? "bg-primary/20 text-primary" : "hover:bg-studio-overlay text-muted-foreground"
                     )}
                   >
                     <div className={cn("w-2 h-2 rounded-full", (track.folderMembers || []).includes(t.id) ? "bg-primary" : "bg-muted-foreground/30")} />
@@ -134,7 +134,7 @@ export default function FolderTrackHeader({
             <DropdownMenuItem onClick={() => duplicateTrack(track)}>
               <Copy className="w-4 h-4 mr-2" /> Duplicate
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={() => deleteTrack(track.id)}>
+            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => deleteTrack(track.id)}>
               <Trash2 className="w-4 h-4 mr-2" /> Delete Folder
             </DropdownMenuItem>
           </DropdownMenuContent>

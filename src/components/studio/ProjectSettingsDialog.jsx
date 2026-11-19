@@ -189,6 +189,8 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
                     <Button
                       size="icon"
                       variant="ghost"
+                      aria-label={`Remove ${user.display_name || user.full_name || "collaborator"}`}
+                      title="Remove collaborator"
                       className="w-8 h-8 rounded-lg text-destructive hover:bg-destructive/10 shrink-0"
                       onClick={() => handleRemove(user.id)}
                     >

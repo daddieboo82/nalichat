@@ -222,6 +222,8 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
                 />
                 <Button 
                   size="icon" 
+                  aria-label="Send comment"
+                  title="Send comment"
                   className="h-8 w-8 shrink-0"
                   disabled={!commentText.trim() || addCommentMutation.isPending}
                   onClick={() => addCommentMutation.mutate({ text: commentText.trim(), timestamp: activeCommentTime })}

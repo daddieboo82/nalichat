@@ -181,7 +181,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
           )}
         </div>
         {canEdit && (
-          <Button id="add-milestone-btn" type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:bg-primary/20 hover:text-primary" onClick={(e) => {
+          <Button id="add-milestone-btn" type="button" size="icon" variant="ghost" aria-label="Add milestone" title="Add milestone" className="h-7 w-7 rounded-lg hover:bg-primary/20 hover:text-primary" onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             setShowAdd(true);
@@ -246,7 +246,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
         <div className="absolute inset-0 z-20 flex flex-col bg-background/95 backdrop-blur-sm p-5">
           <div className="flex items-center justify-between mb-5 pr-8">
             <h4 className="font-heading font-bold text-lg">Add Milestone</h4>
-            <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={(e) => {
+            <Button type="button" size="icon" variant="ghost" aria-label="Close add milestone" title="Close" className="h-8 w-8 rounded-lg" onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setShowAdd(false);

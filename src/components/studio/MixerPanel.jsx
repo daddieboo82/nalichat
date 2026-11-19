@@ -105,7 +105,7 @@ export default function MixerPanel({
         >
           <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
             <span className="text-xs font-bold text-muted-foreground mr-2">MIXER & FX</span>
-            <Button type="button" variant="ghost" size="icon" onClick={onClose} className="w-6 h-6 rounded-full"><Square className="w-3 h-3" /></Button>
+            <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close mixer" title="Close mixer" className="w-6 h-6 rounded-full"><Square className="w-3 h-3" /></Button>
           </div>
 
           <div className="flex sm:flex-nowrap p-4 gap-3 pt-8 pb-4 h-full items-end w-max min-w-full">

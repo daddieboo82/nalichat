@@ -130,11 +130,11 @@ export default function Leaderboard() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background">
+    <div className="nali-workspace flex h-full flex-col overflow-hidden bg-background">
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]">
       <PullToRefresh onRefresh={handleRefresh}>
       {/* Header */}
-      <div className="border-b border-border/60 bg-gradient-to-br from-yellow-500/10 via-background to-primary/10 px-4 pb-6 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8 sm:pt-8">
+      <div className="nali-leaderboard-banner border-b border-border/60 bg-gradient-to-br from-yellow-500/10 via-background to-primary/10 px-4 pb-6 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8 sm:pt-8">
         <div className="max-w-2xl mx-auto text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-yellow-500/20 shadow-lg shadow-yellow-500/10">
             <Trophy className="w-8 h-8 text-yellow-400" />

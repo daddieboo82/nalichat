@@ -39,9 +39,9 @@ export default function MeetingHub() {
     } catch (e) { setError(message(e)); }
     finally { setBusy(false); }
   }
-  return <main className="min-h-full overflow-y-auto bg-background px-4 py-6 pb-28 text-foreground">
+  return <main className="nali-workspace min-h-full overflow-y-auto bg-background px-4 py-6 pb-28 text-foreground">
     <div className="mx-auto max-w-5xl">
-      <header className="rounded-3xl border border-violet-400/25 bg-gradient-to-br from-violet-950 via-slate-950 to-cyan-950 p-5 sm:p-8">
+      <header className="nali-meeting-banner rounded-3xl border border-violet-400/25 bg-gradient-to-br from-violet-950 via-slate-950 to-cyan-950 p-5 sm:p-8">
         <p className="text-xs font-bold uppercase tracking-[.25em] text-violet-300">NaliBase · private rooms</p>
         <h1 className="mt-2 text-3xl font-black sm:text-5xl">Meeting Hub</h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">Meet your team on video, or host a private listening party to discuss an artist's music before a signing decision.</p>

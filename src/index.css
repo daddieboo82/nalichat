@@ -670,3 +670,27 @@
     border-color: hsl(var(--primary) / .48);
   }
 }
+
+.nali-meeting-banner {
+  background-image:
+    radial-gradient(ellipse at 12% 0%, #783acb52, transparent 67%),
+    radial-gradient(ellipse at 100% 100%, #0891a63b, transparent 61%),
+    linear-gradient(135deg, #21123b, #10101d 55%, #10262d);
+  box-shadow: 0 20px 42px -28px #000c, inset 0 1px 0 #ccb1ff29;
+}
+.nali-meeting-banner :is(h1, p) {
+  color: #f4edff;
+}
+.nali-battle-stage {
+  box-shadow: 0 20px 56px -30px #000e, inset 0 1px 0 hsl(var(--foreground) / .17);
+}
+.nali-battle-drafts {
+  background-image: linear-gradient(130deg, hsl(var(--primary) / .10), transparent 72%);
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / .08);
+}
+.nali-leaderboard-banner {
+  background-image:
+    radial-gradient(ellipse at 50% 0%, hsl(43 82% 49% / .20), transparent 75%),
+    radial-gradient(ellipse at 100% 100%, hsl(var(--primary) / .12), transparent 60%);
+  box-shadow: inset 0 -1px 0 hsl(var(--foreground) / .07);
+}

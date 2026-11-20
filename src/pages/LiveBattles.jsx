@@ -105,14 +105,14 @@ export default function LiveBattles() {
     setTrackUrl(URL.createObjectURL(file));
   }
 
-  return <div className="h-full overflow-y-auto bg-background text-foreground">
+  return <div className="nali-workspace h-full overflow-y-auto bg-background text-foreground">
     <div className="mx-auto max-w-6xl px-4 py-8 pb-24">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><p className="text-xs font-bold uppercase tracking-[.3em] text-fuchsia-300">NaliChat presents</p><h1 className="text-3xl font-black sm:text-5xl">Live Battles</h1><p className="mt-2 text-muted-foreground">Rap or sing. Bring your track. Own the stage.</p></div>
         <Link to="/explore" className="rounded-xl border border-border px-4 py-2 text-sm hover:bg-foreground/10">Back to Explore</Link>
       </div>
       <div role="status" className="mt-6 flex gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-100"><AlertCircle className="h-5 w-5 shrink-0" /><span>Test your camera locally, upload a track, then invite another artist from the battle lobby. Audience scoring opens after both performers publish media in the live room. Camera preview stays on this device.</span></div>
-      <section aria-label="Battle stage preview" className={`relative mt-6 overflow-hidden rounded-3xl border border-border bg-gradient-to-br ${themes[theme]} p-4 shadow-2xl sm:p-8`}>
+      <section aria-label="Battle stage preview" className={`nali-battle-stage relative mt-6 overflow-hidden rounded-3xl border border-border bg-gradient-to-br ${themes[theme]} p-4 shadow-2xl sm:p-8`}>
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 50% 20%, #fff 0, transparent 42%)' }} />
         <div className="relative">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-2 text-xs font-bold uppercase tracking-widest"><span className="rounded-full bg-foreground/15 px-3 py-2">Stage preview · {category}</span><span className="rounded-full bg-background/50 px-3 py-2">No live audience yet</span></div>
@@ -145,7 +145,7 @@ export default function LiveBattles() {
           <Link to="/battles/lobby" className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-fuchsia-600 font-bold hover:bg-fuchsia-500">Open battle lobby</Link>
         </section>
       </div>
-      <section className="mt-6 rounded-2xl border border-border bg-foreground/5 p-5" aria-label="Your saved battle drafts"><h2 className="text-xl font-bold">Your saved battle drafts</h2>{draftError && <p role="alert" className="mt-2 text-rose-300">{draftError}</p>}{drafts.length === 0 && <p className="mt-2 text-sm text-muted-foreground">No saved drafts yet.</p>}<div className="mt-3 grid gap-3 sm:grid-cols-2">{drafts.map(draft => <article key={draft.id} className="rounded-xl border border-border/70 bg-background/30 p-4"><p className="font-bold">{draft.title}</p><p className="mb-2 text-xs capitalize text-muted-foreground">{draft.category} · Draft</p>{draft.creator_track_url && <audio controls src={draft.creator_track_url} className="w-full" aria-label={`Play ${draft.creator_track_name || draft.title}`} />}</article>)}</div></section>
+      <section className="nali-battle-drafts mt-6 rounded-2xl border border-border bg-foreground/5 p-5" aria-label="Your saved battle drafts"><h2 className="text-xl font-bold">Your saved battle drafts</h2>{draftError && <p role="alert" className="mt-2 text-rose-300">{draftError}</p>}{drafts.length === 0 && <p className="mt-2 text-sm text-muted-foreground">No saved drafts yet.</p>}<div className="mt-3 grid gap-3 sm:grid-cols-2">{drafts.map(draft => <article key={draft.id} className="rounded-xl border border-border/70 bg-background/30 p-4"><p className="font-bold">{draft.title}</p><p className="mb-2 text-xs capitalize text-muted-foreground">{draft.category} · Draft</p>{draft.creator_track_url && <audio controls src={draft.creator_track_url} className="w-full" aria-label={`Play ${draft.creator_track_name || draft.title}`} />}</article>)}</div></section>
       <section className="mt-6 grid gap-3 sm:grid-cols-3"><div className="rounded-xl border border-border/70 p-4"><Users className="mb-2 text-fuchsia-300" /><strong>Live audience</strong><p className="text-sm text-muted-foreground">Watch performers and send reactions during live battles.</p></div><div className="rounded-xl border border-border/70 p-4"><Volume2 className="mb-2 text-fuchsia-300" /><strong>Fair scoring</strong><p className="text-sm text-muted-foreground">One scorecard per viewer, rating both artists on three musical criteria.</p></div><div className="rounded-xl border border-border/70 p-4"><Trophy className="mb-2 text-fuchsia-300" /><strong>Artist awards</strong><p className="text-sm text-muted-foreground">Best Rapper and Best Singer will reflect completed battles.</p></div></section>
       {!consent && track && <p className="mt-3 text-xs text-amber-300">Confirm track rights before uploading for a public battle.</p>}
     </div>

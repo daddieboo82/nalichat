@@ -122,9 +122,9 @@ export default function Playlists() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="nali-workspace flex h-full flex-col bg-background">
       {/* Header */}
-      <div className="shrink-0 border-b border-border/70 bg-card/40 px-4 py-4 backdrop-blur-xl sm:px-6">
+      <div className="nali-workspace-header shrink-0 border-b border-border/70 bg-card/40 px-4 py-4 backdrop-blur-xl sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h1 className="text-2xl font-heading font-bold tracking-tight">Your Playlists</h1>
         <Button onClick={() => setShowCreateDialog(true)} className="ui-hover min-h-11 w-full gap-2 rounded-xl font-semibold shadow-lg shadow-primary/10 sm:w-auto">
           <Plus className="w-4 h-4" /> Create Playlist
@@ -149,9 +149,9 @@ export default function Playlists() {
               <Link
                 key={playlist.id}
                 to={`/playlist/${playlist.id}`}
-                className="ui-surface ui-hover group cursor-pointer rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl hover:border-border hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="nali-playlist-card ui-surface ui-hover group cursor-pointer rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl hover:border-border hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                <div className="mb-4 flex aspect-[16/10] items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 transition-colors group-hover:from-primary/30 group-hover:to-accent/30">
+                <div className="nali-playlist-art mb-4 flex aspect-[16/10] items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 transition-colors group-hover:from-primary/30 group-hover:to-accent/30">
                   <Music className="w-8 h-8 text-primary/60" />
                 </div>
                 <h3 className="font-heading font-semibold truncate group-hover:text-primary transition-colors">

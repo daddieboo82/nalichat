@@ -298,9 +298,9 @@ export default function Profile() {
   }
 
   return (
-    <PullToRefresh onRefresh={async () => { queryClient.invalidateQueries({ queryKey: ["my-posts"] }); queryClient.invalidateQueries({ queryKey: ["my-achievements"] }); }} className="h-full overflow-y-auto bg-background">
+    <PullToRefresh onRefresh={async () => { queryClient.invalidateQueries({ queryKey: ["my-posts"] }); queryClient.invalidateQueries({ queryKey: ["my-achievements"] }); }} className="nali-workspace h-full overflow-y-auto bg-background">
       {/* Cover */}
-      <div className="relative h-44 overflow-hidden bg-gradient-to-br from-primary/30 via-secondary to-accent/20 shadow-inner sm:h-56">
+      <div className="nali-creator-cover relative h-44 overflow-hidden bg-gradient-to-br from-primary/30 via-secondary to-accent/20 shadow-inner sm:h-56">
         {user.cover_url && <img src={user.cover_url} className="w-full h-full object-cover" alt="cover" />}
         <div className="absolute inset-0 bg-black/20" />
         {isMe && (
@@ -377,7 +377,7 @@ export default function Profile() {
             { label: "Plays", value: totalPlays, icon: Eye },
             { label: "Awards", value: achievements.length, icon: Award },
           ].map(({ label, value, icon: Icon }) => (
-            <div key={label} className="ui-surface rounded-2xl border border-border/60 bg-card/50 p-3 text-center backdrop-blur-xl sm:p-4">
+            <div key={label} className="nali-creator-stat ui-surface rounded-2xl border border-border/60 bg-card/50 p-3 text-center backdrop-blur-xl sm:p-4">
               <Icon className="w-4 h-4 text-primary mx-auto mb-1" />
               <p className="font-bold text-lg font-heading">{value}</p>
               <p className="text-xs text-muted-foreground">{label}</p>

@@ -280,9 +280,9 @@ export default function PlaylistDetail() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="nali-workspace flex h-full flex-col bg-background">
       {/* Header */}
-      <div className="h-16 border-b border-border flex items-center px-6 shrink-0 gap-3">
+      <div className="nali-workspace-header h-16 border-b border-border flex items-center px-6 shrink-0 gap-3">
         <button
           onClick={() => navigate("/playlists")}
           className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
@@ -318,7 +318,7 @@ export default function PlaylistDetail() {
         {/* Now Playing */}
         {currentTrack && (
           <div className="lg:w-80 flex flex-col gap-4">
-            <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl flex items-center justify-center overflow-hidden">
+            <div className="nali-playlist-art aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl flex items-center justify-center overflow-hidden">
               {currentTrack.image_url ? (
                 <img
                   src={currentTrack.image_url}

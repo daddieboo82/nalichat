@@ -34,7 +34,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
 
   return (
     <nav
-      className="relative z-50 hidden border-t border-white/[0.08] shadow-[0_-1px_18px_rgba(0,0,0,0.12)] backdrop-blur-xl lg:block"
+      className="nali-desktop-nav relative z-50 hidden border-t border-white/[0.08] shadow-[0_-1px_18px_rgba(0,0,0,0.12)] backdrop-blur-xl lg:block"
       style={{ background: "hsl(240 8% 6% / 0.95)" }}
     >
       <div className="flex min-h-14 w-full items-center justify-between gap-2 px-3 py-2">

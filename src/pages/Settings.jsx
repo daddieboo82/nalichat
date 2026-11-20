@@ -172,12 +172,12 @@ export default function Settings() {
   }
 
   return (
-    <PullToRefresh onRefresh={async () => { await checkUserAuth(); }} className="h-full overflow-y-auto">
+    <PullToRefresh onRefresh={async () => { await checkUserAuth(); }} className="nali-workspace nali-settings h-full overflow-y-auto">
       <div className={`mx-auto max-w-2xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:py-10 ${reduceMotion ? "reduce-motion-surface" : ""}`}>
         <div className="mb-6"><div className="mb-1 flex items-center gap-2 text-primary"><UserRound className="h-5 w-5" aria-hidden="true" /><span className="text-xs font-bold uppercase tracking-[0.16em]">Account</span></div><h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">Profile Settings</h1><p className="mt-1 text-sm text-muted-foreground">Manage your public artist profile, preferences, privacy, subscription, and devices.</p></div>
 
         {/* Avatar */}
-        <div className="ui-surface relative mb-7 flex flex-col items-center gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-5 text-center shadow-lg backdrop-blur-xl sm:flex-row sm:gap-6 sm:p-6 sm:text-left">
+        <div className="nali-profile-surface ui-surface relative mb-7 flex flex-col items-center gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-5 text-center shadow-lg backdrop-blur-xl sm:flex-row sm:gap-6 sm:p-6 sm:text-left">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-accent/20 blur-3xl rounded-full pointer-events-none" />
           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/20 blur-3xl rounded-full pointer-events-none" />
           

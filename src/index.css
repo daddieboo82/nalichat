@@ -614,3 +614,36 @@
     -webkit-text-fill-color: currentColor;
   }
 }
+
+/* Scoped visual treatments for creator workspaces. */
+.nali-workspace {
+  background-image: radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / .10), transparent 32rem);
+}
+.nali-workspace-header {
+  background-image: linear-gradient(115deg, hsl(var(--primary) / .11), transparent 62%);
+}
+.nali-explore-header {
+  background-image:
+    radial-gradient(ellipse at 12% 0%, hsl(var(--primary) / .25), transparent 66%),
+    radial-gradient(ellipse at 100% 100%, hsl(var(--accent) / .13), transparent 63%);
+  box-shadow: inset 0 -1px 0 hsl(var(--foreground) / .07);
+}
+.nali-profile-surface {
+  background-image: linear-gradient(135deg, hsl(var(--primary) / .13), transparent 70%);
+  box-shadow: 0 16px 36px -25px #000b, inset 0 1px 0 hsl(var(--foreground) / .12);
+}
+.nali-settings .ui-surface,
+.nali-files .ui-surface {
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / .08), 0 9px 20px -18px #000a;
+}
+.nali-files .ui-surface.ring-1 {
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), inset 0 1px 0 hsl(var(--foreground) / .08);
+}
+.nali-desktop-nav {
+  border-color: hsl(var(--foreground) / .16);
+  box-shadow: 0 -8px 25px -16px #000b, inset 0 1px 0 hsl(var(--primary) / .14);
+}
+.nali-workspace :is(a, button):focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}

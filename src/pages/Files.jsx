@@ -535,8 +535,8 @@ export default function Files() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-background">
-      <div className="px-4 pt-5 sm:px-6 sm:pt-6">
+    <div className="nali-workspace nali-files flex h-full flex-col bg-background">
+      <div className="nali-workspace-header px-4 pt-5 sm:px-6 sm:pt-6">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold">Files</h1>

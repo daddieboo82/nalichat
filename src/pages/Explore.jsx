@@ -168,10 +168,10 @@ export default function Explore() {
   return (
     <PullToRefresh
       onRefresh={() => queryClient.invalidateQueries({ queryKey: ["artposts"] })}
-      className="h-full overflow-y-auto bg-background"
+      className="nali-workspace nali-explore h-full overflow-y-auto bg-background"
     >
       {/* Hero */}
-      <div className="relative overflow-hidden border-b border-border/60 bg-gradient-to-br from-primary/25 via-background to-accent/15 px-4 pb-6 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8 sm:pt-8">
+      <div className="nali-explore-header relative overflow-hidden border-b border-border/60 bg-gradient-to-br from-primary/25 via-background to-accent/15 px-4 pb-6 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8 sm:pt-8">
         <div className="absolute -top-24 right-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float-blob pointer-events-none" />
         <div className="absolute -bottom-24 left-10 w-72 h-72 bg-accent/20 rounded-full blur-3xl animate-float-blob pointer-events-none" style={{ animationDelay: "-7s" }} />
         <div className="relative mx-auto max-w-5xl">

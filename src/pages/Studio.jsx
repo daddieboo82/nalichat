@@ -566,7 +566,7 @@ export default function Studio() {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0 && !hasTransientStudioAudio(parsed)) setHasAutosave(true);
       }
-    } catch (e) {}
+    } catch {}
   }, [autosaveStorageKey, roomId]);
 
   useEffect(() => {
@@ -769,7 +769,7 @@ export default function Studio() {
           return;
         }
       }
-    } catch (e) {}
+    } catch {}
     toast.error("No autosave found");
   };
 
@@ -1088,8 +1088,6 @@ export default function Studio() {
                const height = canvas.height;
                
                // Draw only the latest sample at its time-based x position — O(1) per frame, no canvas clearing
-               const points = liveWaveformRef.current;
-               const idx = points.length - 1;
                // Match canvas internal resolution to recording pixel width for crisp 1:1 rendering
                const targetW = Math.max(1, Math.ceil(currentWidth));
                if (canvas.width !== targetW) canvas.width = targetW;
@@ -2344,7 +2342,6 @@ export default function Studio() {
     // the timeline without revoking their underlying source media.
     sounds.error();
     selectedTrackIds.forEach(id => {
-      const track = tracks.find(t => t.id === id);
       if (audioElementsRef.current[id]) {
         audioElementsRef.current[id].pause();
         audioElementsRef.current[id].src = '';
@@ -2405,7 +2402,6 @@ export default function Studio() {
   };
 
   const deleteTrack = (trackId) => {
-    const track = tracks.find(t => t.id === trackId);
     if (audioElementsRef.current[trackId]) {
       audioElementsRef.current[trackId].pause();
       audioElementsRef.current[trackId].removeAttribute('src');
@@ -3367,7 +3363,6 @@ export default function Studio() {
       setSelectedTrackIds(imported.map(track => track.id));
       toast.success(`Imported ${imported.length} track${imported.length === 1 ? '' : 's'}`);
       const file = filesToImport[0];
-      const duration = imported[0]?.duration || 0;
       try {
         const key = `nali_activation_first_upload:${user?.id || "unknown"}`;
         if (localStorage.getItem(key) !== "1") {
@@ -3760,7 +3755,7 @@ export default function Studio() {
     }
   };
 
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [_isDownloading, setIsDownloading] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState('wav');
 
@@ -5237,7 +5232,7 @@ export default function Studio() {
             } else {
               setHardware(prev => ({...prev, refreshingMidi: false}));
             }
-          } catch (e) {
+          } catch {
             setHardware(prev => ({...prev, refreshingMidi: false}));
           }
         }}

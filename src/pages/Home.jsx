@@ -218,12 +218,12 @@ export default function Home() {
   // A focused public landing page; the authenticated home below remains unchanged.
   if (!user && authChecked) {
     return (
-      <main className="relative min-h-[100dvh] overflow-hidden bg-background text-foreground">
+      <main className="nali-landing relative min-h-[100dvh] overflow-hidden bg-background text-foreground">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-primary/15 blur-[100px]" />
           <div className="absolute -bottom-48 -left-40 h-[28rem] w-[28rem] rounded-full bg-accent/10 blur-[100px]" />
         </div>
-        <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
+        <header className="nali-landing-header relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
           <Link to="/" aria-label="NaliBase home" className="flex items-center gap-3"><Logo size={42} glow={false} /><span className="font-heading text-xl font-black tracking-tight">NaliBase</span></Link>
           <nav className="flex items-center gap-2 sm:gap-3" aria-label="Main navigation">
             <Button variant="ghost" className="rounded-xl px-3" asChild><Link to="/login">Log in</Link></Button>
@@ -233,10 +233,10 @@ export default function Home() {
         <section className="relative z-10 mx-auto grid min-h-[72vh] max-w-7xl items-center gap-12 px-5 pb-16 pt-8 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:pb-24">
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3.5 py-2 text-xs font-semibold text-muted-foreground shadow-sm"><Sparkles className="h-4 w-4 text-primary" /> Your space to create, connect, and discover</span>
-            <h1 className="mt-6 font-heading text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">Everything you create.<br /><span className="text-primary">One creative universe.</span></h1>
+            <h1 className="mt-6 font-heading text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">Everything you create.<br /><span className="nali-landing-highlight text-primary">One creative universe.</span></h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">Make music, connect with artists, share your work, and explore new creative worlds—all in one place.</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button size="lg" className="min-h-12 rounded-xl px-6 text-base font-bold" asChild><Link to="/register" onClick={() => trackProductEvent("signup_click", { source: "public_landing_hero", cta: "start_free" })}>Create your free account <ArrowRight className="ml-2 h-5 w-5" /></Link></Button>
+              <Button size="lg" className="nali-landing-primary min-h-12 rounded-xl px-6 text-base font-bold" asChild><Link to="/register" onClick={() => trackProductEvent("signup_click", { source: "public_landing_hero", cta: "start_free" })}>Create your free account <ArrowRight className="ml-2 h-5 w-5" /></Link></Button>
               <Button size="lg" variant="outline" className="min-h-12 rounded-xl border-border bg-card/60 px-6 text-base" asChild><Link to="/login">I already have an account</Link></Button>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">Start free. Explore at your own pace.</p>
@@ -250,7 +250,7 @@ export default function Home() {
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="nali-landing-grid grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[
               { icon: MessageSquare, title: "Connect", text: "Chat and collaborate with your people.", tone: "text-primary bg-primary/10" },
               { icon: Music, title: "Create", text: "Bring musical ideas into the Studio.", tone: "text-pink-400 bg-pink-400/10" },
@@ -258,7 +258,7 @@ export default function Home() {
               { icon: FolderKanban, title: "Share", text: "Keep creative files and projects together.", tone: "text-violet-400 bg-violet-400/10" },
             ].map((item) => {
               const ItemIcon = item.icon;
-              return <div key={item.title} className="rounded-2xl border border-border/80 bg-card/65 p-5 shadow-sm backdrop-blur-sm transition-colors hover:border-primary/30"><span className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ${item.tone}`}><ItemIcon className="h-5 w-5" /></span><h2 className="font-heading text-lg font-bold">{item.title}</h2><p className="mt-1.5 text-sm leading-6 text-muted-foreground">{item.text}</p></div>;
+              return <div key={item.title} className="nali-landing-card rounded-2xl border border-border/80 bg-card/65 p-5 shadow-sm backdrop-blur-sm transition-colors hover:border-primary/30"><span className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ${item.tone}`}><ItemIcon className="h-5 w-5" /></span><h2 className="font-heading text-lg font-bold">{item.title}</h2><p className="mt-1.5 text-sm leading-6 text-muted-foreground">{item.text}</p></div>;
             })}
             <div className="col-span-1 flex items-center gap-3 rounded-2xl border border-border/80 bg-card/40 px-4 py-3 sm:col-span-2"><Shield className="h-5 w-5 shrink-0 text-primary" /><p className="text-sm text-muted-foreground">One home for your creative life, with room to grow.</p></div>
           </div>
@@ -272,7 +272,7 @@ export default function Home() {
     <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">
 
       {/* — Hero — */}
-      <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-4 pb-20 pt-[max(5.5rem,env(safe-area-inset-top))] sm:px-6 sm:pb-28 md:min-h-[700px] md:pt-28">
+      <section className="nali-hub-hero relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-4 pb-20 pt-[max(5.5rem,env(safe-area-inset-top))] sm:px-6 sm:pb-28 md:min-h-[700px] md:pt-28">
         {/* Animated blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary/30 rounded-full blur-[100px] animate-float-blob" />
@@ -331,12 +331,12 @@ export default function Home() {
                   <motion.span className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 rounded-full bg-white/70 shadow-[0_0_12px_rgba(255,255,255,.55)]" animate={{ y: [0, 12, 0], opacity: [.45, 1, .45] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} />
                 </div>
               </div>
-              <Link to="/meetings" className="group mx-auto mb-5 flex min-h-24 max-w-3xl items-center gap-4 rounded-2xl border border-violet-400/35 bg-gradient-to-r from-violet-700/25 via-slate-800/20 to-cyan-500/15 px-5 py-4 text-left shadow-lg transition hover:border-violet-300/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300">
+              <Link to="/meetings" className="nali-hub-room group mx-auto mb-5 flex min-h-24 max-w-3xl items-center gap-4 rounded-2xl border border-violet-400/35 bg-gradient-to-r from-violet-700/25 via-slate-800/20 to-cyan-500/15 px-5 py-4 text-left shadow-lg transition hover:border-violet-300/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-400/20 text-violet-200"><Video className="h-6 w-6" /></span>
                 <span className="min-w-0 flex-1"><span className="block text-[10px] font-black uppercase tracking-[.2em] text-violet-200">Private video rooms</span><span className="mt-1 block font-heading text-lg font-black">Meeting Hub</span><span className="block text-xs text-foreground/70">Host business meetings and artist listening parties.</span></span>
                 <ArrowRight className="h-5 w-5 shrink-0 text-violet-200" />
               </Link>
-              <Link to="/battles" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: "enter_battle_arena" })} className="group mx-auto mb-5 flex min-h-24 max-w-3xl items-center gap-4 rounded-2xl border border-fuchsia-400/35 bg-gradient-to-r from-fuchsia-700/25 via-purple-800/20 to-amber-500/15 px-5 py-4 text-left shadow-lg backdrop-blur-xl transition hover:border-fuchsia-300/60 hover:bg-white/[.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-300">
+              <Link to="/battles" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: "enter_battle_arena" })} className="nali-hub-room group mx-auto mb-5 flex min-h-24 max-w-3xl items-center gap-4 rounded-2xl border border-fuchsia-400/35 bg-gradient-to-r from-fuchsia-700/25 via-purple-800/20 to-amber-500/15 px-5 py-4 text-left shadow-lg backdrop-blur-xl transition hover:border-fuchsia-300/60 hover:bg-white/[.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-300">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-fuchsia-400/20 text-fuchsia-200"><Trophy className="h-6 w-6" /></span>
                 <span className="min-w-0 flex-1"><span className="block text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-200">Live rap & singing</span><span className="mt-1 block font-heading text-lg font-black">Enter Battle Arena</span><span className="block text-xs text-foreground/70">Watch a live battle or challenge another artist with your track.</span></span>
                 <ArrowRight className="h-5 w-5 shrink-0 text-fuchsia-200 transition-transform group-hover:translate-x-1" />
@@ -356,7 +356,7 @@ export default function Home() {
                   const WorldIcon = world.icon;
                   return (
                     <motion.div key={world.title} whileHover={{ y: -5, scale: 1.015 }} whileTap={{ scale: 0.985 }} transition={{ duration: 0.2 }}>
-                      <Link to={world.path} onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: world.action })} className={`group relative flex min-h-44 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${world.gradient} p-5 shadow-xl backdrop-blur-xl transition-all hover:border-white/25 hover:shadow-2xl`}>
+                      <Link to={world.path} onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: world.action })} className={`nali-world-card group relative flex min-h-44 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${world.gradient} p-5 shadow-xl backdrop-blur-xl transition-all hover:border-white/25 hover:shadow-2xl`}>
                         <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-3xl transition-transform group-hover:scale-150" />
                         <div className="relative z-10 flex w-full flex-col">
                           <div className="flex items-start justify-between">

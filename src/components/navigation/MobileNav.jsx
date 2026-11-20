@@ -43,7 +43,7 @@ export default function MobileNav() {
   return (
     <nav
       aria-label="Primary"
-      className="lg:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-card/90 backdrop-blur-md select-none"
+      className="nali-nav-chrome lg:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-card/90 backdrop-blur-md select-none"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="flex items-stretch justify-around">

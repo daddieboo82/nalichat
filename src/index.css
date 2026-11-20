@@ -531,3 +531,86 @@
     transform: none !important;
   }
 }
+/* NaliBase visual surfaces. Gradients and shadows keep the existing layout and touch targets. */
+.nali-landing {
+  background-image:
+    radial-gradient(ellipse at 81% 28%, hsl(var(--primary) / .18), transparent 46%),
+    radial-gradient(ellipse at 95% 88%, hsl(var(--accent) / .10), transparent 48%);
+}
+.nali-landing-header {
+  box-shadow: 0 1px 0 hsl(var(--foreground) / .09);
+}
+.nali-landing h1 {
+  text-wrap: balance;
+}
+.nali-landing-highlight {
+  color: hsl(var(--foreground));
+  background: linear-gradient(105deg, #f0dcff, #bc9dff 49%, #8eeada);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.nali-landing-primary {
+  background-image: linear-gradient(115deg, #6835c6, #492197);
+  box-shadow: 0 9px 28px hsl(var(--primary) / .26), inset 0 1px 0 #ffffff30;
+}
+.nali-landing-primary:hover {
+  background-image: linear-gradient(115deg, #713ccd, #5524ac);
+}
+.nali-landing-grid {
+  background-image: radial-gradient(circle at center, hsl(var(--primary) / .13), transparent 68%);
+}
+.nali-landing-card {
+  background-image: linear-gradient(145deg, hsl(var(--primary) / .12), transparent 64%);
+  border-color: hsl(var(--foreground) / .14);
+  box-shadow: 0 10px 24px -16px #000a, inset 0 1px 0 hsl(var(--foreground) / .07);
+}
+.nali-landing-card:nth-child(2) {
+  background-image: linear-gradient(145deg, #ed8bba19, transparent 64%);
+}
+.nali-landing-card:nth-child(3) {
+  background-image: linear-gradient(145deg, hsl(var(--accent) / .12), transparent 64%);
+}
+.nali-landing-card:nth-child(4) {
+  background-image: linear-gradient(145deg, #a787ff24, transparent 64%);
+}
+.nali-hub-hero {
+  background-image: radial-gradient(ellipse at 50% 32%, hsl(var(--primary) / .13), transparent 60%);
+}
+.nali-world-card, .nali-hub-room {
+  border-color: hsl(var(--foreground) / .15);
+  box-shadow: 0 14px 32px -20px #000c, inset 0 1px 0 hsl(var(--foreground) / .10);
+}
+.nali-world-card:focus-visible, .nali-landing-primary:focus-visible {
+  outline: 2px solid hsl(var(--foreground));
+  outline-offset: 3px;
+}
+.nali-auth {
+  background-image:
+    radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / .20), transparent 52%),
+    radial-gradient(ellipse at 100% 100%, hsl(var(--accent) / .10), transparent 52%);
+}
+.nali-auth-card {
+  border-color: hsl(var(--foreground) / .16);
+  box-shadow: 0 26px 60px -36px #000e, inset 0 1px 0 hsl(var(--foreground) / .10);
+}
+.nali-auth-card :is(input, select):focus-visible {
+  border-color: hsl(var(--primary));
+}
+.nali-message-sidebar {
+  background-image: linear-gradient(155deg, hsl(var(--primary) / .07), transparent 55%);
+}
+.nali-nav-chrome {
+  background-image: linear-gradient(110deg, hsl(var(--primary) / .08), hsl(var(--accent) / .035));
+  border-color: hsl(var(--foreground) / .14);
+}
+@media (min-width: 640px) {
+  .nali-message-shell {
+    border-color: hsl(var(--foreground) / .14);
+    box-shadow: 0 24px 64px -32px #000d, inset 0 1px 0 hsl(var(--foreground) / .08);
+  }
+}
+@media (forced-colors: active) {
+  .nali-landing-highlight {
+    -webkit-text-fill-color: currentColor;
+  }
+}

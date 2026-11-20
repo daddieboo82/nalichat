@@ -113,7 +113,7 @@ export default function MobileHeader() {
   return (
     <>
       <header
-        className="sticky top-0 z-40 border-b border-white/[0.08] bg-card/85 backdrop-blur-xl select-none lg:hidden shadow-sm shadow-black/10"
+        className="nali-nav-chrome sticky top-0 z-40 border-b border-white/[0.08] bg-card/85 backdrop-blur-xl select-none lg:hidden shadow-sm shadow-black/10"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="flex h-14 items-center justify-between gap-2 px-2 sm:px-3">

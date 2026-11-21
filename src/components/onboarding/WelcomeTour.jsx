@@ -115,7 +115,7 @@ export default function WelcomeTour({ open, onClose }) {
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
-            className="relative w-full max-w-md bg-card border border-border rounded-3xl overflow-hidden shadow-2xl"
+            className="nali-onboarding-panel relative w-full max-w-md bg-card border border-border rounded-3xl overflow-hidden shadow-2xl"
           >
             <button
               onClick={handleDismiss}
@@ -150,7 +150,7 @@ export default function WelcomeTour({ open, onClose }) {
               </div>
             </div>
 
-            <div className="flex justify-center gap-2 pb-8">
+            <div className="nali-onboarding-progress flex justify-center gap-2 pb-8">
               {STEPS.map((_, i) => (
                 <div
                   key={i}

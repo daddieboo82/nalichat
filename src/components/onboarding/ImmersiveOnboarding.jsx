@@ -331,7 +331,7 @@ export default function ImmersiveOnboarding({ onDismiss }) {
             </AnimatePresence>
 
             {/* Progress indicator */}
-            <div className="mt-7 flex justify-center gap-1 sm:mt-12">
+            <div className="nali-onboarding-progress mt-7 flex justify-center gap-1 sm:mt-12">
               {steps.map((s, i) => (
                 <button
                   key={s.id}

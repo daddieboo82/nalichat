@@ -773,3 +773,20 @@
 .nali-help-shortcuts a {
   background-image: linear-gradient(120deg, hsl(var(--primary) / .06), transparent 75%);
 }
+
+.nali-onboarding-panel {
+  background-image: radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / .14), transparent 58%);
+  border-color: hsl(var(--foreground) / .16);
+}
+.nali-onboarding-progress > .bg-muted,
+.nali-onboarding-progress button > .bg-muted {
+  background-color: hsl(var(--foreground) / .28);
+}
+.nali-onboarding-progress [aria-current="step"] > span,
+.nali-onboarding-progress > :is(.bg-primary, .bg-foreground) {
+  box-shadow: 0 0 10px hsl(var(--primary) / .45), inset 0 0 0 1px hsl(var(--foreground) / .22);
+}
+.nali-onboarding-progress button:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  border-radius: .5rem;
+}

@@ -17,7 +17,7 @@ export default function InteractiveWizard({ open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md border border-border bg-card p-0 overflow-hidden shadow-2xl rounded-3xl [&>button]:hidden">
+      <DialogContent className="nali-onboarding-panel sm:max-w-md border border-border bg-card p-0 overflow-hidden shadow-2xl rounded-3xl [&>button]:hidden">
         <button 
           onClick={() => onOpenChange(false)} 
           className="absolute right-4 top-4 rounded-full p-2 bg-background/50 hover:bg-background text-muted-foreground transition-colors z-50 focus:outline-none"
@@ -95,7 +95,7 @@ export default function InteractiveWizard({ open, onOpenChange }) {
           </AnimatePresence>
           
           {/* Progress dots */}
-          <div className="flex justify-center gap-2 pb-8 shrink-0">
+          <div className="nali-onboarding-progress flex justify-center gap-2 pb-8 shrink-0">
             {[1, 2, 3].map((i) => (
               <div key={i} className={`w-2 h-2 rounded-full transition-colors ${step === i ? 'bg-foreground' : 'bg-muted'}`} />
             ))}

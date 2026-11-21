@@ -215,7 +215,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
               key={conv.id}
               onClick={() => onSelect(conv.id)}
               className={cn(
-                "ui-surface ui-hover w-full min-h-[82px] flex items-center gap-3.5 p-3.5 rounded-3xl transition-all duration-200 text-left group relative touch-manipulation focus-visible:ring-2 focus-visible:ring-primary/40 border",
+                "nali-conversation-row ui-surface ui-hover w-full min-h-[82px] flex items-center gap-3.5 p-3.5 rounded-3xl transition-all duration-200 text-left group relative touch-manipulation focus-visible:ring-2 focus-visible:ring-primary/40 border",
                 isSelected
                   ? "bg-gradient-to-r from-primary/[0.14] to-primary/[0.05] shadow-lg shadow-black/10 border-primary/30 z-10"
                   : "bg-card/65 border-border/45 hover:bg-card/90 hover:border-primary/25 hover:shadow-md active:bg-secondary/65"
@@ -246,7 +246,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
                     {displayName}
                   </p>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {unread && !isSelected && <span className="w-2.5 h-2.5 rounded-full bg-primary shrink-0" />}
+                    {unread && !isSelected && <span className="nali-conversation-unread w-2.5 h-2.5 rounded-full bg-primary shrink-0" />}
                     {conv.last_message_at && !isNaN(new Date(conv.last_message_at).getTime()) && (
                       <span className={cn("text-[11px] font-medium", unread ? "text-primary" : isSelected ? "text-primary/80" : "text-muted-foreground/70")}>
                         {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false }).replace('about ','').replace('less than a minute','now')}

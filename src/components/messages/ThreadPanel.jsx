@@ -156,9 +156,9 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
   };
 
   return (
-    <div className="absolute inset-0 z-40 w-full h-full min-h-0 border-l border-border flex flex-col bg-card/95 backdrop-blur-xl shrink-0 sm:static sm:z-auto sm:w-80 sm:bg-card/70 sm:backdrop-blur-sm">
+    <div className="nali-reply-panel absolute inset-0 z-40 w-full h-full min-h-0 border-l border-border flex flex-col bg-card/95 backdrop-blur-xl shrink-0 sm:static sm:z-auto sm:w-80 sm:bg-card/70 sm:backdrop-blur-sm">
       {/* Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
+      <div className="nali-reply-heading h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <MessageSquareQuote className="w-4 h-4 text-primary" />
           <span className="font-heading font-semibold text-sm">Thread</span>
@@ -169,7 +169,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
       </div>
 
       {/* Parent message */}
-      <div className="px-4 py-3 border-b border-border bg-secondary/30 shrink-0">
+      <div className="nali-reply-context px-4 py-3 border-b border-border bg-secondary/30 shrink-0">
         <div className="flex items-start gap-2">
           <Avatar className="w-6 h-6 shrink-0">
             <AvatarImage src={parentMessage.sender_avatar} />

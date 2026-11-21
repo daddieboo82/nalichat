@@ -543,7 +543,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             placeholder={dragOver ? "📎 Drop files here..." : "Message..."}
             title="Message Input"
             aria-label="Message Input"
-            className="flex-1 min-w-0 bg-secondary/30 border border-border/50 rounded-2xl px-3 sm:px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 placeholder:text-muted-foreground/50 transition-all"
+            className="nali-chat-input flex-1 min-w-0 bg-secondary/30 border border-border/50 rounded-2xl px-3 sm:px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 placeholder:text-muted-foreground/50 transition-all"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -563,7 +563,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             disabled={disabled}
             whileTap={{ scale: 0.88 }}
             whileHover={{ scale: 1.08 }}
-            className="h-11 w-11 rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-primary/40"
+            className="nali-chat-send h-11 w-11 rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-primary/40"
             title="Send Message"
             aria-label="Send Message"
           >

@@ -47,8 +47,8 @@ function PlanCard({
 
   return (
     <article
-      className={`ui-surface relative flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border p-5 sm:p-6 ${
-        badge ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border bg-card"
+      className={`nali-plan-card ui-surface relative flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border p-5 sm:p-6 ${
+        badge ? "nali-plan-featured border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border bg-card"
       }`}
       aria-labelledby={`${plan.id}-plan-title`}
       id={`${plan.id}-plan`}
@@ -63,7 +63,7 @@ function PlanCard({
       </h2>
       <p className="mt-2 min-h-10 text-sm text-muted-foreground">{plan.description}</p>
       <div className="mt-6 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="max-w-full break-words font-heading text-4xl font-black leading-none">{price.label}</span>
+        <span className="nali-plan-price max-w-full break-words font-heading text-4xl font-black leading-none">{price.label}</span>
         <span className="min-w-0 break-words text-sm text-muted-foreground">{price.suffix}</span>
       </div>
       {paid && period === "annual" && (

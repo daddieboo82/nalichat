@@ -153,8 +153,8 @@ export default function MessageSearch({
       aria-modal="true"
       aria-labelledby="message-search-title"
     >
-      <div className="bg-card border border-border/60 rounded-none shadow-2xl w-full h-full min-h-0 flex flex-col overflow-hidden sm:h-auto sm:max-w-2xl sm:max-h-[85dvh] sm:rounded-2xl">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40">
+      <div className="nali-search-panel bg-card border border-border/60 rounded-none shadow-2xl w-full h-full min-h-0 flex flex-col overflow-hidden sm:h-auto sm:max-w-2xl sm:max-h-[85dvh] sm:rounded-2xl">
+        <div className="nali-search-heading flex items-center gap-2 px-4 py-3 border-b border-border/40">
           <Search className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           <h2 id="message-search-title" className="sr-only">Search messages</h2>
           <input
@@ -324,7 +324,7 @@ export default function MessageSearch({
                       setError("That message could not be opened. Please try again.");
                     }
                   }}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-secondary/60 transition-colors group"
+                  className="nali-search-result w-full text-left px-3 py-2 rounded-xl hover:bg-secondary/60 transition-colors group"
                   title="Jump to message"
                   aria-label={`Jump to message from ${message.sender_name || "unknown sender"}`}
                 >

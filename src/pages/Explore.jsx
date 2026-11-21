@@ -217,7 +217,7 @@ export default function Explore() {
               placeholder="Search by title, artist, tag..."
               title="Search Tracks"
               aria-label="Search Tracks"
-              className="w-full min-h-11 rounded-xl border border-border/80 bg-secondary/60 pl-9 pr-4 py-2.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="nali-search-input w-full min-h-11 rounded-xl border border-border/80 bg-secondary/60 pl-9 pr-4 py-2.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
         </div>

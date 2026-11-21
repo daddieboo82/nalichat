@@ -600,7 +600,7 @@ export default function Files() {
               </Button>
               <div className="relative flex-1 max-w-md min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Search files..." value={search} onChange={e => setSearch(e.target.value)} className="h-11 rounded-xl border border-border/50 bg-secondary/40 pl-9 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
+                <Input placeholder="Search files..." value={search} onChange={e => setSearch(e.target.value)} className="nali-search-input h-11 rounded-xl border border-border/50 bg-secondary/40 pl-9 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
               </div>
             </>
           )}

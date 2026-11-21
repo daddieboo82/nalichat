@@ -293,7 +293,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           "relative rounded-2xl min-w-[60px] transition-all",
           isOwn
             ? "chat-message-own bg-gradient-to-br from-primary via-primary to-pink-500 text-white rounded-br-sm shadow-xl shadow-primary/20"
-            : "chat-message-other bg-card/80 border border-border/60 rounded-bl-sm shadow-sm backdrop-blur-sm",
+            : "nali-thread-bubble chat-message-other bg-card/80 border border-border/60 rounded-bl-sm shadow-sm backdrop-blur-sm",
           (hasFile && message.type !== "audio") || message.type === "session" ? "p-2" : "px-4 py-2.5",
           message.type === "session" && isOwn && "from-transparent to-transparent bg-transparent text-foreground shadow-none border border-primary/30"
         )}>
@@ -412,7 +412,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
 
       {/* Hover action buttons */}
       <div className={cn(
-        "hidden md:flex items-center gap-1 opacity-0 focus-within:opacity-100 transition-all self-center shrink-0 relative",
+        "nali-thread-actions hidden md:flex items-center gap-1 opacity-0 focus-within:opacity-100 transition-all self-center shrink-0 relative",
         (showActions || showEmojiPicker) && "opacity-100",
         isOwn ? "flex-row mr-2" : "flex-row ml-2"
       )}>

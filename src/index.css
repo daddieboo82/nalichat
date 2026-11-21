@@ -848,3 +848,11 @@
   outline: 2px solid hsl(var(--ring));
   outline-offset: -2px;
 }
+
+.nali-thread-bubble {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, currentColor 8%, transparent), 0 1px 4px #0001;
+}
+.nali-thread-actions button:focus-visible {
+  outline: 2px solid var(--chat-link, hsl(var(--ring)));
+  outline-offset: 2px;
+}

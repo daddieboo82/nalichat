@@ -721,3 +721,15 @@
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
+
+.nali-notification-panel {
+  border-color: hsl(var(--foreground) / .16);
+  box-shadow: 0 24px 54px -20px #000c, inset 0 1px 0 hsl(var(--foreground) / .08);
+}
+.nali-notification-heading {
+  background-image: linear-gradient(105deg, hsl(var(--primary) / .15), transparent 75%);
+}
+.nali-notification-unread {
+  background-image: linear-gradient(90deg, hsl(var(--primary) / .09), transparent 70%);
+  box-shadow: inset 3px 0 0 hsl(var(--primary));
+}

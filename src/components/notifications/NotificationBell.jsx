@@ -250,10 +250,10 @@ export default function NotificationBell({ direction = "down" }) {
 
       {open && (
         <div className={cn(
-          "absolute right-0 z-50 w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-2xl shadow-black/40 backdrop-blur-xl",
+          "nali-notification-panel absolute right-0 z-50 w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-2xl shadow-black/40 backdrop-blur-xl",
           direction === "up" ? "bottom-full mb-2" : "top-full mt-2"
         )}>
-          <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-secondary/20 px-4 py-3.5">
+          <div className="nali-notification-heading flex items-center justify-between gap-3 border-b border-border/70 bg-secondary/20 px-4 py-3.5">
             <p className="font-heading font-bold text-sm">Notifications</p>
             {pushPermission === 'default' && (
               <button
@@ -290,7 +290,7 @@ export default function NotificationBell({ direction = "down" }) {
                 const inner = (
                   <div className={cn(
                     "ui-hover flex min-h-[76px] items-start gap-3 border-b border-border/50 px-4 py-3.5 transition-colors hover:bg-secondary/50 focus-within:bg-secondary/50 focus-within:ring-2 focus-within:ring-inset focus-within:ring-primary/30",
-                    !n.read && "bg-primary/5"
+                    !n.read && "nali-notification-unread bg-primary/5"
                   )}>
                     <div className="relative shrink-0">
                       <Avatar className="h-10 w-10">

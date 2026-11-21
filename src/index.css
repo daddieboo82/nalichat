@@ -733,3 +733,24 @@
   background-image: linear-gradient(90deg, hsl(var(--primary) / .09), transparent 70%);
   box-shadow: inset 3px 0 0 hsl(var(--primary));
 }
+
+.nali-assistant-panel {
+  border-color: hsl(var(--foreground) / .16);
+  box-shadow: 0 22px 60px -20px #000d, inset 0 1px 0 hsl(var(--foreground) / .08);
+}
+.nali-assistant-heading {
+  background-image: linear-gradient(115deg, hsl(var(--primary) / .17), hsl(var(--card)) 67%, hsl(var(--accent) / .08));
+}
+.nali-assistant-reply {
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / .07);
+}
+.nali-assistant-composer {
+  background-image: linear-gradient(110deg, hsl(var(--primary) / .08), transparent 75%);
+}
+.nali-assistant-input {
+  border-color: hsl(var(--foreground) / .19);
+}
+.nali-assistant-composer button:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 1px;
+}

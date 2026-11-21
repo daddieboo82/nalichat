@@ -364,11 +364,11 @@ export default function AiAssistant() {
       {/* Chat panel */}
       {open && (
         <div className={cn(
-          "fixed bottom-28 md:bottom-8 right-4 z-[999999] bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 flex flex-col transition-all duration-300",
+          "nali-assistant-panel fixed bottom-28 md:bottom-8 right-4 z-[999999] bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 flex flex-col transition-all duration-300",
           minimized ? "w-64 max-w-[calc(100vw-32px)] h-14" : expanded ? "w-[calc(100vw-32px)] sm:w-[440px] h-[640px] max-h-[calc(100dvh-120px)] sm:max-h-[80vh]" : "w-[calc(100vw-32px)] sm:w-96 h-[500px] max-h-[calc(100dvh-120px)] sm:max-h-[80vh]"
         )}>
           {/* Header */}
-          <div className="relative flex items-center gap-1 sm:gap-3 px-3 sm:px-4 py-3 border-b border-primary/20 bg-gradient-to-r from-background via-primary/10 to-background rounded-t-2xl shrink-0 overflow-hidden">
+          <div className="nali-assistant-heading relative flex items-center gap-1 sm:gap-3 px-3 sm:px-4 py-3 border-b border-primary/20 bg-gradient-to-r from-background via-primary/10 to-background rounded-t-2xl shrink-0 overflow-hidden">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] pointer-events-none" />
             
             <div className="relative w-9 h-9 rounded-full border border-primary/40 bg-card flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(var(--primary),0.3)]">
@@ -460,7 +460,7 @@ export default function AiAssistant() {
                       "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
                       msg.role === "user" 
                         ? "bg-primary text-primary-foreground rounded-tr-sm" 
-                        : "bg-secondary/80 border border-border/50 text-foreground rounded-tl-sm backdrop-blur-sm"
+                        : "nali-assistant-reply bg-secondary/80 border border-border/50 text-foreground rounded-tl-sm backdrop-blur-sm"
                     )}>
                       {msg.role === "user" ? (
                         <p>{msg.content}</p>
@@ -506,7 +506,7 @@ export default function AiAssistant() {
                 </div>
               )}
               {/* Input */}
-              <div className="p-3 border-t border-border/50 bg-background/50 backdrop-blur-md flex gap-2 shrink-0">
+              <div className="nali-assistant-composer p-3 border-t border-border/50 bg-background/50 backdrop-blur-md flex gap-2 shrink-0">
                 <div className="relative flex-1">
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-mono font-bold">{'>'}</div>
                   <input
@@ -514,7 +514,7 @@ export default function AiAssistant() {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     placeholder="Ask Nali about your music, projects, or anything else..."
-                    className="w-full bg-secondary/40 border border-primary/20 rounded-xl pl-8 pr-10 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/70"
+                    className="nali-assistant-input w-full bg-secondary/40 border border-primary/20 rounded-xl pl-8 pr-10 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/70"
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                   />
                   <button

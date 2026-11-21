@@ -27,7 +27,7 @@ export default function GlobalAudioPlayer() {
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
-        className="fixed bottom-[calc(3.75rem+env(safe-area-inset-bottom))] md:bottom-[53px] left-0 right-0 z-50 bg-black/95 backdrop-blur-3xl border-t border-white/10 shadow-[0_-20px_40px_-10px_rgba(0,0,0,0.5)] text-white safe-bottom"
+        className="nali-global-player fixed bottom-[calc(3.75rem+env(safe-area-inset-bottom))] md:bottom-[53px] left-0 right-0 z-50 bg-black/95 backdrop-blur-3xl border-t border-white/10 shadow-[0_-20px_40px_-10px_rgba(0,0,0,0.5)] text-white safe-bottom"
       >
         {/* Progress Bar Top */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-white/10 group cursor-pointer hover:h-2 transition-all" onClick={(e) => {
@@ -55,7 +55,7 @@ export default function GlobalAudioPlayer() {
             </Avatar>
             <div className="min-w-0">
               <h4 className="text-sm font-bold truncate text-white leading-tight">{currentTrack.title}</h4>
-              <p className="text-xs text-white/50 truncate font-medium tracking-wide">{currentTrack.creator_name || "Unknown Artist"}</p>
+              <p className="text-xs text-white/70 truncate font-medium tracking-wide">{currentTrack.creator_name || "Unknown Artist"}</p>
             </div>
           </div>
 
@@ -74,7 +74,7 @@ export default function GlobalAudioPlayer() {
               </Button>
             </div>
             <div className="hidden md:flex items-center gap-2 w-full mt-1.5">
-              <span className="text-xs text-white/50 w-8 text-right font-mono">{formatTime(currentTime)}</span>
+              <span className="text-xs text-white/70 w-8 text-right font-mono">{formatTime(currentTime)}</span>
               <Slider 
                 value={[currentTime]} 
                 max={displayDuration || 100} 
@@ -82,7 +82,7 @@ export default function GlobalAudioPlayer() {
                 onValueChange={(v) => seek(v[0])}
                 className="flex-1 [&_[role=slider]]:w-3 [&_[role=slider]]:h-3 [&_[role=slider]]:bg-white [&_[role=slider]]:border-white/50 [&_.bg-primary]:bg-white [&_.bg-primary\\/20]:bg-white/20" 
               />
-              <span className="text-xs text-white/50 w-8 font-mono">{formatTime(displayDuration, true)}</span>
+              <span className="text-xs text-white/70 w-8 font-mono">{formatTime(displayDuration, true)}</span>
             </div>
           </div>
 

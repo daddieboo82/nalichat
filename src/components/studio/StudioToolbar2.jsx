@@ -210,7 +210,7 @@ export default function StudioToolbar2({
 
   if (isMobile) {
     return (
-      <div className="relative z-10 mx-2 mt-2 flex min-h-[3.75rem] shrink-0 items-center justify-between gap-2 rounded-2xl border border-foreground/10 bg-studio-header/90 px-3 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+      <div className="nali-studio-toolbar relative z-10 mx-2 mt-2 flex min-h-[3.75rem] shrink-0 items-center justify-between gap-2 rounded-2xl border border-foreground/10 bg-studio-header/90 px-3 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
         <Button onClick={addTrack} variant="secondary" size="sm" className="ui-hover min-h-11 gap-2 rounded-xl bg-primary/10 px-4 text-primary hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-primary/40">
           <Plus className="w-4 h-4" /> Add Track
         </Button>
@@ -234,7 +234,7 @@ export default function StudioToolbar2({
   }
 
   return (
-    <div className="min-h-[3.5rem] py-1.5 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-foreground/10 bg-studio-header/90 backdrop-blur-xl shadow-[0_8px_32px_-12px_hsl(var(--studio-bg)/0.85),inset_0_1px_0_0_hsl(var(--foreground)/0.06)] flex flex-wrap items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative z-10">
+    <div className="nali-studio-toolbar min-h-[3.5rem] py-1.5 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-foreground/10 bg-studio-header/90 backdrop-blur-xl shadow-[0_8px_32px_-12px_hsl(var(--studio-bg)/0.85),inset_0_1px_0_0_hsl(var(--foreground)/0.06)] flex flex-wrap items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative z-10">
       {toolbarContent}
     </div>
   );

@@ -694,3 +694,14 @@
     radial-gradient(ellipse at 100% 100%, hsl(var(--primary) / .12), transparent 60%);
   box-shadow: inset 0 -1px 0 hsl(var(--foreground) / .07);
 }
+
+.nali-studio-toolbar {
+  background-image: linear-gradient(110deg, hsl(var(--primary) / .13), transparent 55%, hsl(var(--accent) / .06));
+  border-color: hsl(var(--foreground) / .14);
+}
+.nali-studio-track-headers {
+  border-color: hsl(var(--foreground) / .15);
+}
+.nali-studio-ruler-edge {
+  box-shadow: inset 0 -1px 0 hsl(var(--primary) / .16);
+}

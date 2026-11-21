@@ -642,3 +642,8 @@
   border-color:hsl(var(--border));
   color:hsl(var(--muted-foreground));
 }
+/* Keep the transport chrome distinct from the track area in both orientations. */
+.studio-mobile-premium .studio-mobile-transport {
+  background-image: linear-gradient(100deg, hsl(var(--primary) / .11), transparent 55%, hsl(var(--accent) / .05));
+  border-top-color: hsl(var(--foreground) / .16);
+}

@@ -87,7 +87,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent className="nali-contact-dialog bg-card border-border max-w-md">
          <DialogHeader>
            <DialogTitle className="font-heading">Start a Chat</DialogTitle>
            <DialogDescription>Select a user to begin a conversation</DialogDescription>
@@ -100,7 +100,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
             onChange={(e) => setSearch(e.target.value)}
             title="Search public profiles"
             aria-label="Search public profiles"
-            className="pl-9 bg-secondary/50 border-0 rounded-xl"
+            className="nali-contact-search pl-9 bg-secondary/50 border-0 rounded-xl"
             autoFocus
           />
         </div>
@@ -125,7 +125,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
                   key={user.id}
                   onClick={() => selectUser(user)}
                   disabled={!!pendingUserId}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl disabled:opacity-60 hover:bg-primary/10 transition-colors text-left"
+                  className="nali-contact-row w-full flex items-center gap-3 p-3 rounded-xl disabled:opacity-60 hover:bg-primary/10 transition-colors text-left"
                   title={`Start chat with ${user.display_name || user.full_name}`}
                   aria-label={`Start chat with ${user.display_name || user.full_name}`}
                 >
@@ -153,7 +153,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
               key={user.id}
               onClick={() => selectUser(user)}
               disabled={!!pendingUserId}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl disabled:opacity-60 hover:bg-secondary/50 transition-colors text-left"
+                  className="nali-contact-row w-full flex items-center gap-3 p-3 rounded-xl disabled:opacity-60 hover:bg-secondary/50 transition-colors text-left"
               title={`Start chat with ${user.display_name || user.full_name}`}
               aria-label={`Start chat with ${user.display_name || user.full_name}`}
             >

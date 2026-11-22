@@ -878,3 +878,15 @@
   outline: 2px solid hsl(var(--ring));
   outline-offset: 1px;
 }
+
+.nali-contact-dialog {
+  background-image: radial-gradient(ellipse at 8% 0%, hsl(var(--primary) / .13), transparent 55%);
+}
+.nali-contact-row {
+  box-shadow: inset 0 0 0 1px hsl(var(--foreground) / .08);
+}
+.nali-contact-search:focus-visible,
+.nali-contact-row:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: -2px;
+}

@@ -155,7 +155,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
                 placeholder="Search by name..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-9 rounded-lg bg-secondary/50 border-0"
+                className="nali-contact-search pl-9 rounded-lg bg-secondary/50 border-0"
                 autoFocus
               />
             </div>
@@ -189,7 +189,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
                       retrySignatureRef.current = "";
                       setSelectedUser(user);
                     }}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors text-left"
+                    className="nali-contact-row w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors text-left"
                   >
                     <Avatar className="w-10 h-10 shrink-0">
                       <AvatarImage src={user.avatar_url} />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -23,6 +23,9 @@ export default function Onboarding() {
   });
   const [formOwnerId, setFormOwnerId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [fieldError, setFieldError] = useState(null);
+  const displayNameInput = useRef(null);
+  const birthdateInput = useRef(null);
   const [validationRecovery, setValidationRecovery] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [onboardingInteractionTracked, setOnboardingInteractionTracked] = useState(false);
@@ -62,6 +65,7 @@ export default function Onboarding() {
   const handleSave = async (displayNameOnly = false) => {
     if (loading) return;
     setValidationRecovery(false);
+    setFieldError(null);
     const submittingUserId = user?.id;
     if (!submittingUserId || formOwnerId !== submittingUserId) {
       toast.error("Your account changed. Please wait for setup to reload.");
@@ -70,7 +74,8 @@ export default function Onboarding() {
     const displayName = form.display_name.trim();
     if (!displayName) {
       trackProductEvent("onboarding_validation_blocked", { source: "profile_setup", user_id: submittingUserId, reason: "missing_display_name" });
-      toast.error("Please enter your display name");
+      setFieldError({ field: "display_name", message: "Please enter your display name." });
+      displayNameInput.current?.focus();
       return;
     }
     // The backend accepts only a real YYYY-MM-DD birthdate that is not in
@@ -85,7 +90,8 @@ export default function Onboarding() {
           parsed.toISOString().slice(0, 10) !== form.birthdate ||
           parsed.getTime() > todayUtc) {
         trackProductEvent("onboarding_validation_blocked", { source: "profile_setup", user_id: submittingUserId, reason: "invalid_birthdate" });
-        toast.error("Enter a valid birthdate that is not in the future, or leave it blank.");
+        setFieldError({ field: "birthdate", message: "Enter a valid birthdate that is not in the future, or leave it blank." });
+        birthdateInput.current?.focus();
         return;
       }
     }
@@ -176,29 +182,45 @@ export default function Onboarding() {
         )}
         <div className="mb-5" aria-label="Profile setup progress"><div className="mb-2 flex items-center justify-between text-xs font-medium text-muted-foreground"><span>Profile setup</span><span>One quick step</span></div><div className="h-1.5 overflow-hidden rounded-full bg-primary/15"><div className="h-full w-full rounded-full bg-primary" /></div></div><div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="What you can do after setup">{[[MessageSquare,"Message"],[Music,"Create"],[Files,"Share files"],[Sparkles,"Use AI"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-secondary/20 px-2 py-2 text-center text-[11px] font-semibold text-muted-foreground"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" aria-hidden="true" />{label}</div>)}</div><div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-sm font-semibold"><UserRound className="h-4 w-4 text-primary" aria-hidden="true" />Display Name <span className="text-primary">*</span></label>
+            <label htmlFor="setup-display-name" className="flex items-center gap-2 text-sm font-semibold"><UserRound className="h-4 w-4 text-primary" aria-hidden="true" />Display Name <span className="text-primary">*</span></label>
             <Input
+              id="setup-display-name"
+              ref={displayNameInput}
+              aria-required="true"
+              aria-invalid={fieldError?.field === "display_name"}
+              aria-describedby={fieldError?.field === "display_name" ? "setup-display-name-error" : undefined}
               value={form.display_name}
-              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, display_name: e.target.value })); }}
+              onChange={(e) => { markOnboardingInteraction(); setFieldError(error => error?.field === "display_name" ? null : error); setForm(f => ({ ...f, display_name: e.target.value })); }}
               placeholder="What should we call you?"
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
+          {fieldError?.field === "display_name" && (
+            <p id="setup-display-name-error" role="alert" className="text-sm text-destructive">{fieldError.message}</p>
+          )}
           {!validationRecovery && (
             <Button type="button" variant="outline" disabled={loading} className="min-h-11 w-full" onClick={() => handleSave(true)}>
               Continue with display name only
             </Button>
           )}
           <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />Birthdate <span className="font-normal text-muted-foreground">(optional)</span></label>
+            <label htmlFor="setup-birthdate" className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />Birthdate <span className="font-normal text-muted-foreground">(optional)</span></label>
             <Input
+              id="setup-birthdate"
+              ref={birthdateInput}
+              aria-invalid={fieldError?.field === "birthdate"}
+              aria-describedby={fieldError?.field === "birthdate" ? "setup-birthdate-error" : undefined}
               type="date"
               value={form.birthdate}
-              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, birthdate: e.target.value })); }}
+              onChange={(e) => { markOnboardingInteraction(); setFieldError(error => error?.field === "birthdate" ? null : error); setForm(f => ({ ...f, birthdate: e.target.value })); }}
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
+          {fieldError?.field === "birthdate" && (
+            <p id="setup-birthdate-error" role="alert" className="text-sm text-destructive">{fieldError.message}</p>
+          )}
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold">Bio <span className="font-normal text-muted-foreground">(optional)</span></label>
+            <label htmlFor="setup-bio" className="text-sm font-semibold">Bio <span className="font-normal text-muted-foreground">(optional)</span></label>
             <Textarea
+              id="setup-bio"
               value={form.bio}
               onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, bio: e.target.value })); }}
               placeholder="A short bio about your music (optional)"
@@ -206,8 +228,9 @@ export default function Onboarding() {
             className="min-h-[88px] resize-y rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-primary" aria-hidden="true" />Location <span className="font-normal text-muted-foreground">(optional)</span></label>
+            <label htmlFor="setup-location" className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-primary" aria-hidden="true" />Location <span className="font-normal text-muted-foreground">(optional)</span></label>
             <Input
+              id="setup-location"
               value={form.location}
               onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, location: e.target.value })); }}
               placeholder="City, Country"

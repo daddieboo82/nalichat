@@ -403,7 +403,7 @@ describe('auth and onboarding flows', () => {
   it('renders the invalid reset-token recovery state', () => {
     renderInRouter(<ResetPassword />, ['/reset-password']);
     expect(screen.getByText('Invalid reset link')).toBeTruthy();
-    expect(screen.getByText(/request a new password reset email/i)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Request a new link' })).toBeTruthy();
   });
 
   it('renders the unauthenticated element for protected routes and a banned state when needed', () => {

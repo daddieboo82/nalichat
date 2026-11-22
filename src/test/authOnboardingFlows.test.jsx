@@ -221,6 +221,19 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.auth.resendOtp).not.toHaveBeenCalled();
   });
 
+  it('offers login after successful verification when no session was issued', async () => {
+    mockBase44.auth.verifyOtp.mockResolvedValueOnce({});
+    renderInRouter(<Register />);
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'verified@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'I already have a verification code' }));
+    fireEvent.change(screen.getByLabelText('OTP'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
+    await screen.findByText('Email verified');
+    expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toMatch(/^\/login\?returnTo=/);
+    expect(screen.queryByRole('button', { name: 'Verify' })).toBeNull();
+    expect(mockBase44.auth.setToken).not.toHaveBeenCalled();
+  });
+
   it('lets a user correct their email address without verifying a wrong inbox', async () => {
     mockBase44.auth.register.mockResolvedValueOnce(undefined);
     renderInRouter(<Register />);

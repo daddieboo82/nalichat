@@ -41,6 +41,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [needsLogin, setNeedsLogin] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -152,7 +153,7 @@ export default function Register() {
       const token = persistAuthResult(result);
       // Never redirect without a session: that lands the new user in a logged-out app.
       if (!token) {
-        setError("Your email is verified, but the session could not be started. Log in to continue.");
+        setNeedsLogin(true);
         setLoading(false);
         return;
       }
@@ -282,6 +283,16 @@ export default function Register() {
     return <MfaScreen><MfaFlow challenge={mfaChallenge} returnTo={safeReturnTo()} /></MfaScreen>;
   }
 
+  if (needsLogin) {
+    return (
+      <AuthLayout icon={Mail} title="Email verified" subtitle="Log in to continue with your verified email address.">
+        <Button asChild className="h-12 w-full rounded-xl font-semibold">
+          <Link to={`/login?returnTo=${encodeURIComponent(returnDestination)}`}>Log in</Link>
+        </Button>
+      </AuthLayout>
+    );
+  }
+
   if (showOtp) {
     return (
       <AuthLayout
@@ -297,6 +308,8 @@ export default function Register() {
         <div className="mb-6 flex justify-center overflow-x-auto px-1 py-1">
           <InputOTP
             maxLength={6}
+            aria-label="6-digit verification code"
+            inputMode="numeric"
             value={otpCode}
             onChange={setOtpCode}
             autoFocus

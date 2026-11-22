@@ -1,3 +1,4 @@
+import { onboardingLoginPath } from '@/lib/authReturnTo';
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -129,6 +130,10 @@ const ReleaseWarRoom = lazyWithReloadRecovery(() => import('@/pages/ReleaseWarRo
 const SongFeedbackLab = lazyWithReloadRecovery(() => import('@/pages/SongFeedbackLab'), 'song-feedback-lab');
 const StudioEditor = lazyWithReloadRecovery(() => import('@/pages/StudioEditor'), 'studio-editor');
 const Download = lazyWithReloadRecovery(() => import('@/pages/Download'), 'download');
+
+function OnboardingLoginRedirect() {
+  return <Navigate to={onboardingLoginPath()} replace />;
+}
 
 function safeLocalStorageGet(key) {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -355,13 +360,14 @@ const AuthenticatedApp = () => {
     '/privacy', '/terms', '/thankyou', '/subscription_thank_you', '/oauth-consent', '/shared-file',
   ]);
   const currentPath = location.pathname.toLowerCase();
+  const onboardingGatePath = currentPath.replace(/\/+$/, "") || "/";
 
   if (
     isAuthenticated &&
     user &&
     !user.onboarding_completed &&
     !isAdminUser &&
-    !ONBOARDING_EXEMPT_PATHS.has(currentPath)
+    !ONBOARDING_EXEMPT_PATHS.has(onboardingGatePath)
   ) {
     return <Navigate to={`/onboarding?returnTo=${encodeURIComponent(location.pathname + location.search + location.hash)}`} replace />;
   }
@@ -395,7 +401,7 @@ const AuthenticatedApp = () => {
       <Route path="/mfa" element={<Mfa />} />
       <Route path="/oauth-consent" element={<OAuthConsent />} />
       <Route path="/shared-file" element={<SharedFileDownload />} />
-      <Route path="/onboarding" element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />}><Onboarding /></ProtectedRoute>} />
+      <Route path="/onboarding" element={<ProtectedRoute unauthenticatedElement={<OnboardingLoginRedirect />}><Onboarding /></ProtectedRoute>} />
       <Route path="/Onboarding" element={<Navigate to="/onboarding" replace />} />
       <Route element={<AppLayout />}>
         <Route path="/" element={<Home />} />

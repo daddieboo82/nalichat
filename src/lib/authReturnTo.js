@@ -31,3 +31,8 @@ export function safeReturnTo() {
     return "/";
   }
 }
+
+export function onboardingLoginPath() {
+  const destination = safeReturnTo();
+  return destination === "/" ? "/login" : `/login?returnTo=${encodeURIComponent(destination)}`;
+}

@@ -9,7 +9,7 @@ import { Loader2, CheckCircle2, Music, UserRound, MapPin, CalendarDays, ChevronD
 import { toast } from "sonner";
 import OnboardingNaliGuide from "@/components/onboarding/OnboardingNaliGuide";
 import { trackProductEvent } from "@/lib/productAnalytics";
-import { safeReturnTo } from "@/lib/authReturnTo";
+import { onboardingLoginPath, safeReturnTo } from "@/lib/authReturnTo";
 
 export default function Onboarding() {
   const { user, checkUserAuth, isAuthenticated } = useAuth();
@@ -69,7 +69,7 @@ export default function Onboarding() {
       setInitializing(false);
     } else if (isAuthenticated === false) {
         setFormOwnerId(null);
-        window.location.href = "/login";
+        window.location.href = onboardingLoginPath();
     }
   }, [user, isAuthenticated, formOwnerId, onboardingInteractionTracked]);
 

@@ -79,16 +79,19 @@ export default function ChallengeLeaderboard() {
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:p-6">
       <div>
+        <Link to={`/challenge/${challengeId}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">← Back to challenge</Link>
         <h1 className="font-heading text-2xl font-bold tracking-tight">Leaderboard</h1>
         {challenge && <p className="text-muted-foreground text-sm">{challenge.title}</p>}
       </div>
 
-      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+      <div role="group" aria-label="Leaderboard period" className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
           <button
             key={f.key}
+            type="button"
+            aria-pressed={filter === f.key}
             onClick={() => setFilter(f.key)}
-            className={cn("ui-hover min-h-10 shrink-0 rounded-xl border px-3 py-1.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40", filter === f.key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground")}
+            className={cn("ui-hover min-h-11 shrink-0 rounded-xl border px-3 py-1.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40", filter === f.key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground")}
           >
             {f.label}
           </button>

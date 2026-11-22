@@ -175,13 +175,13 @@ export default function ChallengeDetail() {
   return (
     <PullToRefresh onRefresh={refresh} className="mx-auto max-w-4xl space-y-5 px-4 py-5 pb-[max(6rem,env(safe-area-inset-bottom))] sm:p-6 sm:space-y-6 lg:pb-20">
       <div className="ui-surface overflow-hidden rounded-3xl border border-border bg-card">
-        <div className="relative aspect-[16/9] bg-secondary sm:aspect-[16/7] md:aspect-[16/6]">
+        <div className={challenge.cover_url ? "relative aspect-[16/9] bg-secondary sm:aspect-[16/7] md:aspect-[16/6]" : "h-2 bg-primary/20"}>
           {challenge.cover_url && <img src={challenge.cover_url} alt={challenge.title} className="w-full h-full object-cover" />}
         </div>
         <div className="space-y-4 p-4 sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="font-heading text-xl font-bold tracking-tight sm:text-2xl">{challenge.title}</h1>
+              <h1 className="break-words font-heading text-xl font-bold tracking-tight sm:text-2xl">{challenge.title}</h1>
               <div className="flex items-center gap-2 mt-1">
                 <Avatar className="w-5 h-5">
                   <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
@@ -219,6 +219,12 @@ export default function ChallengeDetail() {
             <CountdownTimer targetDate={challenge.submission_end_date} label="Submissions close in" />
           )}
 
+          {canSubmit && (
+            <Button onClick={() => user ? setModalOpen(true) : toast.error("Log in to submit a remix.")} className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-accent text-base font-semibold text-white shadow-lg shadow-primary/10">
+              Submit Your Remix
+            </Button>
+          )}
+
           {isHostOrAdmin && (challenge.status === "active" || challenge.status === "voting") && (
             <div className="border-t border-border/50 pt-3">
               {challenge.status === "active" && (
@@ -241,9 +247,9 @@ export default function ChallengeDetail() {
         {challenge.source_track_url ? (
           <div className="flex flex-col gap-3 rounded-2xl bg-secondary/40 p-3 sm:flex-row sm:items-center">
             <audio controls src={challenge.source_track_url} className="h-10 w-full min-w-0 flex-1" />
-            <a className="w-full sm:w-auto" href={challenge.source_track_url} download title="Download source track">
-              <Button className="ui-hover h-11 w-full rounded-xl focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-11" size="icon" variant="ghost" aria-label="Download source track"><Download className="w-4 h-4" /></Button>
-            </a>
+            <Button asChild variant="outline" className="h-11 w-full shrink-0 gap-2 rounded-xl sm:w-auto">
+              <a href={challenge.source_track_url} download><Download className="h-4 w-4" aria-hidden="true" /> Download track</a>
+            </Button>
             <span className="text-xs text-muted-foreground shrink-0 max-w-[120px] truncate">{challenge.source_track_name || "Source Track"}</span>
           </div>
         ) : (
@@ -256,12 +262,6 @@ export default function ChallengeDetail() {
           <h2 className="font-heading font-bold mb-1">Rules</h2>
           <p className="text-sm text-muted-foreground whitespace-pre-line">{challenge.rules}</p>
         </div>
-      )}
-
-      {canSubmit && (
-        <Button onClick={() => user ? setModalOpen(true) : toast.error("Log in to submit a remix.")} className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-accent text-base font-semibold text-white shadow-lg shadow-primary/10">
-          Submit Your Remix
-        </Button>
       )}
 
       <div className="space-y-3">

@@ -14,6 +14,7 @@ export default function SharedFileDownload() {
   const fileId = params.get("id");
   const token = params.get("token");
   const [file, setFile] = useState(null);
+  const [progress, setProgress] = useState(null);
   const [state, setState] = useState("loading");
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function SharedFileDownload() {
 
   const download = async () => {
     if (!file) return;
+    setProgress(null);
     setState("downloading");
     try {
       const refreshUrl = async () => {
@@ -64,7 +66,7 @@ export default function SharedFileDownload() {
         ) throw new Error("Could not refresh download authorization.");
         return refreshed.file_url;
       };
-      await resumableDownload(refreshUrl, file.name || "NaliBase-file");
+      await resumableDownload(refreshUrl, file.name || "NaliBase-file", setProgress);
       setState("ready");
     } catch {
       setState("error");
@@ -72,11 +74,11 @@ export default function SharedFileDownload() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="w-full max-w-lg bg-card border border-border rounded-2xl p-8 text-center shadow-xl">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-6">
+      <div className="w-full min-w-0 max-w-md rounded-2xl border border-border bg-card p-5 text-center shadow-xl sm:p-8">
         {state === "loading" ? (
           <>
-            <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+            <Loader2 className="mx-auto mb-3 h-8 w-8 motion-safe:animate-spin text-primary" />
             <h1 className="text-2xl font-heading font-bold">Loading shared file…</h1>
           </>
         ) : state === "invalid" ? (
@@ -88,20 +90,26 @@ export default function SharedFileDownload() {
         ) : (
           <>
             <ShieldCheck className="w-12 h-12 text-primary mx-auto mb-4" />
-            <h1 className="text-2xl font-heading font-bold mb-2">{file?.name || "Shared file"}</h1>
-            <p className="text-muted-foreground mb-6">Securely shared through NaliBase.</p>
-            <Button onClick={download} disabled={state === "downloading"} className="w-full h-12">
+            <h1 className="mb-2 break-words font-heading text-xl font-bold sm:text-2xl">{file?.name || "Shared file"}</h1>
+            <p className="text-muted-foreground mb-6">Shared through NaliBase.</p>
+            <Button onClick={download} disabled={state === "downloading"} className="h-12 w-full rounded-xl font-semibold">
               {state === "downloading"
                 ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 : <Download className="w-4 h-4 mr-2" />}
-              {state === "downloading" ? "Downloading…" : "Download file"}
+              {state === "downloading" ? "Downloading…" : state === "error" ? "Retry download" : "Download file"}
             </Button>
+            {state === "downloading" && (
+              <div className="mt-3">
+                <progress aria-label="Download progress" max={100} value={progress ?? undefined} className="h-2 w-full accent-primary" />
+                {progress !== null && <p className="mt-1 text-xs tabular-nums text-muted-foreground">{progress}%</p>}
+              </div>
+            )}
             {state === "error" && (
-              <p className="text-sm text-destructive mt-4">Download failed. Please try again.</p>
+              <p role="alert" className="mt-4 text-sm text-destructive">Download failed. You can try again.</p>
             )}
           </>
         )}
       </div>
-    </div>
+    </main>
   );
 }

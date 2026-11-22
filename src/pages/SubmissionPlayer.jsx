@@ -165,18 +165,18 @@ export default function SubmissionPlayer() {
 
   return (
     <div className="mx-auto max-w-xl space-y-5 px-4 py-5 pb-[max(6rem,env(safe-area-inset-bottom))] sm:p-6 sm:space-y-6">
-      <Link to={`/challenge/${challengeId}`} className="ui-hover inline-flex min-h-10 items-center gap-1 rounded-xl px-2 text-sm text-muted-foreground hover:bg-secondary/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40">
+      <Link to={`/challenge/${challengeId}`} className="ui-hover inline-flex min-h-11 items-center gap-1 rounded-xl px-2 text-sm text-muted-foreground hover:bg-secondary/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40">
         <ArrowLeft className="w-4 h-4" /> Back to challenge
       </Link>
 
       <div className="ui-surface space-y-5 rounded-3xl border border-border bg-card p-5 text-center sm:p-6">
         <audio ref={audioRef} src={submission.remix_file_url} preload="none" onEnded={() => setPlaying(false)} />
-        <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-accent shadow-xl shadow-primary/15 sm:h-32 sm:w-32">
-          <Button size="icon" variant="ghost" className="ui-hover h-16 w-16 rounded-2xl text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/70" onClick={togglePlay}>
-            {playing ? <Pause className="w-10 h-10" /> : <Play className="w-10 h-10" />}
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-accent shadow-xl shadow-primary/15 sm:h-32 sm:w-32">
+          <Button size="icon" variant="ghost" className="ui-hover h-14 w-14 rounded-2xl text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/70" aria-label={playing ? "Pause remix" : "Play remix"} onClick={togglePlay}>
+            {playing ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
           </Button>
         </div>
-        <h1 className="font-heading text-xl font-bold">{submission.remix_name}</h1>
+        <h1 className="break-words font-heading text-xl font-bold">{submission.remix_name}</h1>
 
         <Link to={`/profile?id=${submission.producer_id}`} className="ui-hover mx-auto flex min-h-10 w-fit items-center justify-center gap-2 rounded-xl px-2 hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary/40">
           <Avatar className="w-8 h-8"><AvatarImage src={submission.producer_avatar} /><AvatarFallback>{submission.producer_name?.[0] || "?"}</AvatarFallback></Avatar>

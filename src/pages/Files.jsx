@@ -653,9 +653,10 @@ export default function Files() {
 
       <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-6">
         <PullToRefresh onRefresh={handleRefresh}>
-        {showTransfer ? (
+        <div hidden={!showTransfer}>
           <LargeFileTransfer currentUser={currentUser} />
-        ) : isLoading ? (
+        </div>
+        {showTransfer ? null : isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>

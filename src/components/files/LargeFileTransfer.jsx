@@ -244,7 +244,7 @@ function LargeFileTransferContent({ currentUser }) {
               <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Optional transfer details</summary>
               <div className="space-y-3 pb-3">
                 <label className="block text-sm font-medium">Recipient email
-                  <Input type="email" value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} className="mt-1 min-h-11 text-base sm:text-sm" />
+                  <Input inputMode="email" autoComplete="email" value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} className="mt-1 min-h-11 text-base sm:text-sm" />
                   <span className="mt-1 block text-xs font-normal text-muted-foreground">For reference. NaliBase does not email the link automatically.</span>
                 </label>
                 <label className="block text-sm font-medium">File description

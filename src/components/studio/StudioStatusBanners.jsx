@@ -1,25 +1,25 @@
-import { Music } from "lucide-react";
+import { Gauge, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-/**
- * Status banners shown above the Studio toolbar: low-end performance notice,
- * view-only collaborator notice, and the Premium upgrade prompt.
- * Extracted from Studio.jsx to keep that file manageable.
- */
+export function StudioPerformanceNotice() {
+  return (
+    <div className="relative mx-2 mt-1.5 flex min-w-0 shrink-0 items-start gap-2 self-start rounded-lg border border-amber-500/35 bg-amber-500/10 px-2.5 py-1 text-xs text-foreground sm:mx-3" role="status">
+      <Gauge className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" aria-hidden="true" />
+      <p>
+        <span className="font-semibold">Performance Mode</span>
+        {" · "}
+        <span className="text-muted-foreground">Simplified waveforms</span>
+      </p>
+    </div>
+  );
+}
 export default function StudioStatusBanners({
-  isLowEnd,
   isViewOnly,
   showUpgradeBanner,
   onUpgradeClick,
 }) {
   return (
     <>
-      {isLowEnd && (
-        <div className="studio-mobile-performance-banner absolute top-2 left-1/2 -translate-x-1/2 z-30 px-4 py-1.5 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-xs font-medium backdrop-blur-md whitespace-nowrap">
-          ⚠ Performance Mode: Reduced waveform quality for smoother experience
-        </div>
-      )}
-
       {isViewOnly && (
         <div
           role="status"

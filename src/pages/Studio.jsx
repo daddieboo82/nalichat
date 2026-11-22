@@ -21,7 +21,7 @@ import { useStudioMobileViewport } from '@/hooks/useStudioMobileViewport';
 import '@/styles/studioMobileOrientation.css';
 import { usePerformance } from '@/hooks/use-performance';
 import { useSubscription } from '@/hooks/useSubscription';
-import StudioStatusBanners from '@/components/studio/StudioStatusBanners';
+import StudioStatusBanners, { StudioPerformanceNotice } from '@/components/studio/StudioStatusBanners';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderTunedVocal, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
@@ -3863,7 +3863,6 @@ export default function Studio() {
       </div>
 
       <StudioStatusBanners
-        isLowEnd={isLowEnd}
         isViewOnly={Boolean(roomId) && !projectLoading && !canEditProject}
         showUpgradeBanner={!subscriptionLoading && !hasPaidAccess}
         onUpgradeClick={() => {
@@ -4101,6 +4100,8 @@ export default function Studio() {
           </div>
         </div>
       </div>
+
+      {isLowEnd && <StudioPerformanceNotice />}
 
       {/* Inputs stay mounted outside hidden desktop toolbars for iOS file picking. */}
       <input type="file" ref={fileInputRef} className="sr-only" tabIndex={-1} multiple accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} aria-label="Import Studio audio" />

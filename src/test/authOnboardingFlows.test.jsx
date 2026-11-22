@@ -429,7 +429,16 @@ describe('auth and onboarding flows', () => {
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'user@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send reset link' }));
 
-    await screen.findByText(/If an account exists with that email/);
+    const status = await screen.findByRole('status');
+    expect(status.textContent).toContain('If an account exists for user@example.com');
+    fireEvent.click(screen.getByRole('button', { name: 'Edit email address' }));
+    const email = screen.getByLabelText('Email address');
+    expect(email.value).toBe('user@example.com');
+    expect(mockBase44.auth.resetPasswordRequest).toHaveBeenCalledTimes(1);
+    fireEvent.change(email, { target: { value: 'correct@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send reset link' }));
+    await screen.findByText('correct@example.com');
+    expect(mockBase44.auth.resetPasswordRequest).toHaveBeenLastCalledWith('correct@example.com');
   });
 
   it('renders the invalid reset-token recovery state', () => {

@@ -2495,7 +2495,7 @@ describe('onboarding auth refresh contract', () => {
     expect(source).toContain('const refreshedUser = await checkUserAuth()');
     expect(source).toContain('refreshedUser.id !== submittingUserId');
     expect(source).toContain('refreshedUser.onboarding_completed !== true');
-    expect(source).toContain('your session did not refresh');
+    expect(source).toContain('Your profile is saved. Select Continue to retry opening NaliBase.');
   });
 });
 

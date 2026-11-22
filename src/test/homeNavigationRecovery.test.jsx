@@ -239,6 +239,25 @@ describe('home, navigation, and recovery flows', () => {
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/'));
   });
 
+  it.each([
+    [0, 'Home destination'],
+    [1, 'Previous app page'],
+  ])('uses the in-app history depth %i for the mobile Back button', async (idx, expected) => {
+    const previousState = window.history.state;
+    window.history.replaceState({ idx }, '');
+    try {
+      renderWithProviders(<Routes>
+        <Route path="/" element={<div>Home destination</div>} />
+        <Route path="/explore" element={<div>Previous app page</div>} />
+        <Route path="/pricing" element={<MobileHeader />} />
+      </Routes>, ['/explore', '/pricing?source=shared']);
+      fireEvent.click(screen.getByRole('button', { name: 'Back', exact: true }));
+      await screen.findByText(expected);
+    } finally {
+      window.history.replaceState(previousState, '');
+    }
+  });
+
   it('shows the mobile header menu and anonymous login affordance', async () => {
     renderWithProviders(
       <Routes>

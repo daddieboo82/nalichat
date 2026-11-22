@@ -87,10 +87,10 @@ export default function MobileHeader() {
   const handleBack = () => {
     if (location.state?.from) {
       navigate(location.state.from);
-    } else if (window.history.length > 1) {
+    } else if (window.history.state?.idx > 0) {
       navigate(-1);
     } else {
-      navigate("/");
+      navigate("/", { replace: true });
     }
   };
 

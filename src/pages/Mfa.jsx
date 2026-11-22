@@ -55,7 +55,7 @@ export default function Mfa() {
 
 // Changing two-factor settings starts with a fresh sign-in, then a code from an enrolled method.
 function ConfirmIdentity({ returnTo, onChallenge, initialError }) {
-  const info = useAppInfo();
+  const { info, failed, retry } = useAppInfo();
   const options = info ? info.auth_config || {} : null;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -81,7 +81,13 @@ function ConfirmIdentity({ returnTo, onChallenge, initialError }) {
     <>
       <MfaHeader title="Two-step verification" description="Sign in to manage your verification methods." />
       <MfaNotice error={error} />
-      {!options && !error && <Loader2 className="mx-auto w-6 h-6 animate-spin text-muted-foreground" />}
+      {failed && (
+        <div className="space-y-3">
+          <p role="alert" className="text-center text-sm text-muted-foreground">Couldn’t load sign-in options.</p>
+          <Button type="button" onClick={retry} variant="outline" className="w-full h-12">Try again</Button>
+        </div>
+      )}
+      {!options && !failed && <p role="status" className="text-center text-sm text-muted-foreground">Loading sign-in options…</p>}
       {options && (
         <div className="space-y-4">
           {providers.map((provider) => (

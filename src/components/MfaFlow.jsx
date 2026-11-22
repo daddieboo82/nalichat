@@ -25,11 +25,11 @@ export default function MfaFlow({ challenge, returnTo, onManage }) {
 
 function Enroll({ session, onDone }) {
   const [method, setMethod] = useState(null);
-  const info = useAppInfo();
+  const { info, failed } = useAppInfo();
   return (
     <>
       <MfaHeader
-        title={info && `${info.name || "This app"} requires multi-factor authentication`}
+        title={failed ? "Two-step verification" : info && `${info.name || "This app"} requires multi-factor authentication`}
         description={method ? null : "Add a second sign-in step to keep your account secure. Choose how you want to get your codes."}
       />
       {method ? (

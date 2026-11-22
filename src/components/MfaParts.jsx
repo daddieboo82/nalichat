@@ -12,16 +12,26 @@ import { safeReturnTo } from "@/lib/authReturnTo";
 
 // Building blocks shared by MfaFlow, MfaMethodSetup and MfaManage.
 
-let appInfo;
-
-// The app's name and sign-in settings, as login-info reports them.
 export function useAppInfo() {
   const [info, setInfo] = useState(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
-    appInfo ||= loadSignInOptions().catch(() => ({}));
-    appInfo.then((value) => setInfo(value || {}));
-  }, []);
-  return info;
+    let active = true;
+    loadSignInOptions().then(
+      (result) => { if (active) setInfo(result || {}); },
+      () => { if (active) setFailed(true); },
+    );
+    return () => { active = false; };
+  }, [attempt]);
+
+  function retry() {
+    setFailed(false);
+    setAttempt((previous) => previous + 1);
+  }
+
+  return { info, failed, retry };
 }
 
 // A whole page holding one MFA card. MfaFlow and MfaManage are card content, so a page that

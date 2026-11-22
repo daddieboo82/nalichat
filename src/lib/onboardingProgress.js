@@ -7,6 +7,12 @@ export const onboardingStages = [
   ["onboarding_complete", "Completed setup"],
 ];
 
+export const onboardingValidationReasons = [
+  ["missing_display_name", "Missing display name"],
+  ["invalid_birthdate", "Invalid birthdate"],
+  ["other", "Other or unspecified"],
+];
+
 const stageOrder = new Map(onboardingStages.map(([name], index) => [name, index]));
 
 export function summarizeOnboardingProgress(events) {
@@ -26,11 +32,18 @@ export function summarizeOnboardingProgress(events) {
     const sameTimeLaterStage = previous && timestamp === previous.timestamp &&
       stageOrder.get(event.event_name) > stageOrder.get(previous.name);
     if (completed || newer || sameTimeLaterStage) {
-      latestByAccount.set(event.user_id, { name: event.event_name, timestamp });
+      latestByAccount.set(event.user_id, { name: event.event_name, timestamp, reason: event.metadata?.reason });
     }
   }
 
   const counts = Object.fromEntries(onboardingStages.map(([name]) => [name, 0]));
-  for (const { name } of latestByAccount.values()) counts[name] += 1;
-  return { counts, accounts: latestByAccount.size, unlinkedEvents };
+  const validationCounts = { missing_display_name: 0, invalid_birthdate: 0, other: 0 };
+  for (const { name, reason } of latestByAccount.values()) {
+    counts[name] += 1;
+    if (name === "onboarding_validation_blocked") {
+      const key = Object.hasOwn(validationCounts, reason) ? reason : "other";
+      validationCounts[key] += 1;
+    }
+  }
+  return { counts, validationCounts, accounts: latestByAccount.size, unlinkedEvents };
 }

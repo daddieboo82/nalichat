@@ -28,4 +28,22 @@ describe("onboarding progress", () => {
       onboarding_complete: 1,
     });
   });
+  it("breaks down the latest validation blocks and excludes recovered accounts", () => {
+    const blocked = (id, reason) => ({
+      ...event("onboarding_validation_blocked", id, "09"),
+      metadata: { reason },
+    });
+    const result = summarizeOnboardingProgress([
+      blocked("missing", "missing_display_name"),
+      blocked("invalid", "invalid_birthdate"),
+      blocked("unknown", "unexpected_value"),
+      blocked("recovered", "invalid_birthdate"),
+      event("onboarding_complete", "recovered", "10"),
+    ]);
+    expect(result.validationCounts).toEqual({
+      missing_display_name: 1,
+      invalid_birthdate: 1,
+      other: 1,
+    });
+  });
 });

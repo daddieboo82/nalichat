@@ -8,7 +8,7 @@ import { TrendingUp, Eye, Heart, Music, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getLikeCount } from "@/lib/engagement";
 import { useAuth } from "@/lib/AuthContext";
-import { onboardingStages, summarizeOnboardingProgress } from "@/lib/onboardingProgress";
+import { onboardingStages, onboardingValidationReasons, summarizeOnboardingProgress } from "@/lib/onboardingProgress";
 import { summarizeVisitorRetention } from "@/lib/visitorRetentionSummary";
 
 async function listAllFunnelEvents() {
@@ -582,6 +582,19 @@ export default function Analytics() {
                       </div>
                     ))}
                   </dl>
+                  <h4 className="mt-4 text-xs font-semibold">Reasons for the last validation block</h4>
+                  {onboardingProgress.counts.onboarding_validation_blocked > 0 ? (
+                    <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+                      {onboardingValidationReasons.map(([reason, label]) => (
+                        <div key={reason} className="flex items-center gap-2">
+                          <dt>{label}</dt>
+                          <dd className="font-semibold tabular-nums text-foreground">{onboardingProgress.validationCounts[reason]}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">No accounts ended on a recorded validation block in this period.</p>
+                  )}
                 </>
               )}
               <h3 className="mt-5 font-heading text-sm font-semibold">Creator challenge</h3>

@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight, Play, Pause, Share2, Edit, MessageSquare, Sparkles } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight, Play, Pause, Share2, Edit, MessageSquare, MoreHorizontal } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -157,6 +157,7 @@ export default function Files() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [showTransfer, setShowTransfer] = useState(false);
   const [uploading, setUploading] = useState(false);
   const { user: currentUser } = useAuth();
   const [selectedIds, setSelectedIds] = useState([]);
@@ -189,6 +190,7 @@ export default function Files() {
     setEditFormData({ name: "", tags: "", description: "" });
     setSearch("");
     setTypeFilter("all");
+    setShowTransfer(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [currentUser?.id]);
 
@@ -537,86 +539,68 @@ export default function Files() {
   return (
     <div className="nali-workspace nali-files flex h-full flex-col bg-background">
       <div className="nali-workspace-header px-4 pt-5 sm:px-6 sm:pt-6">
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-heading font-bold">Files</h1>
-            <p className="text-sm text-muted-foreground">Your creative transfer hub — upload once, share anywhere.</p>
-          </div>
-          {typeFilter !== "transfer" && (
-            <div className="flex flex-wrap items-center gap-2">
-              {uploading && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
-              <Button
-                className="ui-hover min-h-11 flex-1 rounded-xl bg-primary font-semibold text-primary-foreground shadow-lg shadow-primary/10 hover:bg-primary/90 sm:flex-none"
-                onClick={() => setShowUploadModal(true)}
-                disabled={uploading}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Files
+        <header className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="font-heading text-2xl font-bold">Files</h1>
+          {!showTransfer && (
+            <div className="flex items-center gap-2">
+              <Button className="min-h-11 rounded-xl font-semibold" onClick={() => setShowUploadModal(true)} disabled={uploading}>
+                {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                Upload files
               </Button>
-              <Button
-                variant="default"
-                size="sm"
-                className="ui-hover min-h-11 flex-1 rounded-xl bg-gradient-to-r from-primary to-accent font-semibold text-primary-foreground transition-all hover:opacity-90 sm:flex-none"
-                onClick={() => navigate('/explore?upload=true')}
-                title="Publish Track to Explore"
-              >
-                Publish Track
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="outline" size="icon" className="h-11 w-11 rounded-xl" aria-label="More file actions">
+                    <MoreHorizontal className="h-5 w-5" aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => setShowNewFolder(true)}><Plus className="mr-2 h-4 w-4" /> New folder</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate("/explore?upload=true")}><Music className="mr-2 h-4 w-4" /> Publish track</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate("/messages")}><MessageSquare className="mr-2 h-4 w-4" /> Share in Messages</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
-        </div>
+        </header>
 
-                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <button type="button" onClick={() => setShowUploadModal(true)} className="group rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/15 to-primary/5 p-4 text-left transition hover:border-primary/40 hover:-translate-y-0.5">
-            <div className="mb-2 flex items-center gap-2 text-primary"><Upload className="h-4 w-4"/><span className="text-sm font-bold">Send a file</span></div>
-            <p className="text-xs leading-relaxed text-muted-foreground">Upload audio, video, artwork, documents, or full session files.</p>
-          </button>
-          <button type="button" onClick={() => setTypeFilter('transfer')} className="group rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/15 to-accent/5 p-4 text-left transition hover:border-accent/40 hover:-translate-y-0.5">
-            <div className="mb-2 flex items-center gap-2 text-accent"><Sparkles className="h-4 w-4"/><span className="text-sm font-bold">Large transfer</span></div>
-            <p className="text-xs leading-relaxed text-muted-foreground">Move large creative files with a dedicated transfer workflow.</p>
-          </button>
-          <button type="button" onClick={() => navigate('/messages')} className="group rounded-2xl border border-chart-3/20 bg-gradient-to-br from-chart-3/15 to-chart-3/5 p-4 text-left transition hover:border-chart-3/40 hover:-translate-y-0.5">
-            <div className="mb-2 flex items-center gap-2 text-chart-3"><MessageSquare className="h-4 w-4"/><span className="text-sm font-bold">Share in Messages</span></div>
-            <p className="text-xs leading-relaxed text-muted-foreground">Jump into a conversation and attach files directly to your collaboration.</p>
-          </button>
+        <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-secondary/60 p-1 sm:w-fit" role="group" aria-label="Files view">
+          <Button type="button" variant={!showTransfer ? "secondary" : "ghost"} aria-pressed={!showTransfer} className="min-h-11 rounded-lg px-4" onClick={() => setShowTransfer(false)}>My files</Button>
+          <Button type="button" variant={showTransfer ? "secondary" : "ghost"} aria-pressed={showTransfer} className="min-h-11 rounded-lg px-4" onClick={() => setShowTransfer(true)}>Large transfer</Button>
         </div>
-<div className="mb-5 flex flex-wrap items-center gap-2 sm:gap-4">
-          {typeFilter !== "transfer" && (
-            <>
-              <Button 
-                variant={selectedIds.length > 0 && selectedIds.length === filtered.length ? "default" : "outline"} 
-                size="icon" 
-                className="rounded-xl shrink-0" 
-                onClick={() => {
-                  if (selectedIds.length === filtered.length && filtered.length > 0) {
-                    setSelectedIds([]);
-                  } else {
-                    setSelectedIds(filtered.map(f => f.id));
-                  }
-                }}
-                title={selectedIds.length === filtered.length ? "Deselect All" : "Select All"}
-              >
-                <CheckSquare className="w-4 h-4" />
-              </Button>
-              <div className="relative min-w-0 flex-1 sm:max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Search files..." value={search} onChange={e => setSearch(e.target.value)} className="nali-search-input h-11 rounded-xl border border-border/50 bg-secondary/40 pl-9 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
-              </div>
-            </>
-          )}
-          <Tabs value={typeFilter} onValueChange={setTypeFilter} className={typeFilter === "transfer" ? "w-full min-w-0 sm:ml-auto sm:w-auto" : "w-full min-w-0 sm:w-auto"}>
-            <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl bg-secondary/50 p-1 min-[420px]:grid-cols-6 sm:w-auto [&>button]:min-h-11 [&>button]:min-w-0 [&>button]:px-1">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="audio">Audio</TabsTrigger>
-              <TabsTrigger value="image">Images</TabsTrigger>
-              <TabsTrigger value="session">Sessions</TabsTrigger>
-              <TabsTrigger value="video">Video</TabsTrigger>
-              <TabsTrigger value="transfer" className="text-primary font-bold">Transfer</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+        {!showTransfer && (
+          <div className="mb-4 flex items-center gap-2">
+            <div className="relative min-w-0 flex-1 sm:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input type="search" aria-label="Search files" placeholder="Search files…" value={search} onChange={e => setSearch(e.target.value)} className="nali-search-input h-11 rounded-xl border-border bg-background pl-9 text-base sm:text-sm" />
+            </div>
+            <select aria-label="Filter by file type" value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="min-h-11 max-w-[42%] rounded-xl border border-border bg-background px-2 text-base sm:px-3 sm:text-sm">
+              <option value="all">All types</option>
+              <option value="audio">Audio</option>
+              <option value="image">Images</option>
+              <option value="session">Sessions</option>
+              <option value="video">Video</option>
+              <option value="document">Documents</option>
+            </select>
+            <Button
+              type="button"
+              variant={filtered.length > 0 && filtered.every(file => selectedIds.includes(file.id)) ? "default" : "outline"}
+              size="icon"
+              className="h-11 w-11 shrink-0 rounded-xl"
+              disabled={filtered.length === 0}
+              aria-label={filtered.length > 0 && filtered.every(file => selectedIds.includes(file.id)) ? "Clear visible selection" : "Select all visible files"}
+              onClick={() => {
+                const visibleIds = new Set(filtered.map(file => file.id));
+                setSelectedIds(ids => filtered.every(file => ids.includes(file.id))
+                  ? ids.filter(id => !visibleIds.has(id))
+                  : [...new Set([...ids, ...visibleIds])]);
+              }}
+            >
+              <CheckSquare className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </div>
+        )}
 
-        {selectedIds.length > 0 && (
+        {!showTransfer && selectedIds.length > 0 && (
           <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/10 p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm font-medium text-primary">
               <CheckSquare className="w-4 h-4" />
@@ -645,13 +629,13 @@ export default function Files() {
           </div>
         )}
 
-        {typeFilter !== "transfer" && currentFolder && (
+        {!showTransfer && currentFolder && (
           <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-secondary/50 border border-border">
             <Button size="sm" variant="ghost" className="rounded-lg" onClick={() => setCurrentFolderId(null)}>
               <ChevronRight className="w-4 h-4 rotate-180 mr-1" /> Back
             </Button>
             <FolderOpen className="w-4 h-4 text-accent" />
-            <span className="font-medium text-sm flex-1">{currentFolder.name}</span>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">{currentFolder.name}</span>
             <Button 
               size="icon"
               variant="ghost"
@@ -663,23 +647,11 @@ export default function Files() {
           </div>
         )}
 
-        {typeFilter !== "transfer" && (
-          <div className="flex items-center gap-2 mb-4">
-            <Button 
-              size="sm"
-              variant="outline"
-              className="rounded-lg"
-              onClick={() => setShowNewFolder(true)}
-            >
-              <Plus className="w-4 h-4 mr-1" /> New Folder
-            </Button>
-          </div>
-        )}
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-6">
         <PullToRefresh onRefresh={handleRefresh}>
-        {typeFilter === "transfer" ? (
+        {showTransfer ? (
           <LargeFileTransfer currentUser={currentUser} />
         ) : isLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -706,7 +678,7 @@ export default function Files() {
               <>
                 <FolderOpen className="w-12 h-12 opacity-30 mx-auto mb-3" />
                 <p className="font-heading text-lg">No files yet</p>
-                <p className="text-sm mt-1">{currentFolder ? `Upload files to ${currentFolder.name}` : "Upload your first file to get started"}</p>
+                <p className="mt-1 text-sm">{typeFilter === "all" ? (currentFolder ? `Upload files to ${currentFolder.name}` : "Upload your first file to get started") : "Try another file type."}</p>
               </>
             )}
           </div>
@@ -715,12 +687,13 @@ export default function Files() {
             {filteredFolders.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {filteredFolders.map((folder, i) => (
-                  <motion.div
+                  <motion.button
+                    type="button"
                     key={folder.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className="ui-surface ui-hover group cursor-pointer rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl hover:border-border hover:bg-card/70"
+                    className="ui-surface ui-hover group min-w-0 cursor-pointer rounded-2xl text-left focus-visible:ring-2 focus-visible:ring-primary border border-border/60 bg-card/50 p-4 backdrop-blur-xl hover:border-border hover:bg-card/70"
                     onClick={() => setCurrentFolderId(folder.id)}
                   >
                     <div className="flex items-start gap-3">
@@ -735,7 +708,7 @@ export default function Files() {
                         </p>
                       </div>
                     </div>
-                  </motion.div>
+                  </motion.button>
                 ))}
               </div>
             )}
@@ -754,8 +727,9 @@ export default function Files() {
                       transition={{ delay: i * 0.03 }}
                       className={`ui-surface group rounded-2xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-border/60 hover:border-border hover:bg-card/70"}`}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:gap-3">
                         <Checkbox
+                          aria-label={`Select ${file.name}`}
                           checked={isSelected}
                           onCheckedChange={() => toggleSelect(file.id)}
                           className="mt-1 shrink-0"
@@ -763,7 +737,7 @@ export default function Files() {
                         <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${typeColors[file.file_type] || typeColors.other}`}>
                           <Icon className="w-5 h-5" />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1 basis-1/2 sm:basis-auto">
                           <p className="font-medium text-sm truncate">{file.name}</p>
                           {(file.tags && file.tags.length > 0) && (
                             <div className="flex flex-wrap gap-1 mt-1">
@@ -803,15 +777,15 @@ export default function Files() {
                             </Button>
                           )}
                         </div>
-                        <div className="flex max-w-[96px] flex-wrap justify-end gap-1 opacity-100 transition-opacity sm:max-w-none sm:opacity-60 sm:group-hover:opacity-100">
+                        <div className="flex w-full flex-wrap justify-end gap-1 border-t border-border/50 pt-1 sm:w-auto sm:border-0 sm:pt-0">
                           <FileShareButton file={file} canShare={canEditFile} currentUserId={currentUser?.id} />
                           <FileDownloadButton file={file} />
                           {canEditFile && (
                             <>
-                              <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl focus-visible:ring-2 focus-visible:ring-primary/40" onClick={(e) => handleEditClick(e, file)}>
+                              <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl focus-visible:ring-2 focus-visible:ring-primary/40" aria-label="Edit file" onClick={(e) => handleEditClick(e, file)}>
                                 <Edit className="w-3.5 h-3.5" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
+                              <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30" aria-label="Delete file" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </>
@@ -838,9 +812,10 @@ export default function Files() {
                   transition={{ delay: i * 0.03 }}
                   className={`ui-surface group rounded-2xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-border/60 hover:border-border hover:bg-card/70"}`}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:gap-3">
                     <Checkbox
-                      checked={isSelected}
+                      aria-label={`Select ${file.name}`}
+                          checked={isSelected}
                       disabled={!canEditFile}
                       onCheckedChange={() => canEditFile && toggleSelect(file.id)}
                       className="mt-1 shrink-0"
@@ -848,7 +823,7 @@ export default function Files() {
                     <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${typeColors[file.file_type] || typeColors.other}`}>
                       <Icon className="w-5 h-5" />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1 basis-1/2 sm:basis-auto">
                       <p className="font-medium text-sm truncate">{file.name}</p>
                       {(file.tags && file.tags.length > 0) && (
                         <div className="flex flex-wrap gap-1 mt-1">
@@ -888,15 +863,15 @@ export default function Files() {
                         </Button>
                       )}
                     </div>
-                    <div className="flex max-w-[96px] flex-wrap justify-end gap-1 opacity-100 transition-opacity sm:max-w-none sm:opacity-60 sm:group-hover:opacity-100">
+                    <div className="flex w-full flex-wrap justify-end gap-1 border-t border-border/50 pt-1 sm:w-auto sm:border-0 sm:pt-0">
                       <FileShareButton file={file} canShare={canEditFile} currentUserId={currentUser?.id} />
                       <FileDownloadButton file={file} />
                       {canEditFile && (
                         <>
-                          <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl focus-visible:ring-2 focus-visible:ring-primary/40" onClick={(e) => handleEditClick(e, file)}>
+                          <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl focus-visible:ring-2 focus-visible:ring-primary/40" aria-label="Edit file" onClick={(e) => handleEditClick(e, file)}>
                             <Edit className="w-3.5 h-3.5" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
+                          <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30" aria-label="Delete file" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </>

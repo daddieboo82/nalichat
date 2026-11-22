@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, CheckCircle2, Music, UserRound, MapPin, CalendarDays, MessageSquare, Files, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, Music, UserRound, MapPin, CalendarDays, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import OnboardingNaliGuide from "@/components/onboarding/OnboardingNaliGuide";
 import { trackProductEvent } from "@/lib/productAnalytics";
@@ -23,6 +23,7 @@ export default function Onboarding() {
   });
   const [formOwnerId, setFormOwnerId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showOptionalDetails, setShowOptionalDetails] = useState(false);
   const [fieldError, setFieldError] = useState(null);
   const displayNameInput = useRef(null);
   const birthdateInput = useRef(null);
@@ -180,7 +181,7 @@ export default function Onboarding() {
             Welcome back. Finish your profile below whenever you’re ready.
           </p>
         )}
-        <div className="mb-5" aria-label="Profile setup progress"><div className="mb-2 flex items-center justify-between text-xs font-medium text-muted-foreground"><span>Profile setup</span><span>One quick step</span></div><div className="h-1.5 overflow-hidden rounded-full bg-primary/15"><div className="h-full w-full rounded-full bg-primary" /></div></div><div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="What you can do after setup">{[[MessageSquare,"Message"],[Music,"Create"],[Files,"Share files"],[Sparkles,"Use AI"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-secondary/20 px-2 py-2 text-center text-[11px] font-semibold text-muted-foreground"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" aria-hidden="true" />{label}</div>)}</div><div className="space-y-4">
+        <div className="space-y-4">
           <div className="space-y-1.5">
             <label htmlFor="setup-display-name" className="flex items-center gap-2 text-sm font-semibold"><UserRound className="h-4 w-4 text-primary" aria-hidden="true" />Display Name <span className="text-primary">*</span></label>
             <Input
@@ -197,51 +198,60 @@ export default function Onboarding() {
           {fieldError?.field === "display_name" && (
             <p id="setup-display-name-error" role="alert" className="text-sm text-destructive">{fieldError.message}</p>
           )}
-          {!validationRecovery && (
-            <Button type="button" variant="outline" disabled={loading} className="min-h-11 w-full" onClick={() => handleSave(true)}>
-              Continue with display name only
-            </Button>
-          )}
-          <div className="space-y-1.5">
-            <label htmlFor="setup-birthdate" className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />Birthdate <span className="font-normal text-muted-foreground">(optional)</span></label>
-            <Input
-              id="setup-birthdate"
-              ref={birthdateInput}
-              aria-invalid={fieldError?.field === "birthdate"}
-              aria-describedby={fieldError?.field === "birthdate" ? "setup-birthdate-error" : undefined}
-              type="date"
-              value={form.birthdate}
-              onChange={(e) => { markOnboardingInteraction(); setFieldError(error => error?.field === "birthdate" ? null : error); setForm(f => ({ ...f, birthdate: e.target.value })); }}
-            className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
+          <button
+            type="button"
+            aria-expanded={showOptionalDetails}
+            aria-controls="setup-optional-details"
+            disabled={loading}
+            onClick={() => setShowOptionalDetails(open => !open)}
+            className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-border/70 px-3 text-left text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            Optional profile details
+            <ChevronDown aria-hidden="true" className={showOptionalDetails ? "h-4 w-4 rotate-180" : "h-4 w-4"} />
+          </button>
+          <div id="setup-optional-details" hidden={!showOptionalDetails} className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="setup-birthdate" className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />Birthdate <span className="font-normal text-muted-foreground">(optional)</span></label>
+              <Input
+                id="setup-birthdate"
+                ref={birthdateInput}
+                aria-invalid={fieldError?.field === "birthdate"}
+                aria-describedby={fieldError?.field === "birthdate" ? "setup-birthdate-error" : undefined}
+                type="date"
+                value={form.birthdate}
+                onChange={(e) => { markOnboardingInteraction(); setFieldError(error => error?.field === "birthdate" ? null : error); setForm(f => ({ ...f, birthdate: e.target.value })); }}
+              className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
+            </div>
+            {fieldError?.field === "birthdate" && (
+              <p id="setup-birthdate-error" role="alert" className="text-sm text-destructive">{fieldError.message}</p>
+            )}
+            <div className="space-y-1.5">
+              <label htmlFor="setup-bio" className="text-sm font-semibold">Bio <span className="font-normal text-muted-foreground">(optional)</span></label>
+              <Textarea
+                id="setup-bio"
+                value={form.bio}
+                onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, bio: e.target.value })); }}
+                placeholder="A short bio about your music (optional)"
+                rows={3}
+              className="min-h-[88px] resize-y rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="setup-location" className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-primary" aria-hidden="true" />Location <span className="font-normal text-muted-foreground">(optional)</span></label>
+              <Input
+                id="setup-location"
+                value={form.location}
+                onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, location: e.target.value })); }}
+                placeholder="City, Country"
+              className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
+            </div>
           </div>
-          {fieldError?.field === "birthdate" && (
-            <p id="setup-birthdate-error" role="alert" className="text-sm text-destructive">{fieldError.message}</p>
-          )}
-          <div className="space-y-1.5">
-            <label htmlFor="setup-bio" className="text-sm font-semibold">Bio <span className="font-normal text-muted-foreground">(optional)</span></label>
-            <Textarea
-              id="setup-bio"
-              value={form.bio}
-              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, bio: e.target.value })); }}
-              placeholder="A short bio about your music (optional)"
-              rows={3}
-            className="min-h-[88px] resize-y rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor="setup-location" className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-primary" aria-hidden="true" />Location <span className="font-normal text-muted-foreground">(optional)</span></label>
-            <Input
-              id="setup-location"
-              value={form.location}
-              onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, location: e.target.value })); }}
-              placeholder="City, Country"
-            className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
-          </div>
-          <p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Only your display name is required. Birthdate, bio, and location are optional and can be added later in Settings.</p>{validationRecovery && (
+          {showOptionalDetails && validationRecovery && (
             <div role="alert" className="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
               <p>Profile details were not accepted. You can try again with only your required display name. Optional information will not be saved in that attempt.</p>
               <Button type="button" variant="outline" disabled={loading} className="min-h-11 w-full" onClick={() => handleSave(true)}>Finish with display name only</Button>
             </div>
-          )}<Button onClick={() => handleSave(false)} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
+          )}
+          <Button onClick={() => handleSave(!showOptionalDetails)} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
             {loading ? "Saving..." : "Enter NaliBase"}
           </Button>

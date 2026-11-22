@@ -295,6 +295,8 @@ describe('auth and onboarding flows', () => {
 
     const { container } = renderInRouter(<Onboarding />);
     fireEvent.change(screen.getByPlaceholderText('What should we call you?'), { target: { value: 'Fresh Artist' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Optional profile details' }));
+    expect(screen.getByRole('button', { name: 'Optional profile details' }).getAttribute('aria-expanded')).toBe('true');
     fireEvent.change(container.querySelector('input[type="date"]'), { target: { value: '2000-01-01' } });
     fireEvent.change(screen.getByPlaceholderText('A short bio about your music (optional)'), { target: { value: 'Hello world' } });
     fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
@@ -352,6 +354,7 @@ describe('auth and onboarding flows', () => {
       } });
     const { container } = renderInRouter(<Onboarding />);
     fireEvent.change(screen.getByPlaceholderText('What should we call you?'), { target: { value: 'Artist One' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Optional profile details' }));
     fireEvent.change(screen.getByPlaceholderText('A short bio about your music (optional)'), { target: { value: 'Unsaved optional bio' } });
     fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
     await screen.findByRole('button', { name: 'Finish with display name only' });

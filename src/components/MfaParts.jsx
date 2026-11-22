@@ -28,8 +28,8 @@ export function useAppInfo() {
 // shows them returns <MfaScreen> in place of its own layout instead of nesting them in its card.
 export function MfaScreen({ children }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
-      <div className="w-full max-w-md bg-card rounded-2xl shadow-sm border border-border p-8">{children}</div>
+    <div className="min-h-screen flex items-center justify-center bg-background px-3 py-4 sm:px-4 sm:py-8">
+      <div className="w-full max-w-md bg-card rounded-2xl shadow-sm border border-border p-4 sm:p-8">{children}</div>
     </div>
   );
 }
@@ -38,8 +38,8 @@ export function MfaScreen({ children }) {
 // name is null until it loads, so the right text appears once instead of replacing a placeholder.
 export function MfaHeader({ title, description }) {
   return (
-    <div className="flex flex-col items-center text-center mb-6">
-      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
+    <div className="flex flex-col items-center text-center mb-4 sm:mb-6">
+      <div className="inline-flex items-center justify-center w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-primary mb-3 sm:mb-4">
         <ShieldCheck className="w-7 h-7 text-primary-foreground" aria-hidden="true" />
       </div>
       <h1 className="text-2xl font-bold tracking-tight text-foreground min-h-[2rem]">{title}</h1>
@@ -54,7 +54,7 @@ export function CodeField({ id, label = "Enter the 6-digit code", value, onChang
   return (
     <div className="space-y-2">
       <Label htmlFor={id} className="block text-center font-normal text-muted-foreground">{label}</Label>
-      <InputOTP id={id} maxLength={6} value={value} autoFocus autoComplete="one-time-code" containerClassName="justify-center"
+      <InputOTP id={id} maxLength={6} inputMode="numeric" aria-invalid={hasError} value={value} autoFocus autoComplete="one-time-code" containerClassName="justify-center"
         onChange={(next) => { onChange(next); if (next.length === 6) onComplete?.(next); }}
         onKeyDown={(e) => { if (e.key === "Enter" && onComplete) { e.preventDefault(); onComplete(value); } }}>
         <InputOTPGroup>
@@ -76,7 +76,7 @@ export function ResendLine({ cooldown, disabled, onResend, error }) {
         {cooldown > 0 ? (
           <span>Resend in {cooldown}s</span>
         ) : (
-          <button type="button" disabled={disabled} onClick={onResend} className="font-semibold text-foreground hover:underline disabled:opacity-50">
+          <button type="button" disabled={disabled} onClick={onResend} className="min-h-11 px-2 font-semibold text-foreground hover:underline disabled:opacity-50">
             Resend
           </button>
         )}

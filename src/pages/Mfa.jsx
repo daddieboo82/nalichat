@@ -79,7 +79,7 @@ function ConfirmIdentity({ returnTo, onChallenge, initialError }) {
 
   return (
     <>
-      <MfaHeader title={info && `Welcome to ${info.name || "the app"}`} description="Sign in to continue" />
+      <MfaHeader title="Two-step verification" description="Sign in to manage your verification methods." />
       <MfaNotice error={error} />
       {!options && !error && <Loader2 className="mx-auto w-6 h-6 animate-spin text-muted-foreground" />}
       {options && (
@@ -101,7 +101,7 @@ function ConfirmIdentity({ returnTo, onChallenge, initialError }) {
                 <Label htmlFor="mfa-email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                  <Input id="mfa-email" type="email" autoComplete="email" placeholder="you@example.com" value={email}
+                  <Input id="mfa-email" type="email" autoCapitalize="none" spellCheck={false} autoComplete="email" placeholder="you@example.com" value={email}
                     onChange={(e) => setEmail(e.target.value)} className="pl-10 h-12" required />
                 </div>
               </div>

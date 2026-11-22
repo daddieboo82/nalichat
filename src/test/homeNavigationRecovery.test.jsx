@@ -90,7 +90,7 @@ vi.mock('@/components/navigation/RecentlyVisited', () => ({ useRecentPages: () =
 vi.mock('@/components/branding/Logo', () => ({ default: () => <div>Logo</div> }));
 vi.mock('@/components/ui/sheet', () => ({
   Sheet: ({ open, onOpenChange, children }) => <div data-open={open}>{children}</div>,
-  SheetContent: ({ children }) => <div>{children}</div>,
+  SheetContent: ({ children }) => <div role="dialog">{children}</div>,
   SheetHeader: ({ children }) => <div>{children}</div>,
   SheetTitle: ({ children }) => <div>{children}</div>,
   SheetDescription: ({ children }) => <div>{children}</div>,

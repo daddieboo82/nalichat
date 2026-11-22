@@ -377,7 +377,7 @@ export default function Register() {
     <AuthLayout
       icon={UserPlus}
       title={paidSignup ? `Create your account for ${selectedPlanLabel}` : "Join NaliBase free"}
-      subtitle={paidSignup ? "Registration is free. After verifying your account, you'll return to your selected plan to choose whether to subscribe." : isNativeIos ? "Create your account with email. No payment required." : "Start with Google in one tap, or use your email. No payment required."}
+      subtitle={paidSignup ? "Verify your email to return to your selected plan. You can decide whether to subscribe there." : "No payment required."}
       footer={
         <>
           Already have an account?{" "}
@@ -407,7 +407,6 @@ export default function Register() {
         )}
       </Button>}
 
-      {!isNativeIos && <p className="mb-5 text-center text-xs font-medium text-muted-foreground">Fastest option · No password to create · Free core messaging + NaliStudio</p>}
 
       {!isNativeIos && <div className="relative mb-5">
         <div className="absolute inset-0 flex items-center">
@@ -424,7 +423,7 @@ export default function Register() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4"><p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Email signup takes about a minute. We’ll send one 6-digit verification code.</p>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">
@@ -433,7 +432,9 @@ export default function Register() {
               id="email"
               type="email"
               autoComplete="email"
-              autoFocus
+              autoCapitalize="none"
+              spellCheck={false}
+              aria-describedby="registration-email-hint"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => { setEmail(e.target.value); markEmailRegistrationStarted(); }}
@@ -441,6 +442,7 @@ export default function Register() {
               required
             />
           </div>
+          <p id="registration-email-hint" className="text-xs text-muted-foreground">We’ll email you a 6-digit code.</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
@@ -457,7 +459,7 @@ export default function Register() {
               required
             />
           </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">Use a strong, unique password with a mix of letters, numbers, and symbols. The sign-up provider checks its security requirements; if rejected, try a longer password.</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">Use a long, unique password.</p>
           <button type="button" onClick={() => setShowPassword((value) => !value)} className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-primary focus-visible:ring-2 focus-visible:ring-primary/40" aria-pressed={showPassword}>
             {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
             {showPassword ? "Hide passwords" : "Show passwords"}

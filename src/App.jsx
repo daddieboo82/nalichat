@@ -417,7 +417,8 @@ const AuthenticatedApp = () => {
           <Route path="/world/:worldId" element={<WorldHub />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/live-tv" element={<LiveTV />} />
-          <Route path="/battles" element={<LiveBattles />} />
+          <Route path="/battles" element={<BattleLobby />} />
+          <Route path="/battles/new" element={<LiveBattles />} />
           <Route path="/meetings" element={<MeetingHub />} />
           <Route path="/meetings/:roomId" element={<MeetingRoom />} />
           <Route path="/battles/lobby" element={<BattleLobby />} />

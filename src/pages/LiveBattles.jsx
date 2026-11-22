@@ -1,24 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
-import { Camera, Mic, Music2, Trophy, Users, Volume2, AlertCircle } from 'lucide-react';
+import { Camera, Music2 } from 'lucide-react';
 
-const themes = {
-  neon: 'from-fuchsia-700/40 via-purple-950 to-slate-950',
-  gold: 'from-amber-600/40 via-stone-950 to-slate-950',
-  ice: 'from-cyan-600/40 via-blue-950 to-slate-950',
-};
 const supported = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/flac'];
 
 export default function LiveBattles() {
-  const { user } = useAuth();
-  const [drafts, setDrafts] = useState([]);
-  const [draftError, setDraftError] = useState('');
+  const navigate = useNavigate();
   const [category, setCategory] = useState('rap');
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
-  const [savedDraft, setSavedDraft] = useState('');
   const [theme, setTheme] = useState('neon');
   const [track, setTrack] = useState(null);
   const [trackUrl, setTrackUrl] = useState('');
@@ -26,21 +17,15 @@ export default function LiveBattles() {
   const [mediaError, setMediaError] = useState('');
   const [preview, setPreview] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const streamRef = useRef(null);
   const videoRef = useRef(null);
 
+  const mediaRequest = useRef(0);
+  const [cameraPending, setCameraPending] = useState(false);
   useEffect(() => () => {
-    streamRef.current?.getTracks().forEach(t => t.stop());
+    mediaRequest.current += 1;
+    streamRef.current?.getTracks().forEach(track => track.stop());
   }, []);
-  useEffect(() => {
-    let active = true;
-    if (!user?.id) return undefined;
-    base44.entities.LiveBattle.filter({ creator_id: user.id }, '-created_date', 30)
-      .then(rows => { if (active) setDrafts(rows.filter(row => row.status === 'draft')); })
-      .catch(() => { if (active) setDraftError('Could not load your saved battle drafts.'); });
-    return () => { active = false; };
-  }, [user?.id]);
   useEffect(() => () => { if (trackUrl) URL.revokeObjectURL(trackUrl); }, [trackUrl]);
   useEffect(() => { if (videoRef.current && streamRef.current) videoRef.current.srcObject = streamRef.current; }, [preview]);
 
@@ -50,15 +35,23 @@ export default function LiveBattles() {
       setMediaError('Camera preview requires a secure connection and a supported browser.');
       return;
     }
+    const request = ++mediaRequest.current;
+    setCameraPending(true);
     try {
-      streamRef.current?.getTracks().forEach(t => t.stop());
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: { echoCancellation: true } });
+      if (request !== mediaRequest.current) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
       streamRef.current = stream;
       setPreview(true);
       setMuted(false);
-      if (videoRef.current) videoRef.current.srcObject = stream;
     } catch (error) {
-      setMediaError(error?.name === 'NotAllowedError' ? 'Camera or microphone permission was denied. Check your browser permissions and try again.' : 'Could not open your camera and microphone. Check that another app is not using them.');
+      if (request === mediaRequest.current) {
+        setMediaError(error?.name === 'NotAllowedError' ? 'Camera or microphone permission was denied. Check your browser permissions and try again.' : 'Could not open your camera and microphone. Check that another app is not using them.');
+      }
+    } finally {
+      if (request === mediaRequest.current) setCameraPending(false);
     }
   }
   function stopPreview() {
@@ -72,7 +65,8 @@ export default function LiveBattles() {
     streamRef.current?.getAudioTracks().forEach(t => { t.enabled = !next; });
     setMuted(next);
   }
-  async function saveDraft() {
+  async function saveDraft(event) {
+    event.preventDefault();
     if (!consent || !track || !title.trim() || saving) return;
     setSaving(true);
     setMediaError('');
@@ -85,9 +79,7 @@ export default function LiveBattles() {
       form.append('file', track);
       const response = await base44.functions.invoke('createBattleDraft', form);
       if (response?.data?.success !== true || !response?.data?.battleId) throw new Error(response?.data?.error || 'Saving draft failed.');
-      setSavedDraft(response.data.battleId);
-      const rows = await base44.entities.LiveBattle.filter({ creator_id: user.id }, '-created_date', 30);
-      setDrafts(rows.filter(row => row.status === 'draft'));
+      navigate('/battles?draft=' + encodeURIComponent(response.data.battleId), { replace: true });
     } catch (error) { setMediaError(error?.response?.data?.error || error?.message || 'Saving draft failed.'); }
     finally { setSaving(false); }
   }
@@ -103,51 +95,65 @@ export default function LiveBattles() {
     setMediaError('');
     setTrack(file);
     setTrackUrl(URL.createObjectURL(file));
+    event.target.value = '';
   }
 
-  return <div className="nali-workspace h-full overflow-y-auto bg-background text-foreground">
-    <div className="mx-auto max-w-6xl px-4 py-8 pb-24">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><p className="text-xs font-bold uppercase tracking-[.3em] text-fuchsia-300">NaliChat presents</p><h1 className="text-3xl font-black sm:text-5xl">Live Battles</h1><p className="mt-2 text-muted-foreground">Rap or sing. Bring your track. Own the stage.</p></div>
-        <Link to="/explore" className="rounded-xl border border-border px-4 py-2 text-sm hover:bg-foreground/10">Back to Explore</Link>
-      </div>
-      <div role="status" className="mt-6 flex gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-100"><AlertCircle className="h-5 w-5 shrink-0" /><span>Test your camera locally, upload a track, then invite another artist from the battle lobby. Audience scoring opens after both performers publish media in the live room. Camera preview stays on this device.</span></div>
-      <section aria-label="Battle stage preview" className={`nali-battle-stage relative mt-6 overflow-hidden rounded-3xl border border-border bg-gradient-to-br ${themes[theme]} p-4 shadow-2xl sm:p-8`}>
-        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 50% 20%, #fff 0, transparent 42%)' }} />
-        <div className="relative">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-2 text-xs font-bold uppercase tracking-widest"><span className="rounded-full bg-foreground/15 px-3 py-2">Stage preview · {category}</span><span className="rounded-full bg-background/50 px-3 py-2">No live audience yet</span></div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex aspect-video items-center justify-center overflow-hidden rounded-2xl border border-fuchsia-400/50 bg-background/70">
-              {preview ? <video ref={videoRef} autoPlay muted playsInline aria-label="Your local camera preview" className="h-full w-full object-cover -scale-x-100" /> : <div className="text-center"><Camera className="mx-auto mb-2 h-10 w-10 text-fuchsia-300" /><span>Your camera</span></div>}
+  return (
+    <main className="nali-workspace h-full overflow-y-auto bg-background px-4 pt-5 pb-24 text-foreground">
+      <div className="mx-auto max-w-xl space-y-4">
+        <Link to="/battles" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">← Battle Arena</Link>
+        <header>
+          <h1 className="font-heading text-3xl font-black tracking-tight">Create a battle</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Add your track, then invite an artist.</p>
+        </header>
+        <form onSubmit={saveDraft} className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <label className="block text-sm font-medium">Battle name
+            <input required value={title} maxLength={100} onChange={e => setTitle(e.target.value)} placeholder="Name your battle" className="mt-1 block min-h-12 w-full rounded-xl border border-border bg-background px-3" />
+          </label>
+          <label className="block text-sm font-medium">Battle style
+            <select value={category} onChange={e => setCategory(e.target.value)} className="mt-1 block min-h-12 w-full rounded-xl border border-border bg-background px-3">
+              <option value="rap">Rap battle</option>
+              <option value="singing">Singing battle</option>
+            </select>
+          </label>
+          <label className="block text-sm font-medium">Battle track <span className="text-muted-foreground">(up to 50 MB)</span>
+            <input type="file" accept=".mp3,.m4a,.wav,.webm,.ogg,.flac,audio/*" onChange={chooseTrack} className="mt-1 block min-h-11 w-full text-sm file:mr-2 file:min-h-11 file:rounded-xl file:border-0 file:bg-secondary file:px-3 file:font-semibold file:text-foreground" />
+          </label>
+          {track && (
+            <div className="space-y-2 rounded-xl border border-border bg-background p-3">
+              <p className="flex min-w-0 items-center gap-2 text-sm"><Music2 className="h-4 w-4 shrink-0" aria-hidden="true" /><span className="truncate">{track.name}</span></p>
+              <audio controls src={trackUrl} className="w-full" aria-label="Preview selected battle track" />
+              <button type="button" className="min-h-11 text-sm underline" onClick={() => { setTrack(null); setTrackUrl(''); }}>Remove track</button>
             </div>
-            <div className="flex aspect-video items-center justify-center rounded-2xl border border-border bg-background/70 text-center text-muted-foreground"><div><Mic className="mx-auto mb-2 h-10 w-10" />Opponent stage<br /><span className="text-xs">Appears when your invited artist joins</span></div></div>
-          </div>
-          <div className="mt-5 grid grid-cols-1 gap-2 text-center text-xs min-[400px]:grid-cols-3 sm:text-sm"><div className="rounded-xl bg-background/40 p-3">Live round<br /><strong>Starts from the lobby</strong></div><div className="rounded-xl bg-background/40 p-3">Crowd energy<br /><strong>Awaiting audience</strong></div><div className="rounded-xl bg-background/40 p-3">Score reveal<br /><strong>No result yet</strong></div></div>
-        </div>
-      </section>
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border bg-foreground/5 p-5"><h2 className="text-xl font-bold">Set up your performance</h2>
-          <label className="mt-4 block text-sm">Battle title<input value={title} maxLength={100} onChange={e => setTitle(e.target.value)} placeholder="Name your battle" className="mt-1 w-full rounded-xl border border-border bg-card p-3" /></label>
-          <label className="mt-4 block text-sm">Battle style<select value={category} onChange={e => setCategory(e.target.value)} className="mt-1 w-full rounded-xl border border-border bg-card p-3"><option value="rap">Rap battle</option><option value="singing">Singing battle</option></select></label>
-          <label className="mt-4 block text-sm">Stage look<select value={theme} onChange={e => setTheme(e.target.value)} className="mt-1 w-full rounded-xl border border-border bg-card p-3"><option value="neon">Neon</option><option value="gold">Gold</option><option value="ice">Ice</option></select></label>
-          <label className="mt-4 block text-sm">Battle track · audio under 50 MB<input type="file" accept=".mp3,.m4a,.wav,.webm,.ogg,.flac,audio/*" onChange={chooseTrack} className="mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-fuchsia-500 file:px-4 file:py-2 file:font-bold file:text-foreground" /></label>
-          <label className="mt-4 flex items-start gap-2 text-sm"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-1" />I own this track or have permission to use it in a public performance.</label>
-          {track && <div className="mt-4 rounded-xl bg-background/40 p-3"><p className="mb-2 truncate text-sm"><Music2 className="mr-2 inline h-4 w-4" />{track.name} · local preview only</p><audio controls src={trackUrl} className="w-full" aria-label="Preview selected battle track" /><button type="button" onClick={() => { setTrack(null); setTrackUrl(''); }} className="mt-2 text-xs underline">Remove track</button></div>}
-          <button type="button" onClick={saveDraft} disabled={!title.trim() || !track || !consent || saving || Boolean(savedDraft)} className="mt-4 min-h-11 rounded-xl bg-fuchsia-600 px-4 font-bold disabled:opacity-50">{saving ? 'Uploading track…' : savedDraft ? 'Draft saved' : 'Save battle and upload track'}</button>
-          {savedDraft && <div role="status" className="mt-2 text-sm text-emerald-300">Battle draft saved. <Link className="underline" to="/battles/lobby">Open the lobby</Link> to invite an artist. <button type="button" onClick={() => { setSavedDraft(''); setTitle(''); setTrack(null); setTrackUrl(''); setConsent(false); }} className="ml-2 underline">Create another battle</button></div>}
-          <p className="mt-3 text-xs text-muted-foreground">A saved track is stored with your battle draft. Avoid playing a track on speakers during camera preview to prevent feedback.</p>
-        </section>
-        <section className="rounded-2xl border border-border bg-foreground/5 p-5"><h2 className="text-xl font-bold">Camera and accessibility</h2><p className="mt-2 text-sm text-muted-foreground">Check your setup before stepping on stage. Preview stays on your device.</p>
-          <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={preview ? stopPreview : startPreview} className="min-h-11 rounded-xl bg-fuchsia-600 px-4 font-bold hover:bg-fuchsia-500">{preview ? 'Stop camera preview' : 'Test camera and microphone'}</button>{preview && <button type="button" onClick={toggleMic} className="min-h-11 rounded-xl border border-border px-4">{muted ? 'Unmute microphone' : 'Mute microphone'}</button>}</div>
-          {mediaError && <p role="alert" className="mt-3 text-sm text-rose-300">{mediaError}</p>}
-          <label className="mt-5 flex items-center gap-3 text-sm"><input type="checkbox" checked={reducedMotion} onChange={e => setReducedMotion(e.target.checked)} />Reduce stage motion</label>
-          <p className="mt-3 text-xs text-muted-foreground">Theme: {theme}. {reducedMotion ? 'Reduced motion enabled.' : 'Stage effects will respect your device settings.'}</p>
-          <Link to="/battles/lobby" className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-fuchsia-600 font-bold hover:bg-fuchsia-500">Open battle lobby</Link>
-        </section>
+          )}
+          <label className="flex min-h-11 items-center gap-3 text-sm">
+            <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="h-5 w-5 shrink-0 accent-primary" />
+            I have permission to use this track in a public performance.
+          </label>
+          <details className="rounded-xl border border-border px-3">
+            <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Stage look and camera check</summary>
+            <div className="space-y-3 pb-3">
+              <label className="block text-sm">Stage look
+                <select value={theme} onChange={e => setTheme(e.target.value)} className="mt-1 block min-h-11 w-full rounded-xl border border-border bg-background px-3">
+                  <option value="neon">Neon</option><option value="gold">Gold</option><option value="ice">Ice</option>
+                </select>
+              </label>
+              <p className="text-xs text-muted-foreground">Camera preview stays on this device.</p>
+              {preview && <video ref={videoRef} autoPlay muted playsInline aria-label="Your local camera preview" className="aspect-video w-full rounded-xl bg-black object-cover -scale-x-100" />}
+              <div className="flex flex-wrap gap-2">
+                <button type="button" disabled={cameraPending} onClick={preview ? stopPreview : startPreview} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm">
+                  <Camera className="h-4 w-4" aria-hidden="true" /> {cameraPending ? 'Opening camera…' : preview ? 'Stop camera preview' : 'Test camera and microphone'}
+                </button>
+                {preview && <button type="button" onClick={toggleMic} className="min-h-11 rounded-xl border border-border px-3 text-sm">{muted ? 'Unmute microphone' : 'Mute microphone'}</button>}
+              </div>
+            </div>
+          </details>
+          {mediaError && <p role="alert" className="text-sm text-destructive">{mediaError}</p>}
+          <button type="submit" disabled={!title.trim() || !track || !consent || saving} className="min-h-12 w-full rounded-xl bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50">
+            {saving ? 'Uploading track…' : 'Save and invite an artist'}
+          </button>
+        </form>
       </div>
-      <section className="nali-battle-drafts mt-6 rounded-2xl border border-border bg-foreground/5 p-5" aria-label="Your saved battle drafts"><h2 className="text-xl font-bold">Your saved battle drafts</h2>{draftError && <p role="alert" className="mt-2 text-rose-300">{draftError}</p>}{drafts.length === 0 && <p className="mt-2 text-sm text-muted-foreground">No saved drafts yet.</p>}<div className="mt-3 grid gap-3 sm:grid-cols-2">{drafts.map(draft => <article key={draft.id} className="rounded-xl border border-border/70 bg-background/30 p-4"><p className="font-bold">{draft.title}</p><p className="mb-2 text-xs capitalize text-muted-foreground">{draft.category} · Draft</p>{draft.creator_track_url && <audio controls src={draft.creator_track_url} className="w-full" aria-label={`Play ${draft.creator_track_name || draft.title}`} />}</article>)}</div></section>
-      <section className="mt-6 grid gap-3 sm:grid-cols-3"><div className="rounded-xl border border-border/70 p-4"><Users className="mb-2 text-fuchsia-300" /><strong>Live audience</strong><p className="text-sm text-muted-foreground">Watch performers and send reactions during live battles.</p></div><div className="rounded-xl border border-border/70 p-4"><Volume2 className="mb-2 text-fuchsia-300" /><strong>Fair scoring</strong><p className="text-sm text-muted-foreground">One scorecard per viewer, rating both artists on three musical criteria.</p></div><div className="rounded-xl border border-border/70 p-4"><Trophy className="mb-2 text-fuchsia-300" /><strong>Artist awards</strong><p className="text-sm text-muted-foreground">Best Rapper and Best Singer will reflect completed battles.</p></div></section>
-      {!consent && track && <p className="mt-3 text-xs text-amber-300">Confirm track rights before uploading for a public battle.</p>}
-    </div>
-  </div>;
+    </main>
+  );
 }

@@ -205,7 +205,7 @@ export default function Explore() {
             </button>
           </div>
 
-          <button type="button" onClick={() => navigate('/battles')} className="mb-4 flex min-h-11 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-bold text-foreground hover:bg-primary/20"><Swords className="h-4 w-4" /> Enter Live Battles stage</button>
+          <button type="button" onClick={() => navigate('/battles')} className="mb-4 flex min-h-11 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-bold text-foreground hover:bg-primary/20"><Swords className="h-4 w-4" /> Open Battle Arena</button>
 
           {currentUser && (
             <section className="mb-4 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-card/70 p-4 sm:flex-row sm:items-center sm:justify-between">

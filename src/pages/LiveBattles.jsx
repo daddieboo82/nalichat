@@ -55,6 +55,8 @@ export default function LiveBattles() {
     }
   }
   function stopPreview() {
+    mediaRequest.current += 1;
+    setCameraPending(false);
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
@@ -130,7 +132,7 @@ export default function LiveBattles() {
             <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="h-5 w-5 shrink-0 accent-primary" />
             I have permission to use this track in a public performance.
           </label>
-          <details className="rounded-xl border border-border px-3">
+          <details onToggle={event => { if (!event.currentTarget.open && (preview || cameraPending)) stopPreview(); }} className="rounded-xl border border-border px-3">
             <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Stage look and camera check</summary>
             <div className="space-y-3 pb-3">
               <label className="block text-sm">Stage look

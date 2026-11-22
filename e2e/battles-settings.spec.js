@@ -40,15 +40,16 @@ test.describe('battles and settings workflows', () => {
     await login(page);
   });
 
-  test('live battles stage renders preview and lobby link', async ({ page }) => {
+  test('Battle Arena opens the create flow directly', async ({ page }) => {
     const errors = collectErrors(page);
 
     await page.goto('/battles');
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/battles');
     await expect(page.locator('body')).toBeVisible({ timeout: 10000 });
 
-    // The stage preview should be visible
-    await expect(page.getByText(/stage preview/i)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('link', { name: 'Create a battle' }).click();
+    await expect(page.getByRole('heading', { name: 'Create a battle' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByLabel('Battle name')).toBeVisible();
 
     expect(filterNoise(errors)).toEqual([]);
   });
@@ -61,7 +62,7 @@ test.describe('battles and settings workflows', () => {
     await expect(page.locator('body')).toBeVisible({ timeout: 10000 });
 
     // The lobby should show battle sections
-    await expect(page.getByText(/battle lobby/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Battle Arena' })).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/live now/i)).toBeVisible({ timeout: 5000 });
     await expect(page.getByText(/battle awards/i)).toBeVisible({ timeout: 5000 });
 
@@ -77,8 +78,8 @@ test.describe('battles and settings workflows', () => {
 
     // The meeting planner should be visible
     await expect(page.getByText(/meeting hub/i)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/plan a private room/i)).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText(/your rooms/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Create a meeting' })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Your meetings' })).toBeVisible({ timeout: 5000 });
 
     expect(filterNoise(errors)).toEqual([]);
   });

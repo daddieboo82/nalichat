@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mic, Square, Play, Pause, Save, Trash2, Loader2, Radio, RotateCcw, HelpCircle } from "lucide-react";
+import { Mic, Square, Play, Pause, Save, Trash2, Loader2, Radio, HelpCircle, Download, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
 import { useAudioDevices } from "@/hooks/useAudioDevices";
@@ -14,8 +14,6 @@ import RecordingTips from "@/components/record/RecordingTips";
 import RecordingGuide from "@/components/record/RecordingGuide";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
-
-const GUIDE_KEY = "nali_rec_guide_done";
 
 function getSupportedRecordingMimeType() {
   if (typeof MediaRecorder === "undefined") return "";
@@ -44,10 +42,14 @@ export default function Record() {
   const [visualData, setVisualData] = useState(new Array(64).fill(0));
   const [recLevel, setRecLevel] = useState(0);
   const [countdown, setCountdown] = useState(false);
+  const [captureStatus, setCaptureStatus] = useState("");
+  const [showMicCheck, setShowMicCheck] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
 
   const { devices, selectedDevices, selectDevice } = useAudioDevices();
 
+  const captureBusyRef = useRef(false);
+  const saveBusyRef = useRef(false);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
@@ -68,6 +70,11 @@ export default function Record() {
     recordingGenerationRef.current += 1;
     activeUserIdRef.current = nextUserId;
     setCountdown(false);
+    captureBusyRef.current = false;
+    saveBusyRef.current = false;
+    setCaptureStatus("");
+    setShowMicCheck(false);
+    setShowGuide(false);
     setIsRecording(false);
     setIsPaused(false);
     setSaving(null);
@@ -103,10 +110,8 @@ export default function Record() {
   }, [currentUser?.id]);
 
   useEffect(() => {
-    try {
-      if (localStorage.getItem(GUIDE_KEY) !== "1") setShowGuide(true);
-    } catch {}
     return () => {
+      recordingGenerationRef.current += 1;
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -147,6 +152,7 @@ export default function Record() {
   };
 
   const startRecording = async () => {
+    if (captureBusyRef.current || (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive")) return;
     setCountdown(false);
 
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
@@ -154,12 +160,19 @@ export default function Record() {
       return;
     }
 
+    const recordingGeneration = recordingGenerationRef.current;
+    captureBusyRef.current = true;
+    setCaptureStatus("Opening microphone…");
     let stream = null;
     let audioCtx = null;
     try {
       const devId = selectedDevices.input && selectedDevices.input !== "default" ? selectedDevices.input : undefined;
       const constraints = { audio: devId ? { deviceId: { exact: devId } } : true };
       stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (recordingGeneration !== recordingGenerationRef.current) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
       streamRef.current = stream;
 
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -175,21 +188,27 @@ export default function Record() {
 
       const mimeType = getSupportedRecordingMimeType();
       const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-      const recordingGeneration = recordingGenerationRef.current;
       const recordingMimeType = recorder.mimeType || mimeType || "audio/webm";
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
-        if (e.data?.size) chunksRef.current.push(e.data);
+        if (e.data?.size && recordingGeneration === recordingGenerationRef.current) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
         stream.getTracks().forEach(t => t.stop());
+        if (recordingGeneration !== recordingGenerationRef.current) return;
+        mediaRecorderRef.current = null;
+        captureBusyRef.current = false;
+        setCaptureStatus("");
+        setIsRecording(false);
+        setIsPaused(false);
+        clearInterval(timerRef.current);
         if (streamRef.current === stream) streamRef.current = null;
         if (animationRef.current) cancelAnimationFrame(animationRef.current);
         const blob = new Blob(chunksRef.current, { type: recordingMimeType });
         if (blob.size > 0 && recordingGeneration === recordingGenerationRef.current) {
           const url = URL.createObjectURL(blob);
           setRecordings(prev => [...prev, {
-            id: Date.now().toString(),
+            id: crypto.randomUUID(),
             blob,
             url,
             duration: currentTimeRef.current,
@@ -212,6 +231,8 @@ export default function Record() {
       recorder.start();
       sounds.recStart();
       setIsRecording(true);
+      setCaptureStatus("");
+      captureBusyRef.current = false;
       setIsPaused(false);
       currentTimeRef.current = 0;
       timerRef.current = setInterval(() => {
@@ -220,6 +241,9 @@ export default function Record() {
       }, 1000);
       updateVisualizer();
     } catch (error) {
+      if (recordingGeneration !== recordingGenerationRef.current) return;
+      captureBusyRef.current = false;
+      setCaptureStatus("");
       stream?.getTracks().forEach((track) => track.stop());
       if (streamRef.current === stream) streamRef.current = null;
       if (audioCtx && audioCtx.state !== "closed") {
@@ -236,13 +260,18 @@ export default function Record() {
   };
 
   const beginRecording = () => {
-    if (isRecording) return;
+    if (isRecording || captureBusyRef.current || countdown) return;
+    setShowMicCheck(false);
     setCountdown(true);
   };
 
   const stopRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === "inactive") return;
+    captureBusyRef.current = true;
+    setCaptureStatus("Preparing take…");
     sounds.recStop();
-    mediaRecorderRef.current?.stop();
+    recorder.stop();
     setIsRecording(false);
     setIsPaused(false);
     clearInterval(timerRef.current);
@@ -265,6 +294,10 @@ export default function Record() {
   };
 
   const saveRecording = async (rec) => {
+    if (!currentUser?.id || saveBusyRef.current || rec.saved) return;
+    const ownerId = currentUser.id;
+    const generation = recordingGenerationRef.current;
+    saveBusyRef.current = true;
     setSaving(rec.id);
     try {
       const extension = recordingExtension(rec.blob.type);
@@ -274,6 +307,7 @@ export default function Record() {
         throw new Error(`${validation.error} Your local recording is still available.`);
       }
       const { file_url } = await secureUploadFile({ file });
+      if (generation !== recordingGenerationRef.current || activeUserIdRef.current !== ownerId) return;
       const created = await base44.functions.invoke("createSharedFileRecord", {
         name: rec.name,
         file_url,
@@ -288,12 +322,18 @@ export default function Record() {
         created?.data?.fileId !== created?.data?.file?.id ||
         created?.data?.file?.uploader_id !== currentUser?.id
       ) throw new Error("Recording save was not confirmed.");
+      if (generation !== recordingGenerationRef.current || activeUserIdRef.current !== ownerId) return;
+      setRecordings(previous => previous.map(item => item.id === rec.id ? { ...item, saved: true } : item));
       toast.success("Recording saved to Files.");
     } catch (error) {
+      if (generation !== recordingGenerationRef.current) return;
       console.error("Recording save failed:", error);
       toast.error(error?.message || "Recording could not be saved. The local recording is still available.");
     } finally {
-      setSaving(null);
+      if (generation === recordingGenerationRef.current) {
+        saveBusyRef.current = false;
+        setSaving(null);
+      }
     }
   };
 
@@ -310,21 +350,11 @@ export default function Record() {
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
   return (
-    <div className="flex min-h-full flex-col items-center overflow-y-auto px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 sm:justify-center sm:p-6">
+    <div className="flex min-h-full flex-col items-center overflow-y-auto px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 sm:p-6">
       <div className="w-full max-w-2xl">
         <div className="mb-5 text-center sm:mb-6">
-          <h1 className="mb-2 text-2xl font-heading font-bold tracking-tight sm:text-3xl">Recording Studio</h1>
-          <p className="text-sm text-muted-foreground">Capture your ideas with professional-quality recording</p>
-        </div>
-
-        {/* Pre-flight mic check */}
-        <div className="mb-6">
-          <MicCheckPanel
-            devices={devices.input}
-            selectedDevice={selectedDevices.input}
-            onSelectDevice={(id) => selectDevice("input", id)}
-            recording={isRecording}
-          />
+          <h1 className="mb-2 text-2xl font-heading font-bold tracking-tight sm:text-3xl">Quick Record</h1>
+          <p className="text-sm text-muted-foreground">Capture an idea, then play it back or save it.</p>
         </div>
 
         {/* Immersive Visualizer */}
@@ -341,8 +371,8 @@ export default function Record() {
             )}
           </AnimatePresence>
 
-          <div className="relative flex h-[min(18rem,78vw)] w-[min(18rem,78vw)] items-center justify-center">
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 288 288" style={{ overflow: "visible" }}>
+          <div className="relative flex h-[min(16rem,68vw)] w-[min(16rem,68vw)] items-center justify-center">
+            <svg aria-hidden="true" className="absolute inset-0 w-full h-full" viewBox="0 0 288 288" style={{ overflow: "visible" }}>
               {visualData.slice(0, 48).map((v, i) => {
                 const angle = (i / 48) * 2 * Math.PI - Math.PI / 2;
                 const innerR = 90;
@@ -368,6 +398,7 @@ export default function Record() {
               {!isRecording ? (
                 <motion.button
                   onClick={beginRecording}
+                  disabled={Boolean(captureStatus) || countdown}
                   whileTap={{ scale: 0.93 }}
                   whileHover={{ scale: 1.05 }}
                   className="flex h-24 w-24 items-center justify-center rounded-full shadow-2xl shadow-primary/40 focus-visible:ring-4 focus-visible:ring-primary/30" aria-label="Start recording"
@@ -375,7 +406,7 @@ export default function Record() {
                   animate={{ boxShadow: ["0 0 20px hsl(265 80% 60% / 0.3)", "0 0 40px hsl(265 80% 60% / 0.55)", "0 0 20px hsl(265 80% 60% / 0.3)"] }}
                   transition={{ repeat: Infinity, duration: 2.5 }}
                 >
-                  <Mic className="w-9 h-9 text-white" />
+                  {captureStatus ? <Loader2 className="h-9 w-9 animate-spin text-white" /> : <Mic className="w-9 h-9 text-white" />}
                 </motion.button>
               ) : (
                 <div className="flex flex-col items-center gap-2">
@@ -397,7 +428,8 @@ export default function Record() {
                 </div>
               )}
 
-              <p className="text-3xl font-mono font-black tracking-wider mt-1">{formatTime(currentTime)}</p>
+              <p className="mt-1 font-mono text-3xl font-black tabular-nums tracking-wider">{formatTime(currentTime)}</p>
+              {!isRecording && <p role="status" className="text-center text-xs font-semibold text-muted-foreground">{captureStatus || "Start recording"}</p>}
               {isRecording && (
                 <div className="flex items-center gap-1.5">
                   <motion.div
@@ -417,18 +449,17 @@ export default function Record() {
           <RecordingTips level={recLevel} isPaused={isPaused} />
         )}
 
-        {/* Friendly empty state */}
-        {!isRecording && recordings.length === 0 && (
-          <div className="text-center mb-4 px-4">
-            <p className="text-sm text-muted-foreground">
-              Press the glowing button to record. You'll get a 3-second countdown first so you're never caught off guard.
-            </p>
-            <button
-              onClick={() => setShowGuide(true)}
-              className="ui-hover mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-primary hover:bg-primary/10"
-            >
-              <HelpCircle className="w-3.5 h-3.5" /> New to recording? Replay the guide
+        {!isRecording && !captureStatus && (
+          <div className="mb-4 flex flex-wrap justify-center gap-2">
+            <button type="button" aria-expanded={showMicCheck} aria-controls="quick-record-mic" onClick={() => setShowMicCheck(open => !open)} className="ui-hover min-h-11 rounded-xl border border-border px-3 text-sm font-medium">
+              Microphone setup
             </button>
+            <button type="button" onClick={() => { setShowMicCheck(false); setShowGuide(true); }} className="ui-hover inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-primary">
+              <HelpCircle className="h-4 w-4" aria-hidden="true" /> Recording guide
+            </button>
+            <div id="quick-record-mic" className="w-full" hidden={!showMicCheck}>
+              {showMicCheck && <MicCheckPanel devices={devices.input} selectedDevice={selectedDevices.input} onSelectDevice={(id) => selectDevice("input", id)} />}
+            </div>
           </div>
         )}
 
@@ -436,17 +467,16 @@ export default function Record() {
         {recordings.length > 0 && (
           <div>
             <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="font-heading font-semibold text-lg">Recordings</h2>
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <RotateCcw className="w-3 h-3" /> Nothing is saved until you choose to save — retake freely
-              </span>
+              <h2 className="font-heading font-semibold text-lg">Your takes</h2>
+              <span className="text-xs text-muted-foreground">Save to Files or download before leaving.</span>
             </div>
             <div className="space-y-3">
-              {recordings.map(rec => (
+              {[...recordings].reverse().map(rec => (
                 <RecordingItem
                   key={rec.id}
                   recording={rec}
                   saving={saving === rec.id}
+                  saveDisabled={Boolean(saving) || rec.saved}
                   onSave={() => saveRecording(rec)}
                   onDelete={() => deleteRecording(rec.id)}
                   onRename={(name) => setRecordings(prev => prev.map(r => r.id === rec.id ? { ...r, name } : r))}
@@ -473,7 +503,7 @@ export default function Record() {
   );
 }
 
-function RecordingItem({ recording, saving, onSave, onDelete, onRename }) {
+function RecordingItem({ recording, saving, saveDisabled, onSave, onDelete, onRename }) {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef(null);
 
@@ -502,18 +532,25 @@ function RecordingItem({ recording, saving, onSave, onDelete, onRename }) {
       </button>
       <div className="flex-1 min-w-0">
         <Input
+          aria-label="Take name"
           value={recording.name}
           onChange={(e) => onRename(e.target.value)}
-          className="bg-transparent border-0 p-0 h-auto text-sm font-medium focus-visible:ring-0"
+          className="min-h-10 bg-transparent px-2 text-base font-medium sm:text-sm"
         />
         <p className="text-[10px] text-muted-foreground">{Math.floor(recording.duration / 60)}:{String(recording.duration % 60).padStart(2, '0')} • {(recording.blob.size / 1024 / 1024).toFixed(1)} MB</p>
       </div>
-      <div className="ml-auto flex gap-1">
-        <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg" onClick={onSave} disabled={saving}>
-          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+      <div className="flex w-full flex-wrap gap-1 sm:ml-auto sm:w-auto">
+        <Button variant="outline" className="min-h-11 flex-1 gap-1.5 rounded-lg sm:flex-none" onClick={onSave} disabled={saveDisabled}>
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : recording.saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+          {saving ? "Saving…" : recording.saved ? "Saved" : "Save to Files"}
         </Button>
-        <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg text-destructive" onClick={onDelete}>
-          <Trash2 className="w-3.5 h-3.5" />
+        <Button asChild size="icon" variant="outline" className="h-11 w-11 rounded-lg">
+          <a href={recording.url} download={`${recording.name.trim() || "Recording"}.${recordingExtension(recording.blob.type)}`} aria-label="Download take" title="Download take">
+            <Download className="h-4 w-4" aria-hidden="true" />
+          </a>
+        </Button>
+        <Button size="icon" variant="ghost" className="h-11 w-11 rounded-lg text-destructive" aria-label="Delete take" title="Delete take" onClick={onDelete} disabled={saving}>
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
         </Button>
       </div>
     </div>

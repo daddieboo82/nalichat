@@ -377,7 +377,7 @@ export default function Register() {
     <AuthLayout
       icon={UserPlus}
       title={paidSignup ? `Create your account for ${selectedPlanLabel}` : "Join NaliBase free"}
-      subtitle={paidSignup ? "Verify your email to return to your selected plan. You can decide whether to subscribe there." : "No payment required."}
+      subtitle={paidSignup ? "Verify your email to return to your selected plan. You can decide whether to subscribe there." : isNativeIos ? "Create your account with email. No payment required." : "No payment required."}
       footer={
         <>
           Already have an account?{" "}

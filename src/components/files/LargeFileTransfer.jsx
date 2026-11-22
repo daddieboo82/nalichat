@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { resumableUpload } from "@/lib/resumableUpload";
-import { UploadCloud, FileText, CheckCircle2 } from "lucide-react";
+import { UploadCloud, FileText, CheckCircle2, Copy } from "lucide-react";
 import { copyToClipboard } from "@/lib/clipboard";
 
 function LargeFileTransferContent({ currentUser }) {
@@ -17,41 +17,64 @@ function LargeFileTransferContent({ currentUser }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [shareLink, setShareLink] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [controlBusy, setControlBusy] = useState(false);
+  const [error, setError] = useState("");
+  const busyRef = useRef(false);
+  const attemptRef = useRef(0);
   const fileInputRef = useRef(null);
   const transferRef = useRef(null);
-  const cancelledRef = useRef(false);
+  useEffect(() => () => {
+    attemptRef.current += 1;
+    const transfer = transferRef.current;
+    if (transfer) void (async () => {
+      try { await transfer.pause(); } catch {}
+    })();
+  }, []);
+
+  const finishing = isFinalizing || uploadProgress >= 100;
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
+    e.target.value = "";
+    if (busyRef.current) return;
     if (!selectedFile) return;
 
     if (!selectedFile.name || selectedFile.size <= 0) {
-      toast.error("The selected file is empty or invalid.");
+      setError("The selected file is empty or invalid.");
       return;
     }
 
+    setError("");
     setFile(selectedFile);
     setShareLink("");
     setUploadProgress(0);
   };
 
-  const handleTransfer = async () => {
+  const handleTransfer = async (event) => {
+    event.preventDefault();
+    if (busyRef.current || !currentUser?.id) return;
     if (!file) {
       toast.error("Please select a file to transfer.");
       return;
     }
-    cancelledRef.current = false;
+    busyRef.current = true;
+    const attempt = ++attemptRef.current;
+    setError("");
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
       // 1. Resumable Upload
       const transferPromise = resumableUpload(file, (progress) => {
-        setUploadProgress(progress);
+        if (attempt === attemptRef.current) setUploadProgress(progress);
       });
       transferRef.current = transferPromise.controller;
       const transfer = await transferPromise;
+      if (attempt !== attemptRef.current) return;
       transferRef.current = null;
+      setIsFinalizing(true);
       const file_url = transfer?.file_url;
       if (!file_url) throw new Error("Transfer verification returned no download URL.");
 
@@ -66,6 +89,7 @@ function LargeFileTransferContent({ currentUser }) {
         file_size: file.size,
         description: message,
       });
+      if (attempt !== attemptRef.current) return;
       if (created?.data?.error) throw new Error(created.data.error);
       const newFile = created.data.file;
       if (
@@ -79,6 +103,7 @@ function LargeFileTransferContent({ currentUser }) {
       // 3. Generate a tokenized public link. The file record itself is not
       // globally readable.
       const share = await base44.functions.invoke("createFileShareLink", { fileId: newFile.id });
+      if (attempt !== attemptRef.current) return;
       const token = share?.data?.token;
       const expiresAt = share?.data?.expires_at;
       const expiresAtMs = typeof expiresAt === "string" ? Date.parse(expiresAt) : NaN;
@@ -94,6 +119,7 @@ function LargeFileTransferContent({ currentUser }) {
       ) throw new Error("Could not create share link");
       const link = `${window.location.origin}/shared-file?id=${encodeURIComponent(newFile.id)}&token=${encodeURIComponent(token)}`;
       setShareLink(link);
+      setExpiresAt(expiresAt);
 
       if (recipientEmail) {
         toast.success(`Upload complete! Copy the link and send it to ${recipientEmail}.`);
@@ -102,156 +128,156 @@ function LargeFileTransferContent({ currentUser }) {
       }
 
     } catch (error) {
-      console.error(error);
-      if (!cancelledRef.current) toast.error("Transfer failed. Please try again.");
+      if (attempt === attemptRef.current) {
+        console.error(error);
+        setError("Transfer could not finish. Try again, or check My files if the upload already completed.");
+      }
     } finally {
-      transferRef.current = null;
-      setIsUploading(false);
-      setIsPaused(false);
+      if (attempt === attemptRef.current) {
+        transferRef.current = null;
+        busyRef.current = false;
+        setIsUploading(false);
+        setIsPaused(false);
+        setIsFinalizing(false);
+        setControlBusy(false);
+      }
     }
   };
 
-  const pauseTransfer = async () => {
-    await transferRef.current?.pause?.();
-    setIsPaused(true);
-  };
-
-  const resumeTransfer = () => {
-    transferRef.current?.resume?.();
-    setIsPaused(false);
+  const togglePause = async () => {
+    const transfer = transferRef.current;
+    if (!transfer || controlBusy || finishing) return;
+    const attempt = attemptRef.current;
+    setControlBusy(true);
+    setError("");
+    try {
+      if (isPaused) await transfer.resume();
+      else await transfer.pause();
+      if (attempt === attemptRef.current) setIsPaused(!isPaused);
+    } catch {
+      if (attempt === attemptRef.current) setError("Could not change the upload state. Try again.");
+    } finally {
+      if (attempt === attemptRef.current) setControlBusy(false);
+    }
   };
 
   const cancelTransfer = async () => {
-    cancelledRef.current = true;
-    await transferRef.current?.cancel?.();
+    const transfer = transferRef.current;
+    if (!transfer || controlBusy || finishing) return;
+    attemptRef.current += 1;
+    const attempt = attemptRef.current;
     transferRef.current = null;
-    setIsUploading(false);
-    setIsPaused(false);
-    setUploadProgress(0);
-    toast.info("Transfer cancelled.");
+    setControlBusy(true);
+    setError("");
+    try {
+      await transfer.cancel();
+      if (attempt === attemptRef.current) toast.info("Transfer cancelled.");
+    } catch {
+      if (attempt === attemptRef.current) setError("The upload was stopped here, but storage did not confirm cancellation.");
+    } finally {
+      if (attempt === attemptRef.current) {
+        busyRef.current = false;
+        setControlBusy(false);
+        setIsUploading(false);
+        setIsPaused(false);
+        setUploadProgress(0);
+      }
+    }
   };
 
+  function resetTransfer() {
+    setFile(null);
+    setShareLink("");
+    setExpiresAt("");
+    setRecipientEmail("");
+    setMessage("");
+    setUploadProgress(0);
+    setError("");
+  }
+
   return (
-    <div className="max-w-4xl mx-auto mt-6 bg-card rounded-2xl border border-border shadow-xl overflow-hidden flex flex-col md:flex-row">
-      {/* Left side: Form */}
-      <div className="flex-1 p-6 md:p-8 space-y-6">
+    <section className="mx-auto my-3 max-w-xl space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-6" aria-labelledby="nali-transfer-title">
+      <header className="flex items-start gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <UploadCloud className="h-5 w-5" aria-hidden="true" />
+        </span>
         <div>
-          <h2 className="text-2xl font-bold font-heading mb-1">Nali Transfer</h2>
-          <p className="text-sm text-muted-foreground">Send big. Resume anytime. No NaliBase file-size limit.</p>
+          <h2 id="nali-transfer-title" className="font-heading text-2xl font-bold tracking-tight">Nali Transfer</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Upload a file and get a shareable download link.</p>
         </div>
+      </header>
 
-        {shareLink ? (
-          <div className="space-y-6 text-center py-8">
-            <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
-            <div>
-              <h3 className="text-xl font-bold mb-2">You're done!</h3>
-              <p className="text-muted-foreground mb-6">Your transfer is complete and ready to share.</p>
-              <div className="flex gap-2">
-                <Input value={shareLink} readOnly className="bg-secondary/50" />
-                <Button onClick={async () => {
-                  const copied = await copyToClipboard(shareLink);
-                  if (copied) toast.success("Link copied!");
-                  else toast.error("Couldn't copy the link. Please copy it manually.");
-                }}>Copy</Button>
-              </div>
-            </div>
-            <Button variant="outline" className="w-full" onClick={() => {
-              setFile(null);
-              setShareLink("");
-              setRecipientEmail("");
-              setMessage("");
-              setUploadProgress(0);
-            }}>Send another file</Button>
+      {shareLink ? (
+        <div className="space-y-3 rounded-xl border border-border bg-background p-3 sm:p-4">
+          <p role="status" className="flex items-center gap-2 font-semibold">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" aria-hidden="true" /> Download link ready
+          </p>
+          <p className="break-words text-sm text-muted-foreground">{file?.name}</p>
+          <label className="block text-sm font-medium">Share link
+            <Input value={shareLink} readOnly onFocus={event => event.target.select()} className="mt-1 min-h-11 text-base sm:text-sm" />
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Anyone with the link can download the file until {new Date(expiresAt).toLocaleString()}.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" className="min-h-11 flex-1 gap-2 rounded-xl" onClick={async () => {
+              const copied = await copyToClipboard(shareLink);
+              if (copied) toast.success("Link copied!");
+              else toast.error("Couldn't copy the link. Please copy it manually.");
+            }}><Copy className="h-4 w-4" aria-hidden="true" /> Copy link</Button>
+            <Button type="button" variant="outline" className="min-h-11 flex-1 rounded-xl" onClick={resetTransfer}>Send another file</Button>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div 
-              className="relative border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-8 flex flex-col items-center justify-center text-center bg-secondary/20"
-            >
-              <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" ref={fileInputRef} onChange={handleFileChange} />
-              <div className="pointer-events-none relative z-0 flex flex-col items-center justify-center">
-                {file ? (
-                  <>
-                    <FileText className="w-10 h-10 text-primary mb-3" />
-                    <p className="font-medium text-sm truncate max-w-[250px]">{file.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud className="w-10 h-10 text-muted-foreground mb-3" />
-                    <p className="font-medium text-sm">Click to select a file</p>
-                    <p className="text-xs text-muted-foreground mt-1">Or drag and drop</p>
-                  </>
-                )}
+          {recipientEmail && <p className="break-words text-xs text-muted-foreground">Copy the link and send it to {recipientEmail}.</p>}
+        </div>
+      ) : (
+        <form onSubmit={handleTransfer} className="space-y-4">
+          <label className="relative flex min-h-24 cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-border bg-background p-3 hover:border-primary/50 focus-within:ring-2 focus-within:ring-primary">
+            <input type="file" aria-label={file ? "Replace transfer file" : "Choose transfer file"} className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default" ref={fileInputRef} onChange={handleFileChange} disabled={isUploading} />
+            {file ? <FileText className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" /> : <UploadCloud className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />}
+            <span className="min-w-0">
+              <span className="block break-words text-sm font-semibold">{file ? file.name : "Choose a file"}</span>
+              <span className="mt-1 block text-xs text-muted-foreground">{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "No NaliBase file-size limit"}</span>
+            </span>
+          </label>
+          {!isUploading && (
+            <details className="rounded-xl border border-border px-3">
+              <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Optional transfer details</summary>
+              <div className="space-y-3 pb-3">
+                <label className="block text-sm font-medium">Recipient email
+                  <Input type="email" value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} className="mt-1 min-h-11 text-base sm:text-sm" />
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">For reference. NaliBase does not email the link automatically.</span>
+                </label>
+                <label className="block text-sm font-medium">File description
+                  <Textarea value={message} onChange={event => setMessage(event.target.value)} className="mt-1 text-base sm:text-sm" />
+                </label>
               </div>
-            </div>
+            </details>
+          )}
 
-            <div className="space-y-1">
-              <Input 
-                type="email"
-                placeholder="Recipient email (optional)" 
-                value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
-                className="bg-secondary/50"
-              />
-              <p className="text-[10px] text-muted-foreground">
-                For your reference only — NaliBase does not email the link automatically.
-              </p>
-            </div>
-            
-            <Textarea 
-              placeholder="Message (optional)" 
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="bg-secondary/50 resize-none h-24"
-            />
-
-            {isUploading ? (
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-medium">
-                  <span>Uploading...</span>
-                  <span>{Math.round(uploadProgress)}%</span>
-                </div>
-                <Progress value={uploadProgress} className="h-2" />
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          {isUploading ? (
+            <div className="space-y-3 rounded-xl border border-border bg-background p-3">
+              <div className="flex items-center justify-between gap-2 text-sm font-medium">
+                <p role="status">{finishing ? "Preparing download link…" : isPaused ? "Upload paused" : "Uploading…"}</p>
+                <span className="tabular-nums">{Math.round(uploadProgress)}%</span>
+              </div>
+              <Progress value={uploadProgress} aria-label="File upload progress" className="h-2" />
+              {!finishing && (
                 <div className="flex gap-2">
-                  <Button type="button" variant="outline" className="flex-1" onClick={isPaused ? resumeTransfer : pauseTransfer}>
-                    {isPaused ? "Resume" : "Pause"}
-                  </Button>
-                  <Button type="button" variant="destructive" className="flex-1" onClick={cancelTransfer}>
-                    Cancel
-                  </Button>
+                  <Button type="button" variant="outline" className="min-h-11 flex-1 rounded-xl" disabled={controlBusy} onClick={togglePause}>{isPaused ? "Resume" : "Pause"}</Button>
+                  <Button type="button" variant="ghost" className="min-h-11 flex-1 rounded-xl text-destructive" disabled={controlBusy} onClick={cancelTransfer}>Cancel</Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground text-center">
-                  {isPaused ? "Paused — resume when you're ready." : "Nali Transfer can recover interrupted uploads."}
-                </p>
-              </div>
-            ) : (
-              <Button 
-                className="w-full h-12 text-lg font-medium bg-primary hover:bg-primary/90 text-white rounded-xl"
-                onClick={handleTransfer}
-              >
-                Transfer
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-      
-      {/* Right side: Fancy graphic */}
-      <div className="hidden md:flex md:w-2/5 bg-secondary/30 items-center justify-center relative overflow-hidden p-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10" />
-        <div className="relative z-10 text-center">
-          <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
-            <UploadCloud className="w-12 h-12 text-primary animate-pulse" />
-          </div>
-          <h3 className="font-heading font-bold text-2xl mb-3">Fast, secure, resumable.</h3>
-          <p className="text-sm text-muted-foreground max-w-[200px] mx-auto">Share supported sessions and media securely through NaliBase.</p>
-        </div>
-      </div>
-    </div>
+              )}
+            </div>
+          ) : (
+            <Button type="submit" className="min-h-12 w-full rounded-xl font-semibold" disabled={!file || !currentUser?.id}>Upload and create link</Button>
+          )}
+        </form>
+      )}
+    </section>
   );
 }
 
 export default function LargeFileTransfer({ currentUser }) {
-  return <LargeFileTransferContent currentUser={currentUser} />;
+  return <LargeFileTransferContent key={currentUser?.id || "anonymous"} currentUser={currentUser} />;
 }

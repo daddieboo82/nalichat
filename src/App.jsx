@@ -360,6 +360,7 @@ const AuthenticatedApp = () => {
     '/privacy', '/terms', '/thankyou', '/subscription_thank_you', '/oauth-consent', '/shared-file',
   ]);
   const currentPath = location.pathname.toLowerCase();
+  const encodedDestination = encodeURIComponent(location.pathname + location.search + location.hash);
   const onboardingGatePath = currentPath.replace(/\/+$/, "") || "/";
 
   if (
@@ -369,7 +370,7 @@ const AuthenticatedApp = () => {
     !isAdminUser &&
     !ONBOARDING_EXEMPT_PATHS.has(onboardingGatePath)
   ) {
-    return <Navigate to={`/onboarding?returnTo=${encodeURIComponent(location.pathname + location.search + location.hash)}`} replace />;
+    return <Navigate to={`/onboarding?returnTo=${encodedDestination}`} replace />;
   }
 
   // Core app routes require authentication, while individual paid capabilities
@@ -413,12 +414,12 @@ const AuthenticatedApp = () => {
         <Route path="/challenge/:challengeId/leaderboard" element={<ChallengeLeaderboard />} />
         <Route path="/challenge/:challengeId/submission/:submissionId" element={<SubmissionPlayer />} />
         <Route path="/squad/join/:inviteCode" element={<SquadJoin />} />
-      <Route path="/viral-seed" element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login?returnTo=%2Fviral-seed" replace />}><ViralSeed /></ProtectedRoute>} />
+      <Route path="/viral-seed" element={<ProtectedRoute unauthenticatedElement={<Navigate to={`/login?returnTo=${encodedDestination}`} replace />}><ViralSeed /></ProtectedRoute>} />
         <Route path="/ThankYou" element={<ThankYou />} />
         <Route path="/thankyou" element={<ThankYou />} />
         <Route path="/subscription_thank_you" element={<ThankYou />} />
       </Route>
-      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} replace />} />}>
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to={`/login?returnTo=${encodedDestination}`} replace />} />}>
         <Route path="/studio" element={<Studio />} />
         <Route element={<AppLayout />}>
           <Route path="/world/:worldId" element={<WorldHub />} />

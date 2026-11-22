@@ -514,6 +514,8 @@ export default function Files() {
     return (f?.name || "").toLowerCase().includes(search.toLowerCase());
   }), [filesInFolder, typeFilter, search]);
 
+  const allVisibleSelected = filtered.length > 0 && filtered.every(file => selectedIds.includes(file.id));
+
   const filteredFolders = React.useMemo(() => accessibleFolders.filter(f => (f?.name || "").toLowerCase().includes(search.toLowerCase())), [accessibleFolders, search]);
 
   const handleUpload = (e) => {
@@ -583,11 +585,11 @@ export default function Files() {
             </select>
             <Button
               type="button"
-              variant={filtered.length > 0 && filtered.every(file => selectedIds.includes(file.id)) ? "default" : "outline"}
+              variant={allVisibleSelected ? "default" : "outline"}
               size="icon"
               className="h-11 w-11 shrink-0 rounded-xl"
               disabled={filtered.length === 0}
-              aria-label={filtered.length > 0 && filtered.every(file => selectedIds.includes(file.id)) ? "Clear visible selection" : "Select all visible files"}
+              aria-label={allVisibleSelected ? "Clear visible selection" : "Select all visible files"}
               onClick={() => {
                 const visibleIds = new Set(filtered.map(file => file.id));
                 setSelectedIds(ids => filtered.every(file => ids.includes(file.id))
@@ -815,7 +817,7 @@ export default function Files() {
                   <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:gap-3">
                     <Checkbox
                       aria-label={`Select ${file.name}`}
-                          checked={isSelected}
+                      checked={isSelected}
                       disabled={!canEditFile}
                       onCheckedChange={() => canEditFile && toggleSelect(file.id)}
                       className="mt-1 shrink-0"

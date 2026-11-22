@@ -299,6 +299,9 @@ describe('auth and onboarding flows', () => {
     expect(screen.getByRole('button', { name: 'Optional profile details' }).getAttribute('aria-expanded')).toBe('true');
     fireEvent.change(container.querySelector('input[type="date"]'), { target: { value: '2000-01-01' } });
     fireEvent.change(screen.getByPlaceholderText('A short bio about your music (optional)'), { target: { value: 'Hello world' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Optional profile details' }));
+    expect(screen.getByRole('button', { name: 'Optional profile details' }).getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByRole('button', { name: 'Finish with display name only' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
 
     await waitFor(() => {

@@ -63,6 +63,16 @@ export default function Onboarding() {
     }
   }, [user, isAuthenticated]);
 
+  useEffect(() => {
+    if (showOptionalDetails && fieldError?.field === "birthdate") {
+      birthdateInput.current?.focus();
+    }
+  }, [showOptionalDetails, fieldError]);
+
+  const hasOptionalEdits = form.birthdate !== (user?.birthdate || "") ||
+    form.bio !== (user?.bio || "") ||
+    form.location !== (user?.location || "");
+
   const handleSave = async (displayNameOnly = false) => {
     if (loading) return;
     setValidationRecovery(false);
@@ -92,7 +102,7 @@ export default function Onboarding() {
           parsed.getTime() > todayUtc) {
         trackProductEvent("onboarding_validation_blocked", { source: "profile_setup", user_id: submittingUserId, reason: "invalid_birthdate" });
         setFieldError({ field: "birthdate", message: "Enter a valid birthdate that is not in the future, or leave it blank." });
-        birthdateInput.current?.focus();
+        setShowOptionalDetails(true);
         return;
       }
     }
@@ -245,13 +255,18 @@ export default function Onboarding() {
               className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
             </div>
           </div>
-          {showOptionalDetails && validationRecovery && (
+          {validationRecovery && (
             <div role="alert" className="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
               <p>Profile details were not accepted. You can try again with only your required display name. Optional information will not be saved in that attempt.</p>
               <Button type="button" variant="outline" disabled={loading} className="min-h-11 w-full" onClick={() => handleSave(true)}>Finish with display name only</Button>
             </div>
           )}
-          <Button onClick={() => handleSave(!showOptionalDetails)} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
+          {!showOptionalDetails && hasOptionalEdits && !validationRecovery && (
+            <Button type="button" variant="outline" disabled={loading} className="min-h-11 w-full" onClick={() => handleSave(true)}>
+              Finish with display name only
+            </Button>
+          )}
+          <Button onClick={() => handleSave(!showOptionalDetails && !hasOptionalEdits)} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
             {loading ? "Saving..." : "Enter NaliBase"}
           </Button>

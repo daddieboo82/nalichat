@@ -86,7 +86,7 @@ vi.mock('@/components/onboarding/ImmersiveOnboarding', () => ({
   default: ({ onDismiss }) => <button onClick={onDismiss}>Immersive Onboarding</button>,
   VISITOR_ONBOARDING_STORAGE_KEY: 'nali_onboarding_seen',
 }));
-vi.mock('@/components/navigation/RecentlyVisited', () => ({ default: () => <div>Recently Visited</div> }));
+vi.mock('@/components/navigation/RecentlyVisited', () => ({ useRecentPages: () => [], default: () => <div>Recently Visited</div> }));
 vi.mock('@/components/branding/Logo', () => ({ default: () => <div>Logo</div> }));
 vi.mock('@/components/ui/sheet', () => ({
   Sheet: ({ open, onOpenChange, children }) => <div data-open={open}>{children}</div>,

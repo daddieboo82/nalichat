@@ -91,7 +91,7 @@ export default function SharedFileDownload() {
           <>
             <ShieldCheck className="w-12 h-12 text-primary mx-auto mb-4" />
             <h1 className="mb-2 break-words font-heading text-xl font-bold sm:text-2xl">{file?.name || "Shared file"}</h1>
-            <p className="text-muted-foreground mb-6">Shared through NaliBase.</p>
+            <p className="text-muted-foreground mb-6">Securely shared through NaliBase.</p>
             <Button onClick={download} disabled={state === "downloading"} className="h-12 w-full rounded-xl font-semibold">
               {state === "downloading"
                 ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />

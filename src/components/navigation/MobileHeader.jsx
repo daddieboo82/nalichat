@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { sounds } from "@/hooks/use-sound";
 import { cn } from "@/lib/utils";
-import RecentlyVisited from "@/components/navigation/RecentlyVisited";
+import RecentlyVisited, { useRecentPages } from "@/components/navigation/RecentlyVisited";
 import Logo from "@/components/branding/Logo";
 import { useSubscription } from "@/hooks/useSubscription";
 import { trackProductEvent } from "@/lib/productAnalytics";
@@ -74,6 +74,7 @@ export default function MobileHeader() {
   }, [user?.id]);
 
   const path = location.pathname;
+  const recent = useRecentPages(path, TITLES);
 
   const hasDynamicSegment = path.split("/").filter(Boolean).length > 1 && !ROOT_PATHS.has(path);
   const isSubPage = location.state?.from || hasDynamicSegment || !ROOT_PATHS.has(path) || location.search.length > 0;
@@ -211,7 +212,7 @@ export default function MobileHeader() {
             )}
 
             {/* Recently Visited */}
-            <RecentlyVisited onNavigate={handleNavigate} currentPath={path} currentWorldId="" />
+            <RecentlyVisited recent={recent} titles={TITLES} onNavigate={handleNavigate} currentPath={path} />
 
             {/* Feature categories — clear, direct links with descriptions */}
             {NAV_GROUPS.map((group) => (

@@ -7,9 +7,6 @@ import { getRememberedWorldForPath, getWorldForPath, WORLD_CONTEXTS } from "@/li
 const LEGACY_STORAGE_KEY = "nali_recent_pages";
 const storageKeyFor = (userId) => `nali_recent_pages:${userId || "anonymous"}`;
 const MAX_ITEMS = 4;
-// Paths that shouldn't be tracked (transient/auth pages)
-const EXCLUDE = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/onboarding"];
-
 const ICONS = {
   "/": "🏠",
   "/explore": "🧭",
@@ -34,44 +31,36 @@ const normalizeEntry = (item) => typeof item === "string"
   ? { path: item, fromWorld: "" }
   : { path: item?.path || "", fromWorld: WORLD_CONTEXTS[item?.fromWorld] ? item.fromWorld : "" };
 
-export default function RecentlyVisited({ onNavigate, currentPath, currentWorldId = "" }) {
+export function useRecentPages(currentPath, titles, currentWorldId = "") {
   const { user } = useAuth();
   const storageKey = storageKeyFor(user?.id);
-  const [recent, setRecent] = useState([]);
+  const [history, setHistory] = useState(null);
 
   useEffect(() => {
     try {
       let raw = sessionStorage.getItem(storageKey);
       if (!raw && !user?.id) {
         raw = sessionStorage.getItem(LEGACY_STORAGE_KEY);
-        if (raw) {
-          sessionStorage.setItem(storageKey, raw);
-          sessionStorage.removeItem(LEGACY_STORAGE_KEY);
-        }
+        if (raw) sessionStorage.removeItem(LEGACY_STORAGE_KEY);
       }
       const parsed = JSON.parse(raw || "[]");
-      // Migrate legacy path strings to origin-aware entries and remove Plaza.
-      const cleaned = parsed.map(normalizeEntry).filter(entry => entry.path && entry.path !== "/");
-      if (JSON.stringify(cleaned) !== JSON.stringify(parsed)) sessionStorage.setItem(storageKey, JSON.stringify(cleaned));
-      setRecent(cleaned);
-    } catch { setRecent([]); }
-  }, [currentPath, storageKey, user?.id]);
-
-  // Track current page (skip excluded + detail/sub pages)
-  useEffect(() => {
-    if (EXCLUDE.some(p => currentPath.startsWith(p))) return;
-    // Only track root-level pages (no dynamic segments)
-    if (currentPath.split("/").filter(Boolean).length > 1) return;
-    try {
-      const stored = JSON.parse(sessionStorage.getItem(storageKey) || "[]").map(normalizeEntry);
-      const filtered = stored.filter(entry => entry.path !== currentPath);
-      const entry = { path: currentPath, fromWorld: WORLD_CONTEXTS[currentWorldId] ? currentWorldId : "" };
-      const updated = [entry, ...filtered].slice(0, MAX_ITEMS);
+      const stored = (Array.isArray(parsed) ? parsed : []).map(normalizeEntry)
+        .filter(entry => entry.path !== "/" && Object.hasOwn(titles, entry.path));
+      let updated = stored.slice(0, MAX_ITEMS);
+      if (currentPath !== "/" && Object.hasOwn(titles, currentPath)) {
+        const filtered = stored.filter(entry => entry.path !== currentPath);
+        const entry = { path: currentPath, fromWorld: WORLD_CONTEXTS[currentWorldId] ? currentWorldId : "" };
+        updated = [entry, ...filtered].slice(0, MAX_ITEMS);
+      }
       sessionStorage.setItem(storageKey, JSON.stringify(updated));
-      setRecent(updated);
-    } catch {}
-  }, [currentPath, currentWorldId, storageKey]);
+      setHistory({ storageKey, pages: updated });
+    } catch { setHistory(null); }
+  }, [currentPath, titles, currentWorldId, storageKey, user?.id]);
 
+  return history?.storageKey === storageKey ? history.pages : [];
+}
+
+export default function RecentlyVisited({ recent, onNavigate, currentPath, titles }) {
   if (recent.length === 0) return null;
 
   return (
@@ -96,7 +85,7 @@ export default function RecentlyVisited({ onNavigate, currentPath, currentWorldI
             )}
           >
             <span className="text-sm">{ICONS[path] || "📄"}</span>
-            <span className="capitalize">{path.split("/")[1].replace(/-/g, " ")}</span>
+            <span className="capitalize">{titles[path]}</span>
           </button>
           );
         })}

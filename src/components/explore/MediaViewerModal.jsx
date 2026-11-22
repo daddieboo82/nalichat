@@ -104,7 +104,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0a0a0c] border-white/10 max-w-5xl p-0 shadow-2xl sm:rounded-3xl max-h-[90dvh] overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]">
+      <DialogContent className="isolate bg-[#0a0a0c] border-white/15 max-w-5xl p-0 shadow-[0_24px_96px_rgba(0,0,0,.7)] sm:rounded-3xl max-h-[90dvh] overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]">
         <DialogTitle className="sr-only">{post.title || "Media viewer"}</DialogTitle>
         <DialogDescription className="sr-only">{post.description || "View media details and playback."}</DialogDescription>
         
@@ -112,7 +112,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
           {/* Ambient Background */}
           {post.image_url && (
             <div 
-              className="absolute inset-0 opacity-20 blur-3xl scale-150 pointer-events-none transition-all duration-1000"
+              className="absolute inset-0 opacity-[.14] blur-3xl scale-150 pointer-events-none transition-opacity duration-1000 motion-reduce:transition-none"
               style={{ backgroundImage: `url(${post.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
             />
           )}
@@ -127,8 +127,8 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                 onError={(e) => e.currentTarget.style.display = 'none'}
               />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-secondary/20">
-                <Music className="w-24 h-24 text-white/10 mb-4" />
+              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/15 via-white/5 to-black/50">
+                <Music className="mb-4 h-20 w-20 text-white/30" />
               </div>
             )}
             
@@ -141,11 +141,11 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
           <div className="relative z-10 flex h-full flex-1 flex-col justify-end p-4 sm:p-6 md:p-10">
              <div className="flex-1 flex flex-col justify-center">
                  <div className="flex flex-wrap gap-2 mb-4">
-                   {post.genre && <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-full">{post.genre}</span>}
-                   {post.medium && <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 bg-white/5 px-2.5 py-1 rounded-full">{post.medium}</span>}
+                   {post.genre && <span className="rounded-full border border-primary/30 bg-primary/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">{post.genre}</span>}
+                   {post.medium && <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white/80">{post.medium}</span>}
                  </div>
                  
-                 <h2 className="mb-2 line-clamp-2 font-heading text-2xl font-black leading-tight text-white drop-shadow-lg sm:text-3xl md:text-5xl">{post.title}</h2>
+                 <h2 className="mb-2 line-clamp-2 break-words font-heading text-2xl font-bold leading-tight tracking-tight text-white sm:text-3xl md:text-4xl">{post.title}</h2>
                  
                  <Link 
                    to={`/profile?id=${post.creator_id}`}
@@ -158,7 +158,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    </Avatar>
                    <div>
                      <p className="text-sm font-semibold text-white/90 hover:underline">{post.creator_name || "Anonymous"}</p>
-                     <p className="text-xs text-white/50">Creator</p>
+                     <p className="text-xs text-white/70">Creator</p>
                    </div>
                  </Link>
 
@@ -173,7 +173,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                      size="sm"
                      greeting={`Nali, the user is viewing "${post.title}" by ${post.creator_name || 'this artist'}. Offer a brief, expert insight about the track's genre, production, or arrangement.`}
                    />
-                   <span className="text-[11px] text-white/40">Ask Nali about this track</span>
+                   <span className="text-xs text-white/70">Ask Nali about this track</span>
                  </div>
 
                  <div className="mb-6 grid grid-cols-1 gap-2 sm:mb-8 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
@@ -300,19 +300,19 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    </Button>
                  </div>
 
-                 <div className="grid grid-cols-2 gap-4 mb-8">
+                 <div className="mb-5 grid grid-cols-2 gap-2 sm:mb-6 sm:gap-3">
                     {(post.bpm || post.duration) && (
                        <>
                          {post.bpm && (
-                           <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-md">
-                             <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Tempo</p>
-                             <p className="font-mono text-lg text-white/90">{post.bpm} <span className="text-xs text-white/40">BPM</span></p>
+                           <div className="min-w-0 rounded-xl border border-white/10 bg-white/[.06] px-3 py-2.5">
+                             <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-white/70">Tempo</p>
+                             <p className="break-words font-mono text-lg tabular-nums text-white">{post.bpm} <span className="text-xs text-white/70">BPM</span></p>
                            </div>
                          )}
                          {post.duration && (
-                           <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-md">
-                             <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Length</p>
-                             <p className="font-mono text-lg text-white/90">{formatTime(post.duration)}</p>
+                           <div className="min-w-0 rounded-xl border border-white/10 bg-white/[.06] px-3 py-2.5">
+                             <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-white/70">Length</p>
+                             <p className="break-words font-mono text-lg tabular-nums text-white">{formatTime(post.duration)}</p>
                            </div>
                          )}
                        </>
@@ -322,7 +322,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                  {Array.isArray(post.tags) && post.tags.length > 0 && (
                    <div className="flex flex-wrap gap-2 mb-8">
                      {post.tags.map(tag => (
-                       <span key={tag} className="text-xs text-white/50 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
+                       <span key={tag} className="text-xs text-white/75 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
                          #{tag}
                        </span>
                      ))}
@@ -332,7 +332,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
 
              {/* Audio Player */}
              {(post.file_url || post.image_url?.includes(".mp3") || post.image_url?.includes(".wav") || post.image_url?.includes(".ogg")) && (
-               <div className="mt-auto pt-6 border-t border-white/10">
+               <div className="mt-auto rounded-2xl border border-white/15 bg-black/35 p-2 sm:p-4">
                  <audio
                    ref={audioRef}
                    src={post.file_url || post.image_url}
@@ -347,11 +347,11 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    controlsList="nodownload nofullscreen noremoteplayback"
                  />
 
-                 <div className="flex flex-col gap-4">
+                 <div className="flex flex-col gap-2 sm:gap-3">
                    {/* Progress Bar */}
                    <div className="flex items-center gap-3">
-                     <span className="text-xs font-mono text-white/50 w-10 text-right">{formatTime(currentTime)}</span>
-                     <div className="flex-1 relative group cursor-pointer h-4 flex items-center">
+                     <span className="w-10 shrink-0 font-mono text-xs tabular-nums text-white/75 text-right">{formatTime(currentTime)}</span>
+                     <div className="group relative flex h-4 min-w-0 flex-1 cursor-pointer items-center rounded-full focus-within:ring-2 focus-within:ring-white/70">
                        <input
                          type="range"
                          min="0"
@@ -362,7 +362,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                          aria-label="Seek audio"
                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                        />
-                       <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/20">
                          <div 
                            className="h-full bg-gradient-to-r from-primary to-pink-500 rounded-full"
                            style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
@@ -370,20 +370,20 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                        </div>
                        {/* Thumb */}
                        <div 
-                         className="absolute h-3 w-3 bg-white rounded-full shadow-lg shadow-black/50 scale-0 group-hover:scale-100 transition-transform pointer-events-none"
+                         className="absolute h-3 w-3 bg-white rounded-full shadow-lg shadow-black/50 pointer-events-none scale-0 transition-transform group-focus-within:scale-100 group-hover:scale-100 motion-reduce:transition-none"
                          style={{ left: `calc(${(currentTime / (duration || 1)) * 100}% - 6px)` }}
                        />
                      </div>
-                     <span className="text-xs font-mono text-white/50 w-10">{formatTime(duration)}</span>
+                     <span className="w-10 shrink-0 font-mono text-xs tabular-nums text-white/75">{formatTime(duration)}</span>
                    </div>
 
                    {/* Controls */}
-                   <div className="flex items-center justify-center gap-4 sm:gap-6">
+                   <div className="flex items-center justify-center gap-1 sm:gap-4">
                      <Button
                        type="button"
                        variant="ghost"
                        size="icon"
-                       className="ui-hover h-11 w-11 rounded-xl text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 sm:h-12 sm:w-12"
+                       className="ui-hover h-11 w-11 rounded-xl text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 sm:h-12 sm:w-12"
                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); stopPlayback(); }}
                        title="Stop"
                      >
@@ -394,7 +394,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                        type="button"
                        variant="ghost"
                        size="icon"
-                       className="ui-hover h-11 w-11 rounded-xl text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 sm:h-12 sm:w-12"
+                       className="ui-hover h-11 w-11 rounded-xl text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 sm:h-12 sm:w-12"
                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); skipBackward(); }}
                        title="Rewind 10s"
                      >
@@ -403,7 +403,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                      
                      <Button
                        type="button"
-                       className="ui-hover h-14 w-14 shrink-0 rounded-2xl bg-white text-black shadow-[0_0_40px_rgba(255,255,255,0.3)] transition-all hover:bg-white/90 focus-visible:ring-2 focus-visible:ring-white/70 sm:h-16 sm:w-16"
+                       className="ui-hover h-14 w-14 shrink-0 rounded-2xl bg-white text-black shadow-[0_6px_22px_rgba(0,0,0,.45)] transition-all hover:bg-white/90 focus-visible:ring-2 focus-visible:ring-white/70 sm:h-16 sm:w-16"
                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePlay(); }}
                        title={isPlaying ? "Pause" : "Play"}
                      >
@@ -418,7 +418,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                        type="button"
                        variant="ghost"
                        size="icon"
-                       className="ui-hover h-11 w-11 rounded-xl text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 sm:h-12 sm:w-12"
+                       className="ui-hover h-11 w-11 rounded-xl text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 sm:h-12 sm:w-12"
                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); skipForward(); }}
                        title="Fast Forward 10s"
                      >
@@ -429,7 +429,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                        type="button"
                        variant="ghost"
                        size="icon"
-                       className="ui-hover h-11 w-11 rounded-xl text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 sm:h-12 sm:w-12"
+                       className="ui-hover h-11 w-11 rounded-xl text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 sm:h-12 sm:w-12"
                        onClick={(e) => {
                          e.preventDefault();
                          e.stopPropagation();
@@ -454,7 +454,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
             onClick={() => onOpenChange(false)}
             title="Close"
             aria-label="Close"
-            className="ui-hover fixed right-3 top-[max(.75rem,env(safe-area-inset-top))] z-50 flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-black/50 text-white/80 backdrop-blur-md transition-all hover:bg-black/70 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 sm:right-4 sm:top-4"
+            className="ui-hover fixed right-3 top-[max(.75rem,env(safe-area-inset-top))] z-50 flex h-11 w-11 items-center justify-center rounded-xl border border-white/25 bg-black/70 text-white backdrop-blur-md transition-all hover:bg-black/70 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 sm:right-4 sm:top-4"
           >
             <X className="w-5 h-5" />
           </button>

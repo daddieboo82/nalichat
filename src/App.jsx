@@ -383,6 +383,7 @@ const AuthenticatedApp = () => {
           <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
         </div>
       }>
+      <div className={/^\/(?:studio(?:-editor)?|music-studio|live-studio-sessions)(?:\/|$)/.test(currentPath) ? "contents" : "nali-page-ui contents"}>
       <Routes location={location}>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -461,6 +462,7 @@ const AuthenticatedApp = () => {
       <Route path="/encryption-documentation" element={<EncryptionDocumentation />} />
       <Route path="*" element={<PageNotFound />} />
       </Routes>
+      </div>
       </Suspense>
       {!['/login', '/register', '/onboarding', '/forgot-password', '/reset-password', '/mfa', '/oauth-consent', '/shared-file'].includes(location.pathname) && <AskNaliHint />}
     </>

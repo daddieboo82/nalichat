@@ -1,3 +1,4 @@
+import SectionLinks from "@/components/layout/SectionLinks";
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -471,7 +472,12 @@ export default function Analytics() {
       {/* Header */}
       <div className="border-b border-border/70 bg-gradient-to-r from-primary/10 via-background to-accent/5 px-4 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] sm:p-6">
         <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">Analytics</h1>
-        <p className="mt-1 text-sm text-muted-foreground sm:text-base">Track your audience engagement</p>
+        {!isLoading && !isError && <div className="mt-3">
+          <SectionLinks label="Analytics sections" sections={[
+            ...(isAdmin ? [["analytics-retention", "Visitor retention"], ["analytics-activation", "Activation"]] : []),
+            ["analytics-tracks", "Track performance"],
+          ]} />
+        </div>}
       </div>
 
       {/* Content */}
@@ -496,7 +502,7 @@ export default function Analytics() {
         ) : (
           <>
         {isAdmin && (
-          <Card className="ui-surface rounded-2xl border border-primary/20 bg-card/60 p-4 sm:p-5">
+          <Card id="analytics-retention" tabIndex={-1} className="scroll-mt-4 ui-surface rounded-2xl border border-primary/20 bg-card/60 p-4 sm:p-5">
             <h2 className="font-heading text-lg font-semibold">Visitor Retention — Recorded Sessions</h2>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Each session contributes its highest recorded foreground duration when a page-hide, visibility change, or cleanup event captures that duration. Historical periods may include automated test visits.</p>
             {visitorRetention.checkpointOnly > 0 && (
@@ -528,7 +534,7 @@ export default function Analytics() {
           </Card>
         )}
         {isAdmin && (
-          <Card className="ui-surface rounded-2xl border border-primary/20 bg-card/60 p-4 backdrop-blur-xl sm:p-5">
+          <Card id="analytics-activation" tabIndex={-1} className="scroll-mt-4 ui-surface rounded-2xl border border-primary/20 bg-card/60 p-4 backdrop-blur-xl sm:p-5">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="font-heading text-lg font-semibold tracking-tight">Visitor Activation Funnel</h2>
@@ -838,7 +844,7 @@ export default function Analytics() {
 
         {/* Detailed Track List */}
         {userPosts.length > 0 && (
-          <Card className="ui-surface overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl sm:p-5">
+          <Card id="analytics-tracks" tabIndex={-1} className="scroll-mt-4 ui-surface overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl sm:p-5">
             <h2 className="mb-4 font-heading font-semibold tracking-tight">Track Performance</h2>
             <div className="no-scrollbar -mx-1 overflow-x-auto rounded-xl px-1">
               <table className="w-full min-w-[560px] text-sm tabular-nums">

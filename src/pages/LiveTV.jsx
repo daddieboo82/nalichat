@@ -225,10 +225,9 @@ export default function LiveTV() {
     <main className="mx-auto w-full max-w-7xl space-y-5 p-4 pb-24 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Inspiration break</p>
           <h1 className="font-heading text-3xl font-black">NaliVision</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Watch channels you are authorized to access, then jump back into your recording session.
+            Browse free channels or import an authorized playlist.
           </p>
         </div>
         <Button asChild variant="outline"><Link to="/studio"><ArrowLeft className="mr-2 h-4 w-4" />Back to Studio</Link></Button>
@@ -239,9 +238,9 @@ export default function LiveTV() {
           <Button type="button" onClick={() => loadFreeTv()} disabled={loading}><Tv className="mr-2 h-4 w-4" />{loading ? "Loading…" : "Free TV"}</Button>
           <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import M3U</Button>
           <input ref={fileRef} className="hidden" type="file" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl" onChange={(e) => loadFile(e.target.files?.[0])} />
-          <Input className="min-w-52 flex-1" placeholder="Search channels" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <Input className="min-h-11 min-w-0 basis-full sm:basis-48 sm:flex-1" type="search" aria-label="Search channels" placeholder="Search channels" value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">Free TV loads the public USA channel list. Import playlists you own or have permission to use. NaliChat does not supply unauthorized TV streams.</p>
+        <p className="mt-2 text-xs text-muted-foreground">Free TV loads the public USA channel list. Import only playlists you have permission to use.</p>
         {error && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
       </section>
 
@@ -251,7 +250,7 @@ export default function LiveTV() {
             <div ref={playerRef} className="flex flex-col justify-center bg-black [&:fullscreen]:h-full">
               <video ref={videoRef} key={selected.url} src={/\.m3u8(?:$|[?#])/i.test(selected.url) ? undefined : selected.url} controls playsInline className="aspect-video w-full bg-black" onError={() => setError("This channel is offline right now. Pick another channel from the list.")} />
               <div className="bg-card p-4">
-                <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><div className="flex items-center gap-1"><Button type="button" variant="secondary" onClick={playSelectedChannel}><Play className="mr-2 h-4 w-4" />Play</Button><Button type="button" size="icon" variant="ghost" aria-label="Picture in picture" onClick={openPictureInPicture}><PictureInPicture2 className="h-5 w-5" /></Button><Button type="button" size="icon" variant="ghost" aria-label={isFullscreen ? "Exit full screen" : "Full screen"} onClick={toggleFullscreen}>{isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}</Button><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div></div>
+                <div className="flex flex-wrap items-center justify-between gap-3"><div className="min-w-0"><h2 className="break-words font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><div className="flex max-w-full flex-wrap items-center gap-1 [&>button]:min-h-11 [&>button]:min-w-11"><Button type="button" variant="secondary" onClick={playSelectedChannel}><Play className="mr-2 h-4 w-4" />Play</Button><Button type="button" size="icon" variant="ghost" aria-label="Picture in picture" onClick={openPictureInPicture}><PictureInPicture2 className="h-5 w-5" /></Button><Button type="button" size="icon" variant="ghost" aria-label={isFullscreen ? "Exit full screen" : "Full screen"} onClick={toggleFullscreen}>{isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}</Button><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" aria-pressed={favorites.some((item) => item.url === selected.url)} onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div></div>
               </div>
             </div>
           ) : (
@@ -266,9 +265,9 @@ export default function LiveTV() {
           {loading && <p className="px-2 pb-2 text-xs text-muted-foreground">Loading USA channels…</p>}
           {favorites.length > 0 && <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Favorites: {favorites.length} · Recent: {recent.length}</p>}
           {filtered.map((channel, index) => (
-            <button key={channel.url + index} type="button" onClick={() => chooseChannel(channel)}
+            <button key={channel.url + index} type="button" aria-pressed={selected?.url === channel.url} onClick={() => chooseChannel(channel)}
               className="flex min-h-14 w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-secondary">
-              {channel.logo ? <img src={channel.logo} alt="" className="h-9 w-9 rounded-lg object-cover" /> : <Play className="h-5 w-5 text-primary" />}
+              {channel.logo ? <img src={channel.logo} alt="" loading="lazy" className="h-9 w-9 shrink-0 rounded-lg object-cover" /> : <Play className="h-5 w-5 text-primary" />}
               <span className="min-w-0">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate text-sm font-medium">{channel.name}</span>

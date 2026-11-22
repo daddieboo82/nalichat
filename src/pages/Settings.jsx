@@ -1,3 +1,4 @@
+import SectionLinks from "@/components/layout/SectionLinks";
 import { secureUploadFile } from "@/lib/secureUpload";
 import { validateUpload } from "@/lib/uploadValidation";
 import { useState, useEffect, useRef } from "react";
@@ -174,10 +175,19 @@ export default function Settings() {
   return (
     <PullToRefresh onRefresh={async () => { await checkUserAuth(); }} className="nali-workspace nali-settings h-full overflow-y-auto">
       <div className={`mx-auto max-w-2xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:py-10 ${reduceMotion ? "reduce-motion-surface" : ""}`}>
-        <div className="mb-6"><div className="mb-1 flex items-center gap-2 text-primary"><UserRound className="h-5 w-5" aria-hidden="true" /><span className="text-xs font-bold uppercase tracking-[0.16em]">Account</span></div><h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">Profile Settings</h1><p className="mt-1 text-sm text-muted-foreground">Manage your public artist profile, preferences, privacy, subscription, and devices.</p></div>
+        <header className="mb-5 space-y-3">
+          <h1 className="flex items-center gap-2 font-heading text-2xl font-bold tracking-tight sm:text-3xl"><UserRound className="h-5 w-5 text-primary" aria-hidden="true" />Profile Settings</h1>
+          <SectionLinks label="Settings sections" sections={[
+            ["settings-profile", "Profile"],
+            ["settings-appearance", "Appearance"],
+            ["settings-privacy", "Privacy"],
+            ["settings-billing", "Billing"],
+            ["settings-devices", "Audio devices"],
+          ]} />
+        </header>
 
         {/* Avatar */}
-        <div className="nali-profile-surface ui-surface relative mb-7 flex flex-col items-center gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-5 text-center shadow-lg backdrop-blur-xl sm:flex-row sm:gap-6 sm:p-6 sm:text-left">
+        <div id="settings-profile" tabIndex={-1} className="scroll-mt-4 nali-profile-surface ui-surface relative mb-7 flex flex-col items-center gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-5 text-center shadow-lg backdrop-blur-xl sm:flex-row sm:gap-6 sm:p-6 sm:text-left">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-accent/20 blur-3xl rounded-full pointer-events-none" />
           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/20 blur-3xl rounded-full pointer-events-none" />
           
@@ -262,7 +272,7 @@ export default function Settings() {
           </Button>
         </div>
 
-        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+        <div id="settings-appearance" tabIndex={-1} className="scroll-mt-4 mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
           <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">
             <Palette className="h-5 w-5 text-primary" aria-hidden="true" />
             Appearance
@@ -280,7 +290,7 @@ export default function Settings() {
           <LanguageSettings />
         </div>
 
-        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+        <div id="settings-privacy" tabIndex={-1} className="scroll-mt-4 mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
           <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Privacy</h2>
           <LockedChatSettings />
         </div>
@@ -372,12 +382,12 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+        <div id="settings-billing" tabIndex={-1} className="scroll-mt-4 mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
           <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Subscription & Billing</h2>
           <SubscriptionSettings />
         </div>
 
-        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+        <div id="settings-devices" tabIndex={-1} className="scroll-mt-4 mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
           <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Audio Devices</h2>
           <DeviceSelector compact={true} />
         </div>

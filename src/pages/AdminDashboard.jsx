@@ -1,3 +1,4 @@
+import SectionLinks from "@/components/layout/SectionLinks";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -269,8 +270,14 @@ export default function AdminDashboard() {
           </Button>
         </div>
 
+        <div className="mb-4">
+          <SectionLinks label="Dashboard sections" sections={[
+            ["dashboard-metrics", "Metrics"], ["dashboard-webhook", "PayPal webhook"], ["pending-paypal-audit", "Pending payments"],
+          ]} />
+        </div>
         <NaliMaintenancePanel />
 
+        <h2 id="dashboard-metrics" tabIndex={-1} className="mb-3 scroll-mt-4 font-heading text-lg font-semibold">Account metrics</h2>
         {statsError && (
           <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 mb-6">
             <p className="font-semibold text-destructive">Could not load dashboard metrics.</p>
@@ -333,7 +340,7 @@ export default function AdminDashboard() {
           </>
         )}
 
-        <div className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-6 mb-8">
+        <div id="dashboard-webhook" tabIndex={-1} className="scroll-mt-4 ui-surface bg-card/60 border border-border/60 rounded-2xl p-6 mb-8">
           <h2 className="text-xl font-bold mb-3">Live PayPal webhook verification</h2>
           <p className="mb-4 text-sm text-muted-foreground">Read-only check against PayPal's live registered webhook URL and subscribed events. Does not charge customers or create another webhook.</p>
           <Button type="button" variant="outline" onClick={verifyLivePayPalWebhook} disabled={webhookVerificationLoading} className="min-h-11">
@@ -351,7 +358,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div id="pending-paypal-audit" className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-6 mb-8">
+        <div id="pending-paypal-audit" tabIndex={-1} className="scroll-mt-4 ui-surface bg-card/60 border border-border/60 rounded-2xl p-6 mb-8">
           <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-primary" /> Pending PayPal status
           </h2>

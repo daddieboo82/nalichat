@@ -615,6 +615,17 @@
   }
 }
 
+/* Keep narrow-screen page headings and editable text readable. Studio has its own layout. */
+@media (max-width: 767px) {
+  .nali-page-ui :is(h1, h2, h3) {
+    overflow-wrap: anywhere;
+  }
+
+  .nali-page-ui :is(input:not([type]), input:is([type="text"], [type="email"], [type="password"], [type="search"], [type="tel"], [type="url"]), textarea) {
+    font-size: max(1rem, 16px);
+  }
+}
+
 /* Scoped visual treatments for creator workspaces. */
 .nali-workspace {
   background-image: radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / .10), transparent 32rem);

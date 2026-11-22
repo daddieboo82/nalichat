@@ -218,8 +218,8 @@ export default function ProjectsSummary() {
     <div className="mx-auto h-full max-w-5xl overflow-y-auto px-4 py-5 pb-[max(2rem,env(safe-area-inset-bottom))] custom-scrollbar sm:p-6">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="mb-2 text-2xl font-heading font-bold tracking-tight sm:text-3xl">Collaboration Summary</h1>
-          <p className="text-muted-foreground">Overview of your active projects, milestones, and shared files.</p>
+          <h1 className="mb-2 text-2xl font-heading font-bold tracking-tight sm:text-3xl">Projects</h1>
+          <p className="text-muted-foreground">Open a project to see its milestones and shared files.</p>
         </div>
         <Button onClick={() => setShowNewProject(true)} className="ui-hover min-h-11 shrink-0 gap-2 rounded-xl font-semibold shadow-lg shadow-primary/10">
           <Plus className="w-4 h-4" /> New Project
@@ -229,22 +229,22 @@ export default function ProjectsSummary() {
       {data.projects.length > 0 && (
         <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={projectSearch} onChange={(e) => setProjectSearch(e.target.value)} placeholder="Find a Studio session by name, description, or status..." className="h-12 rounded-2xl border-border/60 bg-card/60 pl-11" />
+          <Input value={projectSearch} onChange={(e) => setProjectSearch(e.target.value)} type="search" aria-label="Search projects" placeholder="Search projects…" className="h-12 rounded-2xl border-border/60 bg-card/60 pl-11" />
         </div>
       )}
 
       {data.projects.length === 0 ? (
         <div className="ui-surface rounded-2xl border border-border/60 bg-card/50 px-5 py-12 text-center backdrop-blur-xl">
           <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">No Active Projects</h2>
-          <p className="text-muted-foreground">You are not collaborating on any projects yet.</p>
+          <h2 className="text-xl font-semibold mb-2">No projects yet</h2>
+          <p className="text-muted-foreground">Use New Project to start a collaboration.</p>
         </div>
       ) : (
         <div className="space-y-6 pb-12">
           {visibleProjects.length === 0 && (
             <div className="rounded-2xl border border-border/60 bg-card/50 px-5 py-10 text-center">
               <Search className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-              <p className="font-semibold">No sessions match “{projectSearch}”</p>
+              <p className="font-semibold">No projects match “{projectSearch}”</p>
               <p className="mt-1 text-sm text-muted-foreground">Try another project name, description, or status.</p>
             </div>
           )}

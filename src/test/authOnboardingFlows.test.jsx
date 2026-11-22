@@ -303,7 +303,7 @@ describe('auth and onboarding flows', () => {
     const displayName = screen.getByRole('textbox', { name: /display name/i });
     const error = await screen.findByText('Please enter your display name.');
     expect(displayName.getAttribute('aria-invalid')).toBe('true');
-    expect(displayName.getAttribute('aria-describedby')).toBe(error.id);
+    expect(displayName.getAttribute('aria-describedby').split(' ')).toContain(error.id);
     expect(document.activeElement).toBe(displayName);
     fireEvent.change(displayName, { target: { value: 'New Name' } });
     expect(screen.queryByText('Please enter your display name.')).toBeNull();
@@ -366,6 +366,21 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.functions.invoke).toHaveBeenCalledWith('completeOnboarding', {
       display_name: 'Artist', birthdate: '', bio: 'Artist bio', location: 'South Bend',
     });
+  });
+
+  it('matches the stored profile limits and shows remaining space for a long bio', () => {
+    mockAuthState.current.user = { id: 'artist', full_name: 'Artist' };
+    mockAuthState.current.isAuthenticated = true;
+    renderInRouter(<Onboarding />);
+    fireEvent.click(screen.getByRole('button', { name: 'Optional profile details' }));
+    const bio = screen.getByLabelText(/Bio/);
+    expect(bio.maxLength).toBe(2000);
+    expect(screen.getByLabelText(/Display Name/).maxLength).toBe(120);
+    expect(screen.getByLabelText(/Location/).maxLength).toBe(200);
+    fireEvent.change(bio, { target: { value: 'a'.repeat(1995) } });
+    expect(screen.getByText('5 of 2000 characters left.')).toBeTruthy();
+    fireEvent.change(bio, { target: { value: 'a'.repeat(2000) } });
+    expect(screen.getByText('2000-character limit reached.')).toBeTruthy();
   });
 
   it('saves onboarding profile data and refreshes auth state', async () => {

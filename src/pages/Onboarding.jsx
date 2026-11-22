@@ -11,6 +11,20 @@ import OnboardingNaliGuide from "@/components/onboarding/OnboardingNaliGuide";
 import { trackProductEvent } from "@/lib/productAnalytics";
 import { onboardingLoginPath, safeReturnTo } from "@/lib/authReturnTo";
 
+const PROFILE_LIMITS = { display_name: 120, bio: 2000, location: 200 };
+
+function LengthHint({ id, value, limit }) {
+  const remaining = limit - value.length;
+  return (
+    <p id={id} className={remaining > 20 ? "sr-only" : "text-xs text-muted-foreground"}>
+      {remaining > 20 ? `Maximum ${limit} characters.`
+        : remaining < 0 ? `${-remaining} over the ${limit}-character limit.`
+        : remaining === 0 ? `${limit}-character limit reached.`
+        : `${remaining} of ${limit} characters left.`}
+    </p>
+  );
+}
+
 function destinationAfterSetup() {
   const destination = safeReturnTo();
   const { pathname } = new URL(destination, window.location.origin);
@@ -239,17 +253,19 @@ function OnboardingForm() {
             <label htmlFor="setup-display-name" className="flex items-center gap-2 text-sm font-semibold"><UserRound className="h-4 w-4 text-primary" aria-hidden="true" />Display Name <span className="text-primary">*</span></label>
             <Input
               id="setup-display-name"
+              maxLength={PROFILE_LIMITS.display_name}
               ref={displayNameInput}
               readOnly={profileSaved}
               autoComplete="nickname"
               enterKeyHint="go"
               aria-required="true"
               aria-invalid={fieldError?.field === "display_name"}
-              aria-describedby={fieldError?.field === "display_name" ? "setup-display-name-error" : undefined}
+              aria-describedby={fieldError?.field === "display_name" ? "setup-display-name-error setup-display-name-length" : "setup-display-name-length"}
               value={form.display_name}
               onChange={(e) => { markOnboardingInteraction(); setFieldError(error => error?.field === "display_name" ? null : error); setForm(f => ({ ...f, display_name: e.target.value })); }}
               placeholder="What should we call you?"
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
+            <LengthHint id="setup-display-name-length" value={form.display_name} limit={PROFILE_LIMITS.display_name} />
           </div>
           {fieldError?.field === "display_name" && (
             <p id="setup-display-name-error" role="alert" className="text-sm text-destructive">{fieldError.message}</p>
@@ -295,21 +311,27 @@ function OnboardingForm() {
               <label htmlFor="setup-bio" className="text-sm font-semibold">Bio <span className="font-normal text-muted-foreground">(optional)</span></label>
               <Textarea
                 id="setup-bio"
+                maxLength={PROFILE_LIMITS.bio}
+                aria-describedby="setup-bio-length"
                 value={form.bio}
                 onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, bio: e.target.value })); }}
                 placeholder="A short bio about your music (optional)"
                 rows={3}
               className="min-h-[88px] resize-y rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
+              <LengthHint id="setup-bio-length" value={form.bio} limit={PROFILE_LIMITS.bio} />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="setup-location" className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-primary" aria-hidden="true" />Location <span className="font-normal text-muted-foreground">(optional)</span></label>
               <Input
                 id="setup-location"
+                maxLength={PROFILE_LIMITS.location}
+                aria-describedby="setup-location-length"
                 enterKeyHint="go"
                 value={form.location}
                 onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, location: e.target.value })); }}
                 placeholder="City, Country"
               className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
+              <LengthHint id="setup-location-length" value={form.location} limit={PROFILE_LIMITS.location} />
             </div>
           </div>
           {detailsVisible && submitSection}

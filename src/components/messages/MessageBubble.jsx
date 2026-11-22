@@ -114,7 +114,7 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
     return (
       <div className="relative group">
         <img src={message.file_url} alt={message.file_name} loading="lazy" decoding="async" className="rounded-xl w-full min-w-0 max-w-full sm:max-w-[300px] max-h-[220px] object-cover block cursor-pointer hover:brightness-90 transition-all" onClick={() => onOpenViewer(message)} />
-        <button onClick={() => onOpenViewer(message)} className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl bg-black/50 text-white opacity-100 transition-opacity hover:bg-black/70 focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" title="Expand Image" aria-label="Expand Image">
+        <button onClick={() => onOpenViewer(message)} className="nali-file-action absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl bg-black/50 text-white opacity-100 transition-opacity hover:bg-black/70 focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" title="Expand Image" aria-label="Expand Image">
           <Maximize2 className="w-4 h-4 text-white" />
         </button>
         {message.text && <p className="text-sm mt-2">{message.text}</p>}
@@ -140,13 +140,13 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
 
   return (
     <div className="min-w-0 w-full sm:min-w-[220px]">
-      <button onClick={canDownload ? handleDownload : undefined} disabled={!canDownload} className="w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left disabled:opacity-50 disabled:cursor-not-allowed" title={canDownload ? "Download File" : "Attachment downloads are available with Premium"} aria-label={canDownload ? "Download File" : "Download locked"}>
-        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isOwn ? "bg-white/20" : "bg-primary/20")}>
+      <button onClick={canDownload ? handleDownload : undefined} disabled={!canDownload} className="nali-file-action w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left disabled:opacity-50 disabled:cursor-not-allowed" title={canDownload ? "Download File" : "Attachment downloads are available with Premium"} aria-label={canDownload ? "Download File" : "Download locked"}>
+        <div className={cn("nali-file-icon w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isOwn ? "bg-white/20" : "bg-primary/20")}>
           <Icon className={cn("w-5 h-5", isOwn ? "text-white" : "text-primary")} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate min-w-0 max-w-[min(140px,50vw)] sm:max-w-[180px]">{message.file_name || "File"}</p>
-          <p className="text-[10px] opacity-60">
+          <p className="nali-file-meta text-[10px] opacity-60">
             {dlProgress !== null ? `${dlProgress}%` : size}
           </p>
         </div>

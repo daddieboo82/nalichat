@@ -890,3 +890,16 @@
   outline: 2px solid hsl(var(--ring));
   outline-offset: -2px;
 }
+
+.nali-file-meta {
+  opacity: .85;
+  font-variant-numeric: tabular-nums;
+}
+.nali-file-icon {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 16%, transparent);
+}
+.nali-file-action:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: .5rem;
+}

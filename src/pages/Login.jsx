@@ -170,7 +170,7 @@ export default function Login() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4"><p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Use the same sign-in method you used when you created your account.</p>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">
@@ -179,7 +179,8 @@ export default function Login() {
               id="email"
               type="email"
               autoComplete="email"
-              autoFocus
+              autoCapitalize="none"
+              spellCheck={false}
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -191,7 +192,7 @@ export default function Login() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
-            <Link to="/forgot-password" className="ui-hover inline-flex min-h-9 items-center rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
+            <Link to={`/forgot-password?returnTo=${encodeURIComponent(safeReturnTo())}`} state={{ email: email.trim() }} className="ui-hover inline-flex min-h-9 items-center rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
               Forgot password?
             </Link>
           </div>

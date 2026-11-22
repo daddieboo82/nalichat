@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Mail, ArrowLeft, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
+import { safeReturnTo } from "@/lib/authReturnTo";
+
 export default function ForgotPassword() {
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const [email, setEmail] = useState(() => typeof location.state?.email === "string" ? location.state.email : "");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -32,7 +35,7 @@ export default function ForgotPassword() {
       title="Reset password"
       subtitle="Enter the email you use to sign in."
       footer={
-        <Link to="/login" className="ui-hover inline-flex min-h-11 items-center rounded-lg px-2 font-medium text-primary hover:bg-primary/10">
+        <Link to={`/login?returnTo=${encodeURIComponent(safeReturnTo())}`} className="ui-hover inline-flex min-h-11 items-center rounded-lg px-2 font-medium text-primary hover:bg-primary/10">
           <ArrowLeft className="w-3 h-3 inline mr-1" />Back to log in
         </Link>
       }
@@ -51,6 +54,8 @@ export default function ForgotPassword() {
                 id="email"
                 type="email"
                 autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

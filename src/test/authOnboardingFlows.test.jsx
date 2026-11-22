@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import Onboarding from '@/pages/Onboarding';
@@ -393,6 +393,29 @@ describe('auth and onboarding flows', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
     await waitFor(() => expect(screen.getByTestId('destination').textContent).toBe(expected));
     window.history.replaceState({}, '', '/');
+  });
+
+  it.each([
+    ['/messages?view=recent#unread', '/messages?view=recent#unread'],
+    ['/Onboarding/?step=1', '/'],
+  ])('skips completed setup on a returning visit to %s', async (target, expected) => {
+    window.history.replaceState({}, '', '/onboarding?returnTo=' + encodeURIComponent(target));
+    try {
+      mockAuthState.current.user = { id: 'existing', onboarding_completed: true };
+      mockAuthState.current.isAuthenticated = true;
+      function Destination() {
+        const { pathname, search, hash } = useLocation();
+        return <output>{pathname + search + hash}</output>;
+      }
+      renderInRouter(<Routes>
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="*" element={<Destination />} />
+      </Routes>, ['/onboarding']);
+      await screen.findByText(expected);
+      expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
+    } finally {
+      window.history.replaceState({}, '', '/');
+    }
   });
 
   it('retries the session without saving the profile again', async () => {

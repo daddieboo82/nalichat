@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,21 @@ import OnboardingNaliGuide from "@/components/onboarding/OnboardingNaliGuide";
 import { trackProductEvent } from "@/lib/productAnalytics";
 import { onboardingLoginPath, safeReturnTo } from "@/lib/authReturnTo";
 
+function destinationAfterSetup() {
+  const destination = safeReturnTo();
+  const { pathname } = new URL(destination, window.location.origin);
+  return /^\/onboarding\/*$/i.test(pathname) ? "/" : destination;
+}
+
 export default function Onboarding() {
+  const { user, isAuthenticated } = useAuth();
+  if (isAuthenticated && user?.id && user.onboarding_completed === true) {
+    return <Navigate to={destinationAfterSetup()} replace />;
+  }
+  return <OnboardingForm />;
+}
+
+function OnboardingForm() {
   const { user, checkUserAuth, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
@@ -157,9 +171,7 @@ export default function Onboarding() {
       // SPA navigation — the auth state is already refreshed in React context
       // (checkUserAuth confirmed onboarding_completed), so a full page reload
       // would just re-download JS and re-run the auth probe for nothing.
-      const destination = safeReturnTo();
-      // Never loop back into setup after it has completed.
-      navigate(new URL(destination, window.location.origin).pathname.toLowerCase() === "/onboarding" ? "/" : destination, { replace: true });
+      navigate(destinationAfterSetup(), { replace: true });
     } catch (error) {
       const httpStatus = Number(error?.response?.status ?? error?.status ?? 0);
       const isBadRequest = httpStatus === 400 || /status code 400/.test(String(error?.message || ""));

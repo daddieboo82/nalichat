@@ -71,8 +71,7 @@ export function resolveWorldForLocation(pathname='', stateWorld='') {
   const preferred = stateWorld || getRememberedWorldForPath(pathname);
   const world = getWorldForPath(pathname, preferred);
   // Keep shared-storefront mall continuity separate from account-scoped visit history.
-  // Explicit navigation state may update the active mall, but only entering WorldHub
-  // should count as a recently visited world.
+  // Resolving a tool can update the active context. Explicit entry records account-scoped history.
   if (stateWorld && world?.id === stateWorld && typeof window !== 'undefined') {
     try { window.sessionStorage.setItem(WORLD_SESSION_KEY, stateWorld); } catch (_) {}
   }

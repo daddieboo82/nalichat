@@ -16,7 +16,6 @@ import GlobalHelpDialog from "@/components/GlobalHelpDialog";
 import GlobalAudioPlayer from "@/components/audio/GlobalAudioPlayer";
 import WorldContinuityBar from "@/components/layout/WorldContinuityBar";
 import WorldAtmosphere from "@/components/layout/WorldAtmosphere";
-import StorefrontEntryTransition from "@/components/layout/StorefrontEntryTransition";
 import { Link } from "react-router-dom";
 import { Gem, Sparkles } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -56,7 +55,6 @@ export default function AppLayout() {
   return (
     <div className="relative h-screen h-[100dvh] flex flex-col bg-background overflow-hidden">
       <WorldAtmosphere />
-      <StorefrontEntryTransition />
       {/* Mobile Header */}
       {!isDesktop && !isPublicHome && <MobileHeader />}
 

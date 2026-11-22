@@ -24,15 +24,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import Logo from "@/components/branding/Logo";
 import AdSlot from "@/components/ads/AdSlot";
-import { getLastVisitedWorld, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
+import { getLastVisitedWorld, rememberWorldContext, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
 
 const PLAZA_WORLD_DETAILS = Object.freeze({
-  connect: { subtitle: "NaliChat", description: "Find creators, start chats, update your profile and manage collaborations.", icon: MessageSquare },
-  create: { subtitle: "NaliStudio", description: "Record in Studio, capture quick ideas, make cover art and organize playlists.", icon: Music },
-  discover: { subtitle: "Creator World", description: "Browse music and creators, follow playlists, rankings and your analytics.", icon: Sparkles },
-  share: { subtitle: "Files & Projects", description: "Find files and projects, message collaborators and import into Studio.", icon: FolderKanban },
-  visualize: { subtitle: "Visual World", description: "Edit your footage with a soundtrack, create cover art and export a music video.", icon: Video },
-  compete: { subtitle: "Challenges", description: "Join or create challenges, check rankings and build a squad.", icon: Trophy },
+  connect: { subtitle: "NaliChat", icon: MessageSquare },
+  create: { subtitle: "NaliStudio", icon: Music },
+  discover: { subtitle: "Creator World", icon: Sparkles },
+  share: { subtitle: "Files & Projects", icon: FolderKanban },
+  visualize: { subtitle: "Visual World", icon: Video },
+  compete: { subtitle: "Challenges", icon: Trophy },
 });
 
 
@@ -40,11 +40,47 @@ const PLAZA_WORLD_DETAILS = Object.freeze({
 const PLAZA_WORLDS = WORLD_ORDER.map((id) => ({
   id,
   title: WORLD_CONTEXTS[id].label,
-  path: WORLD_CONTEXTS[id].path,
+  storefronts: WORLD_CONTEXTS[id].storefronts,
   gradient: WORLD_CONTEXTS[id].plazaGradient,
   action: `enter_${id}`,
   ...PLAZA_WORLD_DETAILS[id],
 }));
+
+function WorldToolLinks({ userId }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {PLAZA_WORLDS.map(({ id, title, subtitle, icon: Icon, gradient, storefronts, action }) => (
+        <section key={id} className={`nali-world-card min-w-0 rounded-2xl border border-border bg-gradient-to-br ${gradient} p-4`}>
+          <header className="mb-3 flex items-center gap-3">
+            <Icon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <div className="min-w-0">
+              <h3 className="font-heading font-bold">{title}</h3>
+              <p className="text-xs text-muted-foreground">{subtitle}</p>
+            </div>
+          </header>
+          <ul className="grid grid-cols-2 gap-2">
+            {storefronts.map(({ label, path }) => (
+              <li key={path} className="min-w-0">
+                <Link
+                  to={path}
+                  state={{ fromWorld: id }}
+                  onClick={() => {
+                    if (!userId) return;
+                    rememberWorldContext(id, userId);
+                    trackProductEvent("post_login_action", { user_id: userId, source: "nalibase_hub", action, route: path });
+                  }}
+                  className="flex min-h-11 items-center rounded-xl border border-border bg-background/70 px-2.5 py-1.5 text-sm font-medium leading-tight hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
 
 const features = [
   {
@@ -319,7 +355,7 @@ export default function Home() {
                 Welcome to NaliBase, {(user.display_name || user.full_name)?.split(" ")[0] || "Creator"}
               </p>
               <h2 className="mt-2 text-center font-heading text-3xl font-black sm:text-5xl">Where do you want to go?</h2>
-              <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground sm:text-base">Your entertainment and creativity universe. Choose a world and step inside.</p>
+              <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground sm:text-base">Choose a tool to open it directly.</p>
               <div className="mx-auto mt-6 max-w-3xl" aria-label="NaliBase Central Plaza map">
                 <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-foreground/45">
                   <span className="h-px flex-1 bg-gradient-to-r from-transparent to-white/15" />
@@ -343,37 +379,15 @@ export default function Home() {
               </Link>
               {lastVisitedWorld && (
                 <div className="mb-4 flex justify-center">
-                  <Link to={lastVisitedWorld.path} onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: `return_${lastVisitedWorld.id}` })} className={`group relative inline-flex items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br ${lastVisitedWorld.plazaGradient} px-4 py-3 text-left shadow-lg backdrop-blur-xl transition hover:border-white/25 hover:shadow-xl`}>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/45">Continue your journey</span>
-                    <span className="font-heading text-sm font-black">Return to {lastVisitedWorld.label}</span>
+                  <Link to={lastVisitedWorld.storefronts[0].path} state={{ fromWorld: lastVisitedWorld.id }} onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: `return_${lastVisitedWorld.id}` })} className={`group relative inline-flex items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br ${lastVisitedWorld.plazaGradient} px-4 py-3 text-left shadow-lg backdrop-blur-xl transition hover:border-white/25 hover:shadow-xl`}>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/45">Quick access</span>
+                    <span className="font-heading text-sm font-black">Open {lastVisitedWorld.storefronts[0].label}</span>
                     <span className="hidden text-xs text-foreground/50 sm:inline">{lastVisitedWorld.name}</span>
                     <ArrowRight className="h-4 w-4 text-foreground/45 transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
                   </Link>
                 </div>
               )}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {PLAZA_WORLDS.map((world) => {
-                  const WorldIcon = world.icon;
-                  return (
-                    <motion.div key={world.title} whileHover={{ y: -5, scale: 1.015 }} whileTap={{ scale: 0.985 }} transition={{ duration: 0.2 }}>
-                      <Link to={world.path} onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: world.action })} className={`nali-world-card group relative flex min-h-44 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${world.gradient} p-5 shadow-xl backdrop-blur-xl transition-all hover:border-white/25 hover:shadow-2xl`}>
-                        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-3xl transition-transform group-hover:scale-150" />
-                        <div className="relative z-10 flex w-full flex-col">
-                          <div className="flex items-start justify-between">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-black/20"><WorldIcon className="h-5 w-5" /></div>
-                            <ArrowRight className="h-5 w-5 text-foreground/50 transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
-                          </div>
-                          <div className="mt-auto pt-5">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-foreground/60">{world.subtitle}</p>
-                            <h3 className="mt-1 font-heading text-2xl font-black tracking-tight">{world.title}</h3>
-                            <p className="mt-1 text-xs leading-relaxed text-foreground/70">{world.description}</p>
-                          </div>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </div>
+              <WorldToolLinks userId={user.id} />
               <div className="mt-5 flex flex-col items-center gap-2 text-center">
                 <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/50">
                   <MapPin className="h-3 w-3" />
@@ -619,14 +633,7 @@ export default function Home() {
           </div>
         </motion.div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {PLAZA_WORLDS.map(({ id, title, icon: WorldIcon, gradient }) => (
-            <Link key={id} to={WORLD_CONTEXTS[id].path} className="rounded-2xl border border-white/10 bg-card/40 p-5">
-              <div className={`mb-3 inline-flex rounded-xl bg-gradient-to-br ${gradient} p-3`}><WorldIcon className="h-5 w-5 text-white" /></div>
-              <h3 className="font-heading text-lg font-bold">{title}</h3>
-            </Link>
-          ))}
-        </div>
+        <WorldToolLinks />
 
         {/* — Quick Start Guide — */}
         <QuickStartGuide />

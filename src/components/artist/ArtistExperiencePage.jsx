@@ -9,7 +9,7 @@ export default function ArtistExperiencePage({ title, description, actions = [] 
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-full overflow-y-auto bg-background px-4 pb-24 pt-6 text-foreground">
+    <div className="nali-artist-experience min-h-full overflow-y-auto bg-background px-4 pb-24 pt-6 text-foreground">
       <div className="mx-auto max-w-6xl">
         <button
           onClick={() => navigate("/artist-career-os")}
@@ -34,7 +34,7 @@ export default function ArtistExperiencePage({ title, description, actions = [] 
               className="ui-surface ui-hover group min-h-12 rounded-2xl p-5 text-left transition-colors hover:border-primary/40"
             >
               <div className="font-heading text-lg font-black">{label}</div>
-              <div className="mt-2 inline-flex items-center gap-1 text-sm text-muted-foreground">
+              <div className="nali-artist-action-caption mt-2 inline-flex items-center gap-1 text-sm text-muted-foreground">
                 Open
                 <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
               </div>

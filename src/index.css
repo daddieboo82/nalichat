@@ -626,6 +626,23 @@
   }
 }
 
+.nali-page-ui .nali-artist-experience header > :first-child,
+.nali-page-ui .nali-artist-action-caption {
+  display: none;
+}
+
+.nali-page-ui .nali-artist-experience header {
+  padding: 1rem;
+}
+
+.nali-page-ui .nali-artist-experience header h1 {
+  margin-top: 0;
+}
+
+.nali-page-ui .nali-artist-experience section > button {
+  padding: .75rem 1rem;
+}
+
 /* Scoped visual treatments for creator workspaces. */
 .nali-workspace {
   background-image: radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / .10), transparent 32rem);

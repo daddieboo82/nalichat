@@ -282,28 +282,25 @@ export default function PlaylistDetail() {
   return (
     <div className="nali-workspace flex h-full flex-col bg-background">
       {/* Header */}
-      <div className="nali-workspace-header h-16 border-b border-border flex items-center px-6 shrink-0 gap-3">
+      <div className="nali-workspace-header flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-4 py-3 sm:px-6">
         <button
           onClick={() => navigate("/playlists")}
-          className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
+          type="button"
+          aria-label="Back to playlists"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="flex-1">
-          <h1 className="text-xl font-heading font-bold">{playlist.name}</h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="break-words font-heading text-xl font-bold">{playlist.name}</h1>
           <p className="text-xs text-muted-foreground">{tracks.length} tracks</p>
         </div>
         {currentUser?.id === playlist.owner_id && (
-          <div className="flex items-center gap-2">
-            {uploadMutation.isPending && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
-            <Input 
-              type="file" 
-              accept="audio/*" 
-              onChange={handleUpload} 
-              disabled={uploadMutation.isPending}
-              className="w-[200px] cursor-pointer" 
-            />
-          </div>
+          <label className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold focus-within:ring-2 focus-within:ring-primary ${uploadMutation.isPending ? "opacity-60" : "cursor-pointer hover:bg-secondary"}`}>
+            {uploadMutation.isPending && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+            {uploadMutation.isPending ? "Adding…" : "Add audio"}
+            <Input type="file" accept="audio/*" onChange={handleUpload} disabled={uploadMutation.isPending} className="sr-only" />
+          </label>
         )}
       </div>
 
@@ -314,11 +311,12 @@ export default function PlaylistDetail() {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-6 p-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 lg:flex-row lg:gap-6 lg:overflow-hidden lg:p-6">
         {/* Now Playing */}
         {currentTrack && (
-          <div className="lg:w-80 flex flex-col gap-4">
-            <div className="nali-playlist-art aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl flex items-center justify-center overflow-hidden">
+          <div className="flex shrink-0 flex-col gap-3 lg:w-80">
+            <div className="flex items-center gap-3 lg:block">
+            <div className="nali-playlist-art h-14 w-14 shrink-0 aspect-square lg:h-auto lg:w-full bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl flex items-center justify-center overflow-hidden">
               {currentTrack.image_url ? (
                 <img
                   src={currentTrack.image_url}
@@ -329,8 +327,8 @@ export default function PlaylistDetail() {
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20" />
               )}
             </div>
-            <div>
-              <h2 className="font-heading font-bold text-lg line-clamp-2">
+            <div className="min-w-0 lg:mt-3">
+              <h2 className="line-clamp-2 font-heading text-base font-bold lg:text-lg">
                 {currentTrack.title}
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -341,6 +339,8 @@ export default function PlaylistDetail() {
                   {currentTrack.genre}
                 </p>
               )}
+            </div>
+
             </div>
 
             {/* Player Controls */}
@@ -356,6 +356,7 @@ export default function PlaylistDetail() {
               {/* Progress */}
               <div>
                 <Slider
+                  aria-label="Playback position"
                   value={[currentTime]}
                   max={duration || 100}
                   step={0.1}
@@ -376,6 +377,7 @@ export default function PlaylistDetail() {
               <div className="flex items-center gap-2">
                 <Volume2 className="w-4 h-4 text-muted-foreground" />
                 <Slider
+                  aria-label="Volume"
                   value={[volume]}
                   max={100}
                   step={1}
@@ -391,13 +393,13 @@ export default function PlaylistDetail() {
                   size="sm"
                   onClick={handlePreviousTrack}
                   disabled={currentTrackIndex === 0}
-                  className="flex-1"
+                  className="min-h-11 flex-1"
                 >
                   ← Prev
                 </Button>
                 <Button
                   onClick={handlePlayPause}
-                  className="flex-1 gap-2"
+                  className="min-h-11 flex-1 gap-2"
                 >
                   {isPlaying ? (
                     <>
@@ -414,7 +416,7 @@ export default function PlaylistDetail() {
                   size="sm"
                   onClick={handleNextTrack}
                   disabled={currentTrackIndex === tracks.length - 1}
-                  className="flex-1"
+                  className="min-h-11 flex-1"
                 >
                   Next →
                 </Button>
@@ -424,9 +426,9 @@ export default function PlaylistDetail() {
         )}
 
         {/* Tracks List */}
-        <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]">
+        <div className="min-w-0 flex-1 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain">
           <h3 className="text-sm font-semibold text-muted-foreground mb-3">
-            PLAYLIST TRACKS
+            Playlist tracks
           </h3>
           {tracksLoading ? (
             <div className="flex items-center justify-center h-40">

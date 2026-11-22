@@ -193,7 +193,7 @@ export default function Squad() {
     <PullToRefresh onRefresh={load} className="mx-auto max-w-2xl space-y-6 px-4 py-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:p-6">
       <div>
         <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gradient-animate">Squad & Scale</h1>
-        <p className="text-muted-foreground text-sm mt-1">Link up with a partner — hit your weekly goals together and unlock a 1.5x weekend bonus.</p>
+        <p className="text-muted-foreground text-sm mt-1">Team up with a partner to work toward your weekly goals.</p>
       </div>
 
       {/* Credits */}
@@ -221,11 +221,12 @@ export default function Squad() {
       {squad && squad.status === "pending" && (
         <div className="ui-surface space-y-4 rounded-3xl border border-border bg-secondary/40 p-5 sm:p-6">
           <h2 className="font-heading font-bold text-lg">Waiting for your partner</h2>
-          <p className="text-sm text-muted-foreground">Share this link — as soon as they join, your squad goes active.</p>
+          <p className="text-sm text-muted-foreground">Copy the invite link and send it to your partner.</p>
           <div className="flex items-stretch gap-2">
-            <div className="flex min-h-11 flex-1 items-center truncate rounded-xl border border-border/50 bg-background px-3 py-2 text-xs text-muted-foreground">{inviteLink}</div>
-            <Button size="icon" variant="outline" onClick={handleCopy} className="ui-hover h-11 w-11 shrink-0 rounded-xl" aria-label="Copy invite link">
-              {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+            <input aria-label="Squad invite link" value={inviteLink} readOnly onFocus={event => event.target.select()} className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-base sm:text-sm" />
+            <Button type="button" variant="outline" onClick={handleCopy} className="ui-hover min-h-11 shrink-0 gap-1.5 rounded-xl" aria-label="Copy invite link">
+              {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+              <span aria-live="polite">{copied ? "Copied" : "Copy"}</span>
             </Button>
           </div>
           <Button variant="ghost" onClick={handleLeave} className="ui-hover min-h-10 gap-1.5 rounded-xl px-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">

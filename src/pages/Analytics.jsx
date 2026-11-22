@@ -8,6 +8,7 @@ import { TrendingUp, Eye, Heart, Music, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getLikeCount } from "@/lib/engagement";
 import { useAuth } from "@/lib/AuthContext";
+import { onboardingStages, summarizeOnboardingProgress } from "@/lib/onboardingProgress";
 import { summarizeVisitorRetention } from "@/lib/visitorRetentionSummary";
 
 async function listAllFunnelEvents() {
@@ -47,7 +48,7 @@ export default function Analytics() {
   const isAdmin = currentUser?.role === "admin";
   const [funnelWindow, setFunnelWindow] = React.useState("30d");
 
-  const { data: funnelEvents = [] } = useQuery({
+  const { data: funnelEvents = [], isPending: funnelPending, isError: funnelError } = useQuery({
     queryKey: ["activationFunnel", currentUser?.id],
     queryFn: async () => isAdmin ? listAllFunnelEvents() : [],
     enabled: Boolean(currentUser && isAdmin),
@@ -63,10 +64,12 @@ export default function Analytics() {
     });
   }, [funnelEvents, funnelWindow]);
 
-  const setupAndChallengeCounts = React.useMemo(() => {
+  const onboardingProgress = React.useMemo(() => summarizeOnboardingProgress(filteredFunnelEvents), [filteredFunnelEvents]);
+
+  const challengeCounts = React.useMemo(() => {
     const accountsByEvent = Object.create(null);
     for (const { event_name, user_id } of filteredFunnelEvents) {
-      if (!user_id || !/^(onboarding_|creator_challenge_)/.test(event_name)) continue;
+      if (!user_id || !event_name?.startsWith("creator_challenge_")) continue;
       (accountsByEvent[event_name] ??= new Set()).add(user_id);
     }
     return accountsByEvent;
@@ -560,22 +563,37 @@ export default function Analytics() {
               ))}
             </div>
             <div className="mt-5 border-t border-border/60 pt-4">
-              <h3 className="font-heading text-sm font-semibold">Profile setup and creator engagement</h3>
-              <p className="mt-1 text-xs text-muted-foreground">Distinct signed-in accounts per event in the selected period. An account can appear in multiple counts.</p>
-              <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <h3 className="font-heading text-sm font-semibold">Where profile setup stopped</h3>
+              {funnelError ? (
+                <p className="mt-1 text-xs text-destructive">Could not load setup analytics.</p>
+              ) : funnelPending ? (
+                <p className="mt-1 text-xs text-muted-foreground">Loading setup analytics…</p>
+              ) : (
+                <>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Last recorded step for {onboardingProgress.accounts} accounts in this period. A recorded completion takes priority.
+                    {" "}{onboardingProgress.unlinkedEvents} events without an account ID were excluded. Accounts with no events are absent.
+                  </p>
+                  <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {onboardingStages.map(([name, label]) => (
+                      <div key={name} className="rounded-xl border border-border/60 bg-background/40 p-3">
+                        <dt className="text-xs text-muted-foreground">{label}</dt>
+                        <dd className="mt-1 text-lg font-bold tabular-nums">{onboardingProgress.counts[name]}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </>
+              )}
+              <h3 className="mt-5 font-heading text-sm font-semibold">Creator challenge</h3>
+              <p className="mt-1 text-xs text-muted-foreground">Distinct signed-in accounts per event in this period.</p>
+              <dl className="mt-3 grid grid-cols-2 gap-3">
                 {[
-                  ["onboarding_view", "Opened setup"],
-                  ["onboarding_form_interaction", "Edited a field"],
-                  ["onboarding_validation_blocked", "Blocked by validation"],
-                  ["onboarding_submit", "Tried to save"],
-                  ["onboarding_save_failed", "Save or session error"],
-                  ["onboarding_complete", "Completed setup"],
                   ["creator_challenge_open", "Opened challenge upload"],
                   ["creator_challenge_publish", "Published from challenge"],
                 ].map(([eventName, label]) => (
                   <div key={eventName} className="rounded-xl border border-border/60 bg-background/40 p-3">
                     <dt className="text-xs text-muted-foreground">{label}</dt>
-                    <dd className="mt-1 text-lg font-bold tabular-nums">{setupAndChallengeCounts[eventName]?.size ?? 0}</dd>
+                    <dd className="mt-1 text-lg font-bold tabular-nums">{funnelPending || funnelError ? "—" : (challengeCounts[eventName]?.size ?? 0)}</dd>
                   </div>
                 ))}
               </dl>

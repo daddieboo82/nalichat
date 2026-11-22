@@ -7,7 +7,7 @@ export default function PageNotFound() {
   const location = useLocation();
   const { user, isAuthenticated, authChecked } = useAuth();
 
-  if (location.pathname.toLowerCase().replace(/\/+$/, '') === '/admin-dashboard') {
+  if (location.pathname.toLowerCase() === '/admin-dashboard') {
     return <Navigate to={'/admin' + location.search + location.hash} replace />;
   }
 

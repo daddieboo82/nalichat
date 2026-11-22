@@ -225,6 +225,7 @@ export default function MobileHeader() {
                     return (
                       <button
                         key={itemPath}
+                        aria-current={active ? "page" : undefined}
                         onClick={() => handleNavigate(itemPath)}
                         className={cn(
                           "ui-hover w-full min-h-[64px] flex items-center gap-3 p-2.5 rounded-xl transition-all text-left focus-visible:ring-2 focus-visible:ring-primary/40",

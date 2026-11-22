@@ -11,6 +11,12 @@ export const PRIMARY_TABS = [
 // Secondary features grouped by category for the "More" menu (mobile sheet + desktop dropdown).
 export const NAV_GROUPS = [
   {
+    label: "Start",
+    items: [
+      { icon: Home, label: "Home", path: "/", desc: "Return to the NaliBase Plaza" },
+    ],
+  },
+  {
     label: "Create",
     items: [
       { icon: Music, label: "Studio", path: "/studio", desc: "Record, edit, and mix your tracks" },

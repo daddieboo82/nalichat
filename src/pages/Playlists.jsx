@@ -149,9 +149,9 @@ export default function Playlists() {
               <Link
                 key={playlist.id}
                 to={`/playlist/${playlist.id}`}
-                className="nali-playlist-card ui-surface ui-hover group cursor-pointer rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl hover:border-border hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="nali-playlist-card min-w-0 ui-surface ui-hover group cursor-pointer rounded-2xl border border-border/60 bg-card/50 p-4 backdrop-blur-xl hover:border-border hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                <div className="nali-playlist-art mb-4 flex aspect-[16/10] items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 transition-colors group-hover:from-primary/30 group-hover:to-accent/30">
+                <div className="nali-playlist-art mb-4 flex aspect-[2/1] items-center sm:aspect-[16/10] justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 transition-colors group-hover:from-primary/30 group-hover:to-accent/30">
                   <Music className="w-8 h-8 text-primary/60" />
                 </div>
                 <h3 className="font-heading font-semibold truncate group-hover:text-primary transition-colors">

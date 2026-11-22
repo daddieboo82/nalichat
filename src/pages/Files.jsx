@@ -598,14 +598,14 @@ export default function Files() {
               >
                 <CheckSquare className="w-4 h-4" />
               </Button>
-              <div className="relative flex-1 max-w-md min-w-[200px]">
+              <div className="relative min-w-0 flex-1 sm:max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input placeholder="Search files..." value={search} onChange={e => setSearch(e.target.value)} className="nali-search-input h-11 rounded-xl border border-border/50 bg-secondary/40 pl-9 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
               </div>
             </>
           )}
-          <Tabs value={typeFilter} onValueChange={setTypeFilter} className={typeFilter === "transfer" ? "ml-auto" : ""}>
-            <TabsList className="no-scrollbar max-w-[calc(100vw-2rem)] justify-start overflow-x-auto rounded-xl bg-secondary/50 p-1">
+          <Tabs value={typeFilter} onValueChange={setTypeFilter} className={typeFilter === "transfer" ? "w-full min-w-0 sm:ml-auto sm:w-auto" : "w-full min-w-0 sm:w-auto"}>
+            <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl bg-secondary/50 p-1 min-[420px]:grid-cols-6 sm:w-auto [&>button]:min-h-11 [&>button]:min-w-0 [&>button]:px-1">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="audio">Audio</TabsTrigger>
               <TabsTrigger value="image">Images</TabsTrigger>

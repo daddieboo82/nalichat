@@ -417,20 +417,50 @@ export default function CoverArt() {
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-6xl flex-col touch-pan-y px-4 py-5 pb-[max(7rem,env(safe-area-inset-bottom))] sm:p-8 md:pb-12">
-      <div className="mb-6 sm:mb-8">
+      <div className="mb-5 rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card px-4 py-5 sm:mb-7 sm:px-6">
         <h1 className="flex items-center gap-3 font-heading text-2xl font-black tracking-tight sm:text-3xl">
           <Sparkles className="h-8 w-8 shrink-0 text-primary" />
           AI Cover Art Creator
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Let AI listen to your finished work and design a one-of-a-kind album cover with exclusive rights.
+          Choose a track to generate cover art, upload your own image, or edit an existing cover.
         </p>
       </div>
 
       <div className="flex flex-1 flex-col gap-4 sm:gap-6 md:flex-row md:gap-8">
         {/* Left: Track Selection */}
-        <div className="ui-surface custom-scrollbar flex max-h-[320px] w-full flex-col gap-3 overflow-y-auto overscroll-contain rounded-3xl border border-border bg-card/50 p-4 backdrop-blur-xl md:max-h-none md:w-1/3">
-          <h2 className="font-semibold uppercase text-xs tracking-wider text-muted-foreground">Your Tracks</h2>
+        <div className="ui-surface custom-scrollbar flex max-h-[min(20rem,42dvh)] min-w-0 w-full flex-col gap-3 overflow-y-auto overscroll-contain rounded-3xl border border-border bg-card/50 p-4 backdrop-blur-xl md:max-h-none md:w-1/3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-heading text-base font-semibold">Your tracks</h2>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default" size="sm" className="min-h-11" disabled={isImporting || generateArtMutation.isPending || saveArtMutation.isPending || isUploading}>
+                  {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                  Import Track
+                  <ChevronDown className="w-4 h-4 ml-2 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => importFileInputRef.current?.click()}>
+                  <Smartphone className="w-4 h-4 mr-2" /> From Device
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => setShowFilesDialog(true)}>
+                  <Folder className="w-4 h-4 mr-2" /> From Files
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowPlaylistDialog(true)}>
+                  <ListMusic className="w-4 h-4 mr-2" /> From Playlist
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <input 
+              type="file" 
+              ref={importFileInputRef} 
+              className="hidden" 
+              accept="audio/*,video/*" 
+              onChange={handleImportAudio}
+            />
+          </div>
           {isLoading ? (
             <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : postsError ? (
@@ -443,39 +473,11 @@ export default function CoverArt() {
           ) : posts.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-5 text-center text-sm text-muted-foreground sm:p-8">
               <Music className="w-8 h-8 mx-auto mb-3 opacity-50" />
-              <p className="mb-4">No tracks found. You need a track to generate cover art.</p>
+              <p className="mb-4">Import a track to start, or create one in Studio.</p>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                 <Button asChild variant="outline" size="sm">
                   <Link to="/studio">Go to Studio</Link>
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="default" size="sm" disabled={isImporting}>
-                      {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                      Import Track
-                      <ChevronDown className="w-4 h-4 ml-2 opacity-50" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => importFileInputRef.current?.click()}>
-                      <Smartphone className="w-4 h-4 mr-2" /> From Device
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem onClick={() => setShowFilesDialog(true)}>
-                      <Folder className="w-4 h-4 mr-2" /> From Files
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowPlaylistDialog(true)}>
-                      <ListMusic className="w-4 h-4 mr-2" /> From Playlist
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <input 
-                  type="file" 
-                  ref={importFileInputRef} 
-                  className="hidden" 
-                  accept="audio/*,video/*" 
-                  onChange={handleImportAudio}
-                />
               </div>
             </div>
           ) : (
@@ -488,6 +490,7 @@ export default function CoverArt() {
                   setGeneratedImage(null);
                 }}
                 role="button"
+                aria-pressed={selectedPost?.id === post.id}
                 tabIndex={0}
                 onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && !generateArtMutation.isPending) { event.preventDefault(); setSelectedPost(post); setGeneratedImage(null); } }}
                 className={`ui-hover min-h-14 cursor-pointer rounded-2xl border p-3 text-left transition-all focus-visible:ring-2 focus-visible:ring-primary/40 ${selectedPost?.id === post.id ? 'border-primary bg-primary/10 ring-1 ring-primary/20' : 'border-border hover:border-border hover:bg-card/70'}`}
@@ -512,7 +515,7 @@ export default function CoverArt() {
                 <div className="p-6 text-center" role="alert">
                   <p className="text-sm font-semibold">Couldn't load your Files</p>
                   <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => void refetchFiles()}>
-                    Retry
+                    Regenerate
                   </Button>
                 </div>
               ) : sharedFiles.filter(f => f.file_type === "audio" || f.file_type === "video").length === 0 ? (
@@ -555,7 +558,7 @@ export default function CoverArt() {
                   <div className="p-6 text-center" role="alert">
                     <p className="text-sm font-semibold">Couldn't load your playlists</p>
                     <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => void refetchPlaylists()}>
-                      Retry
+                      Regenerate
                     </Button>
                   </div>
                 ) : myPlaylists.length === 0 ? (
@@ -616,7 +619,7 @@ export default function CoverArt() {
         </Dialog>
 
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-h-[92dvh] w-[calc(100vw-1rem)] max-w-md overflow-hidden rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
+          <DialogContent className="max-h-[92dvh] w-[calc(100vw-1rem)] max-w-md overflow-y-auto overscroll-y-contain rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
             <DialogHeader>
               <DialogTitle>Manual Cover Editing</DialogTitle>
             </DialogHeader>
@@ -779,22 +782,26 @@ export default function CoverArt() {
         </Dialog>
 
         {/* Right: Generation Area */}
-        <div className="ui-surface custom-scrollbar relative flex min-h-[400px] w-full flex-col items-center overflow-y-auto rounded-3xl border border-border bg-card/50 p-4 pb-8 backdrop-blur-xl sm:min-h-[500px] sm:p-8 md:w-2/3 md:pb-12">
-          <div className="flex flex-col items-center w-full max-w-md my-auto">
+        <div className="ui-surface custom-scrollbar relative flex min-w-0 w-full flex-col items-center overflow-y-auto rounded-3xl border border-border bg-card/50 p-4 pb-8 backdrop-blur-xl sm:min-h-[500px] sm:p-8 md:w-2/3 md:pb-12">
+          <div className="mx-auto flex w-full max-w-md flex-col items-center">
+            <div className="mb-3 w-full min-w-0">
+              <h2 className="font-heading text-base font-semibold">Cover preview</h2>
+              {selectedPost && <p className="mt-1 break-words text-sm text-muted-foreground">{selectedPost.title}</p>}
+            </div>
             <div className="relative mb-5 flex aspect-square w-full items-center justify-center overflow-hidden rounded-3xl border border-border bg-black/50 shadow-2xl sm:mb-6">
               {generatedImage ? (
                 <img src={generatedImage} alt="Generated cover" className="w-full h-full object-cover" />
               ) : selectedPost?.image_url && !generateArtMutation.isPending ? (
-                <img src={selectedPost.image_url} alt="Current cover" className="w-full h-full object-cover opacity-50 blur-sm" />
+                <img src={selectedPost.image_url} alt="Current cover" className="w-full h-full object-contain" />
               ) : (
                 <div className="text-center flex flex-col items-center justify-center text-muted-foreground/30">
                   <ImageIcon className="w-16 h-16 mb-2" />
-                  {!selectedPost && <p className="text-sm font-medium mt-2 text-muted-foreground/70">Select a track first</p>}
+                  <p className="mt-2 px-4 text-sm font-medium text-muted-foreground">{selectedPost ? "Generate or upload a cover to preview it here." : "Select a track to start."}</p>
                 </div>
               )}
 
               {generateArtMutation.isPending && (
-                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-10">
+                <div role="status" className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-10">
                   <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
                   <p className="font-heading font-semibold text-lg text-primary animate-pulse">{generatingStatus}</p>
                 </div>
@@ -831,7 +838,7 @@ export default function CoverArt() {
                     }
                     generateArtMutation.mutate(selectedPost);
                   }}
-                  disabled={generateArtMutation.isPending || isUploading}
+                  disabled={!selectedPost || generateArtMutation.isPending || isUploading}
                 >
                   <Wand2 className="w-5 h-5" />
                   {selectedPost?.image_url ? 'Generate New' : 'Generate Cover'}
@@ -848,7 +855,7 @@ export default function CoverArt() {
                     }
                     fileInputRef.current?.click();
                   }}
-                  disabled={generateArtMutation.isPending || isUploading}
+                  disabled={!selectedPost || generateArtMutation.isPending || isUploading}
                 >
                   {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                   Upload
@@ -870,10 +877,10 @@ export default function CoverArt() {
                     size="lg" 
                     className="ui-hover h-14 gap-2 rounded-xl bg-transparent sm:min-w-[100px] sm:flex-1"
                     onClick={handleDownload}
-                    disabled={generateArtMutation.isPending || isUploading}
+                    disabled={!selectedPost || generateArtMutation.isPending || isUploading}
                   >
                     <Download className="w-5 h-5" />
-                    Export
+                    Download
                   </Button>
                   </>
                 )}
@@ -888,7 +895,7 @@ export default function CoverArt() {
                   disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
                 >
                   <Wand2 className="w-4 h-4" />
-                  Retry
+                  Regenerate
                 </Button>
                 <Button 
                   variant="outline"
@@ -918,7 +925,7 @@ export default function CoverArt() {
                   disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
                 >
                   <Download className="w-4 h-4" />
-                  Export
+                  Download
                 </Button>
                 <Button 
                   size="lg" 

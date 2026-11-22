@@ -330,9 +330,9 @@ export default function Profile() {
               </>
             )}
           </div>
-          <div className="min-w-[180px] flex-1 pb-1 sm:pb-2">
+          <div className="w-full min-w-0 flex-1 pb-1 sm:w-auto sm:pb-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-heading text-xl font-bold tracking-tight sm:text-2xl">{user.display_name || user.full_name}</h1>
+              <h1 className="min-w-0 break-words font-heading text-xl font-bold tracking-tight sm:text-2xl">{user.display_name || user.full_name}</h1>
               <LevelBadge level={user.level || 1} />
             </div>
             <p className="text-muted-foreground text-sm capitalize">{user.artist_role || "Producer"}</p>
@@ -379,7 +379,7 @@ export default function Profile() {
           ].map(({ label, value, icon: Icon }) => (
             <div key={label} className="nali-creator-stat ui-surface rounded-2xl border border-border/60 bg-card/50 p-3 text-center backdrop-blur-xl sm:p-4">
               <Icon className="w-4 h-4 text-primary mx-auto mb-1" />
-              <p className="font-bold text-lg font-heading">{value}</p>
+              <p className="break-all font-heading text-base font-bold tabular-nums sm:text-lg">{value}</p>
               <p className="text-xs text-muted-foreground">{label}</p>
             </div>
           ))}

@@ -122,7 +122,7 @@ export default function LiveBattles() {
             </div>
             <div className="flex aspect-video items-center justify-center rounded-2xl border border-border bg-background/70 text-center text-muted-foreground"><div><Mic className="mx-auto mb-2 h-10 w-10" />Opponent stage<br /><span className="text-xs">Appears when your invited artist joins</span></div></div>
           </div>
-          <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs sm:text-sm"><div className="rounded-xl bg-background/40 p-3">Live round<br /><strong>Starts from the lobby</strong></div><div className="rounded-xl bg-background/40 p-3">Crowd energy<br /><strong>Awaiting audience</strong></div><div className="rounded-xl bg-background/40 p-3">Score reveal<br /><strong>No result yet</strong></div></div>
+          <div className="mt-5 grid grid-cols-1 gap-2 text-center text-xs min-[400px]:grid-cols-3 sm:text-sm"><div className="rounded-xl bg-background/40 p-3">Live round<br /><strong>Starts from the lobby</strong></div><div className="rounded-xl bg-background/40 p-3">Crowd energy<br /><strong>Awaiting audience</strong></div><div className="rounded-xl bg-background/40 p-3">Score reveal<br /><strong>No result yet</strong></div></div>
         </div>
       </section>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

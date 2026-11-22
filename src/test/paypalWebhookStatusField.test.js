@@ -9,4 +9,10 @@ describe('PayPal webhook status field', () => {
     expect(setup).toContain('const verified = enabled !== false && urlMatches && missingEvents.length === 0');
     expect(setup).toContain('deliveryVerified: false');
   });
+  it('keeps an unavailable status from triggering a disabled warning on the Business Dashboard', async () => {
+    const dashboard = await readFile('src/pages/AdminDashboard.jsx', 'utf8');
+    expect(dashboard).toContain('if (webhook.enabled === false)');
+    expect(dashboard).toContain('"Unavailable from PayPal"');
+    expect(dashboard).toContain('webhookIssues.length > 0');
+  });
 });

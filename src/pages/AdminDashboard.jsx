@@ -221,6 +221,28 @@ export default function AdminDashboard() {
     }
   };
 
+  const webhook = paypalAudit?.webhookCheck;
+  const webhookIssues = [];
+  if (webhook) {
+    if (webhook.status !== "registered") {
+      const lookupIssues = {
+        missing_webhook_id: "The Base44 runtime has no PayPal webhook ID configured.",
+        webhook_id_not_registered: "PayPal could not find the configured webhook ID for this app and environment.",
+      };
+      webhookIssues.push(lookupIssues[webhook.status] ?? "Merchant registration could not be verified. Retry the PayPal status check.");
+    } else {
+      if (webhook.enabled === false) webhookIssues.push("PayPal reports the webhook is disabled.");
+      if (webhook.urlMatchesExpected !== true || webhook.urlIsHttps !== true) {
+        webhookIssues.push("The registered callback does not match the configured HTTPS destination.");
+      }
+      if (Array.isArray(webhook.missingEvents) && webhook.missingEvents.length > 0) {
+        webhookIssues.push("The webhook is missing required event subscriptions listed above.");
+      } else if (!Array.isArray(webhook.missingEvents)) {
+        webhookIssues.push("The required event subscriptions could not be verified.");
+      }
+    }
+  }
+
   const cards = [
     { label: "Total Users", value: stats.totalUsers, icon: Users },
     { label: "Active Subscription Records", value: stats.activeSubscriptions, icon: Activity },
@@ -347,7 +369,7 @@ export default function AdminDashboard() {
                   <p className="mt-1">Merchant lookup: {paypalAudit.webhookCheck.status}</p>
                   {paypalAudit.webhookCheck.status === "registered" && (
                     <>
-                      <p>Enabled: {paypalAudit.webhookCheck.enabled ? "Yes" : "No"}</p>
+                      <p>Enabled status: {webhook.enabled === true ? "Enabled" : webhook.enabled === false ? "Disabled" : "Unavailable from PayPal"}</p>
                       <p>HTTPS destination: {paypalAudit.webhookCheck.urlIsHttps ? "Yes" : "No"}</p>
                       <p>Matches configured PayPal webhook destination: {paypalAudit.webhookCheck.urlMatchesExpected ? "Yes" : "No"}</p>
                       <p>Required event types missing: {paypalAudit.webhookCheck.missingEvents?.length ?? "Unknown"}</p>
@@ -379,9 +401,14 @@ export default function AdminDashboard() {
                 }, {})).map(([reason, count]) => <p key={reason} className="py-1">{reason}: <strong>{count}</strong></p>)}
                 <p className="mt-2 text-xs text-muted-foreground">These categories are diagnostic, not permission to restart billing or delete checkout claims.</p>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">PayPal webhook ledger (up to 100 recent events): {paypalAudit.webhookLedgerCount ?? "unavailable"}{paypalAudit.webhookLedgerRecentStates ? ` · Processing states: ${Object.entries(paypalAudit.webhookLedgerRecentStates).map(([state, count]) => `${state}: ${count}`).join(", ") || "none"}` : ""}. No recorded events does not by itself prove PayPal delivery failed.</p>
-              {paypalAudit.webhookCheck && (paypalAudit.webhookCheck.status !== "registered" || !paypalAudit.webhookCheck.enabled || !paypalAudit.webhookCheck.urlMatchesExpected || (paypalAudit.webhookCheck.missingEvents?.length ?? 0) > 0) && (
-                <p role="alert" className="mt-2 text-sm font-medium text-amber-500">PayPal webhook needs attention: verify its registered destination, enabled status, and required subscription/payment events in the PayPal merchant account. Do not treat checkout as fully verified until this check passes.</p>
+              <p className="mt-2 text-sm text-muted-foreground">PayPal webhook ledger (up to 100 recent events): {paypalAudit.webhookLedgerCount ?? "unavailable"}{paypalAudit.webhookLedgerRecentStates ? ` · Processing states: ${Object.entries(paypalAudit.webhookLedgerRecentStates).map(([state, count]) => `${state}: ${count}`).join(", ") || "none"}` : ""}.</p>
+              {webhookIssues.length > 0 && (
+                <div role="alert" className="mt-2 text-sm text-amber-500">
+                  <p className="font-medium">PayPal webhook needs attention</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-5">
+                    {webhookIssues.map(issue => <li key={issue}>{issue}</li>)}
+                  </ul>
+                </div>
               )}
               {paypalAudit.webhookLedgerCount === 0 && (
                 <p className="mt-2 text-sm text-amber-500">No PayPal webhook events appear in the app ledger. Check PayPal delivery history and the registered destination; this alone does not establish a delivery failure.</p>

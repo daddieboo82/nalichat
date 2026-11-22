@@ -1,14 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
-const read=(p)=>readFile(new URL('../'+p,import.meta.url),'utf8');
-describe('NaliBase storefront entry transition',()=>{
-  it('mounts a brief world-aware storefront transition',async()=>{
-    const layout=await read('components/layout/AppLayout.jsx');
-    const transition=await read('components/layout/StorefrontEntryTransition.jsx');
-    expect(layout).toContain('<StorefrontEntryTransition />');
-    expect(transition).toContain('Entering storefront');
-    expect(transition).toContain('{world.label} MALL');
-    expect(transition).toContain('resolveWorldForLocation');
+
+describe('NaliBase tool entry', () => {
+  it('opens tools without a full-screen entry overlay', async () => {
+    const layout = await readFile(new URL('../components/layout/AppLayout.jsx', import.meta.url), 'utf8');
+    expect(layout).not.toContain('StorefrontEntryTransition');
   });
 });

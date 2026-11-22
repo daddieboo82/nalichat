@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Home from '@/pages/Home';
+import WorldHub from '@/pages/WorldHub';
 import DesktopNav from '@/components/navigation/DesktopNav';
 import MobileNav from '@/components/navigation/MobileNav';
 import MobileHeader from '@/components/navigation/MobileHeader';
@@ -180,13 +181,43 @@ describe('home, navigation, and recovery flows', () => {
 
     expect(screen.getByText('NaliBase')).toBeTruthy();
     expect(screen.getByText('Where do you want to go?')).toBeTruthy();
-    expect(screen.getByText('CONNECT').closest('a')?.getAttribute('href')).toBe('/world/connect');
-    expect(screen.getByText('CREATE').closest('a')?.getAttribute('href')).toBe('/world/create');
-    expect(screen.getByText('DISCOVER').closest('a')?.getAttribute('href')).toBe('/world/discover');
-    expect(screen.getByText('SHARE').closest('a')?.getAttribute('href')).toBe('/world/share');
-    expect(screen.getByText('VISUALIZE').closest('a')?.getAttribute('href')).toBe('/world/visualize');
-    expect(screen.getByText('COMPETE').closest('a')?.getAttribute('href')).toBe('/world/compete');
+    for (const [world, label, path] of [
+      ['CONNECT', 'Messages', '/messages'],
+      ['CREATE', 'Studio', '/studio'],
+      ['DISCOVER', 'Explore', '/explore'],
+      ['SHARE', 'File Vault', '/files'],
+      ['VISUALIZE', 'Video Lab', '/music-video-generator'],
+      ['VISUALIZE', 'Cover Art', '/cover-art'],
+      ['COMPETE', 'Challenges', '/challenges'],
+    ]) {
+      const group = screen.getByRole('heading', { name: world, exact: true }).closest('section');
+      const link = Array.from(group.querySelectorAll('a')).find(item => item.textContent.trim() === label);
+      expect(link?.getAttribute('href')).toBe(path);
+    }
   }, 15000);
+
+  it.each([
+    ['connect', '/messages'],
+    ['create', '/studio'],
+    ['discover', '/explore'],
+    ['share', '/files'],
+    ['visualize', '/music-video-generator'],
+    ['compete', '/challenges'],
+  ])('redirects a legacy %s bookmark directly to its primary tool', async (world, destination) => {
+    function LocationProbe() {
+      const location = useLocation();
+      return <div>{location.pathname + location.search + location.hash}</div>;
+    }
+    render(
+      <MemoryRouter initialEntries={[`/world/${world}?source=bookmark#start`]}>
+        <Routes>
+          <Route path="/world/:worldId" element={<WorldHub />} />
+          <Route path="*" element={<LocationProbe />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(await screen.findByText(`${destination}?source=bookmark#start`)).toBeTruthy();
+  });
 
   it('shows visible desktop login and signup entry points for anonymous users', async () => {
     renderWithProviders(<DesktopNav />);

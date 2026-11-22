@@ -17,7 +17,7 @@ describe('NaliBase storefront continuity', () => {
     const layout=await readFile(new URL('../components/layout/AppLayout.jsx',import.meta.url),'utf8');
     const bar=await readFile(new URL('../components/layout/WorldContinuityBar.jsx',import.meta.url),'utf8');
     expect(layout).toContain('<WorldContinuityBar />');
-    expect(bar).toContain('storefront interior');
-    expect(bar).toContain('NaliBase');
+    expect(bar).toContain('to={item.path}');
+    expect(bar).not.toContain('to={world.path}');
   });
 });

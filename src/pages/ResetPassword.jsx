@@ -8,7 +8,11 @@ import { Lock, Loader2, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { resetPasswordErrorMessage } from "@/lib/authErrorMessages";
 
+import { safeReturnTo } from "@/lib/authReturnTo";
+
 export default function ResetPassword() {
+  const destination = safeReturnTo();
+  const returnQuery = destination === "/" ? "" : `?returnTo=${encodeURIComponent(destination)}`;
   const [resetToken] = useState(() =>
     new URLSearchParams(window.location.search).get("token")
   );
@@ -25,12 +29,14 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
   const [error, setError] = useState("");
+  const [showRecoveryLink, setShowRecoveryLink] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
     setError("");
+    setShowRecoveryLink(false);
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -38,9 +44,10 @@ export default function ResetPassword() {
     setLoading(true);
     try {
       await base44.auth.resetPassword({ resetToken, newPassword });
-      window.location.href = "/login";
+      window.location.href = `/login${returnQuery}`;
     } catch (err) {
       setError(resetPasswordErrorMessage(err));
+      setShowRecoveryLink(true);
     } finally {
       setLoading(false);
     }
@@ -54,7 +61,7 @@ export default function ResetPassword() {
         subtitle="This password reset link is missing or invalid"
       >
         <Button asChild className="h-12 w-full rounded-xl font-semibold">
-          <Link to="/forgot-password">Request a new link</Link>
+          <Link to={`/forgot-password${returnQuery}`}>Request a new link</Link>
         </Button>
       </AuthLayout>
     );
@@ -69,6 +76,11 @@ export default function ResetPassword() {
       {error && (
         <div role="alert" className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
+          {showRecoveryLink && (
+            <Link to={`/forgot-password${returnQuery}`} className="mt-1 flex min-h-11 items-center font-medium text-primary underline">
+              Request a new link
+            </Link>
+          )}
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">

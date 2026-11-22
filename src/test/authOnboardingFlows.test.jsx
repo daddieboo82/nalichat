@@ -441,6 +441,23 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.auth.resetPasswordRequest).toHaveBeenLastCalledWith('correct@example.com');
   });
 
+  it('offers a replacement link after the provider rejects an expired reset token', async () => {
+    const originalUrl = window.location.href;
+    window.history.replaceState({}, '', '/reset-password?token=sample&returnTo=%2Fmessages');
+    try {
+      mockBase44.auth.resetPassword.mockRejectedValueOnce(new Error('reset token expired'));
+      renderInRouter(<ResetPassword />);
+      fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'example-password' } });
+      fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'example-password' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Reset password' }));
+      const replacement = await screen.findByRole('link', { name: 'Request a new link' });
+      expect(replacement.getAttribute('href')).toBe('/forgot-password?returnTo=%2Fmessages');
+      expect(window.location.search).not.toContain('token=');
+    } finally {
+      window.history.replaceState({}, '', originalUrl);
+    }
+  });
+
   it('renders the invalid reset-token recovery state', () => {
     renderInRouter(<ResetPassword />, ['/reset-password']);
     expect(screen.getByText('Invalid reset link')).toBeTruthy();

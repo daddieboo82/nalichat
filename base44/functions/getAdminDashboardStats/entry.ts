@@ -3,12 +3,19 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const PAGE_SIZE = 500;
 
-async function countUsers(entities: any): Promise<number> {
-  let total = 0;
+async function aggregateUsers(entities: any) {
+  let totalUsers = 0;
+  let incompleteOnboardingAccounts = 0;
+  const recentlySeenUserIds = new Set<string>();
+  const seenSince = Date.now() - 30 * 24 * 60 * 60 * 1000;
   for (let skip = 0; ; skip += PAGE_SIZE) {
     const page = await entities.User.filter({}, '-created_date', PAGE_SIZE, skip);
-    total += page.length;
-    if (page.length < PAGE_SIZE) return total;
+    totalUsers += page.length;
+    for (const account of page) {
+      if (account.onboarding_completed !== true) incompleteOnboardingAccounts += 1;
+      if (account.id && Date.parse(account.last_seen) >= seenSince) recentlySeenUserIds.add(account.id);
+    }
+    if (page.length < PAGE_SIZE) return { totalUsers, incompleteOnboardingAccounts, recentlySeenUserIds };
   }
 }
 
@@ -29,6 +36,7 @@ async function aggregateSubscriptions(entities: any) {
     premiumSubscriptions: 0,
     premiumPlusSubscriptions: 0,
   };
+  const activeUserIds = new Set<string>();
   const pendingUserIds = new Set<string>();
   for (let skip = 0; ; skip += PAGE_SIZE) {
     const page = await entities.Subscription.filter({}, '-created_date', PAGE_SIZE, skip);
@@ -36,6 +44,7 @@ async function aggregateSubscriptions(entities: any) {
     for (const subscription of page) {
       if (subscription.status === 'active') {
         counts.activeSubscriptions += 1;
+        if (typeof subscription.user_id === "string" && subscription.user_id) activeUserIds.add(subscription.user_id);
         if (subscription.provider === 'paypal') counts.activePayPalRecords += 1;
         else if (subscription.provider === 'manual') counts.activeManualRecords += 1;
         else counts.activeOtherRecords += 1;
@@ -64,7 +73,7 @@ async function aggregateSubscriptions(entities: any) {
         counts.premiumPlusSubscriptions += 1;
       }
     }
-    if (page.length < PAGE_SIZE) return counts;
+    if (page.length < PAGE_SIZE) return { counts, activeUserIds };
   }
 }
 
@@ -101,8 +110,8 @@ Deno.serve(async (req) => {
 
     // Aggregate only. The admin dashboard does not need raw user emails, IDs,
     // purchase rows, or subscription records to render its health metrics.
-    const [totalUsers, subscriptionStats] = await Promise.all([
-      countUsers(base44.asServiceRole.entities),
+    const [users, subscriptions] = await Promise.all([
+      aggregateUsers(base44.asServiceRole.entities),
       aggregateSubscriptions(base44.asServiceRole.entities),
     ]);
 
@@ -110,8 +119,11 @@ Deno.serve(async (req) => {
       success: true,
       adminUserId: user.id,
       stats: {
-        totalUsers,
-        ...subscriptionStats,
+        totalUsers: users.totalUsers,
+        incompleteOnboardingAccounts: users.incompleteOnboardingAccounts,
+        ...subscriptions.counts,
+        activeSubscriberAccounts: subscriptions.activeUserIds.size,
+        activeSubscriberAccountsSeen30d: [...subscriptions.activeUserIds].filter(id => users.recentlySeenUserIds.has(id)).length,
       },
     });
   } catch (error) {

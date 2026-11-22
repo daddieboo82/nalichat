@@ -270,6 +270,19 @@ export default function AdminDashboard() {
               ))}
             </div>
 
+            {Number.isInteger(stats.activeSubscriberAccounts) && (
+              <section className="mb-6 grid gap-3 sm:grid-cols-2" aria-label="Onboarding and subscriber activity">
+                <div className="ui-surface rounded-2xl border border-border/60 bg-card/60 p-5">
+                  <h3 className="text-sm font-bold text-muted-foreground">Incomplete profile setup</h3>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{stats.incompleteOnboardingAccounts}</p>
+                </div>
+                <div className="ui-surface rounded-2xl border border-border/60 bg-card/60 p-5">
+                  <h3 className="text-sm font-bold text-muted-foreground">Active subscriber accounts seen in 30 days</h3>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{stats.activeSubscriberAccountsSeen30d} / {stats.activeSubscriberAccounts}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Uses the last recorded presence for each account with an active subscription record.</p>
+                </div>
+              </section>
+            )}
             <p className="mb-4 text-sm text-muted-foreground">Active subscription records by provider: {stats.activePayPalRecords ?? 0} PayPal · {stats.activeManualRecords ?? 0} manual · {stats.activeOtherRecords ?? 0} other. These are database statuses, not verified payments or unique customers.</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
               <div className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-5">

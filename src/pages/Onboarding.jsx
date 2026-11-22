@@ -280,7 +280,16 @@ function OnboardingForm() {
               className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
             </div>
             {fieldError?.field === "birthdate" && (
-              <p id="setup-birthdate-error" role="alert" className="text-sm text-destructive">{fieldError.message}</p>
+              <div>
+                <p id="setup-birthdate-error" role="alert" className="text-sm text-destructive">{fieldError.message}</p>
+                <Button type="button" variant="outline" className="mt-2 min-h-11 rounded-xl" onClick={() => {
+                  setForm(current => ({ ...current, birthdate: "" }));
+                  setFieldError(null);
+                  birthdateInput.current?.focus();
+                }}>
+                  Remove birthdate
+                </Button>
+              </div>
             )}
             <div className="space-y-1.5">
               <label htmlFor="setup-bio" className="text-sm font-semibold">Bio <span className="font-normal text-muted-foreground">(optional)</span></label>

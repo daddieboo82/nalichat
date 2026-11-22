@@ -345,6 +345,29 @@ describe('auth and onboarding flows', () => {
     expect(submit().compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('removes an invalid optional birthdate while preserving the other profile edits', async () => {
+    mockAuthState.current.user = { id: 'new-artist', full_name: 'Artist' };
+    mockAuthState.current.isAuthenticated = true;
+    mockBase44.functions.invoke.mockResolvedValueOnce({ data: { error: 'Temporary failure' } });
+    renderInRouter(<Onboarding />);
+    fireEvent.click(screen.getByRole('button', { name: 'Optional profile details' }));
+    const birthdate = screen.getByLabelText(/Birthdate/);
+    fireEvent.change(birthdate, { target: { value: '2999-01-01' } });
+    fireEvent.change(screen.getByLabelText(/Bio/), { target: { value: 'Artist bio' } });
+    fireEvent.change(screen.getByLabelText(/Location/), { target: { value: 'South Bend' } });
+    const submit = screen.getByRole('button', { name: 'Enter NaliBase' });
+    fireEvent.click(submit);
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove birthdate' }));
+    expect(birthdate.value).toBe('');
+    expect(birthdate.getAttribute('aria-invalid')).toBe('false');
+    expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
+    fireEvent.click(submit);
+    await screen.findByText('Temporary failure');
+    expect(mockBase44.functions.invoke).toHaveBeenCalledWith('completeOnboarding', {
+      display_name: 'Artist', birthdate: '', bio: 'Artist bio', location: 'South Bend',
+    });
+  });
+
   it('saves onboarding profile data and refreshes auth state', async () => {
     const checkUserAuth = vi.fn().mockResolvedValue({ id: '507f1f77bcf86cd799439012', onboarding_completed: true });
     mockAuthState.current = {

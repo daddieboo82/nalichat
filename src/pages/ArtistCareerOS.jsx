@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Mic2, Users, Image, Film, FolderOpen, BarChart3, Rocket, MessageCircle, Sparkles, ArrowRight, Star, Store, Globe, Radio, Swords, FlaskConical, SlidersHorizontal } from "lucide-react";
+import { Mic2, Users, Image, Film, FolderOpen, BarChart3, Rocket, MessageCircle, ArrowRight, Star, Store, Globe, Radio, Swords, FlaskConical, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const stages = [
@@ -30,21 +30,18 @@ export default function ArtistCareerOS() {
   return <div className="h-full overflow-y-auto bg-background px-4 pb-24 pt-6 text-foreground">
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="overflow-hidden rounded-3xl border border-border/70 bg-gradient-to-br from-primary/15 via-card/60 to-accent/10 p-6 sm:p-8">
-        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[.25em] text-primary"><Sparkles size={16}/> Nali Artist Career OS</div>
-        <h1 className="mt-3 max-w-3xl font-heading text-3xl font-black tracking-tight sm:text-5xl">One command center for the entire artist journey.</h1>
-        <p className="mt-3 max-w-2xl text-sm text-muted-foreground">Create the record, collaborate, finish the assets, build the campaign, release it, connect with your audience and learn from the results without losing the creative thread.</p>
+        <h1 className="mt-3 max-w-3xl font-heading text-3xl font-black tracking-tight sm:text-5xl">Artist Career OS</h1>
+        <p className="mt-3 max-w-2xl text-sm text-muted-foreground">Choose a tool for your next release.</p>
         <Button className="mt-5 min-h-12 rounded-xl px-5 font-semibold" onClick={() => navigate("/artist-release-center")}><Rocket size={17} className="mr-2"/>Open Release Center</Button>
       </header>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {stages.map(([name, description, route, Icon], index) => <button key={name} onClick={() => navigate("/"+route)} className="ui-surface ui-hover group min-h-12 rounded-2xl p-4 text-left transition-colors hover:border-primary/40">
-          <div className="flex items-center justify-between"><span className="text-xs font-bold text-muted-foreground">0{index+1}</span><Icon size={20} className="text-primary"/></div>
+        {stages.map(([name, description, route, Icon]) => <button key={name} onClick={() => navigate("/"+route)} className="ui-surface ui-hover group min-h-12 rounded-2xl p-4 text-left transition-colors hover:border-primary/40">
+          <div className="flex items-center justify-between"><Icon size={20} className="text-primary" aria-hidden="true" /><ArrowRight size={16} className="text-muted-foreground" aria-hidden="true" /></div>
           <h2 className="mt-5 font-heading text-lg font-black">{name}</h2><p className="mt-1 min-h-10 text-xs leading-relaxed text-muted-foreground">{description}</p>
-          <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">Enter <ArrowRight size={13}/></span>
         </button>)}
       </section>
       <section className="ui-surface rounded-3xl p-5">
         <h2 className="font-heading text-lg font-black">Artist &amp; studio experiences</h2>
-        <p className="mt-1 text-xs text-muted-foreground">Open any experience directly from here.</p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {experiences.map(([name, route, Icon]) => (
             <button key={route} onClick={() => navigate(route)} className="flex min-h-12 items-center gap-3 rounded-xl border border-border/70 bg-secondary/40 px-4 py-3 text-left text-sm font-bold transition-colors hover:border-primary/40 hover:bg-secondary/70">

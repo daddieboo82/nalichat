@@ -152,14 +152,18 @@ export default function Leaderboard() {
       <div className="mx-auto max-w-2xl px-4 py-5 pb-[max(6rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6 lg:pb-8">
         {/* Mode Toggle */}
         <div className="flex justify-center mb-6">
-          <div className="flex w-full max-w-sm gap-1 rounded-2xl bg-secondary/50 p-1.5">
+          <div role="group" aria-label="Leaderboard view" className="flex w-full max-w-sm gap-1 rounded-2xl bg-secondary/50 p-1.5">
             <button
+              type="button"
+              aria-pressed={mode === "users"}
               onClick={() => setMode("users")}
               className={cn("ui-hover min-h-11 flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary/40", mode === "users" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
             >
               Top Users
             </button>
             <button
+              type="button"
+              aria-pressed={mode === "content"}
               onClick={() => setMode("content")}
               className={cn("ui-hover min-h-11 flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary/40", mode === "content" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
             >

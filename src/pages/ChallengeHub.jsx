@@ -84,7 +84,7 @@ export default function ChallengeHub() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-heading text-2xl font-bold tracking-tight text-gradient-animate sm:text-3xl">Remix Challenges</h1>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">Upload a source track, remix, and vote for the community's best.</p>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">Find a challenge, submit a remix, or vote.</p>
         </div>
         {user && (
           <Button className="ui-hover min-h-12 w-full gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-5 font-semibold text-white shadow-lg shadow-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-auto" asChild>
@@ -103,8 +103,9 @@ export default function ChallengeHub() {
             )}
           </div>
           <div className="p-4 sm:p-6 space-y-2">
-            <h2 className="font-heading text-xl sm:text-2xl font-bold">{featured.title}</h2>
+            <h2 className="break-words font-heading text-xl font-bold sm:text-2xl">{featured.title}</h2>
             <p className="text-sm text-muted-foreground">Hosted by {featured.host_artist_name}</p>
+            <p className="text-sm font-semibold text-primary">Open challenge</p>
             {featured.submission_end_date && <CountdownTimer targetDate={featured.submission_end_date} label="Submissions close in" />}
           </div>
         </Link>

@@ -10,7 +10,7 @@ const ANDROID_AAB_URL = '/downloads/app-release-bundle.aab';
 
 export default function Download() {
   return (
-    <div className="relative flex min-h-screen min-h-[100dvh] items-center justify-center bg-background px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(5rem,calc(env(safe-area-inset-top)+3rem))] text-foreground sm:py-12">
+    <div className="relative flex min-h-screen min-h-[100dvh] items-center justify-center bg-background px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(4.5rem,calc(env(safe-area-inset-top)+3rem))] text-foreground sm:py-12">
       <div className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] sm:left-6 sm:top-6">
         <Button asChild variant="outline" className="ui-hover min-h-11 rounded-xl border-border/70 bg-card/80 px-3 shadow-sm backdrop-blur sm:px-4">
           <Link to="/" aria-label="Back to Home"><ArrowLeft className="mr-2 h-4 w-4" /><Home className="mr-2 h-4 w-4" /><span>Home</span></Link>
@@ -18,9 +18,9 @@ export default function Download() {
       </div>
 
       <div className="w-full max-w-3xl space-y-6 text-center sm:space-y-8">
-        <div className="space-y-4">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 glow-primary sm:h-20 sm:w-20 sm:rounded-3xl">
-            <DownloadIcon className="h-10 w-10 text-primary" />
+        <div className="space-y-2">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 sm:h-16 sm:w-16">
+            <DownloadIcon className="h-6 w-6 text-primary" aria-hidden="true" />
           </div>
           <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">Download NaliChat</h1>
           <p className="text-muted-foreground">Official NaliChat apps for Android and Windows.</p>
@@ -29,15 +29,18 @@ export default function Download() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Card className="ui-surface rounded-3xl border-primary/20 bg-card/70 text-left backdrop-blur-xl">
             <CardContent className="space-y-5 p-6">
-              <div className="flex items-center gap-3"><Smartphone className="h-7 w-7 text-primary" /><div><h2 className="font-heading text-xl font-bold">Android</h2><p className="text-sm text-muted-foreground">NaliChat for Android</p></div></div>
-              <p className="text-sm leading-relaxed text-muted-foreground">Install the official Android app directly. Google Play updates use the signed AAB release pipeline.</p>
+              <div className="flex items-center gap-3"><Smartphone className="h-7 w-7 text-primary" /><div><h2 className="font-heading text-xl font-bold">Android</h2></div></div>
+              <p className="text-sm leading-relaxed text-muted-foreground">Install the Android app with the APK.</p>
               <div className="grid gap-3">
                 <Button asChild className="ui-hover min-h-12 w-full rounded-xl font-semibold">
                   <a href={ANDROID_APK_URL}><DownloadIcon className="mr-2 h-4 w-4" />Download Android APK<ExternalLink className="ml-2 h-4 w-4" /></a>
                 </Button>
-                <Button asChild variant="outline" className="ui-hover min-h-12 w-full rounded-xl font-semibold">
-                  <a href={ANDROID_AAB_URL}><DownloadIcon className="mr-2 h-4 w-4" />Download Signed AAB<ExternalLink className="ml-2 h-4 w-4" /></a>
-                </Button>
+                <details className="rounded-xl border border-border px-3">
+                  <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Android release bundle</summary>
+                  <Button asChild variant="outline" className="mb-3 min-h-11 w-full rounded-xl">
+                    <a href={ANDROID_AAB_URL}><DownloadIcon className="mr-2 h-4 w-4" />Download Signed AAB</a>
+                  </Button>
+                </details>
               </div>
             </CardContent>
           </Card>
@@ -45,7 +48,7 @@ export default function Download() {
           <Card className="ui-surface rounded-3xl border-primary/20 bg-card/70 text-left backdrop-blur-xl">
             <CardContent className="space-y-5 p-6">
               <div className="flex items-center gap-3"><Monitor className="h-7 w-7 text-primary" /><div><h2 className="font-heading text-xl font-bold">Windows</h2><p className="text-sm text-muted-foreground">NaliChat portable desktop app</p></div></div>
-              <p className="text-sm leading-relaxed text-muted-foreground">Download the portable Windows app for the full NaliChat desktop experience — no installer required.</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">Open the portable Windows app directly after downloading.</p>
               <Button asChild className="ui-hover min-h-12 w-full rounded-xl font-semibold">
                 <a href={WINDOWS_DOWNLOAD_URL}><DownloadIcon className="mr-2 h-4 w-4" />Download for Windows<ExternalLink className="ml-2 h-4 w-4" /></a>
               </Button>

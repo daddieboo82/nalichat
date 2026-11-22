@@ -69,6 +69,14 @@ export const NAV_GROUPS = [
   },
 ];
 
+// Detail URLs use singular names for these two collections.
+export function mobileSectionPath(pathname) {
+  const section = pathname.toLowerCase().split("/")[1];
+  if (section === "challenge") return "/challenges";
+  if (section === "playlist") return "/playlists";
+  return `/${section}`;
+}
+
 // Quick lookup: which paths belong to the "More" tab (secondary features not in the bottom bar).
 const PRIMARY_PATHS = new Set(PRIMARY_TABS.map(t => t.path));
 export const SECONDARY_PATHS = new Set(

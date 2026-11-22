@@ -12,7 +12,7 @@ import RecentlyVisited, { useRecentPages } from "@/components/navigation/Recentl
 import Logo from "@/components/branding/Logo";
 import { useSubscription } from "@/hooks/useSubscription";
 import { trackProductEvent } from "@/lib/productAnalytics";
-import { NAV_GROUPS } from "@/lib/navigationConfig";
+import { NAV_GROUPS, mobileSectionPath } from "@/lib/navigationConfig";
 
 const TITLES = {
   "/": "NaliBase",
@@ -79,10 +79,8 @@ export default function MobileHeader() {
   const hasDynamicSegment = path.split("/").filter(Boolean).length > 1 && !ROOT_PATHS.has(path);
   const isSubPage = location.state?.from || hasDynamicSegment || !ROOT_PATHS.has(path) || location.search.length > 0;
 
-  const baseTitle =
-    TITLES[path] ||
-    Object.entries(TITLES).find(([k]) => k !== "/" && path.startsWith(k))?.[1] ||
-    "NaliBase";
+  const section = mobileSectionPath(path);
+  const baseTitle = TITLES[section] || "NaliBase";
 
   const handleBack = () => {
     if (location.state?.from) {
@@ -109,7 +107,7 @@ export default function MobileHeader() {
     navigate("/", { replace: true });
   };
 
-  const isActive = (p) => path === p || (p !== "/" && path.startsWith(p));
+  const isActive = (p) => section === p;
 
   return (
     <>

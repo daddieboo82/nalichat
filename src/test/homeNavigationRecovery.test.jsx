@@ -258,6 +258,22 @@ describe('home, navigation, and recovery flows', () => {
     }
   });
 
+  it.each([
+    ['/playlist/example', 'Playlists'],
+    ['/challenge/example/leaderboard', 'Challenges'],
+    ['/meetings/example', 'Meetings'],
+    ['/battles/example', 'Live Battles'],
+    ['/studio-editor', 'Studio Editor'],
+  ])('shows the owning section for %s in the mobile header, menu, and tabs', (path, label) => {
+    renderWithProviders(<><MobileHeader /><MobileNav /></>, [path]);
+    expect(screen.getByRole('heading', { name: label })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'More' }).getAttribute('aria-current')).toBe('page');
+    fireEvent.click(screen.getByRole('button', { name: 'More' }));
+    const active = screen.getByRole('dialog').querySelectorAll('[aria-current="page"]');
+    expect(active.length).toBe(1);
+    expect(active[0].textContent).toContain(label);
+  });
+
   it('shows the mobile header menu and anonymous login affordance', async () => {
     renderWithProviders(
       <Routes>

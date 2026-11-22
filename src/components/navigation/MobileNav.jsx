@@ -3,19 +3,16 @@ import { Grid3x3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
-import { PRIMARY_TABS, SECONDARY_PATHS } from "@/lib/navigationConfig";
+import { PRIMARY_TABS, SECONDARY_PATHS, mobileSectionPath } from "@/lib/navigationConfig";
 
 // 5 simple tabs: Home, Messages, Studio, Explore, More
 // "More" opens the full feature menu sheet (handled by MobileHeader).
 const TABS = [...PRIMARY_TABS, { icon: Grid3x3, label: "More", path: "__more__" }];
 
 function getActiveTab(pathname) {
-  if (pathname === "/") return "/";
-  const primary = PRIMARY_TABS.find(t => t.path !== "/" && pathname.startsWith(t.path));
-  if (primary) return primary.path;
-  // If the path matches a secondary feature, "More" is active
-  const isSecondary = [...SECONDARY_PATHS].some(p => pathname.startsWith(p));
-  return isSecondary ? "__more__" : null;
+  const section = mobileSectionPath(pathname);
+  if (PRIMARY_TABS.some(tab => tab.path === section)) return section;
+  return SECONDARY_PATHS.has(section) ? "__more__" : null;
 }
 
 export default function MobileNav() {

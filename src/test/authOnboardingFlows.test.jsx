@@ -223,6 +223,7 @@ describe('auth and onboarding flows', () => {
 
   it('sends one resend request across repeated taps and allows retry after failure', async () => {
     let rejectRequest;
+    mockBase44.auth.resendOtp.mockReset();
     mockBase44.auth.resendOtp.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectRequest = reject; }));
     mockBase44.auth.resendOtp.mockResolvedValueOnce(undefined);
     renderInRouter(<Register />);

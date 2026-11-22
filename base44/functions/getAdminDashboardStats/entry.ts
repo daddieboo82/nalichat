@@ -5,17 +5,33 @@ const PAGE_SIZE = 500;
 
 async function aggregateUsers(entities: any) {
   let totalUsers = 0;
-  let incompleteOnboardingAccounts = 0;
+  const onboarding = {
+    incomplete: 0,
+    missingFlag: 0,
+    reminderRecorded: 0,
+    missedByFlagFilter: 0,
+  };
+  const now = Date.now();
+  const reminderCutoff = now - 24 * 60 * 60 * 1000;
   const recentlySeenUserIds = new Set<string>();
-  const seenSince = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const seenSince = now - 30 * 24 * 60 * 60 * 1000;
   for (let skip = 0; ; skip += PAGE_SIZE) {
     const page = await entities.User.filter({}, '-created_date', PAGE_SIZE, skip);
     totalUsers += page.length;
     for (const account of page) {
-      if (account.onboarding_completed !== true) incompleteOnboardingAccounts += 1;
+      if (account.onboarding_completed !== true) {
+        onboarding.incomplete += 1;
+        if (account.reengagement_sent_at) onboarding.reminderRecorded += 1;
+        if (account.onboarding_completed == null) {
+          onboarding.missingFlag += 1;
+          if (!account.reengagement_sent_at && Date.parse(account.created_date) < reminderCutoff) {
+            onboarding.missedByFlagFilter += 1;
+          }
+        }
+      }
       if (account.id && Date.parse(account.last_seen) >= seenSince) recentlySeenUserIds.add(account.id);
     }
-    if (page.length < PAGE_SIZE) return { totalUsers, incompleteOnboardingAccounts, recentlySeenUserIds };
+    if (page.length < PAGE_SIZE) return { totalUsers, onboarding, recentlySeenUserIds };
   }
 }
 
@@ -120,7 +136,10 @@ Deno.serve(async (req) => {
       adminUserId: user.id,
       stats: {
         totalUsers: users.totalUsers,
-        incompleteOnboardingAccounts: users.incompleteOnboardingAccounts,
+        incompleteOnboardingAccounts: users.onboarding.incomplete,
+        onboardingMissingFlag: users.onboarding.missingFlag,
+        onboardingReminderRecorded: users.onboarding.reminderRecorded,
+        onboardingMissedByFlagFilter: users.onboarding.missedByFlagFilter,
         ...subscriptions.counts,
         activeSubscriberAccounts: subscriptions.activeUserIds.size,
         activeSubscriberAccountsSeen30d: [...subscriptions.activeUserIds].filter(id => users.recentlySeenUserIds.has(id)).length,

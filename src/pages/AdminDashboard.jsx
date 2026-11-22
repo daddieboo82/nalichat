@@ -223,7 +223,7 @@ export default function AdminDashboard() {
 
   const cards = [
     { label: "Total Users", value: stats.totalUsers, icon: Users },
-    { label: "Active Subscriptions", value: stats.activeSubscriptions, icon: Activity },
+    { label: "Active Subscription Records", value: stats.activeSubscriptions, icon: Activity },
     { label: "Trials", value: stats.trialSubscriptions, icon: Clock3 },
     { label: "Premium Plus", value: stats.premiumPlusSubscriptions, icon: Crown },
   ];
@@ -275,6 +275,13 @@ export default function AdminDashboard() {
                 <div className="ui-surface rounded-2xl border border-border/60 bg-card/60 p-5">
                   <h3 className="text-sm font-bold text-muted-foreground">Incomplete profile setup</h3>
                   <p className="mt-1 text-2xl font-bold tabular-nums">{stats.incompleteOnboardingAccounts}</p>
+                  {Number.isInteger(stats.onboardingMissingFlag) && (
+                    <dl className="mt-3 space-y-1 text-xs text-muted-foreground">
+                      <div className="flex justify-between gap-3"><dt>Missing completion flag</dt><dd>{stats.onboardingMissingFlag}</dd></div>
+                      <div className="flex justify-between gap-3"><dt>Reminder recorded</dt><dd>{stats.onboardingReminderRecorded}</dd></div>
+                      <div className="flex justify-between gap-3"><dt>Over 24 hours old, missing flag and reminder</dt><dd>{stats.onboardingMissedByFlagFilter}</dd></div>
+                    </dl>
+                  )}
                 </div>
                 <div className="ui-surface rounded-2xl border border-border/60 bg-card/60 p-5">
                   <h3 className="text-sm font-bold text-muted-foreground">Active subscriber accounts seen in 30 days</h3>
@@ -283,7 +290,7 @@ export default function AdminDashboard() {
                 </div>
               </section>
             )}
-            <p className="mb-4 text-sm text-muted-foreground">Active subscription records by provider: {stats.activePayPalRecords ?? 0} PayPal · {stats.activeManualRecords ?? 0} manual · {stats.activeOtherRecords ?? 0} other. These are database statuses, not verified payments or unique customers.</p>
+            <p className="mb-4 text-sm text-muted-foreground">{stats.totalSubscriptions ?? 0} subscription records across all statuses. Active records by provider: {stats.activePayPalRecords ?? 0} PayPal · {stats.activeManualRecords ?? 0} manual · {stats.activeOtherRecords ?? 0} other. These are database statuses, not verified payments or unique customers.</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
               <div className="ui-surface bg-card/60 border border-border/60 rounded-2xl p-5">
                 <p className="text-sm text-muted-foreground">Premium</p>

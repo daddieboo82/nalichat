@@ -221,6 +221,24 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.auth.resendOtp).not.toHaveBeenCalled();
   });
 
+  it('sends one resend request across repeated taps and allows retry after failure', async () => {
+    let rejectRequest;
+    mockBase44.auth.resendOtp.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectRequest = reject; }));
+    mockBase44.auth.resendOtp.mockResolvedValueOnce(undefined);
+    renderInRouter(<Register />);
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'I already have a verification code' }));
+    const resend = screen.getByRole('button', { name: 'Resend code' });
+    fireEvent.click(resend);
+    fireEvent.click(resend);
+    expect(resend.disabled).toBe(true);
+    expect(mockBase44.auth.resendOtp).toHaveBeenCalledTimes(1);
+    rejectRequest(new Error('Temporary network failure'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Resend code' }));
+    await screen.findByRole('button', { name: 'Resend in 30s' });
+    expect(mockBase44.auth.resendOtp).toHaveBeenCalledTimes(2);
+  });
+
   it('offers login after successful verification when no session was issued', async () => {
     mockBase44.auth.verifyOtp.mockResolvedValueOnce({});
     renderInRouter(<Register />);

@@ -47,6 +47,7 @@ export default function Register() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [mfaChallenge, setMfaChallenge] = useState(null);
   const [emailStartedTracked, setEmailStartedTracked] = useState(false);
+  const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const markEmailRegistrationStarted = () => {
@@ -137,7 +138,7 @@ export default function Register() {
   };
 
   const handleVerify = async () => {
-    if (loading || otpCode.trim().length !== 6) return;
+    if (loading || resending || otpCode.trim().length !== 6) return;
     setError("");
     setLoading(true);
     try {
@@ -203,7 +204,8 @@ export default function Register() {
   };
 
   const handleResend = async () => {
-    if (resendCooldown > 0) return;
+    if (resendCooldown > 0 || resending || loading) return;
+    setResending(true);
     setError("");
     try {
       const normalizedEmail = email.trim().toLowerCase();
@@ -231,6 +233,8 @@ export default function Register() {
         google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
       });
       setError(resendOtpErrorMessage(err));
+    } finally {
+      setResending(false);
     }
   };
 
@@ -328,7 +332,7 @@ export default function Register() {
         <Button
           className="ui-hover h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10"
           onClick={handleVerify}
-          disabled={loading || otpCode.length < 6}
+          disabled={loading || resending || otpCode.length < 6}
         >
           {loading ? (
             <>
@@ -343,10 +347,10 @@ export default function Register() {
           Didn't receive the code?{" "}
           <button
             onClick={handleResend}
-            disabled={resendCooldown > 0 || loading}
+            disabled={resendCooldown > 0 || loading || resending}
             className="ui-hover min-h-9 rounded-lg px-2 py-1 font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+            {resending ? "Sending…" : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
           </button>
         </p>
         <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
@@ -360,7 +364,7 @@ export default function Register() {
             setError("");
             setResendCooldown(0);
           }}
-          disabled={loading}
+          disabled={loading || resending}
           className="mt-3 flex min-h-11 w-full items-center justify-center rounded-xl px-3 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50"
         >
           Change email address

@@ -331,6 +331,20 @@ describe('auth and onboarding flows', () => {
     expect(screen.getByLabelText(/Bio/).value).toBe('');
   });
 
+  it('places the single submit action after the last visible setup field', () => {
+    mockAuthState.current.user = { id: 'new-artist', full_name: 'Artist' };
+    mockAuthState.current.isAuthenticated = true;
+    renderInRouter(<Onboarding />);
+    const toggle = screen.getByRole('button', { name: 'Optional profile details' });
+    const submit = () => screen.getByRole('button', { name: 'Enter NaliBase' });
+    expect(submit().compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(toggle);
+    const location = screen.getByLabelText(/Location/);
+    expect(location.compareDocumentPosition(submit()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(submit().compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('saves onboarding profile data and refreshes auth state', async () => {
     const checkUserAuth = vi.fn().mockResolvedValue({ id: '507f1f77bcf86cd799439012', onboarding_completed: true });
     mockAuthState.current = {

@@ -200,6 +200,17 @@ function OnboardingForm() {
   const returningToSetup = user?.onboarding_completed !== true &&
     Date.parse(user?.created_date) <= Date.now() - 24 * 60 * 60 * 1000;
 
+  const detailsVisible = showOptionalDetails && !profileSaved;
+  const submitSection = (
+    <>
+      {setupError && <p className="text-sm text-destructive" role="alert">{setupError}</p>}
+      <Button type="submit" disabled={loading} className="ui-hover min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
+        {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+        {loading ? "Continuing..." : profileSaved ? "Continue" : "Enter NaliBase"}
+      </Button>
+    </>
+  );
+
   return (
     <>
     <OnboardingNaliGuide step={1} profileComplete={profileComplete} />
@@ -243,14 +254,10 @@ function OnboardingForm() {
           {fieldError?.field === "display_name" && (
             <p id="setup-display-name-error" role="alert" className="text-sm text-destructive">{fieldError.message}</p>
           )}
-          {setupError && <p className="text-sm text-destructive" role="alert">{setupError}</p>}
-          <Button type="submit" disabled={loading} className="ui-hover min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
-            {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-            {loading ? "Continuing..." : profileSaved ? "Continue" : "Enter NaliBase"}
-          </Button>
+          {!detailsVisible && submitSection}
           <button
             type="button"
-            aria-expanded={showOptionalDetails}
+            aria-expanded={detailsVisible}
             aria-controls="setup-optional-details"
             disabled={loading || profileSaved}
             onClick={() => setShowOptionalDetails(open => !open)}
@@ -259,7 +266,7 @@ function OnboardingForm() {
             Optional profile details
             <ChevronDown aria-hidden="true" className={showOptionalDetails ? "h-4 w-4 rotate-180" : "h-4 w-4"} />
           </button>
-          <div id="setup-optional-details" hidden={!showOptionalDetails || profileSaved} className="space-y-4">
+          <div id="setup-optional-details" hidden={!detailsVisible} className="space-y-4">
             <div className="space-y-1.5">
               <label htmlFor="setup-birthdate" className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />Birthdate <span className="font-normal text-muted-foreground">(optional)</span></label>
               <Input
@@ -289,12 +296,14 @@ function OnboardingForm() {
               <label htmlFor="setup-location" className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-primary" aria-hidden="true" />Location <span className="font-normal text-muted-foreground">(optional)</span></label>
               <Input
                 id="setup-location"
+                enterKeyHint="go"
                 value={form.location}
                 onChange={(e) => { markOnboardingInteraction(); setForm(f => ({ ...f, location: e.target.value })); }}
                 placeholder="City, Country"
               className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
             </div>
           </div>
+          {detailsVisible && submitSection}
           {validationRecovery && (
             <div role="alert" className="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
               <p>Profile details were not accepted. You can try again with only your required display name. Optional information will not be saved in that attempt.</p>

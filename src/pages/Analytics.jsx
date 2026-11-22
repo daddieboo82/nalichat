@@ -63,6 +63,15 @@ export default function Analytics() {
     });
   }, [funnelEvents, funnelWindow]);
 
+  const setupAndChallengeCounts = React.useMemo(() => {
+    const accountsByEvent = Object.create(null);
+    for (const { event_name, user_id } of filteredFunnelEvents) {
+      if (!user_id || !/^(onboarding_|creator_challenge_)/.test(event_name)) continue;
+      (accountsByEvent[event_name] ??= new Set()).add(user_id);
+    }
+    return accountsByEvent;
+  }, [filteredFunnelEvents]);
+
   const visitorRetention = React.useMemo(() => summarizeVisitorRetention(filteredFunnelEvents), [filteredFunnelEvents]);
 
   const messengerActivation = React.useMemo(() => {
@@ -549,6 +558,27 @@ export default function Analytics() {
                   )}
                 </div>
               ))}
+            </div>
+            <div className="mt-5 border-t border-border/60 pt-4">
+              <h3 className="font-heading text-sm font-semibold">Profile setup and creator engagement</h3>
+              <p className="mt-1 text-xs text-muted-foreground">Distinct signed-in accounts per event in the selected period. An account can appear in multiple counts.</p>
+              <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  ["onboarding_view", "Opened setup"],
+                  ["onboarding_form_interaction", "Edited a field"],
+                  ["onboarding_validation_blocked", "Blocked by validation"],
+                  ["onboarding_submit", "Tried to save"],
+                  ["onboarding_save_failed", "Save or session error"],
+                  ["onboarding_complete", "Completed setup"],
+                  ["creator_challenge_open", "Opened challenge upload"],
+                  ["creator_challenge_publish", "Published from challenge"],
+                ].map(([eventName, label]) => (
+                  <div key={eventName} className="rounded-xl border border-border/60 bg-background/40 p-3">
+                    <dt className="text-xs text-muted-foreground">{label}</dt>
+                    <dd className="mt-1 text-lg font-bold tabular-nums">{setupAndChallengeCounts[eventName]?.size ?? 0}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
             <div className="mt-5 border-t border-border/60 pt-4">
               <div className="mb-3">

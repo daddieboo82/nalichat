@@ -13,6 +13,7 @@ import TrackCommentsDialog from "@/components/explore/TrackCommentsDialog";
 import { sounds } from "@/hooks/use-sound";
 import { toast } from "sonner";
 import { getLikeCount } from "@/lib/engagement";
+import { trackProductEvent } from "@/lib/productAnalytics";
 import AdSlot from "@/components/ads/AdSlot";
 
 const MEDIUMS = ["all", "original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
@@ -40,6 +41,7 @@ export default function Explore() {
   const [filter, setFilter] = useState(urlParams.get("filter") || "all");
   const [search, setSearch] = useState(urlParams.get("search") || "");
   const [showUpload, setShowUpload] = useState(urlParams.get("upload") === "true");
+  const [challengeUpload, setChallengeUpload] = useState(false);
   const [publishFile, setPublishFile] = useState(location.state?.publishFile || null);
 
   useEffect(() => {
@@ -205,6 +207,26 @@ export default function Explore() {
 
           <button type="button" onClick={() => navigate('/battles')} className="mb-4 flex min-h-11 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-bold text-foreground hover:bg-primary/20"><Swords className="h-4 w-4" /> Enter Live Battles stage</button>
 
+          {currentUser && (
+            <section className="mb-4 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-card/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="font-heading text-sm font-bold">Creator challenge · Share a work in progress</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Post a beat, hook, or rough mix you own and tell listeners what you’d like feedback on.</p>
+              </div>
+              <button
+                type="button"
+                className="ui-hover min-h-11 shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-4 text-sm font-semibold hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-primary"
+                onClick={() => {
+                  trackProductEvent("creator_challenge_open", { user_id: currentUser.id, source: "explore" });
+                  setChallengeUpload(true);
+                  setShowUpload(true);
+                }}
+              >
+                Share a track
+              </button>
+            </section>
+          )}
+
           {/* Search */}
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -319,7 +341,9 @@ export default function Explore() {
         <div className="h-12" aria-hidden="true" />
         </div>
 
-        <UploadArtDialog sourceFile={publishFile} open={showUpload} onClose={() => { setShowUpload(false); setPublishFile(null); }} currentUser={currentUser} onSuccess={() => {
+        <UploadArtDialog sourceFile={publishFile} open={showUpload} onClose={() => { setShowUpload(false); setPublishFile(null); setChallengeUpload(false); }} currentUser={currentUser} onSuccess={() => {
+        if (challengeUpload) trackProductEvent("creator_challenge_publish", { user_id: currentUser?.id, source: "explore" });
+        setChallengeUpload(false);
         setShowUpload(false);
         setPublishFile(null);
         queryClient.invalidateQueries({ queryKey: ["artposts"] });

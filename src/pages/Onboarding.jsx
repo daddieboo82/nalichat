@@ -28,8 +28,9 @@ export default function Onboarding() {
   const [onboardingInteractionTracked, setOnboardingInteractionTracked] = useState(false);
 
   useEffect(() => {
-    trackProductEvent("onboarding_view", { source: "profile_setup" });
-  }, []);
+    if (!user?.id || user.onboarding_completed === true) return;
+    trackProductEvent("onboarding_view", { source: "profile_setup", user_id: user.id });
+  }, [user?.id, user?.onboarding_completed]);
 
   const markOnboardingInteraction = () => {
     if (onboardingInteractionTracked) return;
@@ -37,6 +38,7 @@ export default function Onboarding() {
     trackProductEvent("onboarding_form_interaction", {
       source: "profile_setup",
       stage: "first_field_interaction",
+      user_id: user?.id,
     });
   };
 
@@ -67,6 +69,7 @@ export default function Onboarding() {
     }
     const displayName = form.display_name.trim();
     if (!displayName) {
+      trackProductEvent("onboarding_validation_blocked", { source: "profile_setup", user_id: submittingUserId, reason: "missing_display_name" });
       toast.error("Please enter your display name");
       return;
     }
@@ -81,11 +84,12 @@ export default function Onboarding() {
           Number.isNaN(parsed.getTime()) ||
           parsed.toISOString().slice(0, 10) !== form.birthdate ||
           parsed.getTime() > todayUtc) {
+        trackProductEvent("onboarding_validation_blocked", { source: "profile_setup", user_id: submittingUserId, reason: "invalid_birthdate" });
         toast.error("Enter a valid birthdate that is not in the future, or leave it blank.");
         return;
       }
     }
-    trackProductEvent("onboarding_submit", { source: "profile_setup" });
+    trackProductEvent("onboarding_submit", { source: "profile_setup", user_id: submittingUserId, mode: displayNameOnly ? "name_only" : "full_form" });
     setLoading(true);
     try {
       const res = await base44.functions.invoke("completeOnboarding", {
@@ -129,7 +133,8 @@ export default function Onboarding() {
       const message = typeof errorDetail === "string" ? errorDetail : "Failed to complete setup";
       trackProductEvent("onboarding_save_failed", {
         source: "profile_setup",
-        reason: message.slice(0, 160),
+        user_id: submittingUserId,
+        reason: isBadRequest ? "request_rejected" : "save_or_session_failed",
       });
       toast.error(message);
       setValidationRecovery(isBadRequest && !displayNameOnly);
@@ -158,7 +163,7 @@ export default function Onboarding() {
           </div>
           <div>
             <p className="font-heading font-bold text-lg leading-tight">Welcome to NaliBase</p>
-            <p className="text-xs text-muted-foreground">Set up your creator profile in under a minute, then enter the NaliBase Plaza.</p>
+            <p className="text-xs text-muted-foreground">Finish setup with your display name. You can add profile details later.</p>
           </div>
         </div>
 
@@ -171,6 +176,11 @@ export default function Onboarding() {
               placeholder="What should we call you?"
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
+          {!validationRecovery && (
+            <Button type="button" variant="outline" disabled={loading} className="min-h-11 w-full" onClick={() => handleSave(true)}>
+              Continue with display name only
+            </Button>
+          )}
           <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />Birthdate <span className="font-normal text-muted-foreground">(optional)</span></label>
             <Input

@@ -1,70 +1,33 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Home } from 'lucide-react';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
+import { Button } from '@/components/ui/button';
 
+export default function PageNotFound() {
+  const location = useLocation();
+  const { user, isAuthenticated, authChecked } = useAuth();
 
-export default function PageNotFound({}) {
-    const location = useLocation();
-    const pageName = location.pathname.substring(1);
+  if (location.pathname.toLowerCase().replace(/\/+$/, '') === '/admin-dashboard') {
+    return <Navigate to={'/admin' + location.search + location.hash} replace />;
+  }
 
-    const { user, isAuthenticated, authChecked } = useAuth();
-
-    // Preserve previously shared admin dashboard links while retaining the
-    // destination's existing authentication and admin-role checks.
-    if (location.pathname.toLowerCase() === '/admin-dashboard') {
-        return <Navigate to={'/admin' + location.search + location.hash} replace />;
-    }
-    
-    return (
-        <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-            <div className="max-w-md w-full">
-                <div className="text-center space-y-6">
-                    {/* 404 Error Code */}
-                    <div className="space-y-2">
-                        <h1 className="text-7xl font-light text-muted-foreground/30">404</h1>
-                        <div className="h-0.5 w-16 bg-border mx-auto"></div>
-                    </div>
-                    
-                    {/* Main Message */}
-                    <div className="space-y-3">
-                        <h2 className="text-2xl font-medium text-foreground">
-                            Page Not Found
-                        </h2>
-                        <p className="text-muted-foreground leading-relaxed">
-                            The page <span className="font-medium text-foreground">"{pageName}"</span> could not be found in this application.
-                        </p>
-                    </div>
-                    
-                    {/* Admin Note */}
-                    {authChecked && isAuthenticated && user?.role === 'admin' && (
-                        <div className="mt-8 p-4 bg-card rounded-lg border border-border">
-                            <div className="flex items-start space-x-3">
-                                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center mt-0.5">
-                                    <div className="w-2 h-2 rounded-full bg-primary"></div>
-                                </div>
-                                <div className="text-left space-y-1">
-                                    <p className="text-sm font-medium text-foreground">Admin Note</p>
-                                    <p className="text-sm text-muted-foreground leading-relaxed">
-                                        This route may have been removed or renamed. Check the navigation and deployment configuration if you expected it to exist.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Action Button */}
-                    <div className="pt-6">
-                        <button 
-                            onClick={() => window.location.href = '/'} 
-                            className="ui-hover inline-flex min-h-11 items-center rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors duration-200 hover:bg-secondary/60 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background"
-                        >
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                            </svg>
-                            Go Home
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
+  return (
+    <main className="flex min-h-[100dvh] items-center justify-center bg-background p-5">
+      <div className="w-full min-w-0 max-w-md space-y-4 text-center">
+        <h1 className="text-2xl font-semibold text-foreground">Page Not Found</h1>
+        <p className="text-sm text-muted-foreground">
+          No page is available at <span className="break-all font-medium text-foreground">{location.pathname}</span>.
+        </p>
+        <Button asChild className="min-h-12 w-full rounded-xl">
+          <Link to="/"><Home aria-hidden="true" className="mr-2 h-4 w-4" />Go Home</Link>
+        </Button>
+        {authChecked && isAuthenticated && user?.role === 'admin' && (
+          <aside className="rounded-xl border border-border bg-card p-3 text-left text-sm">
+            <p className="font-medium text-foreground">Admin Note</p>
+            <p className="mt-1 text-muted-foreground">If you expected this page to exist, check its route and deployment configuration.</p>
+          </aside>
+        )}
+      </div>
+    </main>
+  );
 }

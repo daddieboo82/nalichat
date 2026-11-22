@@ -50,6 +50,14 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (user) {
+      if (formOwnerId === user.id && onboardingInteractionTracked) return;
+      if (formOwnerId !== user.id) {
+        setOnboardingInteractionTracked(false);
+        setFieldError(null);
+        setSetupError("");
+        setShowOptionalDetails(false);
+        setValidationRecovery(false);
+      }
       setForm(f => ({
         ...f,
         display_name: user.display_name || user.full_name || "",
@@ -63,7 +71,7 @@ export default function Onboarding() {
         setFormOwnerId(null);
         window.location.href = "/login";
     }
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, formOwnerId, onboardingInteractionTracked]);
 
   useEffect(() => {
     if (showOptionalDetails && fieldError?.field === "birthdate") {

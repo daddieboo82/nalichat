@@ -310,6 +310,27 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
   });
 
+  it('keeps in-progress setup edits on account refresh and resets them for another user', () => {
+    const user = { id: 'first', full_name: 'First Artist' };
+    mockAuthState.current = { ...mockAuthState.current, user, isAuthenticated: true };
+    const { rerender } = renderInRouter(<Onboarding />);
+    const name = () => screen.getByRole('textbox', { name: /display name/i });
+    fireEvent.change(name(), { target: { value: 'My stage name' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Optional profile details' }));
+    fireEvent.change(screen.getByLabelText(/Bio/), { target: { value: 'My draft bio' } });
+
+    mockAuthState.current.user = { ...user };
+    rerender(<MemoryRouter><Onboarding /></MemoryRouter>);
+    expect(name().value).toBe('My stage name');
+    expect(screen.getByLabelText(/Bio/).value).toBe('My draft bio');
+
+    mockAuthState.current.user = { id: 'second', full_name: 'Second Artist' };
+    rerender(<MemoryRouter><Onboarding /></MemoryRouter>);
+    expect(name().value).toBe('Second Artist');
+    fireEvent.click(screen.getByRole('button', { name: 'Optional profile details' }));
+    expect(screen.getByLabelText(/Bio/).value).toBe('');
+  });
+
   it('saves onboarding profile data and refreshes auth state', async () => {
     const checkUserAuth = vi.fn().mockResolvedValue({ id: '507f1f77bcf86cd799439012', onboarding_completed: true });
     mockAuthState.current = {

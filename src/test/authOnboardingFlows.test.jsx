@@ -268,9 +268,13 @@ describe('auth and onboarding flows', () => {
     renderInRouter(<Onboarding />);
     fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
 
-    await waitFor(() => {
-      expect(mockToast.error).toHaveBeenCalledWith('Please enter your display name');
-    });
+    const displayName = screen.getByRole('textbox', { name: /display name/i });
+    const error = await screen.findByText('Please enter your display name.');
+    expect(displayName.getAttribute('aria-invalid')).toBe('true');
+    expect(displayName.getAttribute('aria-describedby')).toBe(error.id);
+    expect(document.activeElement).toBe(displayName);
+    fireEvent.change(displayName, { target: { value: 'New Name' } });
+    expect(screen.queryByText('Please enter your display name.')).toBeNull();
     expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
   });
 

@@ -24,6 +24,8 @@ export default function Onboarding() {
   const [formOwnerId, setFormOwnerId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showOptionalDetails, setShowOptionalDetails] = useState(false);
+  const [savedProfileOwner, setSavedProfileOwner] = useState(null);
+  const [setupError, setSetupError] = useState("");
   const [fieldError, setFieldError] = useState(null);
   const displayNameInput = useRef(null);
   const birthdateInput = useRef(null);
@@ -73,17 +75,20 @@ export default function Onboarding() {
     form.bio !== (user?.bio || "") ||
     form.location !== (user?.location || "");
 
+  const profileSaved = Boolean(user?.id && savedProfileOwner === user.id);
+
   const handleSave = async (displayNameOnly = false) => {
     if (loading) return;
     setValidationRecovery(false);
     setFieldError(null);
+    setSetupError("");
     const submittingUserId = user?.id;
     if (!submittingUserId || formOwnerId !== submittingUserId) {
       toast.error("Your account changed. Please wait for setup to reload.");
       return;
     }
     const displayName = form.display_name.trim();
-    if (!displayName) {
+    if (!profileSaved && !displayName) {
       trackProductEvent("onboarding_validation_blocked", { source: "profile_setup", user_id: submittingUserId, reason: "missing_display_name" });
       setFieldError({ field: "display_name", message: "Please enter your display name." });
       displayNameInput.current?.focus();
@@ -92,7 +97,7 @@ export default function Onboarding() {
     // The backend accepts only a real YYYY-MM-DD birthdate that is not in
     // the future. Validate locally so mobile users receive a useful message
     // instead of an opaque HTTP 400 during onboarding.
-    if (!displayNameOnly && form.birthdate) {
+    if (!profileSaved && !displayNameOnly && form.birthdate) {
       const parsed = new Date(form.birthdate + "T00:00:00Z");
       const today = new Date();
       const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
@@ -106,30 +111,34 @@ export default function Onboarding() {
         return;
       }
     }
-    trackProductEvent("onboarding_submit", { source: "profile_setup", user_id: submittingUserId, mode: displayNameOnly ? "name_only" : "full_form" });
+
     setLoading(true);
     try {
-      const res = await base44.functions.invoke("completeOnboarding", {
-        display_name: displayName,
-        birthdate: displayNameOnly ? "" : form.birthdate,
-        bio: displayNameOnly ? (user.bio || "") : form.bio,
-        location: displayNameOnly ? (user.location || "") : form.location,
-      });
-      if (res?.data?.error) throw new Error(res.data.error);
-      if (
-        res?.data?.success !== true ||
-        res?.data?.action !== "complete_onboarding" ||
-        res?.data?.userId !== submittingUserId ||
-        res?.data?.onboardingCompleted !== true
-      ) throw new Error("Profile setup was not confirmed");
-      
+      if (!profileSaved) {
+        trackProductEvent("onboarding_submit", { source: "profile_setup", user_id: submittingUserId, mode: displayNameOnly ? "name_only" : "full_form" });
+        const res = await base44.functions.invoke("completeOnboarding", {
+          display_name: displayName,
+          birthdate: displayNameOnly ? "" : form.birthdate,
+          bio: displayNameOnly ? (user.bio || "") : form.bio,
+          location: displayNameOnly ? (user.location || "") : form.location,
+        });
+        if (res?.data?.error) throw new Error(res.data.error);
+        if (
+          res?.data?.success !== true ||
+          res?.data?.action !== "complete_onboarding" ||
+          res?.data?.userId !== submittingUserId ||
+          res?.data?.onboardingCompleted !== true
+        ) throw new Error("Profile setup was not confirmed");
+        setSavedProfileOwner(submittingUserId);
+      }
+
       const refreshedUser = await checkUserAuth();
       if (
         !refreshedUser?.id ||
         refreshedUser.id !== submittingUserId ||
         refreshedUser.onboarding_completed !== true
       ) {
-        throw new Error("Profile setup saved, but your session did not refresh. Please try again.");
+        throw new Error("Your profile is saved. Select Continue to retry opening NaliBase.");
       }
       
       trackProductEvent("onboarding_complete", {
@@ -153,7 +162,7 @@ export default function Onboarding() {
         user_id: submittingUserId,
         reason: isBadRequest ? "request_rejected" : "save_or_session_failed",
       });
-      toast.error(message);
+      setSetupError(message);
       setValidationRecovery(isBadRequest && !displayNameOnly);
       setLoading(false);
     }
@@ -191,12 +200,18 @@ export default function Onboarding() {
             Welcome back. Finish your profile below whenever you’re ready.
           </p>
         )}
-        <div className="space-y-4">
+        <form className="space-y-4" onSubmit={(event) => {
+          event.preventDefault();
+          void handleSave(!showOptionalDetails && !hasOptionalEdits);
+        }}>
           <div className="space-y-1.5">
             <label htmlFor="setup-display-name" className="flex items-center gap-2 text-sm font-semibold"><UserRound className="h-4 w-4 text-primary" aria-hidden="true" />Display Name <span className="text-primary">*</span></label>
             <Input
               id="setup-display-name"
               ref={displayNameInput}
+              readOnly={profileSaved}
+              autoComplete="nickname"
+              enterKeyHint="go"
               aria-required="true"
               aria-invalid={fieldError?.field === "display_name"}
               aria-describedby={fieldError?.field === "display_name" ? "setup-display-name-error" : undefined}
@@ -208,18 +223,23 @@ export default function Onboarding() {
           {fieldError?.field === "display_name" && (
             <p id="setup-display-name-error" role="alert" className="text-sm text-destructive">{fieldError.message}</p>
           )}
+          {setupError && <p className="text-sm text-destructive" role="alert">{setupError}</p>}
+          <Button type="submit" disabled={loading} className="ui-hover min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
+            {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+            {loading ? "Continuing..." : profileSaved ? "Continue" : "Enter NaliBase"}
+          </Button>
           <button
             type="button"
             aria-expanded={showOptionalDetails}
             aria-controls="setup-optional-details"
-            disabled={loading}
+            disabled={loading || profileSaved}
             onClick={() => setShowOptionalDetails(open => !open)}
             className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-border/70 px-3 text-left text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Optional profile details
             <ChevronDown aria-hidden="true" className={showOptionalDetails ? "h-4 w-4 rotate-180" : "h-4 w-4"} />
           </button>
-          <div id="setup-optional-details" hidden={!showOptionalDetails} className="space-y-4">
+          <div id="setup-optional-details" hidden={!showOptionalDetails || profileSaved} className="space-y-4">
             <div className="space-y-1.5">
               <label htmlFor="setup-birthdate" className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />Birthdate <span className="font-normal text-muted-foreground">(optional)</span></label>
               <Input
@@ -261,16 +281,12 @@ export default function Onboarding() {
               <Button type="button" variant="outline" disabled={loading} className="min-h-11 w-full" onClick={() => handleSave(true)}>Finish with display name only</Button>
             </div>
           )}
-          {!showOptionalDetails && hasOptionalEdits && !validationRecovery && (
+          {!profileSaved && !showOptionalDetails && hasOptionalEdits && !validationRecovery && (
             <Button type="button" variant="outline" disabled={loading} className="min-h-11 w-full" onClick={() => handleSave(true)}>
               Finish with display name only
             </Button>
           )}
-          <Button onClick={() => handleSave(!showOptionalDetails && !hasOptionalEdits)} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
-            {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-            {loading ? "Saving..." : "Enter NaliBase"}
-          </Button>
-        </div>
+        </form>
       </div>
     </div>
     </>

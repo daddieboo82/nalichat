@@ -10,6 +10,6 @@ describe('authenticated NaliBase hub',()=>{
     expect(gate).toBeLessThan(pillar);
     expect(source).toContain('Where do you want to go?');
     expect(source).toContain('const PLAZA_WORLDS = WORLD_ORDER.map');
-    expect(source).toContain('path: WORLD_CONTEXTS[id].path');
+    expect(source).toContain('storefronts: WORLD_CONTEXTS[id].storefronts');
   });
 });

@@ -453,11 +453,11 @@ export default function CoverArt() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <input 
-              type="file" 
-              ref={importFileInputRef} 
-              className="hidden" 
-              accept="audio/*,video/*" 
+            <input
+              type="file"
+              ref={importFileInputRef}
+              className="hidden"
+              accept="audio/*,video/*"
               onChange={handleImportAudio}
             />
           </div>

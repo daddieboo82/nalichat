@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Loader2, AlertTriangle } from "lucide-react";
+import { Lock, Loader2, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { resetPasswordErrorMessage } from "@/lib/authErrorMessages";
 
@@ -23,11 +23,13 @@ export default function ResetPassword() {
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPasswords, setShowPasswords] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError("");
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match");
@@ -50,15 +52,10 @@ export default function ResetPassword() {
         icon={AlertTriangle}
         title="Invalid reset link"
         subtitle="This password reset link is missing or invalid"
-        footer={
-          <Link to="/forgot-password" className="ui-hover rounded-lg px-1 py-1 font-medium text-primary hover:bg-primary/10">
-            Request a new link
-          </Link>
-        }
       >
-        <p className="text-sm text-foreground text-center">
-          The link you used appears to be incomplete. Please request a new password reset email.
-        </p>
+        <Button asChild className="h-12 w-full rounded-xl font-semibold">
+          <Link to="/forgot-password">Request a new link</Link>
+        </Button>
       </AuthLayout>
     );
   }
@@ -70,7 +67,7 @@ export default function ResetPassword() {
       subtitle="Enter your new password below"
     >
       {error && (
-        <div className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+        <div role="alert" className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -81,9 +78,8 @@ export default function ResetPassword() {
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               id="password"
-              type="password"
+              type={showPasswords ? "text" : "password"}
               autoComplete="new-password"
-              autoFocus
               placeholder="••••••••"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -98,7 +94,7 @@ export default function ResetPassword() {
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               id="confirm"
-              type="password"
+              type={showPasswords ? "text" : "password"}
               autoComplete="new-password"
               placeholder="••••••••"
               value={confirmPassword}
@@ -108,6 +104,10 @@ export default function ResetPassword() {
             />
           </div>
         </div>
+        <Button type="button" variant="ghost" aria-controls="password confirm" aria-pressed={showPasswords} className="min-h-11 gap-2 rounded-xl" onClick={() => setShowPasswords(visible => !visible)}>
+          {showPasswords ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+          {showPasswords ? "Hide passwords" : "Show passwords"}
+        </Button>
         <Button type="submit" className="ui-hover h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10" disabled={loading}>
           {loading ? (
             <>

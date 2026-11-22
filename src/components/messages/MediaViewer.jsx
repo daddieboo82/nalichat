@@ -54,7 +54,7 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
       onClick={onClose}
     >
       <div
-        className="relative bg-black/95 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-2xl max-w-4xl w-full max-h-[90dvh] overflow-hidden flex flex-col"
+        className="nali-media-viewer relative bg-black/95 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-2xl max-w-4xl w-full max-h-[90dvh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -92,7 +92,7 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
                 style={{ transform: `scale(${zoom / 100})` }}
               />
               {/* Zoom controls */}
-              <div className="absolute bottom-4 flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-xl p-2 border border-white/10 shadow-xl">
+              <div className="nali-media-zoom absolute bottom-4 flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-xl p-2 border border-white/10 shadow-xl">
                 <button
                   onClick={() => setZoom((z) => Math.max(50, z - 10))}
                   className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
@@ -129,7 +129,7 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-white/10 bg-white/5 flex items-center justify-between">
-          <p className="text-xs text-white/50 font-mono">
+          <p className="nali-media-meta text-xs text-white/50 font-mono">
             {media.file_size
               ? `${(media.file_size / 1024 / 1024).toFixed(1)} MB`
               : ""}

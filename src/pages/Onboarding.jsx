@@ -182,7 +182,7 @@ export default function Onboarding() {
           </div>
           <div>
             <p className="font-heading font-bold text-lg leading-tight">Welcome to NaliBase</p>
-            <p className="text-xs text-muted-foreground">Finish setup with your display name. You can add profile details later.</p>
+            <p className="text-xs text-muted-foreground">Use your display name to finish setup and enter the NaliBase Plaza. You can add profile details later.</p>
           </div>
         </div>
 

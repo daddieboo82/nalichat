@@ -21,6 +21,7 @@ export default function AiAssistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendError, setSendError] = useState(null);
+  const [replyDelayed, setReplyDelayed] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState(null);
   const { user } = useAuth();
@@ -110,6 +111,7 @@ export default function AiAssistant() {
     setInput("");
     setLoading(false);
     setSendError(null);
+    setReplyDelayed(false);
     setIsListening(false);
     setVoiceEnabled(false);
     setIsSpeaking(false);
@@ -299,6 +301,7 @@ export default function AiAssistant() {
         if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
         pendingAssistantBaselineRef.current = null;
         sendInFlightRef.current = false;
+        setReplyDelayed(false);
         setLoading(false);
       }
     });
@@ -383,6 +386,7 @@ export default function AiAssistant() {
     const generation = identityGenerationRef.current;
     if (!preserveDraft) setInput("");
     setSendError(null);
+    setReplyDelayed(false);
     setLoading(true);
     let conv = conversationRef.current || conversation;
     try {
@@ -404,6 +408,7 @@ export default function AiAssistant() {
         if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current) return;
         // Share the guarded history-only refresh with the manual control.
         // This prevents an overlapping fallback read from racing a newer reply.
+        setReplyDelayed(true);
         void refreshPendingReply({ quiet: true });
       }, 60000);
     } catch (err) {
@@ -421,6 +426,7 @@ export default function AiAssistant() {
       // Delivery failures are local UI notices, not messages from the AI.
       // Keeping them out of history also prevents narration and false
       // assistant-reply completion when speech is enabled.
+      setReplyDelayed(false);
       setSendError(friendlyNaliError(err));
     }
   };
@@ -448,6 +454,7 @@ export default function AiAssistant() {
         if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
         pendingAssistantBaselineRef.current = null;
         sendInFlightRef.current = false;
+        setReplyDelayed(false);
         setLoading(false);
       } else if (!quiet) {
         toast.info('No new reply yet. Nali may still be processing your request.');
@@ -476,6 +483,21 @@ export default function AiAssistant() {
       document.removeEventListener('visibilitychange', checkOnVisibility);
     };
   }, [loading, conversation?.id]);
+
+  // A silent WebSocket failure may not fire online/visibility events while
+  // the user keeps this tab open. Run at most four additional history-only
+  // checks (30 seconds apart); then leave manual Check reply available.
+  useEffect(() => {
+    if (!replyDelayed || !loading || !conversation?.id) return;
+    let checks = 0;
+    const interval = setInterval(() => {
+      if (document.visibilityState !== 'visible' || !navigator.onLine) return;
+      if (++checks > 4) { clearInterval(interval); return; }
+      void refreshPendingReply({ quiet: true });
+      if (checks === 4) clearInterval(interval);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [replyDelayed, loading, conversation?.id]);
 
   const send = () => sendText(input);
 
@@ -682,7 +704,7 @@ export default function AiAssistant() {
               )}
               {loading && conversation?.id && (
                 <div className="shrink-0 border-t border-border/50 px-3 py-2 flex items-center justify-between gap-2 text-xs text-muted-foreground" role="status">
-                  <span>Nali is preparing a reply. Don’t resend yet.</span>
+                  <span>{replyDelayed ? 'Still waiting for Nali. We’re checking for your reply without resending.' : 'Nali is preparing a reply. Don’t resend yet.'}</span>
                   <button type="button" onClick={() => void refreshPendingReply()} className="min-h-11 shrink-0 rounded-lg border border-border px-3 font-semibold text-foreground hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary">Check reply</button>
                 </div>
               )}

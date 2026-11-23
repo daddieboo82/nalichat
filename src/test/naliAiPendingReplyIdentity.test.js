@@ -26,7 +26,7 @@ describe('NALI.ai pending reply completion', () => {
     const code = await readFile('src/components/AiAssistant.jsx', 'utf8');
     expect(code.indexOf('if (!conv) conv = await initConversation();')).toBeLessThan(code.indexOf('pendingAssistantBaselineRef.current = countAssistantReplies(messagesRef.current);'));
     expect(code).toContain('if (sendInFlightRef.current && hasReplySince(msgs, pendingAssistantBaselineRef.current))');
-    expect(code).toContain('if (hasReplySince(freshMessages, pendingAssistantBaselineRef.current))');
+    expect(code).toContain('void refreshPendingReply({ quiet: true });');
     expect(code).toContain('if (hasReplySince(received, pendingAssistantBaselineRef.current))');
     expect(code).toContain('pendingAssistantBaselineRef.current = null;');
     expect(code).toContain('if (!sendInFlightRef.current) return;');

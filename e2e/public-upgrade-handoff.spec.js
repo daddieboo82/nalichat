@@ -2,6 +2,10 @@ import { expect, test } from '@playwright/test';
 
 // Public checkout entry must never create a PayPal agreement before signup.
 test('anonymous mobile customer can choose Premium and retain the selected monthly plan for registration', async ({ page }) => {
+  const subscriptionCreationRequests = [];
+  page.on('request', request => {
+    if (request.url().includes('createPayPalSubscription')) subscriptionCreationRequests.push(request.url());
+  });
   await page.goto('/pricing?source=mobile-release-audit', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#premium-plan')).toBeVisible();
   await expect(page.locator('#premium_plus-plan')).toBeVisible();
@@ -15,9 +19,14 @@ test('anonymous mobile customer can choose Premium and retain the selected month
   expect(target.searchParams.get('billing')).toBe('monthly');
   expect(target.searchParams.get('source')).toBe('mobile-release-audit');
   await expect(page.locator('input[type="email"]')).toBeVisible();
+  expect(subscriptionCreationRequests).toEqual([]);
 });
 
 test('anonymous mobile customer can choose annual Premium Plus without checkout', async ({ page }) => {
+  const subscriptionCreationRequests = [];
+  page.on('request', request => {
+    if (request.url().includes('createPayPalSubscription')) subscriptionCreationRequests.push(request.url());
+  });
   await page.goto('/pricing?billing=annual');
   await expect(page.locator('#premium_plus-plan')).toBeVisible();
   await page.locator('#premium_plus-plan').getByRole('button', { name: /sign up for premium plus/i }).click();
@@ -25,4 +34,5 @@ test('anonymous mobile customer can choose annual Premium Plus without checkout'
   const target = new URL(new URL(page.url()).searchParams.get('returnTo'), page.url());
   expect(target.searchParams.get('plan')).toBe('premium_plus');
   expect(target.searchParams.get('billing')).toBe('annual');
+  expect(subscriptionCreationRequests).toEqual([]);
 });

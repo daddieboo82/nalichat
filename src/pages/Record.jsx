@@ -42,6 +42,10 @@ export default function Record() {
   const [visualData, setVisualData] = useState(new Array(64).fill(0));
   const [recLevel, setRecLevel] = useState(0);
   const [countdown, setCountdown] = useState(false);
+  // Phones start recording on the first tap. Desktop retains its count-in.
+  const [useCountIn, setUseCountIn] = useState(() =>
+    typeof window === "undefined" || !window.matchMedia?.("(max-width: 767px)")?.matches
+  );
   const [captureStatus, setCaptureStatus] = useState("");
   const [showMicCheck, setShowMicCheck] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -260,9 +264,13 @@ export default function Record() {
   };
 
   const beginRecording = () => {
-    if (isRecording || captureBusyRef.current || countdown) return;
+    if (isRecording || captureBusyRef.current || countdown || captureStatus) return;
     setShowMicCheck(false);
-    setCountdown(true);
+    if (useCountIn) {
+      setCountdown(true);
+    } else {
+      void startRecording();
+    }
   };
 
   const stopRecording = () => {
@@ -457,6 +465,10 @@ export default function Record() {
             <button type="button" onClick={() => { setShowMicCheck(false); setShowGuide(true); }} className="ui-hover inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-primary">
               <HelpCircle className="h-4 w-4" aria-hidden="true" /> Recording guide
             </button>
+            <label className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-medium">
+              <input type="checkbox" checked={useCountIn} onChange={(event) => setUseCountIn(event.target.checked)} className="h-4 w-4 accent-primary" />
+              3-second count-in
+            </label>
             <div id="quick-record-mic" className="w-full" hidden={!showMicCheck}>
               {showMicCheck && <MicCheckPanel devices={devices.input} selectedDevice={selectedDevices.input} onSelectDevice={(id) => selectDevice("input", id)} />}
             </div>

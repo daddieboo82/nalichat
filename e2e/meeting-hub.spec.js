@@ -14,7 +14,7 @@ async function signIn(page, email, password) {
   await expect(page.locator('[data-testid="auth-state"][data-state="authenticated"]')).toBeAttached({ timeout: 30000 });
 }
 
-test('private listening room admits invited user and rejects uninvited user', async ({ browser }) => {
+test('private listening room admits invited user and rejects uninvited user', async ({ browser }, testInfo) => {
   test.skip(!firstEmail || !firstPassword || !secondEmail || !secondPassword, 'Protected two-user E2E credentials required.');
 
   const hostContext = await browser.newContext();
@@ -28,11 +28,21 @@ test('private listening room admits invited user and rejects uninvited user', as
     await expect(host.getByRole('heading', { name: 'Meeting Hub' })).toBeVisible({ timeout: 30000 });
 
     const title = 'E2E artist listening ' + Date.now();
-    await host.getByRole('textbox', { name: 'Meeting title' }).fill(title);
-    await host.getByRole('textbox', { name: 'Artist name (optional)' }).fill('Test Artist');
-    await host.getByRole('button', { name: 'Create private room' }).click();
-    await expect(host.getByText('Room created. Share this invitation privately:')).toBeVisible({ timeout: 30000 });
-    const invite = await host.getByRole('status').filter({ hasText: 'Room created' }).locator('p').nth(1).innerText();
+    await host.getByRole('textbox', { name: 'Meeting name' }).fill(title);
+    await host.locator('summary').filter({ hasText: 'Schedule or add details' }).click();
+    await host.getByLabel('Meeting type').selectOption('listening');
+    await host.getByLabel('Artist name').fill('Test Artist');
+    await host.getByRole('button', { name: 'Create meeting' }).click();
+    const isPhone = ['mobile-chromium', 'iphone-16-simulation'].includes(testInfo.project.name);
+    let invite;
+    if (isPhone) {
+      await expect.poll(() => new URL(host.url()).pathname).toMatch(/^\/meetings\/[a-z0-9_-]+$/i);
+      await expect(host.getByRole('heading', { name: title })).toBeVisible({ timeout: 30000 });
+      invite = await host.getByText(/https?:\/\/.*\/meetings\/.*\?invite=/).first().innerText();
+    } else {
+      await expect(host.getByRole('status').filter({ hasText: 'Meeting created' })).toBeVisible({ timeout: 30000 });
+      invite = await host.getByLabel('Private invite link').inputValue();
+    }
     const inviteUrl = new URL(invite);
     expect(inviteUrl.searchParams.get('invite')).toBeTruthy();
 

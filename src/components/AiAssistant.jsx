@@ -351,7 +351,7 @@ export default function AiAssistant() {
   const sendText = async (text, { preserveDraft = false } = {}) => {
     if (!text?.trim() || sendInFlightRef.current) return;
     sendInFlightRef.current = true;
-    pendingAssistantBaselineRef.current = countAssistantReplies(messagesRef.current);
+    pendingAssistantBaselineRef.current = null;
     const generation = identityGenerationRef.current;
     if (!preserveDraft) setInput("");
     setLoading(true);
@@ -359,8 +359,13 @@ export default function AiAssistant() {
     try {
       if (!conv) conv = await initConversation();
       if (generation !== identityGenerationRef.current) throw staleIdentityError();
+      // Establish the baseline only after restoring earlier conversation
+      // history, before dispatching this specific new request.
+      pendingAssistantBaselineRef.current = countAssistantReplies(messagesRef.current);
       await sendAgentText(conv, text.trim());
       if (generation !== identityGenerationRef.current) throw staleIdentityError();
+      // Realtime may already have delivered the reply during the send call.
+      if (!sendInFlightRef.current) return;
       // loading is cleared by the subscription when Nali's reply arrives,
       // but set a safety timeout in case the subscription never fires
       // (agent error, WebSocket drop, or very long tool call)

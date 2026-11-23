@@ -84,9 +84,9 @@ describe('Nali AI end-to-end audit invariants', () => {
 
   it('keeps voice bounded, locale-aware, accessible, and stops it when the panel closes', async () => {
     const assistant = await readText('src/components/AiAssistant.jsx');
-    expect(assistant).toContain('const spokenText = clean.slice(0, 4800);');
+    expect(assistant).toContain('text: clean.slice(0, 4800)');
     expect(assistant).toContain("recognition.lang = navigator.language || 'en-US';");
-    expect(assistant).toContain('(!voiceEnabled || !open)');
+    expect(assistant).toContain('if (!voiceEnabled || !open || minimized)');
     expect(assistant).toContain('aria-label={voiceEnabled ? "Mute Nali voice" : "Enable Nali voice"}');
     expect(assistant).toContain('aria-label={isListening ? "Stop voice input" : "Voice input"}');
   });

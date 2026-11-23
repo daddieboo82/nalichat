@@ -210,7 +210,6 @@ function OnboardingForm() {
     );
   }
 
-  const profileComplete = !!form.display_name;
   const returningToSetup = user?.onboarding_completed !== true &&
     Date.parse(user?.created_date) <= Date.now() - 24 * 60 * 60 * 1000;
 

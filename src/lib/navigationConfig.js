@@ -72,7 +72,7 @@ export const NAV_GROUPS = [
 
 // Detail URLs use singular names for these two collections.
 export function mobileSectionPath(pathname) {
-  const section = pathname.toLowerCase().split("/")[1];
+  const section = pathname.toLowerCase().split("?")[0].split("/")[1];
   if (section === "challenge") return "/challenges";
   if (section === "playlist") return "/playlists";
   return `/${section}`;
@@ -81,7 +81,7 @@ export function mobileSectionPath(pathname) {
 // Quick lookup: which paths belong to the "More" tab (secondary features not in the bottom bar).
 const PRIMARY_PATHS = new Set(PRIMARY_TABS.map(t => t.path));
 export const SECONDARY_PATHS = new Set(
-  NAV_GROUPS.flatMap(g => g.items).map(i => i.path).filter(p => !PRIMARY_PATHS.has(p))
+  NAV_GROUPS.flatMap(g => g.items).map(i => i.path.split("?")[0]).filter(p => !PRIMARY_PATHS.has(p))
 );
 
 // Desktop nav: main links shown directly + everything else in the "More" dropdown.

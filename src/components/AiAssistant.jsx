@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { X, Send, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music, ChevronUp, ChevronDown, Volume2, VolumeX } from "lucide-react";
+import { X, Send, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music, ChevronUp, ChevronDown, Volume2, VolumeX, Copy, Check, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import TutorialTopics from "@/components/ai/TutorialTopics";
@@ -27,6 +27,7 @@ export default function AiAssistant() {
   const [assistantOwnerKey, setAssistantOwnerKey] = useState(() => identityKey);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const unsubRef = useRef(null);
@@ -61,6 +62,7 @@ export default function AiAssistant() {
     setIsListening(false);
     setVoiceEnabled(false);
     setIsSpeaking(false);
+    setCopiedMessageIndex(null);
     setOpen(false);
     setMinimized(false);
     setExpanded(false);
@@ -329,6 +331,16 @@ export default function AiAssistant() {
 
   const send = () => sendText(input);
 
+  const copyReply = async (content, index) => {
+    try {
+      await navigator.clipboard.writeText(String(content || ""));
+      setCopiedMessageIndex(index);
+      toast.success("Nali's response copied");
+    } catch {
+      toast.error("Copy unavailable. Select the response text to copy it.");
+    }
+  };
+
   const handleMicClick = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -364,8 +376,8 @@ export default function AiAssistant() {
       {/* Chat panel */}
       {open && (
         <div className={cn(
-          "nali-assistant-panel fixed bottom-28 md:bottom-8 right-4 z-[999999] bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 flex flex-col transition-all duration-300",
-          minimized ? "w-64 max-w-[calc(100vw-32px)] h-14" : expanded ? "w-[calc(100vw-32px)] sm:w-[440px] h-[640px] max-h-[calc(100dvh-120px)] sm:max-h-[80vh]" : "w-[calc(100vw-32px)] sm:w-96 h-[500px] max-h-[calc(100dvh-120px)] sm:max-h-[80vh]"
+          "nali-assistant-panel fixed z-[999999] bg-card border border-border shadow-2xl shadow-black/40 flex flex-col min-h-0 overflow-hidden transition-all duration-200",
+          minimized ? "bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-3 w-64 max-w-[calc(100vw-24px)] h-14 rounded-2xl sm:bottom-8 sm:right-4" : expanded ? "inset-x-0 top-[env(safe-area-inset-top)] bottom-[env(safe-area-inset-bottom)] rounded-none sm:inset-auto sm:bottom-8 sm:right-4 sm:w-[440px] sm:h-[640px] sm:max-h-[80dvh] sm:rounded-2xl" : "inset-x-0 top-[env(safe-area-inset-top)] bottom-[env(safe-area-inset-bottom)] rounded-none sm:inset-auto sm:bottom-8 sm:right-4 sm:w-96 sm:h-[500px] sm:max-h-[80dvh] sm:rounded-2xl"
         )}>
           {/* Header */}
           <div className="nali-assistant-heading relative flex items-center gap-1 sm:gap-3 px-3 sm:px-4 py-3 border-b border-primary/20 bg-gradient-to-r from-background via-primary/10 to-background rounded-t-2xl shrink-0 overflow-hidden">
@@ -384,7 +396,7 @@ export default function AiAssistant() {
                   <div className={cn("w-[3px] bg-primary rounded-full", isSpeaking ? "waveform-bar" : "h-1")} style={{ animationDelay: "0.4s" }} />
                 </div>
               </div>
-              {!minimized && <p className="text-[10px] text-primary/80 uppercase tracking-widest font-bold mt-0.5">Studio Co-Producer</p>}
+              {!minimized && <p className="text-[11px] text-primary/80 font-semibold mt-0.5">Your creator copilot · {canUseBestModel ? "Plus" : "Premium"}</p>}
             </div>
             {!minimized && (
               <button onClick={() => {
@@ -419,7 +431,7 @@ export default function AiAssistant() {
           {!minimized && (
             <>
               {/* Messages */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div ref={scrollRef} role="log" aria-label="NALI.ai conversation" aria-live="polite" className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y p-3 sm:p-4 space-y-3">
                 {messages.length === 0 && (
                   <div className="text-center py-8">
                     <div className="relative w-24 h-24 mx-auto mb-6">
@@ -429,17 +441,17 @@ export default function AiAssistant() {
                         <Disc className="w-10 h-10 text-primary animate-pulse" />
                       </div>
                     </div>
-                    <p className="text-lg font-heading font-black tracking-tight mb-2">SYSTEMS ONLINE{user ? `, ${user.full_name?.split(" ")[0].toUpperCase()}` : ""}</p>
-                    <p className="text-sm text-muted-foreground mb-8 max-w-[280px] mx-auto leading-relaxed">I'm Nali, your AI co-producer. Ready to mix, master, and manage your creative flow.</p>
+                    <p className="text-lg font-heading font-black tracking-tight mb-2">What can we create today?</p>
+                    <p className="text-sm text-muted-foreground mb-5 max-w-[300px] mx-auto leading-relaxed">Get help with lyrics, mixing, artwork ideas, release plans and NaliChat features. Pick a starter or ask your own question.</p>
                     
                     <div className="grid grid-cols-1 gap-2">
                       {[
-                        { text: "Generate cover art for my track", icon: <Disc className="w-4 h-4" /> },
-                        { text: "Suggest some trending tags", icon: <Activity className="w-4 h-4" /> },
-                        { text: "Write my artist bio", icon: <Mic className="w-4 h-4" /> },
-                        { text: "Create a fresh playlist", icon: <Music className="w-4 h-4" /> }
+                        { text: "Help me write a catchy song hook", icon: <Music className="w-4 h-4" /> },
+                        { text: "Give me a vocal mixing checklist", icon: <Activity className="w-4 h-4" /> },
+                        { text: "Brainstorm cover art for my next single", icon: <Disc className="w-4 h-4" /> },
+                        { text: "Help me write an artist bio", icon: <Mic className="w-4 h-4" /> }
                       ].map((s, i) => (
-                        <button key={i} onClick={() => { setInput(s.text); inputRef.current?.focus(); }} className="flex items-center gap-3 text-xs bg-secondary/50 hover:bg-primary/10 border border-border hover:border-primary/30 text-foreground px-4 py-3 rounded-xl transition-all group">
+                        <button key={i} onClick={() => { setInput(s.text); inputRef.current?.focus(); }} className="flex min-h-12 items-center gap-3 text-sm bg-secondary/50 hover:bg-primary/10 border border-border hover:border-primary/30 text-foreground px-4 py-3 rounded-xl text-left transition-all group">
                           <span className="text-primary group-hover:scale-110 transition-transform">{s.icon}</span>
                           <span className="text-left font-medium">{s.text}</span>
                         </button>
@@ -457,7 +469,7 @@ export default function AiAssistant() {
                       </div>
                     )}
                     <div className={cn(
-                      "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
+                      "min-w-0 max-w-[88%] sm:max-w-[80%] break-words rounded-2xl px-3 sm:px-4 py-2.5 text-sm shadow-sm",
                       msg.role === "user" 
                         ? "bg-primary text-primary-foreground rounded-tr-sm" 
                         : "nali-assistant-reply bg-secondary/80 border border-border/50 text-foreground rounded-tl-sm backdrop-blur-sm"
@@ -465,9 +477,15 @@ export default function AiAssistant() {
                       {msg.role === "user" ? (
                         <p>{msg.content}</p>
                       ) : (
-                        <ReactMarkdown className="prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5">
-                          {msg.content}
-                        </ReactMarkdown>
+                        <>
+                          <ReactMarkdown className="prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5 [&_pre]:overflow-x-auto [&_a]:break-all">
+                            {msg.content}
+                          </ReactMarkdown>
+                          <button type="button" onClick={() => void copyReply(msg.content, i)} aria-label="Copy Nali response" className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-muted-foreground hover:bg-background/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary">
+                            {copiedMessageIndex === i ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                            {copiedMessageIndex === i ? "Copied" : "Copy reply"}
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -506,7 +524,7 @@ export default function AiAssistant() {
                 </div>
               )}
               {/* Input */}
-              <div className="nali-assistant-composer p-3 border-t border-border/50 bg-background/50 backdrop-blur-md flex gap-2 shrink-0">
+              <div className="nali-assistant-composer p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-3 border-t border-border/50 bg-background/50 backdrop-blur-md flex gap-2 shrink-0">
                 <div className="relative flex-1">
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-mono font-bold">{'>'}</div>
                   <input
@@ -514,7 +532,8 @@ export default function AiAssistant() {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     placeholder="Ask Nali about your music, projects, or anything else..."
-                    className="nali-assistant-input w-full bg-secondary/40 border border-primary/20 rounded-xl pl-8 pr-10 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/70"
+                    aria-label="Message NALI.ai"
+                    className="nali-assistant-input min-h-12 w-full bg-secondary/40 border border-primary/20 rounded-xl pl-8 pr-12 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/70"
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                   />
                   <button
@@ -522,7 +541,7 @@ export default function AiAssistant() {
                     title="Voice Input"
                     aria-label="Voice input"
                     className={cn(
-                      "absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-colors",
+                      "absolute right-1 top-1/2 -translate-y-1/2 min-h-11 min-w-11 flex items-center justify-center rounded-lg transition-colors",
                       isListening ? "text-red-500 bg-red-500/10 animate-pulse" : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                     )}
                   >
@@ -534,7 +553,7 @@ export default function AiAssistant() {
                   disabled={!input.trim() || loading}
                   title="Send message"
                   aria-label="Send message"
-                  className="w-10 h-10 bg-primary/20 text-primary border border-primary/30 rounded-xl flex items-center justify-center hover:bg-primary hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-primary/20 disabled:hover:text-primary"
+                  className="min-w-12 min-h-12 bg-primary/20 text-primary border border-primary/30 rounded-xl flex items-center justify-center hover:bg-primary hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-primary/20 disabled:hover:text-primary"
                 >
                   <Send className="w-4 h-4" />
                 </button>

@@ -24,10 +24,10 @@ describe('NALI.ai unified messaging and safe refresh', () => {
 
   it('refreshes pending results without resending a request or charging another AI quota unit', async () => {
     const source = await getSource();
-    const start = source.indexOf('const refreshPendingReply = async () => {');
+    const start = source.indexOf('const refreshPendingReply = async ({ quiet = false } = {}) => {');
     const end = source.indexOf('const send = () => sendText(input);', start);
     const refresh = source.slice(start, end);
-    expect(refresh).toContain('base44.agents.getConversation(conversation.id)');
+    expect(refresh).toContain('base44.agents.getConversation(conv.id)');
     expect(refresh).not.toContain('sendAgentText(');
     expect(refresh).not.toContain('sendText(');
     expect(source).toContain('Check reply</button>');

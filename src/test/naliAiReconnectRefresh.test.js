@@ -8,6 +8,9 @@ describe('NALI.ai reconnect recovery without duplicate dispatches', () => {
   it('checks for existing replies when the browser reconnects or a tab becomes visible', async () => {
     const source = await read();
     expect(source).toContain("window.addEventListener('online', checkOnReconnect)");
+    expect(source).toContain("window.addEventListener('pageshow', checkOnPageShow)");
+    expect(source).toContain("window.removeEventListener('pageshow', checkOnPageShow)");
+    expect(source).toContain("const checkOnPageShow = () => {\n      if (document.visibilityState === 'visible') checkOnReconnect();");
     expect(source).toContain("document.addEventListener('visibilitychange', checkOnVisibility)");
     expect(source).toContain("document.visibilityState === 'visible'");
     expect(source).toContain("window.removeEventListener('online', checkOnReconnect)");

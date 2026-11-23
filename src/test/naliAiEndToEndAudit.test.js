@@ -69,7 +69,7 @@ describe('Nali AI end-to-end audit invariants', () => {
 
   it('does not spend an AI request merely because the panel was opened', async () => {
     const assistant = await readText('src/components/AiAssistant.jsx');
-    expect(assistant).toContain('if (greeting) await sendAgentText(conv, greeting);');
+    expect(assistant).toContain('if (greeting) await sendText(greeting, { preserveDraft: true });');
     expect(assistant).not.toContain('Hi! What can you help me with on RecordStudio?');
   });
 

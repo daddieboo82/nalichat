@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { LiveKitRoom, VideoConference, ConnectionState } from '@livekit/components-react';
 import '@livekit/components-styles';
 import './MeetingRoom.css';
@@ -9,6 +9,7 @@ import { Copy, Music2, Video, ShieldCheck } from 'lucide-react';
 const message = e => e?.response?.data?.error || e?.message || 'Could not load this room.';
 export default function MeetingRoom() {
   const { roomId } = useParams();
+  const location = useLocation();
   const [params] = useSearchParams();
   const inviteCode = params.get('invite') || '';
   const [room, setRoom] = useState(null);
@@ -17,7 +18,14 @@ export default function MeetingRoom() {
   const mediaConnected = useRef(false);
   const [notes, setNotes] = useState('');
   const [notesDirty, setNotesDirty] = useState(false);
-  const [invite, setInvite] = useState('');
+  const [invite, setInvite] = useState(() => {
+    const candidate = location.state?.newMeetingInvite;
+    if (typeof candidate !== 'string') return '';
+    try {
+      const url = new URL(candidate);
+      return url.origin === window.location.origin && url.pathname === `/meetings/${roomId}` && /^[a-z0-9_-]{30,80}$/i.test(url.searchParams.get('invite') || '') ? candidate : '';
+    } catch { return ''; }
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [mediaError, setMediaError] = useState('');

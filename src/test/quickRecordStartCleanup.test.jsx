@@ -20,6 +20,24 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+it('starts microphone capture on the first tap on mobile, with optional count-in', async () => {
+  let grantMicrophone;
+  const getUserMedia = vi.fn(() => new Promise(resolve => { grantMicrophone = resolve; }));
+  const stop = vi.fn();
+  vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+  vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { mediaDevices: { getUserMedia } }));
+  vi.stubGlobal('MediaRecorder', vi.fn());
+
+  const { unmount } = render(<Record />);
+  expect(screen.getByRole('checkbox', { name: '3-second count-in' }).checked).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Start recording' }));
+  expect(getUserMedia).toHaveBeenCalledOnce();
+  expect(screen.queryByRole('button', { name: 'Skip countdown' })).toBeNull();
+  unmount();
+  await act(async () => grantMicrophone({ getTracks: () => [{ stop }] }));
+  expect(stop).toHaveBeenCalledOnce();
+});
+
 it('releases a microphone that resolves after leaving Quick Record', async () => {
   let grantMicrophone;
   const getUserMedia = vi.fn(() => new Promise(resolve => { grantMicrophone = resolve; }));

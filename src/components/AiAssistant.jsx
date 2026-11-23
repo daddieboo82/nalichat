@@ -163,15 +163,9 @@ export default function AiAssistant() {
       }
       setOpen(true);
       setMinimized(false);
-      try {
-        let conv = conversation;
-        if (!conv) conv = await initConversation();
-        await sendAgentText(conv, text);
-      } catch (error) {
-        if (error?.code === "NALI_IDENTITY_CHANGED") return;
-        console.error("Nali event send error", error);
-        toast.error(friendlyNaliError(error));
-      }
+      // All entry points share the same in-flight guard and conversation setup.
+      // Preserve any draft the creator is already typing in the assistant.
+      await sendText(text, { preserveDraft: true });
     };
     window.addEventListener('open-ai-assistant', handleOpen);
     window.addEventListener('nali-send-message', handleSendMessage);
@@ -338,16 +332,16 @@ export default function AiAssistant() {
       const conv = await initConversation();
       // Only send a contextual greeting when one was explicitly provided.
       // Opening Nali by itself should not consume a model request.
-      if (greeting) await sendAgentText(conv, greeting);
+      if (greeting) await sendText(greeting, { preserveDraft: true });
     }
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
-  const sendText = async (text) => {
-    if (!text.trim() || sendInFlightRef.current) return;
+  const sendText = async (text, { preserveDraft = false } = {}) => {
+    if (!text?.trim() || sendInFlightRef.current) return;
     sendInFlightRef.current = true;
     const generation = identityGenerationRef.current;
-    setInput("");
+    if (!preserveDraft) setInput("");
     setLoading(true);
     let conv = conversation;
     try {
@@ -383,7 +377,7 @@ export default function AiAssistant() {
       if (err?.code === "NALI_IDENTITY_CHANGED") return;
       // Retain the unsent prompt so a temporary network failure does not
       // force a mobile creator to retype a long idea.
-      setInput(current => current || text);
+      if (!preserveDraft) setInput(current => current || text);
       console.error("Nali send error", err);
       if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
       sendInFlightRef.current = false;
@@ -392,6 +386,28 @@ export default function AiAssistant() {
         role: "assistant",
         content: friendlyNaliError(err),
       }]);
+    }
+  };
+
+  // Refresh authoritative conversation history without creating a second AI
+  // request. A slow reply is not proof that the first request failed.
+  const refreshPendingReply = async () => {
+    if (!conversation?.id) return;
+    const generation = identityGenerationRef.current;
+    try {
+      const fresh = await base44.agents.getConversation(conversation.id);
+      if (generation !== identityGenerationRef.current) return;
+      const received = fresh?.messages || [];
+      setMessages(received);
+      if (received.length && received[received.length - 1].role !== 'user') {
+        if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
+        sendInFlightRef.current = false;
+        setLoading(false);
+      } else {
+        toast.info('No new reply yet. Nali may still be processing your request.');
+      }
+    } catch {
+      toast.error('Could not refresh the conversation. Try again shortly.');
     }
   };
 
@@ -585,7 +601,12 @@ export default function AiAssistant() {
                 )}
               </div>
 
-              {/* Input */}
+              {loading && conversation?.id && (
+                <div className="shrink-0 border-t border-border/50 px-3 py-2 flex items-center justify-between gap-2 text-xs text-muted-foreground" role="status">
+                  <span>Nali is preparing a reply. Don’t resend yet.</span>
+                  <button type="button" onClick={() => void refreshPendingReply()} className="min-h-11 shrink-0 rounded-lg border border-border px-3 font-semibold text-foreground hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary">Check reply</button>
+                </div>
+              )}
               {/* Always visible quick actions */}
               {messages.length > 0 && (
                 <div className="px-3 pb-2 pt-0 flex gap-2 overflow-x-auto no-scrollbar border-t border-border/50 bg-background/50 shrink-0">

@@ -17,6 +17,9 @@ test('Music Video Lab source ships the AI director and editable export workflow'
   const response = await request.get('/src/pages/MusicVideoGenerator.jsx');
   test.skip(!response.ok(), 'source modules are not exposed by this deployment');
   const source = await response.text();
+  // SPA preview servers may serve index.html for any unknown path instead
+  // of exposing source modules. The bundle test above covers that deployment.
+  test.skip(source.includes('<div id="root"'), 'Preview serves the SPA shell rather than source modules');
   expect(source).toContain('AI Music Video Director');
   expect(source).toContain('generateMusicVideoStoryboard');
   expect(source).toContain('Generate AI Video');

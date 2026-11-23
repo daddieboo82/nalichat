@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { X, Send, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music, ChevronUp, ChevronDown, Volume2, VolumeX, Copy, Check, Lightbulb } from "lucide-react";
+import { X, Send, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music, ChevronUp, ChevronDown, Volume2, VolumeX, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import TutorialTopics from "@/components/ai/TutorialTopics";
@@ -411,19 +411,19 @@ export default function AiAssistant() {
                   }
                   return next;
                 });
-              }} aria-label={voiceEnabled ? "Mute Nali voice" : "Enable Nali voice"} title={voiceEnabled ? "Voice on — tap to mute Nali" : "Enable Nali's voice"} className={cn("p-2 sm:p-1 transition-colors", voiceEnabled ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+              }} aria-label={voiceEnabled ? "Mute Nali voice" : "Enable Nali voice"} title={voiceEnabled ? "Voice on — tap to mute Nali" : "Enable Nali's voice"} className={cn("min-h-11 min-w-11 flex items-center justify-center transition-colors", voiceEnabled ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
                 {voiceEnabled ? <Volume2 className="w-5 h-5 sm:w-4 sm:h-4" /> : <VolumeX className="w-5 h-5 sm:w-4 sm:h-4" />}
               </button>
             )}
             {!minimized && (
-              <button onClick={() => setExpanded(v => !v)} aria-label={expanded ? "Shrink" : "Expand"} className="text-muted-foreground hover:text-foreground p-2 sm:p-1" title={expanded ? "Shrink" : "Expand"}>
+              <button onClick={() => setExpanded(v => !v)} aria-label={expanded ? "Shrink" : "Expand"} className="hidden sm:flex text-muted-foreground hover:text-foreground min-h-11 min-w-11 items-center justify-center" title={expanded ? "Shrink" : "Expand"}>
                 {expanded ? <Shrink className="w-5 h-5 sm:w-4 sm:h-4" /> : <Expand className="w-5 h-5 sm:w-4 sm:h-4" />}
               </button>
             )}
-            <button onClick={() => setMinimized(v => !v)} aria-label={minimized ? "Restore" : "Minimize"} title={minimized ? "Restore" : "Minimize"} className="text-muted-foreground hover:text-foreground p-2 sm:p-1">
+            <button onClick={() => setMinimized(v => !v)} aria-label={minimized ? "Restore" : "Minimize"} title={minimized ? "Restore" : "Minimize"} className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 flex items-center justify-center">
               {minimized ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />}
             </button>
-            <button onClick={() => setOpen(false)} aria-label="Close" title="Close" className="text-muted-foreground hover:text-foreground p-2 sm:p-1 mr-[-4px]">
+            <button onClick={() => setOpen(false)} aria-label="Close" title="Close" className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 flex items-center justify-center">
               <X className="w-6 h-6 sm:w-4 sm:h-4" />
             </button>
           </div>
@@ -515,7 +515,7 @@ export default function AiAssistant() {
                       { text: "Suggest trending tags", icon: <Activity className="w-3 h-3" /> },
                       { text: "Write my artist bio", icon: <Mic className="w-3 h-3" /> }
                     ].map((s, i) => (
-                      <button key={i} onClick={() => { setInput(s.text); inputRef.current?.focus(); }} className="flex items-center gap-1.5 text-[10px] sm:text-xs bg-secondary hover:bg-primary/20 border border-border hover:border-primary/40 text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                      <button key={i} onClick={() => { setInput(s.text); inputRef.current?.focus(); }} className="flex min-h-11 items-center gap-1.5 text-xs sm:text-xs bg-secondary hover:bg-primary/20 border border-border hover:border-primary/40 text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap">
                         <span className="text-primary/70">{s.icon}</span>
                         <span>{s.text}</span>
                       </button>

@@ -11,6 +11,6 @@ describe("Signup usability regression", () => {
     expect(source).toContain('showPassword ? "text" : "password"');
     expect(source).toContain('aria-pressed={showPassword}');
     expect(source).toContain('Codes expire. If your code has expired');
-    expect(source).toContain('disabled={resendCooldown > 0 || loading}');
+    expect(source).toContain('disabled={resendCooldown > 0 || loading || resending}');
   });
 });

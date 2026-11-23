@@ -138,6 +138,7 @@ export default function AiAssistant() {
     if (response?.data?.error) {
       const error = new Error(response.data.error);
       error.code = response.data.code;
+      error.status = response.status || response.data.status;
       error.quota = response.data.quota;
       throw error;
     }

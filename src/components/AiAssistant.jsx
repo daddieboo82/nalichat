@@ -378,6 +378,8 @@ export default function AiAssistant() {
     sendInFlightRef.current = true;
     pendingAssistantBaselineRef.current = null;
     const requestSequence = ++sendSequenceRef.current;
+    replyRefreshInFlightRef.current = false;
+    lastReplyRefreshAtRef.current = 0;
     const generation = identityGenerationRef.current;
     if (!preserveDraft) setInput("");
     setSendError(null);
@@ -390,7 +392,7 @@ export default function AiAssistant() {
       // history, before dispatching this specific new request.
       pendingAssistantBaselineRef.current = countAssistantReplies(messagesRef.current);
       await sendAgentText(conv, text.trim());
-      if (generation !== identityGenerationRef.current) throw staleIdentityError();
+      if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current) throw staleIdentityError();
       // Realtime may already have delivered the reply during the send call.
       if (!sendInFlightRef.current) return;
       // loading is cleared by the subscription when Nali's reply arrives,
@@ -420,7 +422,7 @@ export default function AiAssistant() {
         }
       }, 60000);
     } catch (err) {
-      if (err?.code === "NALI_IDENTITY_CHANGED") return;
+      if (err?.code === "NALI_IDENTITY_CHANGED" || generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current) return;
       // Retain the unsent prompt so a temporary network failure does not
       // force a mobile creator to retype a long idea.
       if (!preserveDraft) setInput(current => current || text);
@@ -468,7 +470,7 @@ export default function AiAssistant() {
         toast.error('Could not refresh the conversation. Try again shortly.');
       }
     } finally {
-      if (generation === identityGenerationRef.current) replyRefreshInFlightRef.current = false;
+      if (generation === identityGenerationRef.current && requestSequence === sendSequenceRef.current) replyRefreshInFlightRef.current = false;
     }
   };
 

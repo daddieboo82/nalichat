@@ -9,12 +9,23 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/lib/AuthContext";
 import { captureReplyBaseline, hasReplySince, preferCurrentConversationMessages } from "@/lib/naliReplyStatus";
 import { isUncertainAiDelivery } from "@/lib/naliDeliveryStatus";
+import { resolveNaliAgentTier } from "@/lib/naliAgentTier";
 
 export default function AiAssistant() {
   const { hasEntitlement, isLoading: subscriptionLoading, isError: subscriptionError, refetch: refetchSubscription } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
   const canUseBestModel = hasEntitlement("ai.best_model");
-  const agentName = canUseBestModel ? "studio_ai_plus" : "studio_ai";
+  const { user } = useAuth();
+  const lastVerifiedAgentRef = useRef(null);
+  const selectedAgent = resolveNaliAgentTier({
+    userId: user?.id,
+    canUseBestModel,
+    subscriptionLoading,
+    subscriptionError,
+    previous: lastVerifiedAgentRef.current,
+  });
+  lastVerifiedAgentRef.current = selectedAgent;
+  const agentName = selectedAgent.agentName;
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -25,7 +36,6 @@ export default function AiAssistant() {
   const [replyDelayed, setReplyDelayed] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState(null);
-  const { user } = useAuth();
   const identityKey = user?.id ? `${user.id}:${agentName}` : null;
   const conversationStorageKey = user?.id ? `nali_ai_conversation:${user.id}:${agentName}` : null;
   const [assistantOwnerKey, setAssistantOwnerKey] = useState(() => identityKey);

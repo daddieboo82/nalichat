@@ -99,7 +99,11 @@ describe('Nali AI end-to-end audit invariants', () => {
       expect(source).toContain('hasEntitlement');
       expect(source).toContain('"ai.standard"');
     }
-    expect(onboarding).toContain('if (isLoading || !canUseAi || openedRef.current) return;');
+    // The onboarding guide is opt-in: entitlement gates the help button,
+    // and the assistant opens only through an explicit user action.
+    expect(onboarding).toContain('if (isLoading || !hasEntitlement("ai.standard")) return null;');
+    expect(onboarding).toContain('onClick={openHelp}');
+    expect(onboarding).not.toContain('useEffect');
     expect(idleHint).toContain('onAuthPage || isLoading || !canUseAi');
     expect(contextHint).toContain('isLoading || !canUseAi || !isProactive');
   });

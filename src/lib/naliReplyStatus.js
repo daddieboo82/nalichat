@@ -1,9 +1,20 @@
-// Only a newly arrived assistant reply can settle the current pending send.
-// Older assistant messages can remain last while the SDK reconnects or
-// returns cached history, so checking the last role alone is insufficient.
+// A blank assistant placeholder (or an explicitly in-progress response) is
+// not a usable reply. Do not unlock Send until there is actual reply content.
+export function isUsableAssistantReply(message) {
+  if (message?.role !== 'assistant') return false;
+  if (message.is_streaming === true || message.completed === false || message.status === 'streaming' || message.status === 'pending') return false;
+  if (typeof message.content === 'string') return message.content.trim().length > 0;
+  if (Array.isArray(message.content)) {
+    return message.content.some(part => typeof part === 'string' ? part.trim().length > 0 : typeof part?.text === 'string' && part.text.trim().length > 0);
+  }
+  return false;
+}
+
+// Only a newly arrived, usable assistant reply can settle a pending send.
+// Older assistant messages can remain last while the SDK reconnects.
 export function countAssistantReplies(messages) {
   return Array.isArray(messages)
-    ? messages.filter((message) => message?.role === 'assistant').length
+    ? messages.filter(isUsableAssistantReply).length
     : 0;
 }
 

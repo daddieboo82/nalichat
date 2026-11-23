@@ -35,6 +35,7 @@ export default function AiAssistant() {
   const unsubRef = useRef(null);
   const spokenIdsRef = useRef(new Set());
   const currentAudioRef = useRef(null);
+  const speechGenerationRef = useRef(0);
   const recognitionRef = useRef(null);
   const loadingTimerRef = useRef(null);
   const identityGenerationRef = useRef(0);
@@ -89,6 +90,7 @@ export default function AiAssistant() {
       clearTimeout(loadingTimerRef.current);
       loadingTimerRef.current = null;
     }
+    speechGenerationRef.current += 1;
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
@@ -202,30 +204,40 @@ export default function AiAssistant() {
     if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
   }, []);
 
-  // Speak Nali's replies aloud when voice is enabled
+  // Speech generation is asynchronous. A response can arrive after the
+  // assistant was muted, closed, minimized, or switched to another account.
+  // Each request receives a generation token, invalidated by those actions.
   const speakText = async (text) => {
-    // Strip markdown for cleaner speech
-    const clean = text.replace(/[#*_`>~|-]/g, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").trim();
+    const clean = String(text || "").replace(/[#*_`>~|-]/g, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").trim();
     if (!clean) return;
+    const generation = ++speechGenerationRef.current;
+    if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; }
+    setIsSpeaking(true);
     try {
-      if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; }
-      setIsSpeaking(true);
-      const spokenText = clean.slice(0, 4800);
-      const res = await base44.functions.invoke('generate-speech', { text: spokenText, voice: "honey" });
+      const res = await base44.functions.invoke('generate-speech', { text: clean.slice(0, 4800), voice: "honey" });
+      if (generation !== speechGenerationRef.current) return;
+      if (!res?.data?.url) throw new Error('Speech audio was not returned');
       const audio = new Audio(res.data.url);
       currentAudioRef.current = audio;
-      audio.onended = () => { setIsSpeaking(false); currentAudioRef.current = null; };
-      audio.onerror = () => { setIsSpeaking(false); currentAudioRef.current = null; };
+      const finish = () => {
+        if (generation !== speechGenerationRef.current || currentAudioRef.current !== audio) return;
+        currentAudioRef.current = null;
+        setIsSpeaking(false);
+      };
+      audio.onended = finish;
+      audio.onerror = finish;
       await audio.play();
-    } catch (e) {
-      console.error("Nali voice error", e);
+    } catch (error) {
+      if (generation !== speechGenerationRef.current) return;
+      console.error('Nali voice error', error);
+      if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; }
       setIsSpeaking(false);
     }
   };
 
   // Watch for new assistant messages and speak them
   useEffect(() => {
-    if (!voiceEnabled || messages.length === 0) return;
+    if (!voiceEnabled || !open || minimized || messages.length === 0) return;
     const last = messages[messages.length - 1];
     if (last.role === "user") return;
     // Use content as a pseudo-id; skip if already spoken
@@ -233,7 +245,7 @@ export default function AiAssistant() {
     if (!id || spokenIdsRef.current.has(id)) return;
     spokenIdsRef.current.add(id);
     speakText(last.content);
-  }, [messages, voiceEnabled]);
+  }, [messages, voiceEnabled, open, minimized]);
 
   // Closing or minimizing must release the microphone immediately.
   useEffect(() => {
@@ -244,17 +256,21 @@ export default function AiAssistant() {
     }
   }, [open, minimized]);
 
-  // Stop voice when toggled off or panel closes
+  // Cancel both playing audio AND any speech request still in flight.
   useEffect(() => {
-    if ((!voiceEnabled || !open) && currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
+    if (!voiceEnabled || !open || minimized) {
+      speechGenerationRef.current += 1;
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
       setIsSpeaking(false);
     }
-  }, [voiceEnabled, open]);
+  }, [voiceEnabled, open, minimized]);
 
   useEffect(() => () => {
-    return () => { if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; } };
+    speechGenerationRef.current += 1;
+    if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; }
   }, []);
 
   const bindConversation = (conv, generation = identityGenerationRef.current) => {

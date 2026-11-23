@@ -37,6 +37,8 @@ export default function AiAssistant() {
   const recognitionRef = useRef(null);
   const loadingTimerRef = useRef(null);
   const identityGenerationRef = useRef(0);
+  const conversationInitRef = useRef(null);
+  const sendInFlightRef = useRef(false);
 
   // iOS Safari can keep the layout viewport tall when its keyboard opens.
   // Size the mobile panel to the *visible* viewport instead so the composer
@@ -72,6 +74,8 @@ export default function AiAssistant() {
 
   useEffect(() => {
     identityGenerationRef.current += 1;
+    conversationInitRef.current = null;
+    sendInFlightRef.current = false;
     unsubRef.current?.();
     unsubRef.current = null;
     if (loadingTimerRef.current) {
@@ -264,13 +268,14 @@ export default function AiAssistant() {
       setMessages(msgs);
       if (msgs.length && msgs[msgs.length - 1].role !== "user") {
         if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
+        sendInFlightRef.current = false;
         setLoading(false);
       }
     });
     return conv;
   };
 
-  const initConversation = async () => {
+  const createOrRestoreConversation = async () => {
     const generation = identityGenerationRef.current;
     if (subscriptionLoading) throw new Error("Subscription is still loading");
     if (!canUseAi) {
@@ -305,6 +310,19 @@ export default function AiAssistant() {
     return bindConversation(conv, generation);
   };
 
+  // Deduplicate simultaneous open, send, and contextual-help requests.
+  // A pending restore/create must be shared until it resolves, and stale
+  // promises from a switched account must not clear the new account's task.
+  const initConversation = () => {
+    if (conversationInitRef.current) return conversationInitRef.current;
+    const pending = createOrRestoreConversation();
+    conversationInitRef.current = pending;
+    void pending.finally(() => {
+      if (conversationInitRef.current === pending) conversationInitRef.current = null;
+    }).catch(() => {});
+    return pending;
+  };
+
   const openChat = async (greeting) => {
     if (subscriptionLoading) {
       toast.info("Checking your subscription…");
@@ -326,7 +344,8 @@ export default function AiAssistant() {
   };
 
   const sendText = async (text) => {
-    if (!text.trim() || loading) return;
+    if (!text.trim() || sendInFlightRef.current) return;
+    sendInFlightRef.current = true;
     const generation = identityGenerationRef.current;
     setInput("");
     setLoading(true);
@@ -350,6 +369,7 @@ export default function AiAssistant() {
           setMessages(freshMessages);
           const last = freshMessages[freshMessages.length - 1];
           if (last && last.role !== "user") {
+            sendInFlightRef.current = false;
             setLoading(false);
             return;
           }
@@ -366,6 +386,7 @@ export default function AiAssistant() {
       setInput(current => current || text);
       console.error("Nali send error", err);
       if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
+      sendInFlightRef.current = false;
       setLoading(false);
       setMessages(prevMsgs => [...prevMsgs, {
         role: "assistant",

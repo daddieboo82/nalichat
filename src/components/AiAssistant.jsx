@@ -658,7 +658,7 @@ export default function AiAssistant() {
                   <div className={cn("w-[3px] bg-primary rounded-full", isSpeaking ? "waveform-bar" : "h-1")} style={{ animationDelay: "0.4s" }} />
                 </div>
               </div>
-              {!minimized && <p className="text-[11px] text-primary/80 font-semibold mt-0.5">Your creator copilot · {canUseBestModel ? "Plus" : "Premium"}</p>}
+              {!minimized && <p className="text-[11px] text-primary/80 font-semibold mt-0.5">Your creator copilot · {agentName === "studio_ai_plus" ? "Plus" : "Premium"}</p>}
             </div>
             {!minimized && (
               <button onClick={() => {

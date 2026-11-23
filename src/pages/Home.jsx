@@ -241,13 +241,15 @@ export default function Home() {
     });
   }, []);
 
-  // Auto-show the welcome tour for users who finished onboarding but haven't seen it yet.
+  // On phones the Home screen should be immediately usable after onboarding.
+  // Keep the tour available from its explicit button, and retain the desktop
+  // first-run experience without placing a modal over mobile navigation.
   useEffect(() => {
-    if (user && user.onboarding_completed && !user.welcome_tour_completed) {
-      const timer = setTimeout(() => setShowTour(true), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [user]);
+    if (!user?.onboarding_completed || user.welcome_tour_completed) return;
+    if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 767px)")?.matches) return;
+    const timer = setTimeout(() => setShowTour(true), 1500);
+    return () => clearTimeout(timer);
+  }, [user?.id, user?.onboarding_completed, user?.welcome_tour_completed]);
 
   const lastVisitedWorld = user ? getLastVisitedWorld(user.id) : null;
 

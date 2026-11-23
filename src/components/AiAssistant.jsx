@@ -45,6 +45,8 @@ export default function AiAssistant() {
   const sendInFlightRef = useRef(false);
   const messagesRef = useRef([]);
   const pendingAssistantBaselineRef = useRef(null);
+  const replyRefreshInFlightRef = useRef(false);
+  const lastReplyRefreshAtRef = useRef(0);
 
   // iOS Safari can keep the layout viewport tall when its keyboard opens.
   // Size the mobile panel to the *visible* viewport instead so the composer
@@ -85,6 +87,8 @@ export default function AiAssistant() {
     sendInFlightRef.current = false;
     messagesRef.current = [];
     pendingAssistantBaselineRef.current = null;
+    replyRefreshInFlightRef.current = false;
+    lastReplyRefreshAtRef.current = 0;
     unsubRef.current?.();
     unsubRef.current = null;
     if (loadingTimerRef.current) {
@@ -430,12 +434,19 @@ export default function AiAssistant() {
 
   // Refresh authoritative conversation history without creating a second AI
   // request. A slow reply is not proof that the first request failed.
-  const refreshPendingReply = async () => {
-    if (!conversation?.id) return;
+  const refreshPendingReply = async ({ quiet = false } = {}) => {
+    const conv = conversationRef.current;
+    if (!conv?.id || !sendInFlightRef.current || replyRefreshInFlightRef.current) return;
     const generation = identityGenerationRef.current;
+    const now = Date.now();
+    // Reconnect and visibility events can fire together. Avoid overlapping
+    // reads and repeated network fetches; no new AI request is dispatched.
+    if (quiet && now - lastReplyRefreshAtRef.current < 5000) return;
+    lastReplyRefreshAtRef.current = now;
+    replyRefreshInFlightRef.current = true;
     try {
-      const fresh = await base44.agents.getConversation(conversation.id);
-      if (generation !== identityGenerationRef.current) return;
+      const fresh = await base44.agents.getConversation(conv.id);
+      if (generation !== identityGenerationRef.current || conversationRef.current?.id !== conv.id) return;
       const received = preferCurrentConversationMessages(messagesRef.current, fresh?.messages);
       messagesRef.current = received;
       setMessages(received);
@@ -444,13 +455,33 @@ export default function AiAssistant() {
         pendingAssistantBaselineRef.current = null;
         sendInFlightRef.current = false;
         setLoading(false);
-      } else {
+      } else if (!quiet) {
         toast.info('No new reply yet. Nali may still be processing your request.');
       }
     } catch {
-      toast.error('Could not refresh the conversation. Try again shortly.');
+      if (generation === identityGenerationRef.current && !quiet) {
+        toast.error('Could not refresh the conversation. Try again shortly.');
+      }
+    } finally {
+      if (generation === identityGenerationRef.current) replyRefreshInFlightRef.current = false;
     }
   };
+
+  // A recovered connection or foregrounded tab should fetch any missed reply.
+  // This only reads existing conversation history, never sends the prompt again.
+  useEffect(() => {
+    if (!loading || !conversation?.id) return;
+    const checkOnReconnect = () => { void refreshPendingReply({ quiet: true }); };
+    const checkOnVisibility = () => {
+      if (document.visibilityState === 'visible') checkOnReconnect();
+    };
+    window.addEventListener('online', checkOnReconnect);
+    document.addEventListener('visibilitychange', checkOnVisibility);
+    return () => {
+      window.removeEventListener('online', checkOnReconnect);
+      document.removeEventListener('visibilitychange', checkOnVisibility);
+    };
+  }, [loading, conversation?.id]);
 
   const send = () => sendText(input);
 

@@ -16,6 +16,14 @@ describe('NALI.ai out-of-order conversation snapshots', () => {
     const updated = [...earlier, { id: 'a1', role: 'assistant', content: 'Updated answer' }];
     expect(preferCurrentConversationMessages(newer, updated)).toEqual(updated);
   });
+  it('rejects equal-length snapshots with conflicting message identities', () => {
+    const conflicting = [...earlier, { id: 'a-old', role: 'assistant', content: 'Earlier response' }];
+    expect(preferCurrentConversationMessages(newer, conflicting)).toEqual(newer);
+    const sameIdentityEdit = [...earlier, { id: 'a1', role: 'assistant', content: 'Updated response' }];
+    expect(preferCurrentConversationMessages(newer, sameIdentityEdit)).toEqual(sameIdentityEdit);
+    const conflictingUser = [{ id: 'different-user-id', role: 'user', content: 'Another thread' }, newer[1]];
+    expect(preferCurrentConversationMessages(newer, conflictingUser)).toEqual(newer);
+  });
   it('does not replace an assistant reply with an equal-length stale user snapshot', () => {
     const stale = [...earlier, { id: 'u2', role: 'user', content: 'Still waiting' }];
     expect(preferCurrentConversationMessages(newer, stale)).toEqual(newer);

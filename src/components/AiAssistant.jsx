@@ -286,13 +286,20 @@ export default function AiAssistant() {
     speakText(last.content);
   }, [messages, voiceEnabled, open, minimized]);
 
-  // Closing or minimizing must release the microphone immediately.
+  // Closing, minimizing, or backgrounding the app must release the mic.
+  // A background tab must not keep dictation running on a mobile device.
   useEffect(() => {
-    if ((!open || minimized) && recognitionRef.current) {
-      recognitionRef.current.abort();
-      recognitionRef.current = null;
-      setIsListening(false);
-    }
+    const stopHiddenRecognition = () => {
+      if ((document.visibilityState === 'hidden' || !open || minimized) && recognitionRef.current) {
+        const recognition = recognitionRef.current;
+        recognitionRef.current = null;
+        recognition.abort();
+        setIsListening(false);
+      }
+    };
+    stopHiddenRecognition();
+    document.addEventListener('visibilitychange', stopHiddenRecognition);
+    return () => document.removeEventListener('visibilitychange', stopHiddenRecognition);
   }, [open, minimized]);
 
   // Cancel both playing audio AND any speech request still in flight.
@@ -576,7 +583,11 @@ export default function AiAssistant() {
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
-    recognition.onstart = () => setIsListening(true);
+    // Web Speech callbacks can arrive after abort/close on mobile browsers.
+    recognition.onstart = () => {
+      if (recognitionRef.current !== recognition) return;
+      setIsListening(true);
+    };
     recognition.onresult = (event) => {
       if (recognitionRef.current !== recognition) return;
       const transcript = event.results[0][0].transcript;

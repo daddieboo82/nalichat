@@ -7,6 +7,7 @@ import TutorialTopics from "@/components/ai/TutorialTopics";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/lib/AuthContext";
+import { countAssistantReplies, hasReplySince } from "@/lib/naliReplyStatus";
 
 export default function AiAssistant() {
   const { hasEntitlement, isLoading: subscriptionLoading } = useSubscription();
@@ -40,6 +41,8 @@ export default function AiAssistant() {
   const conversationInitRef = useRef(null);
   const conversationRef = useRef(null);
   const sendInFlightRef = useRef(false);
+  const messagesRef = useRef([]);
+  const pendingAssistantBaselineRef = useRef(null);
 
   // iOS Safari can keep the layout viewport tall when its keyboard opens.
   // Size the mobile panel to the *visible* viewport instead so the composer
@@ -78,6 +81,8 @@ export default function AiAssistant() {
     conversationInitRef.current = null;
     conversationRef.current = null;
     sendInFlightRef.current = false;
+    messagesRef.current = [];
+    pendingAssistantBaselineRef.current = null;
     unsubRef.current?.();
     unsubRef.current = null;
     if (loadingTimerRef.current) {
@@ -258,13 +263,16 @@ export default function AiAssistant() {
     unsubRef.current?.();
     conversationRef.current = conv;
     setConversation(conv);
-    setMessages(conv.messages || []);
+    messagesRef.current = conv.messages || [];
+    setMessages(messagesRef.current);
     unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
       if (generation !== identityGenerationRef.current) return;
       const msgs = data.messages || [];
+      messagesRef.current = msgs;
       setMessages(msgs);
-      if (msgs.length && msgs[msgs.length - 1].role !== "user") {
+      if (sendInFlightRef.current && hasReplySince(msgs, pendingAssistantBaselineRef.current)) {
         if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
+        pendingAssistantBaselineRef.current = null;
         sendInFlightRef.current = false;
         setLoading(false);
       }
@@ -343,6 +351,7 @@ export default function AiAssistant() {
   const sendText = async (text, { preserveDraft = false } = {}) => {
     if (!text?.trim() || sendInFlightRef.current) return;
     sendInFlightRef.current = true;
+    pendingAssistantBaselineRef.current = countAssistantReplies(messagesRef.current);
     const generation = identityGenerationRef.current;
     if (!preserveDraft) setInput("");
     setLoading(true);
@@ -363,9 +372,10 @@ export default function AiAssistant() {
           const fresh = await base44.agents.getConversation(conv.id);
           if (generation !== identityGenerationRef.current) return;
           const freshMessages = fresh?.messages || [];
+          messagesRef.current = freshMessages;
           setMessages(freshMessages);
-          const last = freshMessages[freshMessages.length - 1];
-          if (last && last.role !== "user") {
+          if (hasReplySince(freshMessages, pendingAssistantBaselineRef.current)) {
+            pendingAssistantBaselineRef.current = null;
             sendInFlightRef.current = false;
             setLoading(false);
             return;
@@ -383,6 +393,7 @@ export default function AiAssistant() {
       if (!preserveDraft) setInput(current => current || text);
       console.error("Nali send error", err);
       if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
+      pendingAssistantBaselineRef.current = null;
       sendInFlightRef.current = false;
       setLoading(false);
       setMessages(prevMsgs => [...prevMsgs, {
@@ -401,9 +412,11 @@ export default function AiAssistant() {
       const fresh = await base44.agents.getConversation(conversation.id);
       if (generation !== identityGenerationRef.current) return;
       const received = fresh?.messages || [];
+      messagesRef.current = received;
       setMessages(received);
-      if (received.length && received[received.length - 1].role !== 'user') {
+      if (hasReplySince(received, pendingAssistantBaselineRef.current)) {
         if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
+        pendingAssistantBaselineRef.current = null;
         sendInFlightRef.current = false;
         setLoading(false);
       } else {

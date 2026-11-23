@@ -24,7 +24,12 @@ it('starts microphone capture on the first tap on mobile, with optional count-in
   let grantMicrophone;
   const getUserMedia = vi.fn(() => new Promise(resolve => { grantMicrophone = resolve; }));
   const stop = vi.fn();
-  vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+  vi.stubGlobal('matchMedia', vi.fn(query => ({
+    matches: query === '(max-width: 767px)',
+    media: query,
+    addListener: vi.fn(), removeListener: vi.fn(),
+    addEventListener: vi.fn(), removeEventListener: vi.fn(),
+  })));
   vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { mediaDevices: { getUserMedia } }));
   vi.stubGlobal('MediaRecorder', vi.fn());
 

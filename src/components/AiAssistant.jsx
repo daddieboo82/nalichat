@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/lib/AuthContext";
 import { captureReplyBaseline, hasReplySince, preferCurrentConversationMessages } from "@/lib/naliReplyStatus";
+import { isUncertainAiDelivery } from "@/lib/naliDeliveryStatus";
 
 export default function AiAssistant() {
   const { hasEntitlement, isLoading: subscriptionLoading } = useSubscription();
@@ -394,12 +395,14 @@ export default function AiAssistant() {
     setReplyDelayed(false);
     setLoading(true);
     let conv = conversationRef.current || conversation;
+    let dispatchStarted = false;
     try {
       if (!conv) conv = await initConversation();
       if (generation !== identityGenerationRef.current) throw staleIdentityError();
       // Establish the baseline only after restoring earlier conversation
       // history, before dispatching this specific new request.
       pendingAssistantBaselineRef.current = captureReplyBaseline(messagesRef.current);
+      dispatchStarted = true;
       await sendAgentText(conv, text.trim());
       if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current) throw staleIdentityError();
       // Realtime may already have delivered the reply during the send call.
@@ -421,8 +424,11 @@ export default function AiAssistant() {
       // The server explicitly says this request was reserved or dispatched.
       // Do not restore the submitted text or unlock Send: doing so could
       // dispatch another request while the original is still processing.
-      if (isAlreadyDispatchedAiRequest(err)) {
+      if (dispatchStarted && isUncertainAiDelivery(err)) {
         setReplyDelayed(true);
+        // A timeout or gateway failure may mean the server accepted the
+        // message. Check the existing thread rather than spending another
+        // request or restoring the prompt as though it was never submitted.
         void refreshPendingReply({ quiet: true });
         return;
       }

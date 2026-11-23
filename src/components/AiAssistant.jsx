@@ -399,30 +399,17 @@ export default function AiAssistant() {
       // but set a safety timeout in case the subscription never fires
       // (agent error, WebSocket drop, or very long tool call)
       if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-      loadingTimerRef.current = setTimeout(async () => {
+      loadingTimerRef.current = setTimeout(() => {
         loadingTimerRef.current = null;
         if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current) return;
-        try {
-          const fresh = await base44.agents.getConversation(conv.id);
-          if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current) return;
-          const freshMessages = preferCurrentConversationMessages(messagesRef.current, fresh?.messages);
-          messagesRef.current = freshMessages;
-          setMessages(freshMessages);
-          if (hasReplySince(freshMessages, pendingAssistantBaselineRef.current)) {
-            pendingAssistantBaselineRef.current = null;
-            sendInFlightRef.current = false;
-            setLoading(false);
-            return;
-          }
-          toast.info("Nali is still working on that request. I'll show the reply as soon as it arrives.");
-        } catch (refreshError) {
-          if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current) return;
-          console.error("Nali conversation refresh error", refreshError);
-          toast.info("Nali is still working, but the live connection was interrupted. Reopen the assistant to refresh.");
-        }
+        // Share the guarded history-only refresh with the manual control.
+        // This prevents an overlapping fallback read from racing a newer reply.
+        void refreshPendingReply({ quiet: true });
       }, 60000);
     } catch (err) {
-      if (err?.code === "NALI_IDENTITY_CHANGED" || generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current) return;
+      if (err?.code === "NALI_IDENTITY_CHANGED" || generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current) return;
+      // A realtime answer can arrive before a slow send endpoint settles.
+      // In that case, don't show a false error or put the sent prompt back.
       // Retain the unsent prompt so a temporary network failure does not
       // force a mobile creator to retype a long idea.
       if (!preserveDraft) setInput(current => current || text);

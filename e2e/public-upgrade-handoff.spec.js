@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 test('anonymous mobile customer can choose Premium and retain the selected monthly plan for registration', async ({ page }) => {
   await page.goto('/pricing?source=mobile-release-audit', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#premium-plan')).toBeVisible();
-  await expect(page.locator('#premium-plus-plan')).toBeVisible();
+  await expect(page.locator('#premium_plus-plan')).toBeVisible();
   await page.locator('#premium-plan').getByRole('button', { name: /sign up for premium/i }).click();
   await expect.poll(() => new URL(page.url()).pathname).toBe('/register');
   const destination = new URL(page.url()).searchParams.get('returnTo');
@@ -19,8 +19,8 @@ test('anonymous mobile customer can choose Premium and retain the selected month
 
 test('anonymous mobile customer can choose annual Premium Plus without checkout', async ({ page }) => {
   await page.goto('/pricing?billing=annual');
-  await expect(page.locator('#premium-plus-plan')).toBeVisible();
-  await page.locator('#premium-plus-plan').getByRole('button', { name: /sign up for premium plus/i }).click();
+  await expect(page.locator('#premium_plus-plan')).toBeVisible();
+  await page.locator('#premium_plus-plan').getByRole('button', { name: /sign up for premium plus/i }).click();
   await expect.poll(() => new URL(page.url()).pathname).toBe('/register');
   const target = new URL(new URL(page.url()).searchParams.get('returnTo'), page.url());
   expect(target.searchParams.get('plan')).toBe('premium_plus');

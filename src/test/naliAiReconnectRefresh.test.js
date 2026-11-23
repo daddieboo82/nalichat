@@ -20,7 +20,7 @@ describe('NALI.ai reconnect recovery without duplicate dispatches', () => {
     expect(source).toContain('if (!conv?.id || !sendInFlightRef.current || replyRefreshInFlightRef.current) return;');
     expect(source).toContain('if (quiet && now - lastReplyRefreshAtRef.current < 5000) return;');
     expect(source).toContain('replyRefreshInFlightRef.current = true;');
-    expect(source).toContain('if (generation === identityGenerationRef.current) replyRefreshInFlightRef.current = false;');
+    expect(source).toContain('if (generation === identityGenerationRef.current && requestSequence === sendSequenceRef.current) replyRefreshInFlightRef.current = false;');
     const start = source.indexOf('const refreshPendingReply = async ({ quiet = false } = {}) => {');
     const end = source.indexOf('const send = () => sendText(input);', start);
     const refresh = source.slice(start, end);

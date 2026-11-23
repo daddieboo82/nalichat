@@ -88,7 +88,7 @@ describe('Nali AI end-to-end audit invariants', () => {
     expect(assistant).toContain("recognition.lang = navigator.language || 'en-US';");
     expect(assistant).toContain('(!voiceEnabled || !open)');
     expect(assistant).toContain('aria-label={voiceEnabled ? "Mute Nali voice" : "Enable Nali voice"}');
-    expect(assistant).toContain('aria-label="Voice input"');
+    expect(assistant).toContain('aria-label={isListening ? "Stop voice input" : "Voice input"}');
   });
 
   it('does not proactively summon an assistant the current account cannot use', async () => {

@@ -11,7 +11,7 @@ import { captureReplyBaseline, hasReplySince, preferCurrentConversationMessages 
 import { isUncertainAiDelivery } from "@/lib/naliDeliveryStatus";
 
 export default function AiAssistant() {
-  const { hasEntitlement, isLoading: subscriptionLoading } = useSubscription();
+  const { hasEntitlement, isLoading: subscriptionLoading, isError: subscriptionError, refetch: refetchSubscription } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
   const canUseBestModel = hasEntitlement("ai.best_model");
   const agentName = canUseBestModel ? "studio_ai_plus" : "studio_ai";
@@ -154,6 +154,9 @@ export default function AiAssistant() {
       const reset = resetAt ? new Date(resetAt).toLocaleString() : "the next UTC day";
       return `You've reached today's NALI.ai request limit. Your access resets at ${reset}.`;
     }
+    if (/subscription verification unavailable/i.test(message)) {
+      return "Couldn't verify your Premium access. Check your subscription again.";
+    }
     if (code === "AI_NOT_ENTITLED" || /premium is required/i.test(message)) {
       return "NALI.ai is a Premium creator tool. Upgrade to add production guidance and creative AI assistance across your workflow.";
     }
@@ -178,8 +181,8 @@ export default function AiAssistant() {
     const handleSendMessage = async (e) => {
       const text = e.detail?.message;
       if (!text) return;
-      if (subscriptionLoading || !canUseAi) {
-        toast.error(subscriptionLoading ? "Checking your subscription…" : "NALI.ai is available with Premium for faster creative guidance across your workflow.");
+      if (subscriptionLoading || subscriptionError || !canUseAi) {
+        toast.error(subscriptionLoading ? "Checking your subscription…" : subscriptionError ? "Couldn't verify your Premium access. Try checking your subscription again." : "NALI.ai is available with Premium for faster creative guidance across your workflow.");
         return;
       }
       setOpen(true);
@@ -202,7 +205,7 @@ export default function AiAssistant() {
       window.removeEventListener('open-ai-assistant', handleOpen);
       window.removeEventListener('nali-send-message', handleSendMessage);
     };
-  }, [conversation, canUseAi, subscriptionLoading, agentName]);
+  }, [conversation, canUseAi, subscriptionLoading, subscriptionError, agentName]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -313,6 +316,7 @@ export default function AiAssistant() {
   const createOrRestoreConversation = async () => {
     const generation = identityGenerationRef.current;
     if (subscriptionLoading) throw new Error("Subscription is still loading");
+    if (subscriptionError) throw new Error("Subscription verification unavailable");
     if (!canUseAi) {
       toast.error("NALI.ai is available with Premium for faster creative guidance across your workflow.");
       throw new Error("AI entitlement required");
@@ -359,6 +363,10 @@ export default function AiAssistant() {
   };
 
   const openChat = async (greeting) => {
+    if (subscriptionError) {
+      toast.error("Couldn't verify your Premium access. Try checking your subscription again.");
+      return;
+    }
     if (subscriptionLoading) {
       toast.info("Checking your subscription…");
       return;
@@ -380,6 +388,10 @@ export default function AiAssistant() {
 
   const sendText = async (text, { preserveDraft = false } = {}) => {
     if (!text?.trim() || sendInFlightRef.current) return;
+    if (subscriptionLoading || subscriptionError || !canUseAi) {
+      toast.error(subscriptionError ? "Couldn't verify your Premium access. Try checking your subscription again." : subscriptionLoading ? "Checking your subscription…" : "NALI.ai is available with Premium.");
+      return;
+    }
     sendInFlightRef.current = true;
     pendingAssistantBaselineRef.current = null;
     const requestSequence = ++sendSequenceRef.current;

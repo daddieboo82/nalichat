@@ -329,10 +329,10 @@ export default function AiAssistant() {
     setOpen(true);
     setMinimized(false);
     if (!conversation) {
-      const conv = await initConversation();
-      // Only send a contextual greeting when one was explicitly provided.
-      // Opening Nali by itself should not consume a model request.
+      // A contextual greeting uses the same guarded send path. Opening Nali
+      // without a greeting creates/restores a chat but spends no AI request.
       if (greeting) await sendText(greeting, { preserveDraft: true });
+      else await initConversation();
     }
     setTimeout(() => inputRef.current?.focus(), 100);
   };

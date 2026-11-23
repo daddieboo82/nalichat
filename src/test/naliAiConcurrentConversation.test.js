@@ -17,7 +17,7 @@ describe('NALI.ai simultaneous initialization safeguards', () => {
     expect(source).toContain('identityGenerationRef.current += 1;');
     expect(source).toContain('conversationInitRef.current = null;');
     expect(source).toContain('sendInFlightRef.current = false;');
-    expect(source).toContain('if (!text.trim() || sendInFlightRef.current) return;');
+    expect(source).toContain('if (!text?.trim() || sendInFlightRef.current) return;');
     expect(source).toContain('sendInFlightRef.current = true;');
   });
 });

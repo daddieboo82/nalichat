@@ -20,6 +20,7 @@ export default function AiAssistant() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sendError, setSendError] = useState(null);
   const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState(null);
   const { user } = useAuth();
@@ -102,6 +103,7 @@ export default function AiAssistant() {
     setMessages([]);
     setInput("");
     setLoading(false);
+    setSendError(null);
     setIsListening(false);
     setVoiceEnabled(false);
     setIsSpeaking(false);
@@ -371,6 +373,7 @@ export default function AiAssistant() {
     pendingAssistantBaselineRef.current = null;
     const generation = identityGenerationRef.current;
     if (!preserveDraft) setInput("");
+    setSendError(null);
     setLoading(true);
     let conv = conversationRef.current || conversation;
     try {
@@ -418,10 +421,10 @@ export default function AiAssistant() {
       pendingAssistantBaselineRef.current = null;
       sendInFlightRef.current = false;
       setLoading(false);
-      setMessages(prevMsgs => [...prevMsgs, {
-        role: "assistant",
-        content: friendlyNaliError(err),
-      }]);
+      // Delivery failures are local UI notices, not messages from the AI.
+      // Keeping them out of history also prevents narration and false
+      // assistant-reply completion when speech is enabled.
+      setSendError(friendlyNaliError(err));
     }
   };
 
@@ -646,6 +649,12 @@ export default function AiAssistant() {
                 )}
               </div>
 
+              {sendError && (
+                <div role="alert" className="shrink-0 border-t border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-foreground">
+                  <p className="font-medium">{sendError}</p>
+                  <p className="mt-1 text-muted-foreground">Your message is still in the composer. Review it before trying again.</p>
+                </div>
+              )}
               {loading && conversation?.id && (
                 <div className="shrink-0 border-t border-border/50 px-3 py-2 flex items-center justify-between gap-2 text-xs text-muted-foreground" role="status">
                   <span>Nali is preparing a reply. Don’t resend yet.</span>

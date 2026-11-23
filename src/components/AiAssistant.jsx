@@ -221,12 +221,25 @@ export default function AiAssistant() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Clean up the conversation subscription, microphone, and loading timer on unmount
+  // Unmount invalidates all outstanding sends, restores, and refreshes.
+  // Closing or minimizing the panel does NOT trigger this cleanup, so an
+  // existing request remains recoverable when the creator reopens it.
   useEffect(() => () => {
+    identityGenerationRef.current += 1;
+    sendSequenceRef.current += 1;
+    sendInFlightRef.current = false;
+    pendingAssistantBaselineRef.current = null;
+    replyRefreshInFlightRef.current = false;
+    lastReplyRefreshAtRef.current = 0;
+    conversationInitRef.current = null;
     recognitionRef.current?.abort();
     recognitionRef.current = null;
     unsubRef.current?.();
-    if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+    unsubRef.current = null;
+    if (loadingTimerRef.current) {
+      clearTimeout(loadingTimerRef.current);
+      loadingTimerRef.current = null;
+    }
   }, []);
 
   // Speech generation is asynchronous. A response can arrive after the

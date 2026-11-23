@@ -78,9 +78,13 @@ test.describe('messaging and collaboration workflows', () => {
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/files');
     await expect(page.locator('body')).toBeVisible({ timeout: 10000 });
 
-    // The files page should have an upload button
-    const uploadBtn = page.getByRole('button', { name: /upload/i }).first();
-    await expect(uploadBtn).toBeVisible({ timeout: 10000 });
+    // On phones the native picker is the upload action; desktop uses a dialog.
+    const mobilePicker = page.getByLabel('Choose files to upload');
+    if (await mobilePicker.isVisible()) {
+      await expect(mobilePicker).toBeEnabled();
+    } else {
+      await expect(page.getByRole('button', { name: 'Upload files' })).toBeVisible({ timeout: 10000 });
+    }
 
     expect(filterNoise(errors)).toEqual([]);
   });

@@ -41,7 +41,26 @@ export function preferCurrentConversationMessages(current, incoming) {
   return incoming;
 }
 
+// Capture the history boundary when a new request is dispatched. Older
+// placeholder messages may finish later; they must not settle this request.
+export function captureReplyBaseline(messages) {
+  return {
+    assistantCount: countAssistantReplies(messages),
+    messageCount: Array.isArray(messages) ? messages.length : 0,
+  };
+}
+
 export function hasReplySince(messages, assistantReplyBaseline) {
+  if (!Array.isArray(messages)) return false;
+  if (assistantReplyBaseline && typeof assistantReplyBaseline === 'object') {
+    const { assistantCount, messageCount } = assistantReplyBaseline;
+    return Number.isInteger(assistantCount) && assistantCount >= 0
+      && Number.isInteger(messageCount) && messageCount >= 0
+      && countAssistantReplies(messages) > assistantCount
+      && messages.slice(messageCount).some(isUsableAssistantReply);
+  }
+  // Numeric baselines are supported for older callers without a history
+  // boundary; new sends should always use captureReplyBaseline instead.
   return Number.isInteger(assistantReplyBaseline)
     && assistantReplyBaseline >= 0
     && countAssistantReplies(messages) > assistantReplyBaseline;

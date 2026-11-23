@@ -723,6 +723,12 @@ export default function AiAssistant() {
                 )}
               </div>
 
+              {subscriptionError && (
+                <div role="alert" className="shrink-0 border-t border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground flex items-center justify-between gap-2">
+                  <span>Couldn't verify your Premium access. Your subscription may still be active.</span>
+                  <button type="button" onClick={() => void refetchSubscription()} className="min-h-11 shrink-0 rounded-lg border border-border px-3 font-semibold hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary">Check access again</button>
+                </div>
+              )}
               {sendError && (
                 <div role="alert" className="shrink-0 border-t border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-foreground">
                   <p className="font-medium">{sendError}</p>

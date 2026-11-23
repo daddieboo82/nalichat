@@ -25,6 +25,7 @@ describe('NALI.ai mobile creator copilot experience', () => {
     expect(ui).toContain('navigator.clipboard.writeText');
     expect(ui).toContain('aria-label="Message NALI.ai"');
     expect(ui).toContain('min-h-12 w-full');
-    expect(ui).toContain('aria-label="Voice input"');
+    expect(ui).toContain('aria-label={isListening ? "Stop voice input" : "Voice input"}');
+    expect(ui).toContain('aria-pressed={isListening}');
   });
 });

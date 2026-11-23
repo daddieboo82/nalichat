@@ -565,7 +565,7 @@ export default function MusicVideoGenerator() {
         <Button variant="outline" onClick={() => travel("redo")} disabled={!historyRef.current.future.length || rendering} aria-label="Redo edit" title="Redo edit"><Redo2 size={16} /></Button>
         <span className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground"><Save size={15} /> Local project</span>
       </header>
-      <nav aria-label="Video Lab sections" className="flex flex-wrap gap-2">
+      <nav aria-label="Video Lab sections" className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 sm:flex-wrap">
         {[
           ["video-lab-media", "Project media"],
           ["video-lab-preview", "Preview & export"],
@@ -576,7 +576,7 @@ export default function MusicVideoGenerator() {
             event.preventDefault();
             document.getElementById(id)?.focus({ preventScroll: true });
             document.getElementById(id)?.scrollIntoView({ block: "start" });
-          }} className="inline-flex min-h-11 items-center rounded-xl border border-border bg-card px-3 text-sm font-medium hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{label}</a>
+          }} className="inline-flex min-h-11 shrink-0 items-center rounded-xl border border-border bg-card px-3 text-sm font-medium hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{label}</a>
         ))}
       </nav>
       <section className="rounded-2xl border border-primary/25 bg-primary/5 p-4 sm:p-5">
@@ -588,19 +588,19 @@ export default function MusicVideoGenerator() {
         </div>
       </section>
       <div className="grid gap-4 lg:grid-cols-[minmax(14rem,0.8fr)_minmax(0,1.6fr)] xl:grid-cols-[minmax(14rem,0.8fr)_minmax(0,1.8fr)_minmax(14rem,0.85fr)]">
-        <section id="video-lab-media" tabIndex={-1} className="min-w-0 scroll-mt-4 rounded-2xl border border-border/70 bg-card/60 p-4">
+        <section id="video-lab-media" tabIndex={-1} className="order-2 min-w-0 scroll-mt-4 rounded-2xl border border-border/70 bg-card/60 p-4 lg:order-1">
           <h2 className="mb-3 flex items-center gap-2 font-bold"><FolderOpen size={18} /> Project media</h2>
           <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-primary/40 bg-primary/5 px-3 text-center text-sm font-medium hover:bg-primary/10 focus-within:ring-2 focus-within:ring-primary"><Upload size={20} className="mb-1" /> Import video, images or audio<input type="file" accept="video/*,image/*,audio/*" multiple className="sr-only" onChange={(event) => { importFiles([...event.target.files]); event.target.value = ""; }} /></label>
           <div className="mt-3 max-h-80 space-y-2 overflow-y-auto">{assets.map((asset) => <div key={asset.id} className="flex items-center gap-2 rounded-lg border border-border/70 p-2"><Film size={15} className="shrink-0 text-primary" /><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold" title={asset.name}>{asset.name}</p><p className="text-[11px] text-muted-foreground">{asset.kind} · {formatTime(asset.duration)}</p></div><button onClick={() => addClip(asset)} aria-label={`Add ${asset.name} to timeline`} title="Add to timeline" className="grid h-11 w-11 shrink-0 place-items-center rounded-lg hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary"><Plus size={17}/></button><button onClick={() => removeAsset(asset)} aria-label={`Remove ${asset.name}`} title="Remove from project" className="grid h-11 w-11 shrink-0 place-items-center rounded-lg hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary"><Trash2 size={15}/></button></div>)}</div>
           {!assets.length && <p className="mt-3 text-xs text-muted-foreground">Add a song for AI generation, or import footage and images to edit by hand.</p>}
         </section>
-        <section id="video-lab-preview" tabIndex={-1} className="min-w-0 scroll-mt-4 rounded-2xl border border-border/70 bg-card/60 p-4">
+        <section id="video-lab-preview" tabIndex={-1} className="order-1 min-w-0 scroll-mt-4 rounded-2xl border border-border/70 bg-card/60 p-3 sm:p-4 lg:order-2">
           <h2 className="mb-3 font-heading font-bold">Preview &amp; export</h2>
           <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} className="aspect-video w-full rounded-xl bg-black" aria-label="Video preview" />
-          <div className="mt-3 flex flex-wrap items-center gap-3">
+          <div className="mt-3 flex flex-wrap items-center gap-2 sm:gap-3">
             <Button onClick={play} disabled={!length || rendering} aria-label={playing ? "Pause preview" : "Play preview"}>{playing ? <Pause size={16}/> : <Play size={16}/>}</Button>
             <span className="font-mono text-sm">{formatTime(time)} / {formatTime(length)}</span>
-            <input aria-label="Playhead" type="range" min="0" max={Math.max(length, 0.1)} step=".01" value={Math.min(time, Math.max(length, .1))} onChange={(e) => seek(Number(e.target.value))} className="min-w-24 flex-1 accent-primary" />
+            <input aria-label="Playhead" type="range" min="0" max={Math.max(length, 0.1)} step=".01" value={Math.min(time, Math.max(length, .1))} onChange={(e) => seek(Number(e.target.value))} className="min-h-11 min-w-24 basis-full flex-1 accent-primary sm:basis-auto" />
             <label className="text-xs text-muted-foreground">Format <select aria-label="Export format" value={exportFormat} onChange={(e) => setExportFormat(e.target.value)} disabled={rendering} className="ml-1 rounded border border-border bg-secondary p-2 text-foreground"><option value="webm">WebM</option><option value="mp4" disabled={!mp4Supported}>MP4{mp4Supported ? "" : " (unavailable)"}</option></select></label>
             <Button onClick={exportVideo} disabled={!length || rendering}><Film size={16} className="mr-2" />{rendering ? "Exporting..." : `Export ${exportFormat.toUpperCase()}`}</Button>
             {rendering && <Button variant="outline" onClick={() => { cancelExportRef.current = true; setStatus("Canceling export..."); }}>Cancel export</Button>}
@@ -609,7 +609,7 @@ export default function MusicVideoGenerator() {
 
           <p role="status" className="mt-3 min-h-5 text-sm text-muted-foreground">{status || (!length ? "Add media to the timeline or generate a storyboard to preview and export." : "")}</p>
         </section>
-        <section id="video-lab-inspector" tabIndex={-1} className="min-w-0 scroll-mt-4 rounded-2xl border border-border/70 bg-card/60 p-4 lg:col-span-2 xl:col-span-1">
+        <section id="video-lab-inspector" tabIndex={-1} className="order-3 min-w-0 scroll-mt-4 rounded-2xl border border-border/70 bg-card/60 p-4 lg:col-span-2 xl:col-span-1">
           <h2 className="mb-3 font-heading font-bold">Inspector</h2>
           <label className="block text-xs text-muted-foreground">Video title<input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={55} placeholder="Optional title overlay" className="mt-1 w-full rounded-lg border border-border bg-black/40 p-2 text-foreground" /></label>
           {chosen && <div className="mt-4 space-y-3 border-t border-border/70 pt-4 text-xs">
@@ -632,13 +632,13 @@ export default function MusicVideoGenerator() {
       </div>
       <section id="video-lab-timeline" tabIndex={-1} className="min-w-0 scroll-mt-4 rounded-2xl border border-border/70 bg-card/60 p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="font-bold">Timeline · Video and soundtrack</h2><Button variant="outline" size="sm" onClick={() => setTrackCount((count) => count + 1)}><Plus size={14} className="mr-1" /> Add video track</Button><label className="text-xs">Zoom <input type="range" min="20" max="160" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="align-middle accent-primary" /></label></div>
-        <div aria-label="Scrollable timeline tracks" role="region" tabIndex={0} className="overflow-x-auto rounded-xl border border-border/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><div style={{ width: Math.max(700, length * zoom + 120) }} className="relative min-h-40 rounded-lg bg-black/40 p-2">
+        <div aria-label="Scrollable timeline tracks" role="region" tabIndex={0} className="w-full max-w-full touch-pan-x overflow-x-auto overscroll-x-contain rounded-xl border border-border/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><div style={{ width: Math.max(700, length * zoom + 120) }} className="relative min-h-40 rounded-lg bg-black/40 p-2">
           <div className="ml-20 h-5 border-b border-border/70 font-mono text-[10px] text-muted-foreground">{Array.from({ length: Math.ceil(Math.max(length, 10) / 5) + 1 }, (_, i) => <span key={i} className="absolute" style={{ left: 90 + i * 5 * zoom }}>{i * 5}s</span>)}</div>
           {Array.from({ length: trackCount }, (_, track) => <div key={track} className="mt-2 flex h-16 items-center"><span className="w-20 shrink-0 text-xs text-muted-foreground">VIDEO {track + 1}</span><div className="relative h-14 flex-1 rounded bg-secondary/60" onClick={(e) => { if (e.target === e.currentTarget) seek(e.nativeEvent.offsetX / zoom); }}>{clips.filter((clip) => (clip.track ?? 0) === track).map((clip) => <button key={clip.id} draggable onDragStart={(e) => { e.dataTransfer.setData("text/plain", clip.id); }} onDragEnd={(e) => { if (e.dataTransfer.dropEffect === "none" && e.clientX === 0) return; const rail = e.currentTarget.parentElement.getBoundingClientRect(); setClips((current) => current.map((item) => item.id === clip.id ? { ...item, start: Math.max(0, Math.round((e.clientX - rail.left) / zoom * 10) / 10) } : item)); }} onClick={() => { setSelected(clip.id); seek(clip.start); }} style={{ left: clip.start * zoom, width: clipLength(clip) * zoom }} className={`absolute top-1 h-12 overflow-hidden rounded border px-2 text-left text-xs ${selected === clip.id ? "border-primary/60 bg-primary text-primary-foreground" : "border-primary/40 bg-primary/25 text-foreground"}`} title="Click to select; drag to move"><span className="block truncate font-bold">{assets.find((asset) => asset.id === clip.assetId)?.name}</span><span>{formatTime(clipLength(clip))}</span></button>)}</div></div>)}
           {music.map((item, index) => <div key={item.id} className="flex h-12 items-center"><span className="w-20 shrink-0 text-xs text-muted-foreground">AUDIO {index + 1}</span><div className="h-9 flex-1 rounded bg-secondary/60"><button onClick={() => { setSelectedMusic(item.id); seek(item.start ?? 0); }} style={{ marginLeft: (item.start ?? 0) * zoom, width: Math.max(0, Math.min((item.out ?? item.duration) - (item.in ?? 0), length - (item.start ?? 0))) * zoom }} className={`h-full truncate rounded border px-2 py-2 text-left text-xs ${selectedMusic === item.id ? "border-accent/60 bg-accent text-accent-foreground" : "border-accent/40 bg-accent/25 text-foreground"}`}>{assets.find((asset) => asset.id === item.assetId)?.name}</button></div></div>)}
           <div className="pointer-events-none absolute top-5 bottom-2 w-px bg-foreground" style={{ left: 90 + time * zoom }} />
         </div></div>
-        <p className="mt-2 text-xs text-muted-foreground">Import your own media. Drag a video clip to move it; use the Inspector to trim, split, transition, grade or delete it. Export plays in real time and mixes video clip audio with all imported audio clips.</p>
+        <p className="mt-2 text-xs text-muted-foreground">Swipe sideways to explore the timeline on a phone. Tap a clip and use the Inspector to adjust its start time, trim, split, transition, grade or delete it. On desktop, drag a video clip to move it. Import your own media. Export plays in real time and mixes video clip audio with all imported audio clips.</p>
       </section>
     </div>
   </div>;

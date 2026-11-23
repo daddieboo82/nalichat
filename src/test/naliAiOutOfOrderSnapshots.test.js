@@ -33,5 +33,6 @@ describe('NALI.ai out-of-order conversation snapshots', () => {
     const code = await readFile('src/components/AiAssistant.jsx', 'utf8');
     expect(code).toContain('preferCurrentConversationMessages(messagesRef.current, data.messages)');
     expect(code).toContain('preferCurrentConversationMessages(messagesRef.current, fresh?.messages)');
+    expect(code).toContain('void refreshPendingReply({ quiet: true });');
   });
 });

@@ -7,7 +7,7 @@ import TutorialTopics from "@/components/ai/TutorialTopics";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/lib/AuthContext";
-import { countAssistantReplies, hasReplySince } from "@/lib/naliReplyStatus";
+import { countAssistantReplies, hasReplySince, preferCurrentConversationMessages } from "@/lib/naliReplyStatus";
 
 export default function AiAssistant() {
   const { hasEntitlement, isLoading: subscriptionLoading } = useSubscription();
@@ -267,7 +267,7 @@ export default function AiAssistant() {
     setMessages(messagesRef.current);
     unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
       if (generation !== identityGenerationRef.current) return;
-      const msgs = data.messages || [];
+      const msgs = preferCurrentConversationMessages(messagesRef.current, data.messages);
       messagesRef.current = msgs;
       setMessages(msgs);
       if (sendInFlightRef.current && hasReplySince(msgs, pendingAssistantBaselineRef.current)) {
@@ -376,7 +376,7 @@ export default function AiAssistant() {
         try {
           const fresh = await base44.agents.getConversation(conv.id);
           if (generation !== identityGenerationRef.current) return;
-          const freshMessages = fresh?.messages || [];
+          const freshMessages = preferCurrentConversationMessages(messagesRef.current, fresh?.messages);
           messagesRef.current = freshMessages;
           setMessages(freshMessages);
           if (hasReplySince(freshMessages, pendingAssistantBaselineRef.current)) {
@@ -416,7 +416,7 @@ export default function AiAssistant() {
     try {
       const fresh = await base44.agents.getConversation(conversation.id);
       if (generation !== identityGenerationRef.current) return;
-      const received = fresh?.messages || [];
+      const received = preferCurrentConversationMessages(messagesRef.current, fresh?.messages);
       messagesRef.current = received;
       setMessages(received);
       if (hasReplySince(received, pendingAssistantBaselineRef.current)) {

@@ -143,6 +143,11 @@ export default function AiAssistant() {
     return response;
   };
 
+  const isAlreadyDispatchedAiRequest = (error) => {
+    const code = error?.response?.data?.code || error?.data?.code || error?.code;
+    return code === 'AI_REQUEST_IN_PROGRESS' || code === 'AI_REQUEST_ALREADY_DISPATCHED';
+  };
+
   const friendlyNaliError = (error) => {
     const data = error?.response?.data || error?.data || {};
     const code = data.code || error?.code;
@@ -413,6 +418,14 @@ export default function AiAssistant() {
       }, 60000);
     } catch (err) {
       if (err?.code === "NALI_IDENTITY_CHANGED" || generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current) return;
+      // The server explicitly says this request was reserved or dispatched.
+      // Do not restore the submitted text or unlock Send: doing so could
+      // dispatch another request while the original is still processing.
+      if (isAlreadyDispatchedAiRequest(err)) {
+        setReplyDelayed(true);
+        void refreshPendingReply({ quiet: true });
+        return;
+      }
       // A realtime answer can arrive before a slow send endpoint settles.
       // In that case, don't show a false error or put the sent prompt back.
       // Retain the unsent prompt so a temporary network failure does not

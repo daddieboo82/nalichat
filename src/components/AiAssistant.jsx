@@ -239,8 +239,9 @@ export default function AiAssistant() {
   useEffect(() => {
     if (!voiceEnabled || !open || minimized || messages.length === 0) return;
     const last = messages[messages.length - 1];
-    if (last.role === "user") return;
-    // Use content as a pseudo-id; skip if already spoken
+    if (last.role !== "assistant" || !String(last.content || "").trim()) return;
+    // Only genuine assistant replies can trigger narration. Skip historical
+    // replies already visible when voice was enabled.
     const id = last.id || last.content?.substring(0, 160);
     if (!id || spokenIdsRef.current.has(id)) return;
     spokenIdsRef.current.add(id);
@@ -537,6 +538,13 @@ export default function AiAssistant() {
                 setVoiceEnabled(v => {
                   const next = !v;
                   if (next) {
+                    // Turning voice on applies to future replies, not the
+                    // last historical answer already displayed in the chat.
+                    const previous = messagesRef.current[messagesRef.current.length - 1];
+                    if (previous?.role === "assistant") {
+                      const previousId = previous.id || previous.content?.substring(0, 160);
+                      if (previousId) spokenIdsRef.current.add(previousId);
+                    }
                     // Unlock audio on this user gesture so TTS can play after async API calls
                     try {
                       const ctx = new (window.AudioContext || window.webkitAudioContext)();

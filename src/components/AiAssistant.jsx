@@ -38,6 +38,7 @@ export default function AiAssistant() {
   const loadingTimerRef = useRef(null);
   const identityGenerationRef = useRef(0);
   const conversationInitRef = useRef(null);
+  const conversationRef = useRef(null);
   const sendInFlightRef = useRef(false);
 
   // iOS Safari can keep the layout viewport tall when its keyboard opens.
@@ -75,6 +76,7 @@ export default function AiAssistant() {
   useEffect(() => {
     identityGenerationRef.current += 1;
     conversationInitRef.current = null;
+    conversationRef.current = null;
     sendInFlightRef.current = false;
     unsubRef.current?.();
     unsubRef.current = null;
@@ -254,6 +256,7 @@ export default function AiAssistant() {
     if (!conv?.id) return null;
     if (generation !== identityGenerationRef.current) throw staleIdentityError();
     unsubRef.current?.();
+    conversationRef.current = conv;
     setConversation(conv);
     setMessages(conv.messages || []);
     unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
@@ -276,7 +279,7 @@ export default function AiAssistant() {
       toast.error("NALI.ai is available with Premium for faster creative guidance across your workflow.");
       throw new Error("AI entitlement required");
     }
-    if (conversation) return conversation;
+    if (conversationRef.current) return conversationRef.current;
 
     if (conversationStorageKey) {
       try {
@@ -328,7 +331,7 @@ export default function AiAssistant() {
     }
     setOpen(true);
     setMinimized(false);
-    if (!conversation) {
+    if (!conversationRef.current) {
       // A contextual greeting uses the same guarded send path. Opening Nali
       // without a greeting creates/restores a chat but spends no AI request.
       if (greeting) await sendText(greeting, { preserveDraft: true });
@@ -343,7 +346,7 @@ export default function AiAssistant() {
     const generation = identityGenerationRef.current;
     if (!preserveDraft) setInput("");
     setLoading(true);
-    let conv = conversation;
+    let conv = conversationRef.current || conversation;
     try {
       if (!conv) conv = await initConversation();
       if (generation !== identityGenerationRef.current) throw staleIdentityError();

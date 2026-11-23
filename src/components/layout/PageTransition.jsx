@@ -18,7 +18,7 @@ export default function PageTransition({ children, scroll = true }) {
       animate="animate"
       exit={reduceMotion ? undefined : "exit"}
       transition={{ duration: reduceMotion ? 0 : 0.12, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`relative h-full min-h-0 w-full min-w-0 ${scroll ? "overflow-x-hidden overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch]" : "overflow-hidden"}`}
+      className={`absolute inset-0 h-full min-h-0 w-full min-w-0 ${scroll ? "overflow-x-hidden overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch]" : "overflow-hidden"}`}
       style={scroll ? { touchAction: "pan-y", WebkitOverflowScrolling: "touch" } : undefined}
     >
       {children}

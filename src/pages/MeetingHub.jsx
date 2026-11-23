@@ -69,8 +69,15 @@ export default function MeetingHub() {
         startsAt: (form.startsAt ? new Date(form.startsAt) : new Date()).toISOString(),
       });
       const path = '/meetings/' + room.id;
-      setCreated({ path, invite: window.location.origin + path + '?invite=' + encodeURIComponent(inviteCode) });
+      const invite = window.location.origin + path + '?invite=' + encodeURIComponent(inviteCode);
       setForm(emptyForm);
+      // On mobile, open the room immediately and bring the invitation along.
+      // Desktop retains the inline creation summary for its existing workflow.
+      if (window.matchMedia?.('(max-width: 767px)')?.matches) {
+        navigate(path, { state: { newMeetingInvite: invite } });
+        return;
+      }
+      setCreated({ path, invite });
       void refresh();
     } catch (e) {
       setError(message(e));

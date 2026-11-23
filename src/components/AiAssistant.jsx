@@ -7,7 +7,7 @@ import TutorialTopics from "@/components/ai/TutorialTopics";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/lib/AuthContext";
-import { countAssistantReplies, hasReplySince, preferCurrentConversationMessages } from "@/lib/naliReplyStatus";
+import { captureReplyBaseline, hasReplySince, preferCurrentConversationMessages } from "@/lib/naliReplyStatus";
 
 export default function AiAssistant() {
   const { hasEntitlement, isLoading: subscriptionLoading } = useSubscription();
@@ -394,7 +394,7 @@ export default function AiAssistant() {
       if (generation !== identityGenerationRef.current) throw staleIdentityError();
       // Establish the baseline only after restoring earlier conversation
       // history, before dispatching this specific new request.
-      pendingAssistantBaselineRef.current = countAssistantReplies(messagesRef.current);
+      pendingAssistantBaselineRef.current = captureReplyBaseline(messagesRef.current);
       await sendAgentText(conv, text.trim());
       if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current) throw staleIdentityError();
       // Realtime may already have delivered the reply during the send call.

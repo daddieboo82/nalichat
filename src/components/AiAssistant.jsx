@@ -144,11 +144,6 @@ export default function AiAssistant() {
     return response;
   };
 
-  const isAlreadyDispatchedAiRequest = (error) => {
-    const code = error?.response?.data?.code || error?.data?.code || error?.code;
-    return code === 'AI_REQUEST_IN_PROGRESS' || code === 'AI_REQUEST_ALREADY_DISPATCHED';
-  };
-
   const friendlyNaliError = (error) => {
     const data = error?.response?.data || error?.data || {};
     const code = data.code || error?.code;

@@ -84,7 +84,9 @@ export default function AppLayout() {
 
       {/* Main Content */}
       <main className={`relative z-10 flex-1 overflow-hidden flex flex-col min-h-0 ${isPublicHome ? 'pb-0' : hasAudioPlayer ? 'pb-[calc(7.75rem+env(safe-area-inset-bottom))] lg:pb-[5rem]' : 'pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0'}`}>
-        <AnimatePresence initial={false} mode="wait">
+        {/* Render incoming routes immediately; waiting for the outgoing fade
+            adds needless latency to every mobile tab and feature switch. */}
+        <AnimatePresence initial={false} mode="sync">
           <PageTransition key={location.pathname} scroll={!location.pathname.startsWith('/messages')}>
             <Outlet />
           </PageTransition>

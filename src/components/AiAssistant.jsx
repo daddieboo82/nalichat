@@ -549,10 +549,17 @@ export default function AiAssistant() {
     const checkOnVisibility = () => {
       if (document.visibilityState === 'visible') checkOnReconnect();
     };
+    // Mobile Safari can restore a page from its back/forward cache without
+    // firing visibilitychange. Checking history on pageshow does not send AI.
+    const checkOnPageShow = () => {
+      if (document.visibilityState === 'visible') checkOnReconnect();
+    };
     window.addEventListener('online', checkOnReconnect);
+    window.addEventListener('pageshow', checkOnPageShow);
     document.addEventListener('visibilitychange', checkOnVisibility);
     return () => {
       window.removeEventListener('online', checkOnReconnect);
+      window.removeEventListener('pageshow', checkOnPageShow);
       document.removeEventListener('visibilitychange', checkOnVisibility);
     };
   }, [loading, conversation?.id]);

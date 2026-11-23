@@ -551,7 +551,12 @@ export default function Files() {
           <h1 className="font-heading text-2xl font-bold">Files</h1>
           {!showTransfer && (
             <div className="flex items-center gap-2">
-              <Button className="min-h-11 rounded-xl font-semibold" onClick={() => setShowUploadModal(true)} disabled={uploading}>
+              <label className={`relative inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground focus-within:ring-2 focus-within:ring-primary sm:hidden ${uploading ? 'pointer-events-none opacity-50' : ''}`}>
+                {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                Upload files
+                <input ref={fileInputRef} type="file" multiple aria-label="Choose files to upload" disabled={uploading} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" onChange={handleUpload} />
+              </label>
+              <Button className="hidden min-h-11 rounded-xl font-semibold sm:inline-flex" onClick={() => setShowUploadModal(true)} disabled={uploading}>
                 {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                 Upload files
               </Button>
@@ -573,7 +578,7 @@ export default function Files() {
 
         <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-secondary/60 p-1 sm:w-fit" role="group" aria-label="Files view">
           <Button type="button" variant={!showTransfer ? "secondary" : "ghost"} aria-pressed={!showTransfer} className="min-h-11 rounded-lg px-4" onClick={() => setShowTransfer(false)}>My files</Button>
-          <Button type="button" variant={showTransfer ? "secondary" : "ghost"} aria-pressed={showTransfer} className="min-h-11 rounded-lg px-4" onClick={() => setShowTransfer(true)}>Large transfer</Button>
+          <Button type="button" variant={showTransfer ? "secondary" : "ghost"} aria-pressed={showTransfer} className="min-h-11 rounded-lg px-4" onClick={() => setShowTransfer(true)}>Nali Transfer</Button>
         </div>
         {!showTransfer && (
           <div className="mb-4 flex items-center gap-2">

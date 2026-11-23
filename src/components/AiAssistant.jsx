@@ -28,6 +28,7 @@ export default function AiAssistant() {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState(null);
+  const [mobileViewport, setMobileViewport] = useState(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const unsubRef = useRef(null);
@@ -36,6 +37,32 @@ export default function AiAssistant() {
   const recognitionRef = useRef(null);
   const loadingTimerRef = useRef(null);
   const identityGenerationRef = useRef(0);
+
+  // iOS Safari can keep the layout viewport tall when its keyboard opens.
+  // Size the mobile panel to the *visible* viewport instead so the composer
+  // remains above the keyboard in portrait and landscape.
+  useEffect(() => {
+    if (!open || minimized) return;
+    const viewport = window.visualViewport;
+    const updateViewport = () => {
+      if (window.innerWidth >= 640) {
+        setMobileViewport(null);
+        return;
+      }
+      const height = Math.max(0, Math.round(viewport?.height ?? window.innerHeight));
+      const top = Math.max(0, Math.round(viewport?.offsetTop ?? 0));
+      setMobileViewport(previous => previous?.height === height && previous?.top === top ? previous : { height, top });
+    };
+    updateViewport();
+    viewport?.addEventListener('resize', updateViewport);
+    viewport?.addEventListener('scroll', updateViewport);
+    window.addEventListener('resize', updateViewport);
+    return () => {
+      viewport?.removeEventListener('resize', updateViewport);
+      viewport?.removeEventListener('scroll', updateViewport);
+      window.removeEventListener('resize', updateViewport);
+    };
+  }, [open, minimized]);
 
   const staleIdentityError = () => {
     const error = new Error("NALI.ai identity changed");
@@ -66,6 +93,7 @@ export default function AiAssistant() {
     setVoiceEnabled(false);
     setIsSpeaking(false);
     setCopiedMessageIndex(null);
+    setMobileViewport(null);
     setOpen(false);
     setMinimized(false);
     setExpanded(false);
@@ -410,7 +438,7 @@ export default function AiAssistant() {
         <div className={cn(
           "nali-assistant-panel fixed z-[999999] bg-card border border-border shadow-2xl shadow-black/40 flex flex-col min-h-0 overflow-hidden transition-all duration-200",
           minimized ? "bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-3 w-64 max-w-[calc(100vw-24px)] h-14 rounded-2xl sm:bottom-8 sm:right-4" : expanded ? "inset-x-0 top-[env(safe-area-inset-top)] bottom-[env(safe-area-inset-bottom)] rounded-none sm:inset-auto sm:bottom-8 sm:right-4 sm:w-[440px] sm:h-[640px] sm:max-h-[80dvh] sm:rounded-2xl" : "inset-x-0 top-[env(safe-area-inset-top)] bottom-[env(safe-area-inset-bottom)] rounded-none sm:inset-auto sm:bottom-8 sm:right-4 sm:w-96 sm:h-[500px] sm:max-h-[80dvh] sm:rounded-2xl"
-        )}>
+        )} style={!minimized && mobileViewport ? { top: mobileViewport.top, bottom: 'auto', height: mobileViewport.height } : undefined}>
           {/* Header */}
           <div className="nali-assistant-heading relative flex items-center gap-1 sm:gap-3 px-3 sm:px-4 py-3 border-b border-primary/20 bg-gradient-to-r from-background via-primary/10 to-background rounded-t-2xl shrink-0 overflow-hidden">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] pointer-events-none" />
@@ -561,6 +589,7 @@ export default function AiAssistant() {
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-mono font-bold">{'>'}</div>
                   <input
                     ref={inputRef}
+                    enterKeyHint="send"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     placeholder="Ask Nali about your music, projects, or anything else..."

@@ -246,6 +246,7 @@ export default function AiAssistant() {
   // assistant was muted, closed, minimized, or switched to another account.
   // Each request receives a generation token, invalidated by those actions.
   const speakText = async (text) => {
+    if (document.visibilityState === 'hidden') return;
     const clean = String(text || "").replace(/[#*_`>~|-]/g, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").trim();
     if (!clean) return;
     const generation = ++speechGenerationRef.current;
@@ -253,7 +254,7 @@ export default function AiAssistant() {
     setIsSpeaking(true);
     try {
       const res = await base44.functions.invoke('generate-speech', { text: clean.slice(0, 4800), voice: "honey" });
-      if (generation !== speechGenerationRef.current) return;
+      if (generation !== speechGenerationRef.current || document.visibilityState === 'hidden') return;
       if (!res?.data?.url) throw new Error('Speech audio was not returned');
       const audio = new Audio(res.data.url);
       currentAudioRef.current = audio;
@@ -276,6 +277,7 @@ export default function AiAssistant() {
   // Watch for new assistant messages and speak them
   useEffect(() => {
     if (!voiceEnabled || !open || minimized || messages.length === 0) return;
+    if (document.visibilityState === 'hidden') return;
     const last = messages[messages.length - 1];
     if (last.role !== "assistant" || !String(last.content || "").trim()) return;
     // Only genuine assistant replies can trigger narration. Skip historical
@@ -313,6 +315,22 @@ export default function AiAssistant() {
       setIsSpeaking(false);
     }
   }, [voiceEnabled, open, minimized]);
+
+  // Do not narrate while the app is backgrounded. Invalidate an outstanding
+  // speech-generation promise as well as pausing already-playing audio.
+  useEffect(() => {
+    const stopBackgroundSpeech = () => {
+      if (document.visibilityState !== 'hidden') return;
+      speechGenerationRef.current += 1;
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+      setIsSpeaking(false);
+    };
+    document.addEventListener('visibilitychange', stopBackgroundSpeech);
+    return () => document.removeEventListener('visibilitychange', stopBackgroundSpeech);
+  }, []);
 
   useEffect(() => () => {
     speechGenerationRef.current += 1;

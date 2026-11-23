@@ -14,7 +14,19 @@ export function preferCurrentConversationMessages(current, incoming) {
   if (!Array.isArray(incoming)) return Array.isArray(current) ? current : [];
   if (!Array.isArray(current)) return incoming;
   if (incoming.length < current.length) return current;
-  if (incoming.length === current.length && countAssistantReplies(incoming) < countAssistantReplies(current)) return current;
+  if (incoming.length === current.length) {
+    if (countAssistantReplies(incoming) < countAssistantReplies(current)) return current;
+    // Equal-size snapshots may come from different points in time. If both
+    // carry stable IDs, a different identity at the same position is not a
+    // streaming edit; it is an incompatible history snapshot. Keep the live
+    // version instead of silently swapping an already-visible reply.
+    const sameIdentities = incoming.every((message, index) => {
+      const previousId = current[index]?.id;
+      const incomingId = message?.id;
+      return !previousId || !incomingId || previousId === incomingId;
+    });
+    if (!sameIdentities) return current;
+  }
   return incoming;
 }
 

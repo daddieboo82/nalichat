@@ -10,11 +10,12 @@ vi.mock('@/api/base44Client', () => ({ base44: { functions: { invoke } } }));
 afterEach(() => {
   cleanup();
   invoke.mockReset();
+  vi.unstubAllGlobals();
 });
 
 function Destination() {
   const location = useLocation();
-  return <div>{location.pathname + location.search}</div>;
+  return <div>{location.pathname + location.search}<span data-testid="new-meeting-invite">{location.state?.newMeetingInvite || ''}</span></div>;
 }
 
 function renderHub() {
@@ -39,6 +40,18 @@ describe('Meeting Hub', () => {
     const [, payload] = invoke.mock.calls.find(([, body]) => body.action === 'create');
     expect(payload).toMatchObject({ title: 'Team check-in', kind: 'business' });
     expect(Math.abs(Date.now() - Date.parse(payload.startsAt))).toBeLessThan(10_000);
+  });
+
+  it('opens a newly created room immediately on mobile with its invite link', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+    renderHub();
+    invoke.mockImplementation(async (_name, body) => body.action === 'list'
+      ? { data: { rooms: [] } }
+      : { data: { room: { id: 'room_123456' }, inviteCode: 'b'.repeat(43) } });
+    fireEvent.change(screen.getByLabelText('Meeting name'), { target: { value: 'Mobile check-in' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create meeting' }));
+    expect(await screen.findByText('/meetings/room_123456', { exact: false })).toBeTruthy();
+    expect(screen.getByTestId('new-meeting-invite').textContent).toContain('/meetings/room_123456?invite=');
   });
 
   it('rejects other domains and opens a valid invitation on the current app', async () => {

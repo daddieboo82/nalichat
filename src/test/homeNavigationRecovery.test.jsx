@@ -291,6 +291,24 @@ describe('home, navigation, and recovery flows', () => {
     await screen.findByText('File vault opened');
   });
 
+  it.each([
+    ['Nali Transfer', '/files?view=transfer'],
+    ['Battle Arena', '/battles'],
+    ['Meeting Hub', '/meetings'],
+    ['Music Video Lab', '/music-video-generator'],
+    ['Cover Art Creator', '/cover-art'],
+  ])('opens the matching destination for %s', async (query, expected) => {
+    function Destination() {
+      const { pathname, search } = useLocation();
+      return <output>{pathname + search}</output>;
+    }
+    renderWithProviders(<Routes><Route path="/" element={<MobileHeader />} /><Route path="*" element={<Destination />} /></Routes>);
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: query } });
+    fireEvent.click(screen.getByRole('dialog').querySelector('button[aria-current], button.ui-hover.w-full'));
+    await screen.findByText(expected);
+  });
+
   it('shows the mobile header menu and anonymous login affordance', async () => {
     renderWithProviders(
       <Routes>

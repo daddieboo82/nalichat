@@ -59,10 +59,10 @@ export default function MobileHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [featureSearch, setFeatureSearch] = useState("");
   const menuTitle = useRef(null);
-  const query = featureSearch.trim().toLowerCase();
+  const query = featureSearch.trim().toLowerCase().replace(/\s+/g, " ");
   const visibleGroups = query ? NAV_GROUPS.map(group => ({
     ...group,
-    items: group.items.filter(item => `${item.label} ${item.desc}`.toLowerCase().includes(query)),
+    items: group.items.filter(item => `${item.label} ${item.desc} ${item.alias || ""}`.toLowerCase().includes(query)),
   })).filter(group => group.items.length) : NAV_GROUPS;
 
   useEffect(() => {
@@ -119,7 +119,9 @@ export default function MobileHeader() {
     navigate("/", { replace: true });
   };
 
-  const isActive = (p) => section === p;
+  const menuPath = section === "/files" && new URLSearchParams(location.search).get("view") === "transfer"
+    ? "/files?view=transfer" : section;
+  const isActive = (p) => menuPath === p;
 
   return (
     <>

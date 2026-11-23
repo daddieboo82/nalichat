@@ -22,7 +22,7 @@ import { sounds } from "@/hooks/use-sound";
 import { copyToClipboard } from "@/lib/clipboard";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { useAuth } from "@/lib/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 async function sha256Hex(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -157,7 +157,14 @@ export default function Files() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [showTransfer, setShowTransfer] = useState(false);
+  const location = useLocation();
+  const showTransfer = new URLSearchParams(location.search).get("view") === "transfer";
+  const setShowTransfer = (open) => {
+    const params = new URLSearchParams(location.search);
+    if (open) params.set("view", "transfer");
+    else params.delete("view");
+    navigate({ pathname: location.pathname, search: params.toString(), hash: location.hash }, { replace: true, state: location.state });
+  };
   const [uploading, setUploading] = useState(false);
   const { user: currentUser } = useAuth();
   const [selectedIds, setSelectedIds] = useState([]);
@@ -190,7 +197,6 @@ export default function Files() {
     setEditFormData({ name: "", tags: "", description: "" });
     setSearch("");
     setTypeFilter("all");
-    setShowTransfer(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [currentUser?.id]);
 

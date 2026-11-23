@@ -21,8 +21,8 @@ export const NAV_GROUPS = [
     items: [
       { icon: Music, label: "Studio", path: "/studio", desc: "Record, edit, and mix your tracks" },
       { icon: Mic, label: "Quick Record", path: "/record", desc: "Capture ideas on the go" },
-      { icon: Image, label: "Cover Art", path: "/cover-art", desc: "Generate AI cover artwork" },
-      { icon: Video, label: "Video Lab", path: "/music-video-generator", desc: "Create music videos with AI" },
+      { icon: Image, label: "Cover Art", path: "/cover-art", alias: "AI Cover Art Creator", desc: "Generate AI cover artwork" },
+      { icon: Video, label: "Video Lab", path: "/music-video-generator", alias: "Music Video Lab", desc: "Create music videos with AI" },
     ],
   },
   {
@@ -45,8 +45,9 @@ export const NAV_GROUPS = [
     items: [
       { icon: MessageSquare, label: "Messages", path: "/messages", desc: "Chat with your network" },
       { icon: FolderOpen, label: "Files", path: "/files", desc: "Your file vault and transfers" },
+      { icon: FolderOpen, label: "Nali Transfer", path: "/files?view=transfer", desc: "Send large files" },
       { icon: FolderKanban, label: "Projects", path: "/projects-summary", desc: "Manage your projects" },
-      { icon: Users, label: "Meetings", path: "/meetings", desc: "Private meetings and listening parties" },
+      { icon: Users, label: "Meetings", path: "/meetings", alias: "Meeting Hub", desc: "Private meetings and listening parties" },
     ],
   },
   {
@@ -64,7 +65,7 @@ export const NAV_GROUPS = [
     items: [
       { icon: Swords, label: "Challenges", path: "/challenges", desc: "Remix challenges and prizes" },
       { icon: UsersRound, label: "Squads", path: "/squad", desc: "Team up with a partner" },
-      { icon: Tv, label: "Live Battles", path: "/battles", desc: "Head-to-head live battles" },
+      { icon: Tv, label: "Live Battles", path: "/battles", alias: "Battle Arena", desc: "Head-to-head live battles" },
     ],
   },
 ];

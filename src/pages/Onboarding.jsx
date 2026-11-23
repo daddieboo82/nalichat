@@ -227,7 +227,6 @@ function OnboardingForm() {
 
   return (
     <>
-    <OnboardingNaliGuide step={1} profileComplete={profileComplete} />
     <div className="flex min-h-screen min-h-[100dvh] items-start sm:items-center justify-center overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] lg:justify-start lg:pl-[6%] xl:pl-[12%]">
       <div className="ui-surface w-full max-w-lg rounded-3xl border border-border/80 bg-card/90 p-5 shadow-2xl backdrop-blur-xl sm:p-8">
         <div className="mb-6 flex items-center gap-3">
@@ -239,6 +238,8 @@ function OnboardingForm() {
             <p className="text-xs text-muted-foreground">Use your display name to finish setup and enter the NaliBase Plaza. You can add profile details later.</p>
           </div>
         </div>
+
+        <OnboardingNaliGuide />
 
         {returningToSetup && (
           <p className="mb-4 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2 text-sm">

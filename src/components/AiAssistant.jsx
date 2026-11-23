@@ -421,22 +421,20 @@ export default function AiAssistant() {
       // history, before dispatching this specific new request.
       pendingAssistantBaselineRef.current = captureReplyBaseline(messagesRef.current);
       dispatchStarted = true;
-      await sendAgentText(conv, text.trim());
-      if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current) throw staleIdentityError();
-      // Realtime may already have delivered the reply during the send call.
-      if (!sendInFlightRef.current) return;
-      // loading is cleared by the subscription when Nali's reply arrives,
-      // but set a safety timeout in case the subscription never fires
-      // (agent error, WebSocket drop, or very long tool call)
+      // Start the recovery clock *before* awaiting the server. A hanging
+      // invoke must not prevent a history-only reply check after one minute.
+      // Never retry the AI dispatch from this timer.
       if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
       loadingTimerRef.current = setTimeout(() => {
         loadingTimerRef.current = null;
         if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current) return;
-        // Share the guarded history-only refresh with the manual control.
-        // This prevents an overlapping fallback read from racing a newer reply.
         setReplyDelayed(true);
         void refreshPendingReply({ quiet: true });
       }, 60000);
+      await sendAgentText(conv, text.trim());
+      if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current) throw staleIdentityError();
+      // Realtime may already have delivered the reply during the send call.
+      if (!sendInFlightRef.current) return;
     } catch (err) {
       if (err?.code === "NALI_IDENTITY_CHANGED" || generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current) return;
       // The server explicitly says this request was reserved or dispatched.

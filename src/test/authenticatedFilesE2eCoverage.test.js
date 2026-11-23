@@ -8,7 +8,9 @@ describe('authenticated Files E2E coverage', () => {
     const e2e = await readFile('e2e/authenticated-smoke.spec.js', 'utf8');
     expect(files).toContain('data-testid="files-upload-input"');
     expect(e2e).toContain("uploads and surfaces a small file in Files");
-    expect(e2e).toContain("setInputFiles({");
+    expect(e2e).toContain('const uploadFile = {');
+    expect(e2e).toContain('mobileUpload.setInputFiles(uploadFile)');
+    expect(e2e).toContain("page.getByTestId('files-upload-input').setInputFiles(uploadFile)");
     expect(e2e).toContain("NaliChat production E2E upload check");
   });
 });

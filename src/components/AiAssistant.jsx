@@ -33,6 +33,7 @@ export default function AiAssistant() {
   const unsubRef = useRef(null);
   const spokenIdsRef = useRef(new Set());
   const currentAudioRef = useRef(null);
+  const recognitionRef = useRef(null);
   const loadingTimerRef = useRef(null);
   const identityGenerationRef = useRef(0);
 
@@ -55,6 +56,8 @@ export default function AiAssistant() {
       currentAudioRef.current = null;
     }
     spokenIdsRef.current.clear();
+    recognitionRef.current?.abort();
+    recognitionRef.current = null;
     setConversation(null);
     setMessages([]);
     setInput("");
@@ -158,8 +161,10 @@ export default function AiAssistant() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Clean up the conversation subscription and loading timer on unmount
+  // Clean up the conversation subscription, microphone, and loading timer on unmount
   useEffect(() => () => {
+    recognitionRef.current?.abort();
+    recognitionRef.current = null;
     unsubRef.current?.();
     if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
   }, []);
@@ -196,6 +201,15 @@ export default function AiAssistant() {
     spokenIdsRef.current.add(id);
     speakText(last.content);
   }, [messages, voiceEnabled]);
+
+  // Closing or minimizing must release the microphone immediately.
+  useEffect(() => {
+    if ((!open || minimized) && recognitionRef.current) {
+      recognitionRef.current.abort();
+      recognitionRef.current = null;
+      setIsListening(false);
+    }
+  }, [open, minimized]);
 
   // Stop voice when toggled off or panel closes
   useEffect(() => {
@@ -319,6 +333,9 @@ export default function AiAssistant() {
       }, 60000);
     } catch (err) {
       if (err?.code === "NALI_IDENTITY_CHANGED") return;
+      // Retain the unsent prompt so a temporary network failure does not
+      // force a mobile creator to retype a long idea.
+      setInput(current => current || text);
       console.error("Nali send error", err);
       if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
       setLoading(false);
@@ -347,26 +364,41 @@ export default function AiAssistant() {
       toast.error("Speech recognition is not supported in this browser.");
       return;
     }
-    if (isListening) return;
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      return;
+    }
 
     const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
     recognition.lang = navigator.language || 'en-US';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => setIsListening(true);
     recognition.onresult = (event) => {
+      if (recognitionRef.current !== recognition) return;
       const transcript = event.results[0][0].transcript;
       setInput((prev) => (prev ? prev + " " + transcript : transcript));
     };
     recognition.onerror = (event) => {
+      if (recognitionRef.current !== recognition) return;
       console.error("Speech recognition error", event.error);
-      setIsListening(false);
-      toast.error("Speech recognition error: " + event.error);
+      if (event.error !== "aborted" && event.error !== "no-speech") toast.error("Speech recognition error: " + event.error);
     };
-    recognition.onend = () => setIsListening(false);
+    recognition.onend = () => {
+      if (recognitionRef.current !== recognition) return;
+      recognitionRef.current = null;
+      setIsListening(false);
+    };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch {
+      recognitionRef.current = null;
+      setIsListening(false);
+      toast.error("Microphone could not start. Check browser permissions and try again.");
+    }
   };
 
   if (assistantOwnerKey !== identityKey) return null;
@@ -539,7 +571,8 @@ export default function AiAssistant() {
                   <button
                     onClick={handleMicClick}
                     title="Voice Input"
-                    aria-label="Voice input"
+                    aria-label={isListening ? "Stop voice input" : "Voice input"}
+                    aria-pressed={isListening}
                     className={cn(
                       "absolute right-1 top-1/2 -translate-y-1/2 min-h-11 min-w-11 flex items-center justify-center rounded-lg transition-colors",
                       isListening ? "text-red-500 bg-red-500/10 animate-pulse" : "text-muted-foreground hover:text-primary hover:bg-primary/10"

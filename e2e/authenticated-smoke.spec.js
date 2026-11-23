@@ -83,12 +83,20 @@ test.describe('authenticated production smoke', () => {
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/files');
 
     const fileName = `e2e-${Date.now()}.txt`;
-    await page.getByRole('button', { name: /upload/i }).first().click();
-    await page.getByTestId('files-upload-input').setInputFiles({
+    const uploadFile = {
       name: fileName,
       mimeType: 'text/plain',
       buffer: Buffer.from('NaliChat production E2E upload check'),
-    });
+    };
+    // Phones use the native file picker directly. Desktop still uses the
+    // upload dialog, so exercise the actual visible workflow on each viewport.
+    const mobileUpload = page.getByLabel('Choose files to upload');
+    if (await mobileUpload.isVisible()) {
+      await mobileUpload.setInputFiles(uploadFile);
+    } else {
+      await page.getByRole('button', { name: 'Upload files' }).click();
+      await page.getByTestId('files-upload-input').setInputFiles(uploadFile);
+    }
 
     try {
       await expect(page.getByText(fileName, { exact: false })).toBeVisible({ timeout: 30000 });

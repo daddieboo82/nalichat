@@ -74,6 +74,7 @@ vi.mock('framer-motion', () => ({
     ),
   }),
   AnimatePresence: ({ children }) => <>{children}</>,
+  useReducedMotion: () => false,
 }));
 vi.mock('@/components/layout/PullToRefresh', () => ({
   default: ({ children }) => <div>{children}</div>,

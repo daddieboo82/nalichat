@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
-import { countAssistantReplies, hasReplySince } from '@/lib/naliReplyStatus';
+import { captureReplyBaseline, countAssistantReplies, hasReplySince } from '@/lib/naliReplyStatus';
 
 const history = [
   { role: 'user', content: 'Old question' },
@@ -22,9 +22,18 @@ describe('NALI.ai pending reply completion', () => {
     expect(hasReplySince(messages, null)).toBe(false);
     expect(hasReplySince(undefined, baseline)).toBe(false);
   });
+  it('does not confuse a late prior answer with the new request', () => {
+    const before = [{ id: 'u1', role: 'user', content: 'Earlier question' }, { id: 'a1', role: 'assistant', content: '' }];
+    const baseline = captureReplyBaseline(before);
+    const oldFinished = [before[0], { id: 'a1', role: 'assistant', content: 'Old answer arrived late' }];
+    expect(hasReplySince(oldFinished, baseline)).toBe(false);
+    const newUser = [...oldFinished, { id: 'u2', role: 'user', content: 'New question' }];
+    expect(hasReplySince(newUser, baseline)).toBe(false);
+    expect(hasReplySince([...newUser, { id: 'a2', role: 'assistant', content: 'New answer' }], baseline)).toBe(true);
+  });
   it('sets a baseline after restoring history and clears it on identity changes and failures', async () => {
     const code = await readFile('src/components/AiAssistant.jsx', 'utf8');
-    expect(code.indexOf('if (!conv) conv = await initConversation();')).toBeLessThan(code.indexOf('pendingAssistantBaselineRef.current = countAssistantReplies(messagesRef.current);'));
+    expect(code.indexOf('if (!conv) conv = await initConversation();')).toBeLessThan(code.indexOf('pendingAssistantBaselineRef.current = captureReplyBaseline(messagesRef.current);'));
     expect(code).toContain('if (sendInFlightRef.current && hasReplySince(msgs, pendingAssistantBaselineRef.current))');
     expect(code).toContain('void refreshPendingReply({ quiet: true });');
     expect(code).toContain('if (hasReplySince(received, pendingAssistantBaselineRef.current))');

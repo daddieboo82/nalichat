@@ -26,6 +26,8 @@ describe('NALI.ai verified agent-tier continuity', () => {
     const source = await readFile('src/components/AiAssistant.jsx', 'utf8');
     expect(source).toContain('resolveNaliAgentTier({');
     expect(source).toContain('const agentName = selectedAgent.agentName;');
+    expect(source).toContain('Your creator copilot · {agentName === "studio_ai_plus" ? "Plus" : "Premium"}');
+    expect(source).not.toContain('Your creator copilot · {canUseBestModel ? "Plus" : "Premium"}');
     expect(source).toContain('if (subscriptionLoading || subscriptionError || !canUseAi) {');
     expect(source).toContain('const identityKey = user?.id ? `${user.id}:${agentName}` : null;');
   });

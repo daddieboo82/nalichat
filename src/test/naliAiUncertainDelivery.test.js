@@ -16,11 +16,15 @@ describe('NALI.ai uncertain delivery safety', () => {
     expect(isUncertainAiDelivery({ response: { status: 403, data: { code: 'AI_NOT_ENTITLED' } } })).toBe(false);
     expect(isUncertainAiDelivery({ response: { status: 413 } })).toBe(false);
     expect(isUncertainAiDelivery({ response: { status: 400 } })).toBe(false);
+    expect(isUncertainAiDelivery({ response: { status: 429 } })).toBe(false);
+    expect(isUncertainAiDelivery({ status: 429 })).toBe(false);
+    expect(isUncertainAiDelivery({ response: { status: 408 } })).toBe(true);
   });
   it('keeps uncertain requests pending only once dispatch has begun', async () => {
     const source = await readFile('src/components/AiAssistant.jsx', 'utf8');
     expect(source).toContain('let dispatchStarted = false;');
     expect(source).toContain('dispatchStarted = true;');
+    expect(source).toContain('error.status = response.status || response.data.status;');
     expect(source).toContain('if (dispatchStarted && isUncertainAiDelivery(err)) {');
     expect(source).toContain('void refreshPendingReply({ quiet: true });');
     expect(source).toContain('if (!preserveDraft) setInput(current => current || text);');

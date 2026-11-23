@@ -17,8 +17,10 @@ async function signIn(page, email, password) {
 test('private listening room admits invited user and rejects uninvited user', async ({ browser }, testInfo) => {
   test.skip(!firstEmail || !firstPassword || !secondEmail || !secondPassword, 'Protected two-user E2E credentials required.');
 
-  const hostContext = await browser.newContext();
-  const guestContext = await browser.newContext();
+  const isPhone = ['mobile-chromium', 'iphone-16-simulation'].includes(testInfo.project.name);
+  const deviceOptions = isPhone ? { viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true } : {};
+  const hostContext = await browser.newContext(deviceOptions);
+  const guestContext = await browser.newContext(deviceOptions);
   const host = await hostContext.newPage();
   const guest = await guestContext.newPage();
   try {
@@ -33,7 +35,6 @@ test('private listening room admits invited user and rejects uninvited user', as
     await host.getByLabel('Meeting type').selectOption('listening');
     await host.getByLabel('Artist name').fill('Test Artist');
     await host.getByRole('button', { name: 'Create meeting' }).click();
-    const isPhone = ['mobile-chromium', 'iphone-16-simulation'].includes(testInfo.project.name);
     let invite;
     if (isPhone) {
       await expect.poll(() => new URL(host.url()).pathname).toMatch(/^\/meetings\/[a-z0-9_-]+$/i);

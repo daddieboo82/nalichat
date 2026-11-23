@@ -14,5 +14,8 @@ describe('production deploy fingerprint', () => {
     expect(pkg.scripts['verify:prod']).toBe('node scripts/verify-production-deploy.mjs');
     expect(verifier).toContain('Production drift detected');
     expect(verifier).toContain('deploy_check');
+    expect(verifier).toContain('const deployedSha = bundle.match(');
+    expect(verifier).toContain('deployedSha.toLowerCase() !== expectedSha.toLowerCase()');
+    expect(verifier).toContain('Live commit ${deployedSha}; expected commit ${expectedSha}');
   });
 });

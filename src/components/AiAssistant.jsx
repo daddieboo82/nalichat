@@ -45,6 +45,7 @@ export default function AiAssistant() {
   const sendInFlightRef = useRef(false);
   const messagesRef = useRef([]);
   const pendingAssistantBaselineRef = useRef(null);
+  const sendSequenceRef = useRef(0);
   const replyRefreshInFlightRef = useRef(false);
   const lastReplyRefreshAtRef = useRef(0);
 
@@ -87,6 +88,7 @@ export default function AiAssistant() {
     sendInFlightRef.current = false;
     messagesRef.current = [];
     pendingAssistantBaselineRef.current = null;
+    sendSequenceRef.current += 1;
     replyRefreshInFlightRef.current = false;
     lastReplyRefreshAtRef.current = 0;
     unsubRef.current?.();
@@ -375,6 +377,7 @@ export default function AiAssistant() {
     if (!text?.trim() || sendInFlightRef.current) return;
     sendInFlightRef.current = true;
     pendingAssistantBaselineRef.current = null;
+    const requestSequence = ++sendSequenceRef.current;
     const generation = identityGenerationRef.current;
     if (!preserveDraft) setInput("");
     setSendError(null);
@@ -396,10 +399,10 @@ export default function AiAssistant() {
       if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
       loadingTimerRef.current = setTimeout(async () => {
         loadingTimerRef.current = null;
-        if (generation !== identityGenerationRef.current) return;
+        if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current) return;
         try {
           const fresh = await base44.agents.getConversation(conv.id);
-          if (generation !== identityGenerationRef.current) return;
+          if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current) return;
           const freshMessages = preferCurrentConversationMessages(messagesRef.current, fresh?.messages);
           messagesRef.current = freshMessages;
           setMessages(freshMessages);
@@ -411,6 +414,7 @@ export default function AiAssistant() {
           }
           toast.info("Nali is still working on that request. I'll show the reply as soon as it arrives.");
         } catch (refreshError) {
+          if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current) return;
           console.error("Nali conversation refresh error", refreshError);
           toast.info("Nali is still working, but the live connection was interrupted. Reopen the assistant to refresh.");
         }
@@ -438,6 +442,7 @@ export default function AiAssistant() {
     const conv = conversationRef.current;
     if (!conv?.id || !sendInFlightRef.current || replyRefreshInFlightRef.current) return;
     const generation = identityGenerationRef.current;
+    const requestSequence = sendSequenceRef.current;
     const now = Date.now();
     // Reconnect and visibility events can fire together. Avoid overlapping
     // reads and repeated network fetches; no new AI request is dispatched.
@@ -446,7 +451,7 @@ export default function AiAssistant() {
     replyRefreshInFlightRef.current = true;
     try {
       const fresh = await base44.agents.getConversation(conv.id);
-      if (generation !== identityGenerationRef.current || conversationRef.current?.id !== conv.id) return;
+      if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current || conversationRef.current?.id !== conv.id) return;
       const received = preferCurrentConversationMessages(messagesRef.current, fresh?.messages);
       messagesRef.current = received;
       setMessages(received);
@@ -459,7 +464,7 @@ export default function AiAssistant() {
         toast.info('No new reply yet. Nali may still be processing your request.');
       }
     } catch {
-      if (generation === identityGenerationRef.current && !quiet) {
+      if (generation === identityGenerationRef.current && requestSequence === sendSequenceRef.current && sendInFlightRef.current && !quiet) {
         toast.error('Could not refresh the conversation. Try again shortly.');
       }
     } finally {

@@ -76,6 +76,7 @@ export default function BattleLobby() {
   const liveBattles = publicBattles.filter(battle => ['live', 'voting'].includes(battle.status));
   const myBattles = mine.filter(battle => battle.status !== 'cancelled');
   const invitations = invites.filter(battle => battle.status !== 'cancelled');
+  const pendingInvitations = invitations.filter(battle => battle.status === 'invited');
   const emptyText = loaded ? 'No live battles right now.' : error ? 'Live battles are unavailable.' : 'Loading live battles…';
 
   return <main className="h-full overflow-y-auto bg-background px-4 pt-5 pb-28 text-foreground"><div className="mx-auto max-w-5xl">
@@ -87,17 +88,23 @@ export default function BattleLobby() {
       <Link to="/battles/new" className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-primary px-4 font-semibold text-primary-foreground hover:bg-primary/90">Create a battle</Link>
     </header>
     {error && <p role="alert" className="mt-4 rounded-xl bg-destructive/15 p-3 text-destructive">{error}</p>}
-    <section className="mt-8"><h2 className="text-xl font-bold">Live now</h2><div className="mt-3 grid gap-3 sm:grid-cols-2">{liveBattles.map(b =>
+    <nav aria-label="Battle Arena sections" className="mt-4 flex flex-wrap gap-2">
+      <a href="#arena-live" className="inline-flex min-h-11 items-center rounded-xl border border-border bg-card px-3 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-primary">Live now{liveBattles.length ? ` (${liveBattles.length})` : ''}</a>
+      <a href="#arena-mine" className="inline-flex min-h-11 items-center rounded-xl border border-border bg-card px-3 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-primary">My battles{myBattles.length ? ` (${myBattles.length})` : ''}</a>
+      <a href="#arena-invites" className={`inline-flex min-h-11 items-center rounded-xl border px-3 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-primary ${pendingInvitations.length ? 'border-primary/60 bg-primary/15 text-foreground' : 'border-border bg-card'}`}>Invitations{pendingInvitations.length ? ` (${pendingInvitations.length} new)` : ''}</a>
+    </nav>
+    {pendingInvitations.length > 0 && <a href="#arena-invites" className="mt-3 flex min-h-12 items-center justify-between gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-foreground focus-visible:ring-2 focus-visible:ring-primary"><span>You have {pendingInvitations.length} battle invitation{pendingInvitations.length === 1 ? '' : 's'} to review</span><span aria-hidden="true">↓</span></a>}
+    <section id="arena-live" className="mt-6 scroll-mt-5"><h2 className="text-xl font-bold">Live now</h2><div className="mt-3 grid gap-3 sm:grid-cols-2">{liveBattles.map(b =>
       <article key={b.id} className="rounded-xl border border-fuchsia-400/30 bg-fuchsia-950/20 p-4"><p className="font-bold">{b.title}</p><p className="text-sm capitalize">{b.category} · {b.status}</p><Link className="mt-3 inline-flex items-center min-h-11 rounded-xl bg-primary px-4 py-2 text-primary-foreground font-bold" to={'/battles/' + b.id}>Watch battle</Link></article>)}
       {!liveBattles.length && <p className="text-sm text-muted-foreground">{emptyText}</p>}</div></section>
-    <section className="mt-8"><h2 className="text-xl font-bold">Your battles</h2><div className="mt-3 grid gap-3 sm:grid-cols-2">{myBattles.map(b =>
+    <section id="arena-mine" className="mt-8 scroll-mt-5"><h2 className="text-xl font-bold">Your battles</h2><div className="mt-3 grid gap-3 sm:grid-cols-2">{myBattles.map(b =>
       <article key={b.id} ref={b.id === draftId ? draftCard : null} tabIndex={b.id === draftId ? -1 : undefined} className="min-w-0 rounded-xl border border-border bg-card/60 p-4 focus-visible:ring-2 focus-visible:ring-primary"><p className="break-words font-bold">{b.title}</p><p className="mb-3 text-sm capitalize text-muted-foreground">{b.category} · {b.status}</p>
         {b.status === 'draft' && <><label className="block text-sm">Invite an artist<select value={selected[b.id] || ''} onChange={e => setSelected(v => ({...v,[b.id]:e.target.value}))} className="mt-1 min-h-11 w-full min-w-0 rounded-xl bg-secondary px-3"><option value="">Choose an artist</option>{users.map(u => <option key={u.id} value={u.id}>{u.display_name || u.id}</option>)}</select></label><button disabled={!selected[b.id] || busy === b.id} onClick={() => act(b.id,'invite')} className="mt-3 min-h-11 rounded-xl bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50">Send invitation</button></>}
         {b.status === 'invited' && <p className="text-sm text-amber-300">Waiting for the invited artist to accept.</p>}
         {b.status === 'ready' && <button disabled={busy === b.id} onClick={() => act(b.id,'start')} className="min-h-11 rounded-xl bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50">Start live room</button>}
         {['live','voting','completed'].includes(b.status) && <button onClick={() => navigate('/battles/' + b.id)} className="min-h-11 rounded-xl bg-primary px-4 py-2 text-primary-foreground">Enter battle</button>}
       </article>)}{loaded && !myBattles.length && <p className="text-sm text-muted-foreground">Your battles will appear here.</p>}</div></section>
-    <section className="mt-8"><h2 className="text-xl font-bold">Invitations</h2><div className="mt-3 grid gap-3 sm:grid-cols-2">{invitations.map(b =>
+    <section id="arena-invites" className="mt-8 scroll-mt-5"><h2 className="text-xl font-bold">Invitations</h2><div className="mt-3 grid gap-3 sm:grid-cols-2">{invitations.map(b =>
       <article key={b.id} className="rounded-xl border border-border bg-card/60 p-4"><p className="font-bold">{b.title}</p><p className="text-sm capitalize text-muted-foreground">{b.category} · {b.status}</p>
         {['invited','ready'].includes(b.status) && <div className="mt-3"><label className="text-sm">Your battle track (optional, 50 MB maximum)<input type="file" accept="audio/*" onChange={e => setOpponentFile(v => ({...v,[b.id]:e.target.files?.[0]}))} className="mt-2 block w-full" /></label><label className="mt-2 flex gap-2 text-sm"><input type="checkbox" checked={!!rights[b.id]} onChange={e => setRights(v => ({...v,[b.id]:e.target.checked}))} />I have permission to use this track.</label>{opponentFile[b.id] && <button disabled={!rights[b.id] || busy === b.id} onClick={() => upload(b.id)} className="mt-2 rounded-lg border px-4 py-2 disabled:opacity-50">Upload my track</button>}</div>}
         {b.status === 'invited' && <div className="mt-3 flex flex-wrap gap-2"><button disabled={busy === b.id} onClick={() => act(b.id,'accept')} className="min-h-11 rounded-xl bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50">Accept battle</button><button disabled={busy === b.id} onClick={() => act(b.id,'decline')} className="min-h-11 rounded-xl border border-border px-4 py-2 disabled:opacity-50">Decline</button></div>}

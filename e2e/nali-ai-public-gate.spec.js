@@ -10,6 +10,25 @@ test.describe('NALI.ai anonymous access gate', () => {
     await expect(page.locator('input[type="email"]')).toBeVisible();
   });
 
+  test('NALI.ai Premium signup leaves payment and AI dispatch untouched', async ({ page }) => {
+    const protectedRequests = [];
+    page.on('request', request => {
+      if (/sendAgentMessage|createPayPalSubscription/.test(request.url())) protectedRequests.push(request.url());
+    });
+    await page.goto('/pricing?source=nali-ai-access-audit');
+    await expect(page.getByText('NALI.ai', { exact: true }).first()).toBeVisible();
+    const premium = page.locator('#premium-plan');
+    await expect(premium).toBeVisible();
+    await premium.getByRole('button', { name: /sign up for premium/i }).click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/register');
+    const returnTo = new URL(page.url()).searchParams.get('returnTo');
+    const destination = new URL(returnTo, page.url());
+    expect(destination.pathname).toBe('/pricing');
+    expect(destination.searchParams.get('source')).toBe('nali-ai-access-audit');
+    expect(destination.searchParams.get('plan')).toBe('premium');
+    expect(protectedRequests).toEqual([]);
+  });
+
   test('anonymous assistant events never dispatch an AI request', async ({ page }) => {
     const aiRequests = [];
     page.on('request', (request) => {

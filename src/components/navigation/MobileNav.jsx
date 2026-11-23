@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Grid3x3 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
 import { PRIMARY_TABS, SECONDARY_PATHS, mobileSectionPath } from "@/lib/navigationConfig";
 
@@ -12,12 +12,13 @@ const TABS = [...PRIMARY_TABS, { icon: Grid3x3, label: "More", path: "__more__" 
 function getActiveTab(pathname) {
   const section = mobileSectionPath(pathname);
   if (PRIMARY_TABS.some(tab => tab.path === section)) return section;
-  return SECONDARY_PATHS.has(section) ? "__more__" : null;
+  return SECONDARY_PATHS.has(section) || SECONDARY_PATHS.has(pathname) ? "__more__" : null;
 }
 
 export default function MobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const reduceMotion = useReducedMotion();
   const path = location.pathname;
 
   const activeTab = getActiveTab(path);
@@ -31,7 +32,7 @@ export default function MobileNav() {
     if (tabPath === path) {
       // Tapping the active tab scrolls to top
       const scroller = document.querySelector("main");
-      scroller?.scrollTo?.({ top: 0, behavior: "smooth" });
+      scroller?.scrollTo?.({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
       return;
     }
     navigate(tabPath);
@@ -39,7 +40,7 @@ export default function MobileNav() {
 
   return (
     <nav
-      aria-label="Primary"
+      aria-label="Mobile primary navigation"
       className="nali-nav-chrome lg:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-card/90 backdrop-blur-md select-none"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
@@ -55,7 +56,7 @@ export default function MobileNav() {
               aria-current={active ? "page" : undefined}
               aria-label={label}
               className={cn(
-                "relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 select-none transition-colors active:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                "relative flex-1 min-h-12 min-w-0 flex flex-col items-center justify-center gap-0.5 py-2 select-none touch-manipulation transition-colors active:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 active ? "text-foreground" : "text-muted-foreground",
                 isMore && !active && "text-primary"
               )}
@@ -64,13 +65,13 @@ export default function MobileNav() {
                 <motion.div
                   layoutId="mobileNavPill"
                   className="absolute inset-x-2 top-1 bottom-1 rounded-2xl bg-primary/10 border border-primary/20"
-                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 32 }}
                 />
               )}
               <motion.div
                 className="relative z-10"
-                animate={active ? { scale: [1, 1.25, 1.1], y: [0, -3, 0] } : { scale: 1, y: 0 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
+                animate={reduceMotion ? { scale: 1, y: 0 } : active ? { scale: [1, 1.25, 1.1], y: [0, -3, 0] } : { scale: 1, y: 0 }}
+                transition={{ duration: reduceMotion ? 0 : 0.35, ease: "easeOut" }}
               >
                 <Icon className="w-5 h-5" />
               </motion.div>

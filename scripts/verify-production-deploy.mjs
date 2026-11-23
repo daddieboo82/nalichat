@@ -28,9 +28,19 @@ async function main() {
   }
   const bundle = await assetResponse.text();
 
-  if (!bundle.includes(expectedSha)) {
-    console.error(`Production drift detected. Expected commit ${expectedSha}, but ${assetUrl.pathname} does not contain that build fingerprint.`);
-    process.exit(1);
+  // The entry point exposes its SHA as document.documentElement.dataset.naliBuild.
+  // Read that exact assignment rather than matching a SHA anywhere in the
+  // bundle, where unrelated strings could produce a false success.
+  const deployedSha = bundle.match(/document\.documentElement\.dataset\.naliBuild\s*=\s*["']([0-9a-f]{40})["']/i)?.[1];
+  if (!deployedSha) {
+    console.error(`Production verification blocked: ${assetUrl.pathname} has no recognizable NaliChat build fingerprint.`);
+    process.exitCode = 1;
+    return;
+  }
+  if (deployedSha.toLowerCase() !== expectedSha.toLowerCase()) {
+    console.error(`Production drift detected. Live commit ${deployedSha}; expected commit ${expectedSha}. Bundle: ${assetUrl.pathname}.`);
+    process.exitCode = 1;
+    return;
   }
 
   console.log(`Production matches commit ${expectedSha} (${assetUrl.pathname}).`);

@@ -274,6 +274,23 @@ describe('home, navigation, and recovery flows', () => {
     expect(active[0].textContent).toContain(label);
   });
 
+  it('finds features by name or description and opens the selected page', async () => {
+    renderWithProviders(<Routes>
+      <Route path="/" element={<MobileHeader />} />
+      <Route path="/files" element={<div>File vault opened</div>} />
+    </Routes>);
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+    const search = screen.getByRole('searchbox', { name: 'Find a feature' });
+    fireEvent.change(search, { target: { value: ' QUICK RECORD ' } });
+    expect(screen.getByRole('button', { name: /Quick Record/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Files Your file/ })).toBeNull();
+    fireEvent.change(search, { target: { value: 'zzzzzz' } });
+    expect(screen.getByText('No matching features.')).toBeTruthy();
+    fireEvent.change(search, { target: { value: 'transfers' } });
+    fireEvent.click(screen.getByRole('button', { name: /Files Your file/ }));
+    await screen.findByText('File vault opened');
+  });
+
   it('shows the mobile header menu and anonymous login affordance', async () => {
     renderWithProviders(
       <Routes>

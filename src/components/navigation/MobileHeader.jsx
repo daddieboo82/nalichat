@@ -57,6 +57,18 @@ export default function MobileHeader() {
   const { subscription, hasPaidAccess, isLoading: subscriptionLoading, isError: subscriptionError } = useSubscription();
   const billingReviewNeeded = subscriptionError || subscription.hasPending;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [featureSearch, setFeatureSearch] = useState("");
+  const menuTitle = useRef(null);
+  const query = featureSearch.trim().toLowerCase();
+  const visibleGroups = query ? NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => `${item.label} ${item.desc}`.toLowerCase().includes(query)),
+  })).filter(group => group.items.length) : NAV_GROUPS;
+
+  useEffect(() => {
+    if (!menuOpen) setFeatureSearch("");
+  }, [menuOpen]);
+
   const lastUserIdRef = useRef(user?.id || null);
 
   // "More" tab in the bottom bar dispatches this event to open the menu.
@@ -181,17 +193,20 @@ export default function MobileHeader() {
 
       {/* Full Feature Menu Sheet */}
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-        <SheetContent side="left" className="w-[88vw] max-w-[380px] overflow-y-auto border-r border-white/[0.08] bg-card/97 p-0 backdrop-blur-xl sm:max-w-sm">
+        <SheetContent onOpenAutoFocus={event => { event.preventDefault(); menuTitle.current?.focus(); }} side="left" className="w-[88vw] max-w-[380px] overflow-y-auto border-r border-white/[0.08] bg-card/97 p-0 backdrop-blur-xl sm:max-w-sm">
           <SheetHeader className="p-4 pb-2 border-b border-white/[0.06]">
             <SheetTitle className="flex items-center gap-2">
               <Logo size={30} />
-              <span className="font-heading font-extrabold text-gradient-animate tracking-tight">NaliBase</span>
+              <span ref={menuTitle} tabIndex={-1} className="font-heading font-extrabold text-gradient-animate tracking-tight">NaliBase</span>
             </SheetTitle>
             <SheetDescription className="sr-only">NaliBase features and account navigation</SheetDescription>
           </SheetHeader>
 
           <div className="p-4 space-y-5">
-            {!isAuthenticated && (
+            <input type="search" aria-label="Find a feature" placeholder="Find a feature"
+              value={featureSearch} onChange={event => setFeatureSearch(event.target.value)}
+              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-base text-foreground focus-visible:ring-2 focus-visible:ring-primary" />
+            {!query && !isAuthenticated && (
               <button
                 onClick={() => {
                   trackProductEvent("upgrade_click", { source: "mobile_menu_premium", cta: "compare_premium" });
@@ -210,10 +225,11 @@ export default function MobileHeader() {
             )}
 
             {/* Recently Visited */}
-            <RecentlyVisited recent={recent} titles={TITLES} onNavigate={handleNavigate} currentPath={path} />
+            {!query && <RecentlyVisited recent={recent} titles={TITLES} onNavigate={handleNavigate} currentPath={path} />}
 
             {/* Feature categories — clear, direct links with descriptions */}
-            {NAV_GROUPS.map((group) => (
+            {visibleGroups.length === 0 && <p role="status" className="text-sm text-muted-foreground">No matching features.</p>}
+            {visibleGroups.map((group) => (
               <div key={group.label}>
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2 px-1">
                   {group.label}

@@ -469,23 +469,22 @@ export default function AiAssistant() {
     // Keep an earlier restore failure visible and sending blocked until
     // bindConversation confirms a usable conversation. Reopening is not proof
     // that the saved conversation has recovered.
-    if (!conversationRef.current) {
-      // A contextual greeting uses the same guarded send path. Opening Nali
-      // without a greeting creates/restores a chat but spends no AI request.
-      if (greeting) await sendText(greeting, { preserveDraft: true });
-      else {
-        const generation = identityGenerationRef.current;
-        setRestorePending(true);
-        try {
-          await initConversation();
-        } catch (error) {
-          if (generation !== identityGenerationRef.current || error?.code === "NALI_IDENTITY_CHANGED") return;
-          console.warn("Nali conversation restore unavailable:", error);
-          setRestoreError(true);
-          return;
-        } finally {
-          if (generation === identityGenerationRef.current) setRestorePending(false);
-        }
+    // Contextual help must reach an already-open conversation too. All
+    // prompts use the guarded sender; opening without one never spends AI.
+    if (greeting) {
+      await sendText(greeting, { preserveDraft: true });
+    } else if (!conversationRef.current) {
+      const generation = identityGenerationRef.current;
+      setRestorePending(true);
+      try {
+        await initConversation();
+      } catch (error) {
+        if (generation !== identityGenerationRef.current || error?.code === "NALI_IDENTITY_CHANGED") return;
+        console.warn("Nali conversation restore unavailable:", error);
+        setRestoreError(true);
+        return;
+      } finally {
+        if (generation === identityGenerationRef.current) setRestorePending(false);
       }
     }
     setTimeout(() => inputRef.current?.focus(), 100);

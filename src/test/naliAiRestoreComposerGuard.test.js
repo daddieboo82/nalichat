@@ -8,7 +8,8 @@ describe('NALI.ai restore composer safeguards', () => {
   it('blocks message dispatch on a known failed restore while retaining drafts', async () => {
     const source = await read();
     const send = source.slice(source.indexOf('const sendText = async'), source.indexOf('// Refresh authoritative conversation history'));
-    const guard = send.indexOf('if (!conversationRef.current && (restorePending || restoreError)) {');
+    const guard = send.indexOf('if (!conversationRef.current && (conversationRestoring || restoreError)) {');
+    expect(send).toContain('const conversationRestoring = !conversationRef.current && (restorePending || Boolean(conversationInitRef.current));');
     expect(guard).toBeGreaterThan(0);
     expect(guard).toBeLessThan(send.indexOf('sendInFlightRef.current = true;'));
     expect(send.slice(guard, send.indexOf('if (subscriptionLoading', guard))).toContain('return;');

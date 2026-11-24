@@ -12,7 +12,7 @@ describe('NALI.ai recoverable conversation open UI', () => {
     expect(open).toContain('await initConversation();');
     expect(open).toContain('if (generation !== identityGenerationRef.current || error?.code === "NALI_IDENTITY_CHANGED") return;');
     expect(open).toContain('setRestoreError(true);');
-    expect(code).toContain("Couldn't load your saved NALI.ai conversation. Your history is preserved.");
+    expect(code).toContain("Couldn't load your saved NALI.ai conversation. Your history is preserved. Retry before sending; your draft stays here.");
     expect(code).toContain('onClick={() => void openChat()}');
     expect(code).toContain("{restorePending ? 'Restoring…' : 'Retry conversation'}</button>");
     expect(code).toContain('disabled={restorePending}');

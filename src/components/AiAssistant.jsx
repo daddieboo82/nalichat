@@ -396,7 +396,7 @@ export default function AiAssistant() {
       try {
         const savedId = sessionStorage.getItem(conversationStorageKey);
         if (savedId) {
-          const restored = await base44.agents.getConversation(savedId);
+          const restored = await withNaliHistoryTimeout(base44.agents.getConversation(savedId));
           if (generation !== identityGenerationRef.current) throw staleIdentityError();
           if (restored?.id && (!restored.created_by_id || restored.created_by_id === user?.id)) {
             return bindConversation(restored, generation);
@@ -404,7 +404,15 @@ export default function AiAssistant() {
         }
       } catch (error) {
         if (error?.code === "NALI_IDENTITY_CHANGED") throw error;
-        console.warn("Nali conversation restore failed:", error);
+        // A network outage or stalled history lookup is not proof that the
+        // saved conversation was deleted. Keep its ID and allow a later retry,
+        // rather than silently creating a separate conversation.
+        const status = Number(error?.response?.status || error?.status || error?.statusCode);
+        if (status !== 404 && status !== 410) {
+          console.warn("Nali conversation restore is temporarily unavailable:", error);
+          throw error;
+        }
+        console.warn("Nali saved conversation is no longer available:", error);
       }
       if (generation !== identityGenerationRef.current) throw staleIdentityError();
       try { sessionStorage.removeItem(conversationStorageKey); } catch {}

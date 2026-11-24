@@ -604,6 +604,7 @@ export default function AiAssistant() {
       // Retain the unsent prompt so a temporary network failure does not
       // force a mobile creator to retype a long idea.
       if (!preserveDraft) setInput(current => current || text);
+      else keepContextPrompt(text);
       console.error("Nali send error", err);
       if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
       pendingAssistantBaselineRef.current = null;
@@ -615,12 +616,8 @@ export default function AiAssistant() {
       setReplyDelayed(false);
       if (!dispatchStarted && !conv) {
         // Conversation initialization failed before any AI request was sent.
-        // Preserve contextual prompts that were not typed into the composer,
-        // without replacing a draft the creator has already started.
-        if (preserveDraft) {
-          keepContextPrompt(text);
-        }
-        // Route all entry points through the same safe restore/retry UI.
+        // The unsent prompt was preserved above. Route all entry points
+        // through the same safe restore/retry UI.
         setRestoreError(true);
         setSendError(null);
       } else {

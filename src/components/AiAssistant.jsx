@@ -32,7 +32,7 @@ export default function AiAssistant() {
   const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [contextPrompt, setContextPrompt] = useState(null);
+  const [contextPrompts, setContextPrompts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sendError, setSendError] = useState(null);
   const [restoreError, setRestoreError] = useState(false);
@@ -135,7 +135,7 @@ export default function AiAssistant() {
     setConversation(null);
     setMessages([]);
     setInput("");
-    setContextPrompt(null);
+    setContextPrompts([]);
     setLoading(false);
     setSendError(null);
     setRestoreError(false);
@@ -492,6 +492,13 @@ export default function AiAssistant() {
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
+  const keepContextPrompt = (text) => {
+    // Queue distinct suggestions rather than replacing an earlier prompt.
+    // The user chooses whether to use one; this never sends an AI request.
+    setContextPrompts(current => current.includes(text) ? current : [...current, text]);
+    setInput(current => current || text);
+  };
+
   const sendText = async (text, { preserveDraft = false } = {}) => {
     if (!text?.trim()) return;
     if (sendInFlightRef.current) {
@@ -499,8 +506,7 @@ export default function AiAssistant() {
       // Keep the new idea editable without dispatching a second AI request
       // or overwriting the creator's existing composer draft.
       if (preserveDraft) {
-        setContextPrompt(text);
-        setInput(current => current || text);
+        keepContextPrompt(text);
       }
       return;
     }
@@ -514,8 +520,7 @@ export default function AiAssistant() {
       // this composer. Preserve it as a draft only when no draft exists.
       // Never auto-dispatch it after a restore retry.
       if (preserveDraft) {
-        setContextPrompt(text);
-        setInput(current => current || text);
+        keepContextPrompt(text);
       }
       toast.info(conversationRestoring ? 'Your NALI.ai conversation is still restoring.' : 'Restore your saved NALI.ai conversation before sending.');
       return;
@@ -589,8 +594,7 @@ export default function AiAssistant() {
         // Preserve contextual prompts that were not typed into the composer,
         // without replacing a draft the creator has already started.
         if (preserveDraft) {
-          setContextPrompt(text);
-          setInput(current => current || text);
+          keepContextPrompt(text);
         }
         // Route all entry points through the same safe restore/retry UI.
         setRestoreError(true);
@@ -927,13 +931,19 @@ export default function AiAssistant() {
               )}
               {/* Keep a contextual suggestion accessible if an existing draft
                   occupied the composer when it arrived. Never auto-send it. */}
-              {contextPrompt && contextPrompt !== input && (
-                <div role="status" className="shrink-0 border-t border-primary/20 bg-primary/5 px-3 py-2 text-xs text-foreground">
-                  <p className="font-semibold">Contextual prompt available</p>
-                  <p className="mt-1 max-h-16 overflow-y-auto break-words text-muted-foreground">{contextPrompt}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button type="button" onClick={() => { setInput(contextPrompt); setContextPrompt(null); inputRef.current?.focus(); }} className="min-h-11 rounded-lg border border-primary/30 px-3 font-semibold hover:bg-primary/10">Use prompt</button>
-                    <button type="button" onClick={() => setContextPrompt(null)} className="min-h-11 rounded-lg border border-border px-3 hover:bg-secondary">Dismiss</button>
+              {contextPrompts.some(prompt => prompt !== input) && (
+                <div role="region" aria-label="Pending NALI.ai prompts" className="shrink-0 border-t border-primary/20 bg-primary/5 px-3 py-2 text-xs text-foreground">
+                  <p className="font-semibold">Pending contextual prompts</p>
+                  <div className="mt-2 max-h-44 space-y-2 overflow-y-auto">
+                    {contextPrompts.filter(prompt => prompt !== input).map(prompt => (
+                      <div key={prompt} className="rounded-lg border border-border/60 p-2">
+                        <p className="break-words text-muted-foreground">{prompt}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <button type="button" onClick={() => { setInput(prompt); setContextPrompts(current => current.filter(item => item !== prompt)); inputRef.current?.focus(); }} className="min-h-11 rounded-lg border border-primary/30 px-3 font-semibold hover:bg-primary/10">Use prompt</button>
+                          <button type="button" onClick={() => setContextPrompts(current => current.filter(item => item !== prompt))} className="min-h-11 rounded-lg border border-border px-3 hover:bg-secondary">Dismiss</button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

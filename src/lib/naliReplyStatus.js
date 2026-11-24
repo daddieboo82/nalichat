@@ -28,19 +28,18 @@ export function preferCurrentConversationMessages(current, incoming) {
   if (!Array.isArray(incoming)) return Array.isArray(current) ? current : [];
   if (!Array.isArray(current)) return incoming;
   if (incoming.length < current.length) return current;
-  if (incoming.length === current.length) {
-    if (countAssistantReplies(incoming) < countAssistantReplies(current)) return current;
-    // Equal-size snapshots may come from different points in time. If both
-    // carry stable IDs, a different identity at the same position is not a
-    // streaming edit; it is an incompatible history snapshot. Keep the live
-    // version instead of silently swapping an already-visible reply.
-    const sameIdentities = incoming.every((message, index) => {
-      const previousId = current[index]?.id;
-      const incomingId = message?.id;
-      return !previousId || !incomingId || previousId === incomingId;
-    });
-    if (!sameIdentities) return current;
-  }
+  // A longer history read is not necessarily newer: it may contain extra
+  // user/tool events while losing a completed answer already seen live.
+  if (countAssistantReplies(incoming) < countAssistantReplies(current)) return current;
+  // Do not replace the known conversation prefix with different stable IDs,
+  // even if the incoming snapshot happens to contain more entries. Same-ID
+  // edits remain valid so an assistant's streaming text can complete.
+  const sameIdentities = current.every((message, index) => {
+    const previousId = message?.id;
+    const incomingId = incoming[index]?.id;
+    return !previousId || !incomingId || previousId === incomingId;
+  });
+  if (!sameIdentities) return current;
   return incoming;
 }
 

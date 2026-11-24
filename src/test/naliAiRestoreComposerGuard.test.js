@@ -8,7 +8,7 @@ describe('NALI.ai restore composer safeguards', () => {
   it('blocks message dispatch on a known failed restore while retaining drafts', async () => {
     const source = await read();
     const send = source.slice(source.indexOf('const sendText = async'), source.indexOf('// Refresh authoritative conversation history'));
-    const guard = send.indexOf('if (!conversationRef.current && restoreError) {');
+    const guard = send.indexOf('if (!conversationRef.current && (restorePending || restoreError)) {');
     expect(guard).toBeGreaterThan(0);
     expect(guard).toBeLessThan(send.indexOf('sendInFlightRef.current = true;'));
     expect(send.slice(guard, send.indexOf('if (subscriptionLoading', guard))).toContain('return;');
@@ -20,5 +20,6 @@ describe('NALI.ai restore composer safeguards', () => {
     expect(source).toContain('onChange={e => setInput(e.target.value)}');
     expect(source).toContain('disabled={!input.trim() || loading || (!conversation?.id && (restorePending || restoreError))}');
     expect(source).toContain('Retry before sending; your draft stays here.');
+    expect(source).toContain('[conversation, canUseAi, subscriptionLoading, subscriptionError, agentName, restorePending, restoreError]');
   });
 });

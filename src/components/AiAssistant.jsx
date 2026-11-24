@@ -55,6 +55,7 @@ export default function AiAssistant() {
   const speechGenerationRef = useRef(0);
   const recognitionRef = useRef(null);
   const loadingTimerRef = useRef(null);
+  const focusTimerRef = useRef(null);
   const identityGenerationRef = useRef(0);
   const conversationInitRef = useRef(null);
   const conversationRef = useRef(null);
@@ -110,6 +111,7 @@ export default function AiAssistant() {
 
   useEffect(() => {
     identityGenerationRef.current += 1;
+    if (focusTimerRef.current) { clearTimeout(focusTimerRef.current); focusTimerRef.current = null; }
     conversationInitRef.current = null;
     conversationRef.current = null;
     sendInFlightRef.current = false;
@@ -244,6 +246,7 @@ export default function AiAssistant() {
   // existing request remains recoverable when the creator reopens it.
   useEffect(() => () => {
     identityGenerationRef.current += 1;
+    if (focusTimerRef.current) { clearTimeout(focusTimerRef.current); focusTimerRef.current = null; }
     sendSequenceRef.current += 1;
     sendInFlightRef.current = false;
     pendingAssistantBaselineRef.current = null;
@@ -489,7 +492,15 @@ export default function AiAssistant() {
         if (generation === identityGenerationRef.current) setRestorePending(false);
       }
     }
-    setTimeout(() => inputRef.current?.focus(), 100);
+    // A delayed focus must not reopen the mobile keyboard after close,
+    // minimize, account switch, or unmount.
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+    const focusGeneration = identityGenerationRef.current;
+    focusTimerRef.current = setTimeout(() => {
+      focusTimerRef.current = null;
+      if (focusGeneration !== identityGenerationRef.current || document.visibilityState === 'hidden') return;
+      if (inputRef.current?.isConnected) inputRef.current.focus();
+    }, 100);
   };
 
   const keepContextPrompt = (text) => {
@@ -803,10 +814,10 @@ export default function AiAssistant() {
                 {expanded ? <Shrink className="w-5 h-5 sm:w-4 sm:h-4" /> : <Expand className="w-5 h-5 sm:w-4 sm:h-4" />}
               </button>
             )}
-            <button onClick={() => setMinimized(v => !v)} aria-label={minimized ? "Restore" : "Minimize"} title={minimized ? "Restore" : "Minimize"} className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 flex items-center justify-center">
+            <button onClick={() => { if (focusTimerRef.current) { clearTimeout(focusTimerRef.current); focusTimerRef.current = null; } setMinimized(v => !v); }} aria-label={minimized ? "Restore" : "Minimize"} title={minimized ? "Restore" : "Minimize"} className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 flex items-center justify-center">
               {minimized ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />}
             </button>
-            <button onClick={() => setOpen(false)} aria-label="Close" title="Close" className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 flex items-center justify-center">
+            <button onClick={() => { if (focusTimerRef.current) { clearTimeout(focusTimerRef.current); focusTimerRef.current = null; } setOpen(false); }} aria-label="Close" title="Close" className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 flex items-center justify-center">
               <X className="w-6 h-6 sm:w-4 sm:h-4" />
             </button>
           </div>

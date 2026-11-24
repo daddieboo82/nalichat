@@ -63,7 +63,7 @@ describe('Nali AI end-to-end audit invariants', () => {
     expect(assistant).toContain('nali_ai_conversation:${user.id}:${agentName}');
     expect(assistant).toContain('base44.agents.getConversation(savedId)');
     expect(assistant).toContain('sessionStorage.setItem(conversationStorageKey, conv.id)');
-    expect(assistant).toContain('const fresh = await base44.agents.getConversation(conv.id)');
+    expect(assistant).toContain('const fresh = await withNaliHistoryTimeout(base44.agents.getConversation(conv.id))');
     expect(assistant).not.toContain('please try sending your message again.');
   });
 

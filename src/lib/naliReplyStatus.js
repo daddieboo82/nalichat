@@ -35,11 +35,22 @@ export function preferCurrentConversationMessages(current, incoming) {
   // even if the incoming snapshot happens to contain more entries. Same-ID
   // edits remain valid so an assistant's streaming text can complete.
   const sameIdentities = current.every((message, index) => {
+    const next = incoming[index];
     const previousId = message?.id;
-    const incomingId = incoming[index]?.id;
+    const incomingId = next?.id;
+    // A message must never change sender role in an incoming snapshot.
+    if (message?.role && next?.role && message.role !== next.role) return false;
     return !previousId || !incomingId || previousId === incomingId;
   });
   if (!sameIdentities) return current;
+  // An aggregate completed-reply count can hide regression of an older
+  // completed answer while another answer becomes complete.
+  const regressesCompletedReply = current.some((message, index) => {
+    const next = incoming[index];
+    return message?.id && next?.id === message.id
+      && isUsableAssistantReply(message) && !isUsableAssistantReply(next);
+  });
+  if (regressesCompletedReply) return current;
   // Same-ID streaming updates can arrive out of order. A shorter prefix
   // of text we've already displayed is stale, even with the same length
   // conversation array or extra trailing events. Keep the newer text.

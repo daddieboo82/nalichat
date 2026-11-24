@@ -231,7 +231,7 @@ export default function AiAssistant() {
       window.removeEventListener('open-ai-assistant', handleOpen);
       window.removeEventListener('nali-send-message', handleSendMessage);
     };
-  }, [conversation, canUseAi, subscriptionLoading, subscriptionError, agentName]);
+  }, [conversation, canUseAi, subscriptionLoading, subscriptionError, agentName, restorePending, restoreError]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -484,10 +484,10 @@ export default function AiAssistant() {
 
   const sendText = async (text, { preserveDraft = false } = {}) => {
     if (!text?.trim() || sendInFlightRef.current) return;
-    // An explicit failed restore requires resolving the existing chat first.
-    // Keep the draft intact instead of silently creating a different thread.
-    if (!conversationRef.current && restoreError) {
-      toast.info('Restore your saved NALI.ai conversation before sending.');
+    // All send entry points (button, Enter, contextual help, events) must
+    // respect a pending or failed restore. Keep unsent drafts intact.
+    if (!conversationRef.current && (restorePending || restoreError)) {
+      toast.info(restorePending ? 'Your NALI.ai conversation is still restoring.' : 'Restore your saved NALI.ai conversation before sending.');
       return;
     }
     if (subscriptionLoading || subscriptionError || !canUseAi) {

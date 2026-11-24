@@ -30,8 +30,9 @@ describe('NALI.ai unmount isolation', () => {
   });
   it('does not cancel an active request simply because the panel closes', async () => {
     const source = await read();
-    expect(source).toContain('<button onClick={() => setOpen(false)} aria-label="Close"');
-    expect(source).toContain('onClick={() => setMinimized(v => !v)}');
+    expect(source).toContain('setOpen(false); }} aria-label="Close"');
+    expect(source).toContain('setMinimized(v => !v); }} aria-label={minimized ? "Restore" : "Minimize"}');
+    expect(source).toContain('clearTimeout(focusTimerRef.current); focusTimerRef.current = null;');
     const cleanup = source.slice(source.indexOf('// Unmount invalidates'), source.indexOf('// Speech generation is asynchronous.'));
     expect(cleanup).not.toContain('setOpen(');
     expect(cleanup).not.toContain('setMinimized(');

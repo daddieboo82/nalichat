@@ -18,7 +18,8 @@ describe('NALI.ai restore composer safeguards', () => {
   it('keeps the composer editable and disables Send during pending/failed restoration', async () => {
     const source = await read();
     expect(source).toContain('value={input}');
-    expect(source).toContain('onChange={e => setInput(e.target.value)}');
+    expect(source).toContain('onChange={e => {');
+    expect(source).toContain('setInput(next);');
     expect(source).toContain('disabled={!input.trim() || loading || (!conversation?.id && (restorePending || restoreError))}');
     expect(source).toContain('Retry before sending; your draft stays here.');
     expect(source).toContain('[conversation, canUseAi, subscriptionLoading, subscriptionError, agentName, restorePending, restoreError]');

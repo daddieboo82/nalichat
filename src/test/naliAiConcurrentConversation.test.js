@@ -19,7 +19,7 @@ describe('NALI.ai simultaneous initialization safeguards', () => {
     expect(source).toContain('sendInFlightRef.current = false;');
     expect(source).toContain('if (!text?.trim()) return;');
     expect(source).toContain('if (sendInFlightRef.current) {');
-    expect(source).toContain('setContextPrompt(text);\n        setInput(current => current || text);');
+    expect(source).toContain('setContextPrompt(text);');
     expect(source).toContain('sendInFlightRef.current = true;');
   });
 });

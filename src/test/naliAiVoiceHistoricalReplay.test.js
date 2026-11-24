@@ -10,6 +10,12 @@ describe('NALI.ai voice only narrates new assistant replies', () => {
     expect(code).toContain('const previous = messagesRef.current[messagesRef.current.length - 1];');
     expect(code).toContain('if (previous?.role === "assistant")');
     expect(code).toContain('if (previousId) spokenIdsRef.current.add(previousId);');
+    const bindStart = code.indexOf('const bindConversation = (conv, generation');
+    const bindEnd = code.indexOf('const createOrRestoreConversation', bindStart);
+    const bind = code.slice(bindStart, bindEnd);
+    expect(bind).toContain("if (message?.role !== 'assistant') continue;");
+    expect(bind).toContain('if (historicalId) spokenIdsRef.current.add(historicalId);');
+    expect(bind.indexOf('spokenIdsRef.current.add(historicalId)')).toBeLessThan(bind.indexOf('setMessages(messagesRef.current)'));
     expect(code).toContain('if (!id || spokenIdsRef.current.has(id)) return;');
   });
 

@@ -344,6 +344,13 @@ export default function AiAssistant() {
     conversationRef.current = conv;
     setConversation(conv);
     messagesRef.current = conv.messages || [];
+    // Restored history predates this session. Mark it before React renders
+    // so enabling voice during a slow restore cannot narrate old responses.
+    for (const message of messagesRef.current) {
+      if (message?.role !== 'assistant') continue;
+      const historicalId = message.id || message.content?.substring(0, 160);
+      if (historicalId) spokenIdsRef.current.add(historicalId);
+    }
     setMessages(messagesRef.current);
     unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
       if (generation !== identityGenerationRef.current) return;

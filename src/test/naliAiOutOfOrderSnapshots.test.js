@@ -74,6 +74,14 @@ describe('NALI.ai out-of-order conversation snapshots', () => {
     const nextAnonymous = [earlier[0], { role: 'assistant', status: 'streaming', content: 'Beginning of the reply' }];
     expect(preferCurrentConversationMessages(placeholder, nextAnonymous)).toEqual(nextAnonymous);
   });
+  it('preserves identified user prompts when a partial snapshot drops their IDs', () => {
+    const missingUserId = [{ role: 'user', content: 'Unrelated prompt' }, newer[1]];
+    expect(preferCurrentConversationMessages(newer, missingUserId)).toEqual(newer);
+    const longerMissingUserId = [...missingUserId, { id: 'u2', role: 'user', content: 'Another message' }];
+    expect(preferCurrentConversationMessages(newer, longerMissingUserId)).toEqual(newer);
+    const stillIdentified = [...newer, { id: 'u2', role: 'user', content: 'Another message' }];
+    expect(preferCurrentConversationMessages(newer, stillIdentified)).toEqual(stillIdentified);
+  });
   it('protects realtime subscriptions and both manual and timed refresh paths', async () => {
     const code = await readFile('src/components/AiAssistant.jsx', 'utf8');
     expect(code).toContain('preferCurrentConversationMessages(messagesRef.current, data.messages)');

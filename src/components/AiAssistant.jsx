@@ -403,7 +403,14 @@ export default function AiAssistant() {
         if (savedId) {
           const restored = await withNaliHistoryTimeout(base44.agents.getConversation(savedId));
           if (generation !== identityGenerationRef.current) throw staleIdentityError();
-          if (restored?.id && (!restored.created_by_id || restored.created_by_id === user?.id)) {
+          // A malformed or incomplete response is not evidence that the
+          // saved conversation was deleted. Keep its ID for a later retry.
+          if (!restored?.id || restored.id !== savedId) {
+            throw new Error('Saved NALI.ai conversation returned incomplete data');
+          }
+          // A saved reference belonging to another account must never bind.
+          // Remove that unsafe reference, then initialize this user's chat.
+          if (!restored.created_by_id || restored.created_by_id === user?.id) {
             return bindConversation(restored, generation);
           }
         }

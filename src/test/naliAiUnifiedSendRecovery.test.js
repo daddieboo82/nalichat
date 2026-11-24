@@ -11,7 +11,7 @@ describe('NALI.ai unified messaging and safe refresh', () => {
     expect(source).toContain('if (!text?.trim() || sendInFlightRef.current) return;');
     expect(source).toContain('if (!preserveDraft) setInput("");');
     expect(source).toContain('if (!preserveDraft) setInput(current => current || text);');
-    expect(source).toContain('if (greeting) await sendText(greeting, { preserveDraft: true });');
+    expect(source).toContain('if (greeting) {\n      await sendText(greeting, { preserveDraft: true });');
   });
 
   it('reuses an initialized conversation before React has rerendered', async () => {

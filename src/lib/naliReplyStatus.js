@@ -40,6 +40,10 @@ export function preferCurrentConversationMessages(current, incoming) {
     const incomingId = next?.id;
     // A message must never change sender role in an incoming snapshot.
     if (message?.role && next?.role && message.role !== next.role) return false;
+    // A partial SDK snapshot without IDs must not erase the identity of a
+    // completed reply already displayed to the creator. Keep permitting
+    // anonymous streaming placeholders to become identified later.
+    if (previousId && !incomingId && isUsableAssistantReply(message)) return false;
     return !previousId || !incomingId || previousId === incomingId;
   });
   if (!sameIdentities) return current;

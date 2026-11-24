@@ -35,6 +35,7 @@ export default function AiAssistant() {
   const [loading, setLoading] = useState(false);
   const [sendError, setSendError] = useState(null);
   const [restoreError, setRestoreError] = useState(false);
+  const [restorePending, setRestorePending] = useState(false);
   const [replyDelayed, setReplyDelayed] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState(null);
@@ -136,6 +137,7 @@ export default function AiAssistant() {
     setLoading(false);
     setSendError(null);
     setRestoreError(false);
+    setRestorePending(false);
     setReplyDelayed(false);
     setIsListening(false);
     setVoiceEnabled(false);
@@ -464,6 +466,7 @@ export default function AiAssistant() {
       if (greeting) await sendText(greeting, { preserveDraft: true });
       else {
         const generation = identityGenerationRef.current;
+        setRestorePending(true);
         try {
           await initConversation();
         } catch (error) {
@@ -471,6 +474,8 @@ export default function AiAssistant() {
           console.warn("Nali conversation restore unavailable:", error);
           setRestoreError(true);
           return;
+        } finally {
+          if (generation === identityGenerationRef.current) setRestorePending(false);
         }
       }
     }
@@ -832,10 +837,13 @@ export default function AiAssistant() {
                   <button type="button" onClick={() => void refetchSubscription()} className="min-h-11 shrink-0 rounded-lg border border-border px-3 font-semibold hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary">Check access again</button>
                 </div>
               )}
+              {restorePending && !conversation?.id && !restoreError && (
+                <div role="status" className="shrink-0 border-t border-border/50 px-3 py-2 text-xs text-muted-foreground">Restoring your NALI.ai conversation…</div>
+              )}
               {restoreError && !conversation?.id && (
                 <div role="alert" className="shrink-0 border-t border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground flex items-center justify-between gap-2">
                   <span>Couldn't load your saved NALI.ai conversation. Your history is preserved.</span>
-                  <button type="button" onClick={() => void openChat()} className="min-h-11 shrink-0 rounded-lg border border-border px-3 font-semibold hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary">Retry conversation</button>
+                  <button type="button" onClick={() => void openChat()} disabled={restorePending} className="min-h-11 shrink-0 rounded-lg border border-border px-3 font-semibold hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-wait">{restorePending ? 'Restoring…' : 'Retry conversation'}</button>
                 </div>
               )}
               {sendError && (

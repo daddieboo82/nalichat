@@ -8,7 +8,9 @@ describe('NALI.ai unified messaging and safe refresh', () => {
   it('shares the same guarded sender between typed messages and app-triggered messages', async () => {
     const source = await getSource();
     expect(source).toContain('await sendText(text, { preserveDraft: true });');
-    expect(source).toContain('if (!text?.trim() || sendInFlightRef.current) return;');
+    expect(source).toContain('if (!text?.trim()) return;');
+    expect(source).toContain('if (sendInFlightRef.current) {');
+    expect(source).toContain('if (preserveDraft) setInput(current => current || text);');
     expect(source).toContain('if (!preserveDraft) setInput("");');
     expect(source).toContain('if (!preserveDraft) setInput(current => current || text);');
     expect(source).toContain('if (greeting) {\n      await sendText(greeting, { preserveDraft: true });');

@@ -53,6 +53,18 @@ describe('NALI.ai out-of-order conversation snapshots', () => {
     const finalReply = [...earlier, { id: 'a1', role: 'assistant', status: 'completed', content: 'Here is a verse' }];
     expect(preferCurrentConversationMessages(live, finalReply)).toEqual(finalReply);
   });
+  it('rejects a same-ID snapshot that changes a message sender role', () => {
+    const conflicting = [earlier[0], { id: 'a1', role: 'user', content: 'Not an assistant reply' }];
+    expect(preferCurrentConversationMessages(newer, conflicting)).toEqual(newer);
+    expect(preferCurrentConversationMessages(newer, [...conflicting, { id: 'u3', role: 'user', content: 'Extra' }])).toEqual(newer);
+  });
+  it('preserves completed same-ID replies even if the total completion count stays constant', () => {
+    const current = [earlier[0], { id: 'a1', role: 'assistant', content: 'Already complete', status: 'completed' }, { id: 'u2', role: 'user', content: 'Next question' }, { id: 'a2', role: 'assistant', content: 'Partial next', status: 'streaming' }];
+    const stale = [earlier[0], { id: 'a1', role: 'assistant', content: 'Earlier partial', status: 'streaming' }, current[2], { id: 'a2', role: 'assistant', content: 'Finished next', status: 'completed' }];
+    expect(preferCurrentConversationMessages(current, stale)).toEqual(current);
+    const valid = [current[0], current[1], current[2], { id: 'a2', role: 'assistant', content: 'Finished next', status: 'completed' }];
+    expect(preferCurrentConversationMessages(current, valid)).toEqual(valid);
+  });
   it('protects realtime subscriptions and both manual and timed refresh paths', async () => {
     const code = await readFile('src/components/AiAssistant.jsx', 'utf8');
     expect(code).toContain('preferCurrentConversationMessages(messagesRef.current, data.messages)');

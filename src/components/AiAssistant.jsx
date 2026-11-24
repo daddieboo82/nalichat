@@ -492,6 +492,10 @@ export default function AiAssistant() {
     // state may not have committed yet when a second tap/event arrives.
     const conversationRestoring = !conversationRef.current && (restorePending || Boolean(conversationInitRef.current));
     if (!conversationRef.current && (conversationRestoring || restoreError)) {
+      // Contextual help comes from other pages without being typed into
+      // this composer. Preserve it as a draft only when no draft exists.
+      // Never auto-dispatch it after a restore retry.
+      if (preserveDraft) setInput(current => current || text);
       toast.info(conversationRestoring ? 'Your NALI.ai conversation is still restoring.' : 'Restore your saved NALI.ai conversation before sending.');
       return;
     }

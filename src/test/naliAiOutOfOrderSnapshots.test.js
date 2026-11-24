@@ -41,6 +41,18 @@ describe('NALI.ai out-of-order conversation snapshots', () => {
     const valid = [...newer, { id: 'u3', role: 'user', content: 'Extra message' }];
     expect(preferCurrentConversationMessages(newer, valid)).toEqual(valid);
   });
+  it('keeps the longer same-ID streaming text when an older partial update arrives', () => {
+    const live = [...earlier, { id: 'a1', role: 'assistant', status: 'streaming', content: 'Here is the first verse' }];
+    const older = [...earlier, { id: 'a1', role: 'assistant', status: 'streaming', content: 'Here is the' }];
+    expect(preferCurrentConversationMessages(live, older)).toEqual(live);
+    expect(preferCurrentConversationMessages(live, [...older, { id: 'u2', role: 'user', content: 'Extra event' }])).toEqual(live);
+    expect(preferCurrentConversationMessages(older, live)).toEqual(live);
+  });
+  it('still accepts the final completed reply even if it edits the streamed text', () => {
+    const live = [...earlier, { id: 'a1', role: 'assistant', status: 'streaming', content: 'Here is the first verse draft' }];
+    const finalReply = [...earlier, { id: 'a1', role: 'assistant', status: 'completed', content: 'Here is a verse' }];
+    expect(preferCurrentConversationMessages(live, finalReply)).toEqual(finalReply);
+  });
   it('protects realtime subscriptions and both manual and timed refresh paths', async () => {
     const code = await readFile('src/components/AiAssistant.jsx', 'utf8');
     expect(code).toContain('preferCurrentConversationMessages(messagesRef.current, data.messages)');

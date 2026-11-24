@@ -557,7 +557,14 @@ export default function AiAssistant() {
       // Keeping them out of history also prevents narration and false
       // assistant-reply completion when speech is enabled.
       setReplyDelayed(false);
-      setSendError(friendlyNaliError(err));
+      if (!dispatchStarted && !conv) {
+        // Conversation initialization failed before any AI request was sent.
+        // Route all entry points through the same safe restore/retry UI.
+        setRestoreError(true);
+        setSendError(null);
+      } else {
+        setSendError(friendlyNaliError(err));
+      }
     }
   };
 

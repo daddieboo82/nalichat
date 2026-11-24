@@ -10,7 +10,7 @@ describe('NALI.ai unified messaging and safe refresh', () => {
     expect(source).toContain('await sendText(text, { preserveDraft: true });');
     expect(source).toContain('if (!text?.trim()) return;');
     expect(source).toContain('if (sendInFlightRef.current) {');
-    expect(source).toContain('setContextPrompt(text);');
+    expect(source).toContain('keepContextPrompt(text);');
     expect(source).toContain('if (!preserveDraft) setInput("");');
     expect(source).toContain('if (!preserveDraft) setInput(current => current || text);');
     expect(source).toContain('if (greeting) {\n      await sendText(greeting, { preserveDraft: true });');

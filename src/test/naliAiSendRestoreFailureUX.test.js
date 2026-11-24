@@ -11,7 +11,7 @@ describe('NALI.ai initialization failure from send entry points', () => {
     const start = send.indexOf('if (!dispatchStarted && !conv) {');
     expect(start).toBeGreaterThan(0);
     const branch = send.slice(start, send.indexOf('\n    }\n  };', start));
-    expect(branch).toContain('setContextPrompt(text);');
+    expect(branch).toContain('keepContextPrompt(text);');
     expect(branch).toContain('setRestoreError(true);');
     expect(branch.indexOf('setInput(current => current || text)')).toBeLessThan(branch.indexOf('setRestoreError(true)'));
     expect(branch).toContain('setSendError(null);');

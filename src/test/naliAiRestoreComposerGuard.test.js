@@ -13,7 +13,7 @@ describe('NALI.ai restore composer safeguards', () => {
     expect(guard).toBeGreaterThan(0);
     expect(guard).toBeLessThan(send.indexOf('sendInFlightRef.current = true;'));
     expect(send.slice(guard, send.indexOf('if (subscriptionLoading', guard))).toContain('return;');
-    expect(send.slice(guard, send.indexOf('if (subscriptionLoading', guard))).toContain('setContextPrompt(text);');
+    expect(send.slice(guard, send.indexOf('if (subscriptionLoading', guard))).toContain('keepContextPrompt(text);');
   });
   it('keeps the composer editable and disables Send during pending/failed restoration', async () => {
     const source = await read();

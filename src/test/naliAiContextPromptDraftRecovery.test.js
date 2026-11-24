@@ -9,7 +9,7 @@ describe('NALI.ai contextual prompt recovery during conversation restore', () =>
     const source = await read();
     const send = source.slice(source.indexOf('const sendText = async'), source.indexOf('// Refresh authoritative conversation history'));
     const blocked = send.slice(send.indexOf('if (!conversationRef.current && (conversationRestoring || restoreError)) {'), send.indexOf('if (subscriptionLoading', send.indexOf('const conversationRestoring')));
-    expect(blocked).toContain('setContextPrompt(text);');
+    expect(blocked).toContain('keepContextPrompt(text);');
     expect(blocked.indexOf('setInput(current => current || text)')).toBeLessThan(blocked.indexOf('return;'));
     expect(blocked).not.toContain('sendAgentText(');
     expect(blocked).not.toContain('initConversation(');

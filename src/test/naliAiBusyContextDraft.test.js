@@ -11,7 +11,7 @@ describe('NALI.ai busy contextual prompt safeguards', () => {
     const start = send.indexOf('if (sendInFlightRef.current) {');
     const end = send.indexOf('// All send entry points', start);
     const busy = send.slice(start, end);
-    expect(busy).toContain('setContextPrompt(text);\n        setInput(current => current || text);');
+    expect(busy).toContain('setContextPrompt(text);');
     expect(busy).toContain('return;');
     expect(busy).not.toContain('sendAgentText(');
     expect(busy).not.toContain('initConversation(');

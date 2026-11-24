@@ -491,7 +491,14 @@ export default function AiAssistant() {
   };
 
   const sendText = async (text, { preserveDraft = false } = {}) => {
-    if (!text?.trim() || sendInFlightRef.current) return;
+    if (!text?.trim()) return;
+    if (sendInFlightRef.current) {
+      // Contextual actions can arrive while Nali is answering another prompt.
+      // Keep the new idea editable without dispatching a second AI request
+      // or overwriting the creator's existing composer draft.
+      if (preserveDraft) setInput(current => current || text);
+      return;
+    }
     // All send entry points (button, Enter, contextual help, events) must
     // respect a pending or failed restore. Keep unsent drafts intact.
     // The initialization ref is set synchronously; React's restorePending

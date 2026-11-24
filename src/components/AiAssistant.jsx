@@ -565,6 +565,9 @@ export default function AiAssistant() {
       setReplyDelayed(false);
       if (!dispatchStarted && !conv) {
         // Conversation initialization failed before any AI request was sent.
+        // Preserve contextual prompts that were not typed into the composer,
+        // without replacing a draft the creator has already started.
+        if (preserveDraft) setInput(current => current || text);
         // Route all entry points through the same safe restore/retry UI.
         setRestoreError(true);
         setSendError(null);

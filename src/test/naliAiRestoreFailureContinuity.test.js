@@ -19,7 +19,9 @@ describe('NALI.ai saved conversation recovery', () => {
   it('creates a new conversation only after a confirmed unavailable or invalid stored chat', async () => {
     const source = await read();
     expect(source).toContain('if (status !== 404 && status !== 410)');
-    expect(source).toContain('if (restored?.id && (!restored.created_by_id || restored.created_by_id === user?.id))');
+    expect(source).toContain('if (!restored?.id || restored.id !== savedId) {');
+    expect(source).toContain("throw new Error('Saved NALI.ai conversation returned incomplete data');");
+    expect(source).toContain('if (!restored.created_by_id || restored.created_by_id === user?.id) {');
     expect(source).toContain('if (generation !== identityGenerationRef.current) throw staleIdentityError();');
   });
   it('never resends a message while checking previous chat history', async () => {

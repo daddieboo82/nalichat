@@ -14,9 +14,16 @@ describe('NALI.ai waits for a usable assistant reply', () => {
     expect(hasReplySince([...conversation, { role: 'tool', content: 'done' }], baseline)).toBe(false);
   });
   it('does not unlock explicitly streaming or pending assistant responses', () => {
-    for (const state of [{ is_streaming: true }, { completed: false }, { status: 'streaming' }, { status: 'pending' }]) {
+    for (const state of [{ is_streaming: true }, { completed: false }, { status: 'streaming' }, { status: 'pending' }, { status: 'in_progress' }, { status: 'generating' }, { status: 'queued' }, { status: 'processing' }, { status: 'IN_PROGRESS' }]) {
       expect(isUsableAssistantReply({ role: 'assistant', content: 'Partial response', ...state })).toBe(false);
     }
+  });
+  it('does not treat new partial assistant text as a completed reply', () => {
+    const baseline = { assistantCount: 0, messageCount: 1 };
+    for (const status of ['in_progress', 'generating', 'queued', 'processing']) {
+      expect(hasReplySince([...conversation, { id: 'a1', role: 'assistant', content: 'Partial answer', status }], baseline)).toBe(false);
+    }
+    expect(hasReplySince([...conversation, { id: 'a1', role: 'assistant', content: 'Completed answer', status: 'completed' }], baseline)).toBe(true);
   });
   it('unlocks for nonempty completed plain text and structured text replies', () => {
     expect(hasReplySince([...conversation, { role: 'assistant', content: 'Here is a chorus' }], 0)).toBe(true);

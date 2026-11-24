@@ -502,10 +502,13 @@ export default function AiAssistant() {
     // newer open request has superseded this one.
     if (focusRequest !== focusRequestRef.current) return;
     if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+    // Opening contextual help on a phone should not summon the keyboard
+    // until the creator explicitly taps the message input.
+    if (window.innerWidth < 640) return;
     const focusGeneration = identityGenerationRef.current;
     focusTimerRef.current = setTimeout(() => {
       focusTimerRef.current = null;
-      if (focusRequest !== focusRequestRef.current || focusGeneration !== identityGenerationRef.current || document.visibilityState === 'hidden') return;
+      if (focusRequest !== focusRequestRef.current || focusGeneration !== identityGenerationRef.current || document.visibilityState === 'hidden' || window.innerWidth < 640) return;
       if (inputRef.current?.isConnected) inputRef.current.focus();
     }, 100);
   };

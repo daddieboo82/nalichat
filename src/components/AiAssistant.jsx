@@ -87,6 +87,17 @@ export default function AiAssistant() {
     };
   }, [open, minimized]);
 
+  // A reply received while the app is hidden stays readable as text but
+  // should not be narrated automatically when the creator returns.
+  const suppressBackgroundNarration = (incomingMessages) => {
+    if (document.visibilityState !== 'hidden') return;
+    for (const message of incomingMessages || []) {
+      if (message?.role !== 'assistant') continue;
+      const id = message.id || message.content?.substring(0, 160);
+      if (id) spokenIdsRef.current.add(id);
+    }
+  };
+
   const staleIdentityError = () => {
     const error = new Error("NALI.ai identity changed");
     error.code = "NALI_IDENTITY_CHANGED";
@@ -321,6 +332,7 @@ export default function AiAssistant() {
   useEffect(() => {
     const stopBackgroundSpeech = () => {
       if (document.visibilityState !== 'hidden') return;
+      suppressBackgroundNarration(messagesRef.current);
       speechGenerationRef.current += 1;
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
@@ -355,6 +367,7 @@ export default function AiAssistant() {
     unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
       if (generation !== identityGenerationRef.current) return;
       const msgs = preferCurrentConversationMessages(messagesRef.current, data.messages);
+      suppressBackgroundNarration(msgs);
       messagesRef.current = msgs;
       setMessages(msgs);
       if (sendInFlightRef.current && hasReplySince(msgs, pendingAssistantBaselineRef.current)) {
@@ -528,6 +541,7 @@ export default function AiAssistant() {
       const fresh = await base44.agents.getConversation(conv.id);
       if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current || conversationRef.current?.id !== conv.id) return;
       const received = preferCurrentConversationMessages(messagesRef.current, fresh?.messages);
+      suppressBackgroundNarration(received);
       messagesRef.current = received;
       setMessages(received);
       if (hasReplySince(received, pendingAssistantBaselineRef.current)) {

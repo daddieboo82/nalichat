@@ -24,8 +24,10 @@ describe('NALI.ai delayed mobile keyboard focus', () => {
     expect(open).toContain('const focusRequest = ++focusRequestRef.current;');
     expect(open).toContain('if (focusRequest !== focusRequestRef.current) return;');
     expect(open.indexOf('if (focusRequest !== focusRequestRef.current) return;')).toBeLessThan(open.indexOf('focusTimerRef.current = setTimeout'));
+    expect(open).toContain('if (window.innerWidth < 640) return;');
+    expect(open.indexOf('if (window.innerWidth < 640) return;')).toBeLessThan(open.indexOf('focusTimerRef.current = setTimeout'));
     expect(open).toContain('const focusGeneration = identityGenerationRef.current;');
-    expect(open).toContain("focusRequest !== focusRequestRef.current || focusGeneration !== identityGenerationRef.current || document.visibilityState === 'hidden'");
+    expect(open).toContain("focusRequest !== focusRequestRef.current || focusGeneration !== identityGenerationRef.current || document.visibilityState === 'hidden' || window.innerWidth < 640");
     expect(open).toContain('if (inputRef.current?.isConnected) inputRef.current.focus();');
   });
 });

@@ -9,6 +9,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/lib/AuthContext";
 import { captureReplyBaseline, hasReplySince, preferCurrentConversationMessages } from "@/lib/naliReplyStatus";
 import { isUncertainAiDelivery } from "@/lib/naliDeliveryStatus";
+import { withNaliHistoryTimeout } from "@/lib/naliHistoryTimeout";
 import { resolveNaliAgentTier } from "@/lib/naliAgentTier";
 
 export default function AiAssistant() {
@@ -538,7 +539,9 @@ export default function AiAssistant() {
     lastReplyRefreshAtRef.current = now;
     replyRefreshInFlightRef.current = true;
     try {
-      const fresh = await base44.agents.getConversation(conv.id);
+      // A stalled history read must not permanently block Check reply.
+      // This times out a read, not the original AI send.
+      const fresh = await withNaliHistoryTimeout(base44.agents.getConversation(conv.id));
       if (generation !== identityGenerationRef.current || requestSequence !== sendSequenceRef.current || !sendInFlightRef.current || conversationRef.current?.id !== conv.id) return;
       const received = preferCurrentConversationMessages(messagesRef.current, fresh?.messages);
       suppressBackgroundNarration(received);

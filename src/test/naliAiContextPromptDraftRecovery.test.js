@@ -21,6 +21,6 @@ describe('NALI.ai contextual prompt recovery during conversation restore', () =>
     expect(retry).not.toContain('sendText(');
     expect(retry).not.toContain('sendAgentText(');
     expect(source).toContain('await sendText(text, { preserveDraft: true });');
-    expect(source).toContain('if (greeting) await sendText(greeting, { preserveDraft: true });');
+    expect(source).toContain('if (greeting) {\n      await sendText(greeting, { preserveDraft: true });');
   });
 });

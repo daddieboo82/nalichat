@@ -5,7 +5,7 @@ export function isUsableAssistantReply(message) {
   // Providers may report unfinished replies using different progress states.
   // Never unlock another send on text that is still being generated.
   const status = String(message.status || '').toLowerCase();
-  if (message.is_streaming === true || message.completed === false || ['streaming', 'pending', 'in_progress', 'generating', 'queued', 'processing'].includes(status)) return false;
+  if (message.is_streaming === true || message.completed === false || ['streaming', 'pending', 'in_progress', 'generating', 'queued', 'processing', 'failed', 'error', 'cancelled', 'canceled'].includes(status)) return false;
   if (typeof message.content === 'string') return message.content.trim().length > 0;
   if (Array.isArray(message.content)) {
     return message.content.some(part => typeof part === 'string' ? part.trim().length > 0 : typeof part?.text === 'string' && part.text.trim().length > 0);

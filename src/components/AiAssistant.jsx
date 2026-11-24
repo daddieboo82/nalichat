@@ -34,6 +34,7 @@ export default function AiAssistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendError, setSendError] = useState(null);
+  const [restoreError, setRestoreError] = useState(false);
   const [replyDelayed, setReplyDelayed] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState(null);
@@ -134,6 +135,7 @@ export default function AiAssistant() {
     setInput("");
     setLoading(false);
     setSendError(null);
+    setRestoreError(false);
     setReplyDelayed(false);
     setIsListening(false);
     setVoiceEnabled(false);
@@ -379,6 +381,7 @@ export default function AiAssistant() {
         setLoading(false);
       }
     });
+    setRestoreError(false);
     return conv;
   };
 
@@ -454,11 +457,22 @@ export default function AiAssistant() {
     }
     setOpen(true);
     setMinimized(false);
+    setRestoreError(false);
     if (!conversationRef.current) {
       // A contextual greeting uses the same guarded send path. Opening Nali
       // without a greeting creates/restores a chat but spends no AI request.
       if (greeting) await sendText(greeting, { preserveDraft: true });
-      else await initConversation();
+      else {
+        const generation = identityGenerationRef.current;
+        try {
+          await initConversation();
+        } catch (error) {
+          if (generation !== identityGenerationRef.current || error?.code === "NALI_IDENTITY_CHANGED") return;
+          console.warn("Nali conversation restore unavailable:", error);
+          setRestoreError(true);
+          return;
+        }
+      }
     }
     setTimeout(() => inputRef.current?.focus(), 100);
   };
@@ -816,6 +830,12 @@ export default function AiAssistant() {
                 <div role="alert" className="shrink-0 border-t border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground flex items-center justify-between gap-2">
                   <span>Couldn't verify your Premium access. Your subscription may still be active.</span>
                   <button type="button" onClick={() => void refetchSubscription()} className="min-h-11 shrink-0 rounded-lg border border-border px-3 font-semibold hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary">Check access again</button>
+                </div>
+              )}
+              {restoreError && !conversation?.id && (
+                <div role="alert" className="shrink-0 border-t border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground flex items-center justify-between gap-2">
+                  <span>Couldn't load your saved NALI.ai conversation. Your history is preserved.</span>
+                  <button type="button" onClick={() => void openChat()} className="min-h-11 shrink-0 rounded-lg border border-border px-3 font-semibold hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary">Retry conversation</button>
                 </div>
               )}
               {sendError && (

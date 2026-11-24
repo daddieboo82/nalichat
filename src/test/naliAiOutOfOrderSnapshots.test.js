@@ -29,6 +29,18 @@ describe('NALI.ai out-of-order conversation snapshots', () => {
     expect(preferCurrentConversationMessages(newer, stale)).toEqual(newer);
     expect(preferCurrentConversationMessages(newer, undefined)).toEqual(newer);
   });
+  it('rejects longer stale snapshots that lose completed replies', () => {
+    const staleLonger = [earlier[0], { id: 'a1', role: 'assistant', content: 'Partial', status: 'generating' }, { id: 'u2', role: 'user', content: 'New question' }];
+    expect(preferCurrentConversationMessages(newer, staleLonger)).toEqual(newer);
+    const finishedLonger = [earlier[0], { id: 'a1', role: 'assistant', content: 'Updated complete answer', status: 'completed' }, { id: 'u2', role: 'user', content: 'New question' }];
+    expect(preferCurrentConversationMessages(newer, finishedLonger)).toEqual(finishedLonger);
+  });
+  it('rejects longer snapshots from conflicting conversation histories', () => {
+    const conflicting = [{ id: 'other-u1', role: 'user', content: 'Different user question' }, newer[1], { id: 'u3', role: 'user', content: 'Extra message' }];
+    expect(preferCurrentConversationMessages(newer, conflicting)).toEqual(newer);
+    const valid = [...newer, { id: 'u3', role: 'user', content: 'Extra message' }];
+    expect(preferCurrentConversationMessages(newer, valid)).toEqual(valid);
+  });
   it('protects realtime subscriptions and both manual and timed refresh paths', async () => {
     const code = await readFile('src/components/AiAssistant.jsx', 'utf8');
     expect(code).toContain('preferCurrentConversationMessages(messagesRef.current, data.messages)');

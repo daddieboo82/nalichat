@@ -40,6 +40,19 @@ export function preferCurrentConversationMessages(current, incoming) {
     return !previousId || !incomingId || previousId === incomingId;
   });
   if (!sameIdentities) return current;
+  // Same-ID streaming updates can arrive out of order. A shorter prefix
+  // of text we've already displayed is stale, even with the same length
+  // conversation array or extra trailing events. Keep the newer text.
+  const regressesStreamingText = current.some((message, index) => {
+    const next = incoming[index];
+    if (!message?.id || next?.id !== message.id || message.role !== 'assistant') return false;
+    const previousText = message.content;
+    const nextText = next.content;
+    if (typeof previousText !== 'string' || typeof nextText !== 'string') return false;
+    const nextStillStreaming = next.is_streaming === true || next.completed === false || ['streaming', 'pending', 'in_progress', 'generating', 'queued', 'processing'].includes(String(next.status || '').toLowerCase());
+    return nextStillStreaming && previousText.length > nextText.length && previousText.startsWith(nextText);
+  });
+  if (regressesStreamingText) return current;
   return incoming;
 }
 

@@ -23,6 +23,13 @@ describe('NALI.ai contextual suggestion queue', () => {
     expect(choice).not.toContain('sendText(');
     expect(choice).not.toContain('sendAgentText(');
   });
+  it('consumes the composer copy when a contextual prompt is edited', async () => {
+    const source = await read();
+    const composer = source.slice(source.indexOf('aria-label="Message NALI.ai"') - 450, source.indexOf('placeholder="Ask Nali about'));
+    expect(composer).toContain('if (next !== input) setContextPrompts(current => current.filter(item => item !== input));');
+    expect(composer).toContain('setInput(next);');
+    expect(source).toContain('contextPrompts.filter(prompt => prompt !== input).map(prompt => (');
+  });
   it('clears the pending prompts when a user switches identity', async () => {
     const source = await read();
     const reset = source.slice(source.indexOf('identityGenerationRef.current += 1;'), source.indexOf('}, [identityKey]);'));

@@ -484,6 +484,12 @@ export default function AiAssistant() {
 
   const sendText = async (text, { preserveDraft = false } = {}) => {
     if (!text?.trim() || sendInFlightRef.current) return;
+    // An explicit failed restore requires resolving the existing chat first.
+    // Keep the draft intact instead of silently creating a different thread.
+    if (!conversationRef.current && restoreError) {
+      toast.info('Restore your saved NALI.ai conversation before sending.');
+      return;
+    }
     if (subscriptionLoading || subscriptionError || !canUseAi) {
       toast.error(subscriptionError ? "Couldn't verify your Premium access. Try checking your subscription again." : subscriptionLoading ? "Checking your subscription…" : "NALI.ai is available with Premium.");
       return;
@@ -842,7 +848,7 @@ export default function AiAssistant() {
               )}
               {restoreError && !conversation?.id && (
                 <div role="alert" className="shrink-0 border-t border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground flex items-center justify-between gap-2">
-                  <span>Couldn't load your saved NALI.ai conversation. Your history is preserved.</span>
+                  <span>Couldn't load your saved NALI.ai conversation. Your history is preserved. Retry before sending; your draft stays here.</span>
                   <button type="button" onClick={() => void openChat()} disabled={restorePending} className="min-h-11 shrink-0 rounded-lg border border-border px-3 font-semibold hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-wait">{restorePending ? 'Restoring…' : 'Retry conversation'}</button>
                 </div>
               )}
@@ -905,7 +911,7 @@ export default function AiAssistant() {
                 </div>
                 <button
                   onClick={send}
-                  disabled={!input.trim() || loading}
+                  disabled={!input.trim() || loading || (!conversation?.id && (restorePending || restoreError))}
                   title="Send message"
                   aria-label="Send message"
                   className="min-w-12 min-h-12 bg-primary/20 text-primary border border-primary/30 rounded-xl flex items-center justify-center hover:bg-primary hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-primary/20 disabled:hover:text-primary"

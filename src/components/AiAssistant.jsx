@@ -548,6 +548,9 @@ export default function AiAssistant() {
       // history, before dispatching this specific new request.
       pendingAssistantBaselineRef.current = captureReplyBaseline(messagesRef.current);
       dispatchStarted = true;
+      // Remove only the suggestion actually submitted; unrelated queued
+      // suggestions remain available for the creator to review.
+      setContextPrompts(current => current.filter(item => item !== text));
       // Start the recovery clock *before* awaiting the server. A hanging
       // invoke must not prevent a history-only reply check after one minute.
       // Never retry the AI dispatch from this timer.

@@ -459,7 +459,9 @@ export default function AiAssistant() {
     }
     setOpen(true);
     setMinimized(false);
-    setRestoreError(false);
+    // Keep an earlier restore failure visible and sending blocked until
+    // bindConversation confirms a usable conversation. Reopening is not proof
+    // that the saved conversation has recovered.
     if (!conversationRef.current) {
       // A contextual greeting uses the same guarded send path. Opening Nali
       // without a greeting creates/restores a chat but spends no AI request.

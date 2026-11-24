@@ -979,7 +979,13 @@ export default function AiAssistant() {
                     ref={inputRef}
                     enterKeyHint="send"
                     value={input}
-                    onChange={e => setInput(e.target.value)}
+                    onChange={e => {
+                      const next = e.target.value;
+                      // Editing a contextual prompt already in the composer
+                      // consumes its queued copy so it cannot reappear stale.
+                      if (next !== input) setContextPrompts(current => current.filter(item => item !== input));
+                      setInput(next);
+                    }}
                     placeholder="Ask Nali about your music, projects, or anything else..."
                     aria-label="Message NALI.ai"
                     className="nali-assistant-input min-h-12 w-full bg-secondary/40 border border-primary/20 rounded-xl pl-8 pr-12 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/70"

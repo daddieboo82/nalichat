@@ -486,8 +486,11 @@ export default function AiAssistant() {
     if (!text?.trim() || sendInFlightRef.current) return;
     // All send entry points (button, Enter, contextual help, events) must
     // respect a pending or failed restore. Keep unsent drafts intact.
-    if (!conversationRef.current && (restorePending || restoreError)) {
-      toast.info(restorePending ? 'Your NALI.ai conversation is still restoring.' : 'Restore your saved NALI.ai conversation before sending.');
+    // The initialization ref is set synchronously; React's restorePending
+    // state may not have committed yet when a second tap/event arrives.
+    const conversationRestoring = !conversationRef.current && (restorePending || Boolean(conversationInitRef.current));
+    if (!conversationRef.current && (conversationRestoring || restoreError)) {
+      toast.info(conversationRestoring ? 'Your NALI.ai conversation is still restoring.' : 'Restore your saved NALI.ai conversation before sending.');
       return;
     }
     if (subscriptionLoading || subscriptionError || !canUseAi) {

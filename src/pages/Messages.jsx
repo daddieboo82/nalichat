@@ -35,6 +35,7 @@ import { CHAT_THEME_ENTITLEMENT, getChatTheme, resolveEffectiveChatThemeId } fro
 import { useLockedChats } from "@/lib/LockedChatsContext";
 import { useAuth } from "@/lib/AuthContext";
 import { partitionUserConversations, resolveRequestedConversation } from "@/lib/lockedChatPolicy";
+import { reconcilePendingConversations } from "@/lib/pendingConversationReconciliation";
 import LockedChatAccessDialog from "@/components/messages/LockedChatAccessDialog";
 
 async function messageEditRequestKey(messageId, text) {
@@ -170,6 +171,7 @@ export default function Messages() {
   const [sharedComposeText, setSharedComposeText] = useState("");
   const queryClient = useQueryClient();
   const lastMessagesUserIdRef = useRef(undefined);
+  const pendingCreatedDmsRef = useRef(new Map());
 
   useEffect(() => {
     const nextUserId = currentUser?.id || null;
@@ -181,6 +183,7 @@ export default function Messages() {
     // the same user must not reset selectedConvId; on iOS that created a
     // clear-then-restore race every time a DM updated ?id=.
     if (!isInitialIdentityResolution && previousUserId !== nextUserId) {
+      pendingCreatedDmsRef.current.clear();
       if (window.location.pathname === "/messages" && window.location.search) {
         navigate("/messages", { replace: true });
       }
@@ -299,11 +302,15 @@ export default function Messages() {
     // Scope the read to this member's conversations on the server. Loading every
     // conversation and filtering in the browser made each 5-second poll grow with
     // the whole table instead of with the user's own chats.
-    queryFn: () => filterAll(
-      base44.entities.Conversation,
-      { participant_ids: currentUser.id },
-      "-last_message_at",
-    ),
+    queryFn: async () => {
+      const requestingUserId = currentUser.id;
+      const rows = await filterAll(
+        base44.entities.Conversation,
+        { participant_ids: requestingUserId },
+        "-last_message_at",
+      );
+      return reconcilePendingConversations(rows, pendingCreatedDmsRef.current, requestingUserId);
+    },
     enabled: !!currentUser?.id,
     refetchInterval: 5000,
     staleTime: 3000,
@@ -770,6 +777,13 @@ export default function Messages() {
         !conv.participant_ids.includes(currentUser.id) ||
         !conv.participant_ids.includes(otherUser.id)
       ) throw new Error("Conversation was not created");
+      // Hold the confirmed DM through a short-lived member-query propagation
+      // delay so a polling response cannot immediately erase its composer.
+      pendingCreatedDmsRef.current.set(conv.id, {
+        userId: currentUser.id,
+        conversation: conv,
+        createdAt: Date.now(),
+      });
       // Seed the freshly created/found DM into the member-scoped cache before
       // navigating. Non-admin clients can otherwise briefly re-query before the
       // new service-role-created conversation is visible through entity RLS,

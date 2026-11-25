@@ -43,6 +43,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   const mountedRef = useRef(true);
   const uploadRemovalTimersRef = useRef(new Set());
   const textareaRef = useRef(null);
+  const sendInFlightRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -83,7 +84,9 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   }, [text]);
 
   const handleSend = async () => {
-    if (!text.trim() || disabled) return;
+    if (!text.trim() || disabled || sendInFlightRef.current) return;
+    sendInFlightRef.current = true;
+    const submittedText = text;
     sounds.upload();
     if (navigator.vibrate) navigator.vibrate(15);
     const payload = { text: text.trim(), type: "text" };
@@ -94,12 +97,16 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     }
     try {
       await Promise.resolve(onSend(payload));
-      setText("");
+      // An edit may take time to confirm. Do not erase text typed while it
+      // was in flight; only clear the exact draft that was submitted.
+      setText((current) => current === submittedText ? "" : current);
       onCancelReply?.();
       onCancelEdit?.();
     } catch {
       // The caller surfaces the user-facing error. Keep the draft/edit state
       // intact so the user can retry without retyping.
+    } finally {
+      sendInFlightRef.current = false;
     }
   };
 

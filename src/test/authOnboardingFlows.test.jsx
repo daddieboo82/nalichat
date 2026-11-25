@@ -331,6 +331,33 @@ describe('auth and onboarding flows', () => {
     expect(screen.getByLabelText(/Bio/).value).toBe('');
   });
 
+  it('ignores an old account save response after switching accounts', async () => {
+    let resolveFirst;
+    const firstSave = new Promise(resolve => { resolveFirst = resolve; });
+    mockBase44.functions.invoke.mockReturnValueOnce(firstSave);
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: 'account-first', full_name: 'First Artist' },
+      isAuthenticated: true,
+      checkUserAuth: vi.fn(),
+    };
+    const { rerender } = renderInRouter(<Onboarding />);
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+    expect(mockBase44.functions.invoke).toHaveBeenCalledTimes(1);
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: 'account-second', full_name: 'Second Artist' },
+    };
+    rerender(<MemoryRouter><Onboarding /></MemoryRouter>);
+    expect(screen.getByRole('textbox', { name: /display name/i }).value).toBe('Second Artist');
+    expect(screen.getByRole('button', { name: 'Enter NaliBase' }).disabled).toBe(false);
+    resolveFirst({ data: { success: true, action: 'complete_onboarding', userId: 'account-first', onboardingCompleted: true } });
+    await waitFor(() => expect(mockBase44.functions.invoke).toHaveBeenCalledTimes(1));
+    expect(mockAuthState.current.checkUserAuth).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Your profile is saved/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Enter NaliBase' }).disabled).toBe(false);
+  });
+
   it('places the single submit action after the last visible setup field', () => {
     mockAuthState.current.user = { id: 'new-artist', full_name: 'Artist' };
     mockAuthState.current.isAuthenticated = true;

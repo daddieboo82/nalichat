@@ -14,7 +14,8 @@ describe('message edit draft preservation', () => {
 
     expect(input).toContain('const handleSend = async () =>');
     expect(input).toContain('await Promise.resolve(onSend(payload));');
-    expect(input.indexOf('setText("");')).toBeGreaterThan(
+    expect(input).toContain('setText((current) => current === submittedText ? "" : current);');
+    expect(input.indexOf('setText((current) => current === submittedText ? "" : current);')).toBeGreaterThan(
       input.indexOf('await Promise.resolve(onSend(payload));'),
     );
     expect(chat).toContain('return onEditMessage(editingMessage.id, payload.text);');

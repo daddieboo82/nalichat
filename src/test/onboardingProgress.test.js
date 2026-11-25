@@ -25,6 +25,7 @@ describe("onboarding progress", () => {
       onboarding_validation_blocked: 0,
       onboarding_submit: 1,
       onboarding_save_failed: 0,
+      onboarding_profile_saved: 0,
       onboarding_session_refresh_failed: 0,
       onboarding_complete: 1,
     });
@@ -41,6 +42,19 @@ describe("onboarding progress", () => {
     expect(result.counts.onboarding_session_refresh_failed).toBe(1);
     expect(result.counts.onboarding_save_failed).toBe(1);
     expect(result.counts.onboarding_complete).toBe(1);
+  });
+
+  it("tracks a confirmed save separately when session recovery has no final outcome", () => {
+    const result = summarizeOnboardingProgress([
+      event("onboarding_submit", "save-confirmed", "09"),
+      event("onboarding_profile_saved", "save-confirmed", "10"),
+      event("onboarding_submit", "no-confirmation", "10"),
+      event("onboarding_profile_saved", "later-recovered", "09"),
+      event("onboarding_session_refresh_failed", "later-recovered", "10"),
+    ]);
+    expect(result.counts.onboarding_profile_saved).toBe(1);
+    expect(result.counts.onboarding_submit).toBe(1);
+    expect(result.counts.onboarding_session_refresh_failed).toBe(1);
   });
 
   it("breaks down the latest validation blocks and excludes recovered accounts", () => {

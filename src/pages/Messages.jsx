@@ -171,6 +171,8 @@ export default function Messages() {
   const [sharedComposeText, setSharedComposeText] = useState("");
   const queryClient = useQueryClient();
   const lastMessagesUserIdRef = useRef(undefined);
+  const activeMessagesUserIdRef = useRef(currentUser?.id);
+  activeMessagesUserIdRef.current = currentUser?.id;
   const pendingCreatedDmsRef = useRef(new Map());
 
   useEffect(() => {
@@ -754,6 +756,7 @@ export default function Messages() {
 
   const startDM = async (otherUser) => {
     if (!otherUser?.id || !currentUser?.id) return;
+    const requestingUserId = currentUser.id;
     try {
       const existing = myConversations.find(c =>
         c.type === "dm" && c.participant_ids?.includes(otherUser.id) && c.participant_ids?.length === 2
@@ -763,6 +766,9 @@ export default function Messages() {
         action: "create_dm",
         participant_ids: [otherUser.id],
       });
+      // A request started by a previous account must not seed its conversation
+      // into a newly signed-in user's UI or navigate that user to the old DM.
+      if (activeMessagesUserIdRef.current !== requestingUserId) return;
       if (created?.data?.error) throw new Error(created.data.error);
       const conv = created?.data?.conversation;
       if (
@@ -809,6 +815,7 @@ export default function Messages() {
       }
       handleSelectConv(conv.id);
     } catch (err) {
+      if (activeMessagesUserIdRef.current !== requestingUserId) return;
       toast.error("Couldn't start the conversation. Please try again.");
       throw err;
     }

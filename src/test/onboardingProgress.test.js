@@ -57,6 +57,24 @@ describe("onboarding progress", () => {
     expect(result.counts.onboarding_session_refresh_failed).toBe(1);
   });
 
+  it("does not downgrade a confirmed save when retry events arrive later", () => {
+    const result = summarizeOnboardingProgress([
+      event("onboarding_profile_saved", "saved", "09"),
+      event("onboarding_submit", "saved", "10"),
+      event("onboarding_save_failed", "saved", "11"),
+      event("onboarding_session_refresh_failed", "recovering", "09"),
+      event("onboarding_validation_blocked", "recovering", "10"),
+      event("onboarding_profile_saved", "completed", "09"),
+      event("onboarding_submit", "completed", "10"),
+      event("onboarding_complete", "completed", "11"),
+    ]);
+    expect(result.counts.onboarding_profile_saved).toBe(1);
+    expect(result.counts.onboarding_session_refresh_failed).toBe(1);
+    expect(result.counts.onboarding_save_failed).toBe(0);
+    expect(result.counts.onboarding_validation_blocked).toBe(0);
+    expect(result.counts.onboarding_complete).toBe(1);
+  });
+
   it("breaks down the latest validation blocks and excludes recovered accounts", () => {
     const blocked = (id, reason) => ({
       ...event("onboarding_validation_blocked", id, "09"),

@@ -10,6 +10,13 @@ describe('Messages presence lifecycle', () => {
     expect(source).toContain('res?.data?.userId !== currentUser.id');
     expect(source).toContain('res?.data?.isOnline !== true');
     expect(source).toContain('Presence heartbeat was not confirmed.');
+    expect(source).toContain('let presenceEffectActive = true;');
+    expect(source).toContain('let presenceRequestPending = false;');
+    expect(source).toContain('if (!presenceEffectActive || presenceRequestPending || !currentUser?.id');
+    expect(source).toContain('presenceRequestPending = true;');
+    expect(source).toContain('presenceRequestPending = false;');
+    expect(source).toContain('if (presenceEffectActive) {');
+    expect(source).toContain('presenceEffectActive = false;');
     expect(source).toContain('document.visibilityState !== "visible"');
     expect(source).toContain('const presenceHeartbeat = window.setInterval(refreshMessagesPresence, 30_000);');
     expect(source).toContain('window.clearInterval(presenceHeartbeat);');

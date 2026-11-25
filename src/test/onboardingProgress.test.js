@@ -25,9 +25,24 @@ describe("onboarding progress", () => {
       onboarding_validation_blocked: 0,
       onboarding_submit: 1,
       onboarding_save_failed: 0,
+      onboarding_session_refresh_failed: 0,
       onboarding_complete: 1,
     });
   });
+  it("distinguishes confirmed profile saves awaiting session recovery from failed writes", () => {
+    const result = summarizeOnboardingProgress([
+      event("onboarding_submit", "saved-waiting", "09"),
+      event("onboarding_session_refresh_failed", "saved-waiting", "10"),
+      event("onboarding_submit", "write-failed", "09"),
+      event("onboarding_save_failed", "write-failed", "10"),
+      event("onboarding_session_refresh_failed", "later-completed", "10"),
+      event("onboarding_complete", "later-completed", "11"),
+    ]);
+    expect(result.counts.onboarding_session_refresh_failed).toBe(1);
+    expect(result.counts.onboarding_save_failed).toBe(1);
+    expect(result.counts.onboarding_complete).toBe(1);
+  });
+
   it("breaks down the latest validation blocks and excludes recovered accounts", () => {
     const blocked = (id, reason) => ({
       ...event("onboarding_validation_blocked", id, "09"),

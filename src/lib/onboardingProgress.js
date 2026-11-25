@@ -4,6 +4,7 @@ export const onboardingStages = [
   ["onboarding_validation_blocked", "Blocked by validation"],
   ["onboarding_submit", "Submitted without a recorded result"],
   ["onboarding_save_failed", "Profile save failed"],
+  ["onboarding_profile_saved", "Profile saved, session pending"],
   ["onboarding_session_refresh_failed", "Saved, awaiting session recovery"],
   ["onboarding_complete", "Completed setup"],
 ];

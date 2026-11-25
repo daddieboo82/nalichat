@@ -212,8 +212,11 @@ export default function Messages() {
   }, [location.pathname, location.search, location.state, navigate]);
 
   useEffect(() => {
+    let presenceEffectActive = true;
+    let presenceRequestPending = false;
     const refreshMessagesPresence = async () => {
-      if (!currentUser?.id || document.visibilityState !== "visible") return;
+      if (!presenceEffectActive || presenceRequestPending || !currentUser?.id || document.visibilityState !== "visible") return;
+      presenceRequestPending = true;
       // Messages is the presence-sensitive surface. Refresh this user's heartbeat
       // immediately before reloading the directory so non-admin accounts do not
       // depend on the slower app-shell heartbeat to appear in Active Now.
@@ -229,9 +232,15 @@ export default function Messages() {
           throw new Error('Presence heartbeat was not confirmed.');
         }
       } catch (error) {
-        console.warn('Messages presence refresh failed:', error);
+        if (presenceEffectActive) console.warn('Messages presence refresh failed:', error);
+      } finally {
+        presenceRequestPending = false;
       }
-      queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUser.id] });
+      // A prior account's heartbeat can resolve after an account switch.
+      // Never refresh its directory or surface its errors after cleanup.
+      if (presenceEffectActive) {
+        queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUser.id] });
+      }
     };
 
     const refreshVisibleMessages = () => {
@@ -252,6 +261,7 @@ export default function Messages() {
     window.addEventListener("focus", refreshVisibleMessages);
     window.addEventListener("pageshow", refreshVisibleMessages);
     return () => {
+      presenceEffectActive = false;
       window.clearInterval(presenceHeartbeat);
       document.removeEventListener("visibilitychange", refreshVisibleMessages);
       window.removeEventListener("focus", refreshVisibleMessages);

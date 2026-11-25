@@ -51,6 +51,7 @@ function OnboardingForm() {
   });
   const [formOwnerId, setFormOwnerId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const saveInFlightRef = useRef(false);
   const [showOptionalDetails, setShowOptionalDetails] = useState(false);
   const [savedProfileOwner, setSavedProfileOwner] = useState(null);
   const [setupError, setSetupError] = useState("");
@@ -114,7 +115,8 @@ function OnboardingForm() {
   const profileSaved = Boolean(user?.id && savedProfileOwner === user.id);
 
   const handleSave = async (displayNameOnly = false) => {
-    if (loading) return;
+    // A second tap in the same event cycle must not dispatch twice.
+    if (loading || saveInFlightRef.current) return;
     setValidationRecovery(false);
     setFieldError(null);
     setSetupError("");
@@ -148,6 +150,7 @@ function OnboardingForm() {
       }
     }
 
+    saveInFlightRef.current = true;
     setLoading(true);
     try {
       if (!profileSaved) {
@@ -198,6 +201,8 @@ function OnboardingForm() {
       });
       setSetupError(message);
       setValidationRecovery(isBadRequest && !displayNameOnly);
+    } finally {
+      saveInFlightRef.current = false;
       setLoading(false);
     }
   };

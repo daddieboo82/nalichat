@@ -361,6 +361,33 @@ describe('auth and onboarding flows', () => {
     expect(screen.getByRole('button', { name: 'Enter NaliBase' }).disabled).toBe(false);
   });
 
+  it('ignores a rejected save from the previous account and allows the next account to submit', async () => {
+    let rejectFirst;
+    const firstSave = new Promise((_, reject) => { rejectFirst = reject; });
+    mockBase44.functions.invoke.mockReturnValueOnce(firstSave);
+    const first = { id: 'account-first', full_name: 'First Artist' };
+    mockAuthState.current = { ...mockAuthState.current, user: first, isAuthenticated: true, checkUserAuth: vi.fn() };
+    const { rerender } = renderInRouter(<Onboarding />);
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+    expect(mockBase44.functions.invoke).toHaveBeenCalledTimes(1);
+    mockAuthState.current = { ...mockAuthState.current, user: { id: 'account-second', full_name: 'Second Artist' } };
+    rerender(<MemoryRouter><Onboarding /></MemoryRouter>);
+    const nextSubmit = screen.getByRole('button', { name: 'Enter NaliBase' });
+    expect(nextSubmit.disabled).toBe(false);
+    await act(async () => {
+      rejectFirst(new Error('Old account network failure'));
+      await firstSave.catch(() => {});
+    });
+    expect(screen.queryByText('Old account network failure')).toBeNull();
+    expect(nextSubmit.disabled).toBe(false);
+    expect(mockAuthState.current.checkUserAuth).not.toHaveBeenCalled();
+    mockBase44.functions.invoke.mockResolvedValueOnce({ data: { success: true, action: 'complete_onboarding', userId: 'account-second', onboardingCompleted: true } });
+    mockAuthState.current.checkUserAuth.mockResolvedValueOnce({ id: 'account-second', onboarding_completed: true });
+    fireEvent.click(nextSubmit);
+    await waitFor(() => expect(mockBase44.functions.invoke).toHaveBeenCalledTimes(2));
+    expect(mockBase44.functions.invoke).toHaveBeenLastCalledWith('completeOnboarding', expect.objectContaining({ display_name: 'Second Artist' }));
+  });
+
   it('places the single submit action after the last visible setup field', () => {
     mockAuthState.current.user = { id: 'new-artist', full_name: 'Artist' };
     mockAuthState.current.isAuthenticated = true;

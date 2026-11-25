@@ -512,6 +512,29 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.functions.invoke).toHaveBeenCalledTimes(1);
   });
 
+  it('explains a confirmed save when session refresh throws, then retries without saving twice', async () => {
+    const id = '507f1f77bcf86cd799439012';
+    const checkUserAuth = vi.fn()
+      .mockRejectedValueOnce(new Error('Network request failed'))
+      .mockResolvedValueOnce({ id, onboarding_completed: true });
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id, full_name: 'New Artist' },
+      isAuthenticated: true,
+      checkUserAuth,
+    };
+    mockBase44.functions.invoke.mockResolvedValueOnce({ data: {
+      success: true, action: 'complete_onboarding', userId: id, onboardingCompleted: true,
+    } });
+    renderInRouter(<Onboarding />);
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliBase' }));
+    await screen.findByText('Your profile is saved. Select Continue to retry opening NaliBase.');
+    expect(screen.queryByText('Network request failed')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Continue', exact: true }));
+    await waitFor(() => expect(checkUserAuth).toHaveBeenCalledTimes(2));
+    expect(mockBase44.functions.invoke).toHaveBeenCalledTimes(1);
+  });
+
   it('offers a display-name-only retry after an onboarding HTTP 400', async () => {
     const userId = '507f1f77bcf86cd799439099';
     mockAuthState.current = {

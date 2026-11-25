@@ -228,25 +228,29 @@ export default async function(req) {
       achievementCount[achievement.user_id] = (achievementCount[achievement.user_id] || 0) + 1;
     }
 
-    // Discovery itself stays bounded, but Messages relies on this endpoint for
-    // names, avatars, and presence of people already in the caller's chats.
-    // Always supplement conversation participants that fell outside the broad
-    // discovery window so older DMs never degrade to an anonymous "User".
+    // Discovery is bounded, but Messenger also needs profiles for saved
+    // contacts who may have never started a conversation. An older contact
+    // outside the discovery window must not disappear from My Contacts.
+    // Keep supplementing active conversation participants as before.
     const visibleUsers = [...allUsers];
     if (includePresence) {
       const loadedIds = new Set(visibleUsers.map((candidate: any) => candidate.id).filter(Boolean));
-      const missingParticipantIds = [...presenceVisibleTo].filter(
-        (participantId) => participantId !== user.id && !loadedIds.has(participantId),
+      const relevantIds = new Set<string>([
+        ...presenceVisibleTo,
+        ...contacts.map((contact: any) => contact.contact_user_id).filter(Boolean),
+      ]);
+      const missingRelevantIds = [...relevantIds].filter(
+        (targetId) => targetId !== user.id && !loadedIds.has(targetId),
       );
-      const missingParticipants = await Promise.all(
-        missingParticipantIds.map((participantId) =>
-          base44.asServiceRole.entities.User.get(participantId).catch(() => null)
+      const additionalUsers = await Promise.all(
+        missingRelevantIds.map((targetId) =>
+          base44.asServiceRole.entities.User.get(targetId).catch(() => null)
         ),
       );
-      for (const participant of missingParticipants) {
-        if (participant?.id && !loadedIds.has(participant.id)) {
-          loadedIds.add(participant.id);
-          visibleUsers.push(participant);
+      for (const candidate of additionalUsers) {
+        if (candidate?.id && !loadedIds.has(candidate.id)) {
+          loadedIds.add(candidate.id);
+          visibleUsers.push(candidate);
         }
       }
     }

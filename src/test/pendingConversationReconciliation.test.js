@@ -24,7 +24,9 @@ describe('new DM propagation reconciliation', () => {
     expect(expired.size).toBe(0);
     const another = entry();
     expect(reconcilePendingConversations([], another, 'different', 2000)).toEqual([]);
-    expect(another.size).toBe(0);
+    // Stale old-account reads must not wipe a new-account pending DM.
+    expect(another.size).toBe(1);
+    expect(reconcilePendingConversations([], another, 'viewer', 2000)).toEqual([dm]);
     const group = new Map([['group', { userId: 'viewer', createdAt: 1000, conversation: { id: 'group', type: 'group', participant_ids: ['viewer'] } }]]);
     expect(reconcilePendingConversations([], group, 'viewer', 2000)).toEqual([]);
   });

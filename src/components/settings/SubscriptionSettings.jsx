@@ -35,6 +35,7 @@ export default function SubscriptionSettings() {
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [resumingApproval, setResumingApproval] = useState(false);
   const [checkingPending, setCheckingPending] = useState(false);
+  const [refreshingPending, setRefreshingPending] = useState(false);
   const [pendingReview, setPendingReview] = useState(null);
   const [paypalReceipt, setPaypalReceipt] = useState(null);
   const checkPayment = async () => {
@@ -65,6 +66,34 @@ export default function SubscriptionSettings() {
       toast.error(err?.response?.data?.error || err?.message || "PayPal status review is unavailable.");
     } finally {
       setCheckingPending(false);
+    }
+  };
+
+  const refreshPendingStatus = async () => {
+    if (refreshingPending || !user?.id || !subscription.hasPending) return;
+    setRefreshingPending(true);
+    try {
+      // Terminal-only backend: checks each agreement with PayPal and changes
+      // local pending rows only when ALL are confirmed cancelled/expired.
+      // It cannot activate or create a recurring PayPal agreement.
+      const response = await base44.functions.invoke("reconcileTerminalPayPal", {});
+      const result = response?.data ?? response;
+      if (result?.success !== true || result.action !== "reconcile_terminal_paypal" ||
+          result.userId !== user.id || !Number.isInteger(result.resolved)) {
+        throw new Error(result?.error || "PayPal agreement reconciliation could not be verified.");
+      }
+      const refresh = await refetch();
+      if (refresh.isError || refresh.error || !refresh.data) {
+        throw new Error("Billing records were reviewed, but the latest subscription status could not be loaded.");
+      }
+      setPendingReview(null);
+      toast.success(refresh.data.hasPending
+        ? "Earlier billing still needs review. Please contact support before another checkout."
+        : "Ended PayPal agreements verified. Review your current plan before trying checkout.");
+    } catch (err) {
+      toast.error(err?.message || "Subscription status refresh is unavailable.");
+    } finally {
+      setRefreshingPending(false);
     }
   };
 
@@ -199,10 +228,18 @@ export default function SubscriptionSettings() {
             </Button>
           </div>
           {pendingReview && (
-            <div className="space-y-1 text-sm" aria-live="polite">
+            <div className="space-y-2 text-sm" aria-live="polite">
               <p>Earlier agreements checked: {pendingReview.total}</p>
               <p>PayPal reported: {pendingReview.results.map((result) => String(result.status).replaceAll("_", " ")).join(", ") || "none"}.</p>
               <p className="text-muted-foreground">This check does not confirm payment or change billing. Approved or active agreements still require subscription verification.</p>
+              {pendingReview.results.length > 0 && pendingReview.results.every((result) => ["cancelled", "expired"].includes(result.status)) && (
+                <div className="space-y-2">
+                  <p>PayPal reports your earlier agreements are ended. Refresh your account status so NaliChat can verify this before another checkout.</p>
+                  <Button variant="outline" className="min-h-11" onClick={refreshPendingStatus} disabled={refreshingPending}>
+                    {refreshingPending ? "Refreshing billing..." : "Refresh subscription status"}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
           <p className="text-sm text-muted-foreground">If PayPal cannot verify your earlier agreement, <a href="mailto:nalichat@nalichat.org?subject=NaliChat%20PayPal%20billing%20review" className="underline underline-offset-2">contact billing support</a> before trying another checkout.</p>

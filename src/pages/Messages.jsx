@@ -218,7 +218,16 @@ export default function Messages() {
       // immediately before reloading the directory so non-admin accounts do not
       // depend on the slower app-shell heartbeat to appear in Active Now.
       try {
-        await base44.functions.invoke('updateUserPresence', { isOnline: true });
+        const res = await base44.functions.invoke('updateUserPresence', { isOnline: true });
+        if (res?.data?.error) throw new Error(res.data.error);
+        if (
+          res?.data?.success !== true ||
+          res?.data?.action !== 'update_presence' ||
+          res?.data?.userId !== currentUser.id ||
+          res?.data?.isOnline !== true
+        ) {
+          throw new Error('Presence heartbeat was not confirmed.');
+        }
       } catch (error) {
         console.warn('Messages presence refresh failed:', error);
       }

@@ -51,7 +51,9 @@ function OnboardingForm() {
   });
   const [formOwnerId, setFormOwnerId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const saveInFlightRef = useRef(false);
+  const saveInFlightRef = useRef(null);
+  const activeUserIdRef = useRef(user?.id);
+  activeUserIdRef.current = user?.id;
   const [showOptionalDetails, setShowOptionalDetails] = useState(false);
   const [savedProfileOwner, setSavedProfileOwner] = useState(null);
   const [setupError, setSetupError] = useState("");
@@ -81,6 +83,10 @@ function OnboardingForm() {
     if (user) {
       if (formOwnerId === user.id && onboardingInteractionTracked) return;
       if (formOwnerId !== user.id) {
+        // A previous account's pending save must not lock this account's form.
+        saveInFlightRef.current = null;
+        setLoading(false);
+        setSavedProfileOwner(null);
         setOnboardingInteractionTracked(false);
         setFieldError(null);
         setSetupError("");
@@ -150,7 +156,9 @@ function OnboardingForm() {
       }
     }
 
-    saveInFlightRef.current = true;
+    const saveAttempt = { userId: submittingUserId };
+    saveInFlightRef.current = saveAttempt;
+    const stillCurrentAttempt = () => activeUserIdRef.current === submittingUserId && saveInFlightRef.current === saveAttempt;
     setLoading(true);
     // Once the backend confirms the profile, later auth-refresh failures
     // must not be presented as a failed save to the creator.
@@ -164,6 +172,7 @@ function OnboardingForm() {
           bio: displayNameOnly ? (user.bio || "") : form.bio,
           location: displayNameOnly ? (user.location || "") : form.location,
         });
+        if (!stillCurrentAttempt()) return;
         if (res?.data?.error) throw new Error(res.data.error);
         if (
           res?.data?.success !== true ||
@@ -175,7 +184,9 @@ function OnboardingForm() {
         setSavedProfileOwner(submittingUserId);
       }
 
+      if (!stillCurrentAttempt()) return;
       const refreshedUser = await checkUserAuth();
+      if (!stillCurrentAttempt()) return;
       if (
         !refreshedUser?.id ||
         refreshedUser.id !== submittingUserId ||
@@ -194,6 +205,7 @@ function OnboardingForm() {
       // would just re-download JS and re-run the auth probe for nothing.
       navigate(destinationAfterSetup(), { replace: true });
     } catch (error) {
+      if (!stillCurrentAttempt()) return;
       const httpStatus = Number(error?.response?.status ?? error?.status ?? 0);
       const isBadRequest = httpStatus === 400 || /status code 400/.test(String(error?.message || ""));
       const errorDetail = error?.response?.data?.error || error?.data?.error || error?.message || "Failed to complete setup";
@@ -208,8 +220,10 @@ function OnboardingForm() {
       setSetupError(message);
       setValidationRecovery(!profileWriteConfirmed && isBadRequest && !displayNameOnly);
     } finally {
-      saveInFlightRef.current = false;
-      setLoading(false);
+      if (stillCurrentAttempt()) {
+        saveInFlightRef.current = null;
+        setLoading(false);
+      }
     }
   };
 

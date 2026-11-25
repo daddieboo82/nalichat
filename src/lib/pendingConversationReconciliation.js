@@ -8,7 +8,10 @@ export function reconcilePendingConversations(serverRows, pending, userId, now =
   const presentIds = new Set(rows.map(row => row?.id));
   const extra = [];
   for (const [id, item] of pending) {
-    if (!item || item.userId !== userId || now - item.createdAt >= PENDING_CONVERSATION_MAX_AGE_MS || presentIds.has(id)) {
+    if (item?.userId !== userId) continue;
+    // A previous account's delayed fetch must not clear the new account's
+    // pending entry. Account-switch cleanup owns removal across identities.
+    if (now - item.createdAt >= PENDING_CONVERSATION_MAX_AGE_MS || presentIds.has(id)) {
       pending.delete(id);
       continue;
     }

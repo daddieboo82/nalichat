@@ -87,8 +87,6 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     if (!text.trim() || disabled || sendInFlightRef.current) return;
     sendInFlightRef.current = true;
     const submittedText = text;
-    sounds.upload();
-    if (navigator.vibrate) navigator.vibrate(15);
     const payload = { text: text.trim(), type: "text" };
     if (replyTo) {
       payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
@@ -96,6 +94,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       payload.reply_to_id = replyTo.id;
     }
     try {
+      sounds.upload();
+      if (navigator.vibrate) navigator.vibrate(15);
       await Promise.resolve(onSend(payload));
       // An edit may take time to confirm. Do not erase text typed while it
       // was in flight; only clear the exact draft that was submitted.

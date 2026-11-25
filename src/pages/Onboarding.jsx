@@ -187,6 +187,10 @@ function OnboardingForm() {
         ) throw new Error("Profile setup was not confirmed");
         profileWriteConfirmed = true;
         setSavedProfileOwner(submittingUserId);
+        trackProductEvent("onboarding_profile_saved", {
+          source: "profile_setup",
+          user_id: submittingUserId,
+        });
       }
 
       if (!stillCurrentAttempt()) return;

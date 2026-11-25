@@ -217,7 +217,7 @@ function OnboardingForm() {
       const message = profileWriteConfirmed
         ? "Your profile is saved. Select Continue to retry opening NaliBase."
         : typeof errorDetail === "string" ? errorDetail : "Failed to complete setup";
-      trackProductEvent("onboarding_save_failed", {
+      trackProductEvent(profileWriteConfirmed ? "onboarding_session_refresh_failed" : "onboarding_save_failed", {
         source: "profile_setup",
         user_id: submittingUserId,
         reason: profileWriteConfirmed ? "session_refresh_failed_after_save" : isBadRequest ? "request_rejected" : "save_or_session_failed",

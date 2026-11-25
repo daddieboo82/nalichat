@@ -1042,6 +1042,20 @@ export default function Messages() {
               onBack={handleBackToConversations}
               onStartDM={startDM}
             />
+          ) : selectedConvId ? (
+            <div data-testid="messages-chat-recovery" role="status" className="flex-1 min-h-0 flex flex-col items-center justify-center gap-4 px-6 text-center">
+              <MessageSquare className="h-9 w-9 text-primary" aria-hidden="true" />
+              <p className="text-base font-semibold text-foreground">Opening conversation…</p>
+              <p className="max-w-sm text-sm text-muted-foreground">Your chat is not available yet. Refresh the conversation list or return to your chats.</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button type="button" onClick={() => queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] })}>
+                  Retry
+                </Button>
+                <Button type="button" variant="outline" onClick={handleBackToConversations}>
+                  Back to chats
+                </Button>
+              </div>
+            </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />

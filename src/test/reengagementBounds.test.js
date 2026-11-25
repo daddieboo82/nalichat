@@ -10,9 +10,12 @@ describe('reengagement candidate bounds', () => {
   it('targets only stalled users and caps each maintenance run', async () => {
     const source = await readText('base44/functions/reengageStalledUsers/entry.ts');
 
-    expect(source).toContain('MAX_REENGAGEMENTS_PER_RUN = 500');
-    expect(source).toMatch(/User\.filter\([\s\S]*onboarding_completed: false[\s\S]*reengagement_sent_at: null[\s\S]*created_date: \{ \$lt: oneDayAgo \}[\s\S]*MAX_REENGAGEMENTS_PER_RUN/);
+    expect(source).toContain('MAX_REENGAGEMENTS_PER_RUN = 25');
+    expect(source).toMatch(/User\.filter\([\s\S]*onboarding_completed: \{ \$ne: true \}[\s\S]*reengagement_sent_at: null[\s\S]*created_date: \{ \$lt: oneDayAgo \}[\s\S]*MAX_REENGAGEMENTS_PER_RUN/);
     expect(source).not.toContain('User.list()');
+    expect(source).toMatch(/consumeHourlyLimit\(s, candidate.id, 'onboarding_reminder_delivery', 1\)/);
+    expect(source.indexOf('s.User.get(candidate.id)')).toBeLessThan(source.indexOf('integrations.Core.SendEmail'));
+    expect(source).toContain('user.onboarding_completed === true || user.reengagement_sent_at');
   });
   it('allows only the daily scheduler window without weakening manual admin authorization', async () => {
     const source = await readText('base44/functions/reengageStalledUsers/entry.ts');

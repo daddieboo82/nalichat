@@ -308,7 +308,9 @@ export default function AdminDashboard() {
                     <dl className="mt-3 space-y-1 text-xs text-muted-foreground">
                       <div className="flex justify-between gap-3"><dt>Missing completion flag</dt><dd>{stats.onboardingMissingFlag}</dd></div>
                       <div className="flex justify-between gap-3"><dt>Reminder recorded</dt><dd>{stats.onboardingReminderRecorded}</dd></div>
-                      <div className="flex justify-between gap-3"><dt>Over 24 hours old, missing flag and reminder</dt><dd>{stats.onboardingMissedByFlagFilter}</dd></div>
+                      {Number.isInteger(stats.onboardingAwaitingReminder) && (
+                        <div className="flex justify-between gap-3"><dt>Eligible for a first reminder</dt><dd>{stats.onboardingAwaitingReminder}</dd></div>
+                      )}
                     </dl>
                   )}
                 </div>

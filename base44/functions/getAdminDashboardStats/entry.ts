@@ -9,7 +9,7 @@ async function aggregateUsers(entities: any) {
     incomplete: 0,
     missingFlag: 0,
     reminderRecorded: 0,
-    missedByFlagFilter: 0,
+    awaitingReminder: 0,
   };
   const now = Date.now();
   const reminderCutoff = now - 24 * 60 * 60 * 1000;
@@ -19,14 +19,14 @@ async function aggregateUsers(entities: any) {
     const page = await entities.User.filter({}, '-created_date', PAGE_SIZE, skip);
     totalUsers += page.length;
     for (const account of page) {
-      if (account.onboarding_completed !== true) {
+      if (account.onboarding_completed !== true && account.role !== 'admin' && !account.is_banned) {
         onboarding.incomplete += 1;
         if (account.reengagement_sent_at) onboarding.reminderRecorded += 1;
-        if (account.onboarding_completed == null) {
-          onboarding.missingFlag += 1;
-          if (!account.reengagement_sent_at && Date.parse(account.created_date) < reminderCutoff) {
-            onboarding.missedByFlagFilter += 1;
-          }
+        if (account.onboarding_completed == null) onboarding.missingFlag += 1;
+        if (account.email && !account.reengagement_sent_at &&
+            Date.parse(account.created_date) < reminderCutoff &&
+            !(Date.parse(account.timeout_until) > now)) {
+          onboarding.awaitingReminder += 1;
         }
       }
       if (account.id && Date.parse(account.last_seen) >= seenSince) recentlySeenUserIds.add(account.id);
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
         incompleteOnboardingAccounts: users.onboarding.incomplete,
         onboardingMissingFlag: users.onboarding.missingFlag,
         onboardingReminderRecorded: users.onboarding.reminderRecorded,
-        onboardingMissedByFlagFilter: users.onboarding.missedByFlagFilter,
+        onboardingAwaitingReminder: users.onboarding.awaitingReminder,
         ...subscriptions.counts,
         activeSubscriberAccounts: subscriptions.activeUserIds.size,
         activeSubscriberAccountsSeen30d: [...subscriptions.activeUserIds].filter(id => users.recentlySeenUserIds.has(id)).length,

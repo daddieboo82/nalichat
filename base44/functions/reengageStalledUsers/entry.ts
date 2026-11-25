@@ -94,13 +94,16 @@ export default async function(req) {
     const s = base44.asServiceRole.entities;
 
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const MAX_REENGAGEMENTS_PER_RUN = 500;
+    const MAX_REENGAGEMENTS_PER_RUN = 25;
 
     // Query only eligible users and cap one maintenance run so a single trigger
     // cannot fan out into a full user-table read or an unbounded email burst.
     const stalled = await s.User.filter(
       {
-        onboarding_completed: false,
+        onboarding_completed: { $ne: true },
+        is_banned: { $ne: true },
+        role: { $ne: 'admin' },
+        $or: [{ timeout_until: null }, { timeout_until: { $lte: new Date().toISOString() } }],
         reengagement_sent_at: null,
         created_date: { $lt: oneDayAgo },
       },
@@ -111,15 +114,27 @@ export default async function(req) {
     const errors = [];
     let sent = 0;
 
-    for (const user of stalled) {
+    for (const candidate of stalled) {
       try {
+        const claim = await consumeHourlyLimit(s, candidate.id, 'onboarding_reminder_delivery', 1);
+        if (!claim.allowed) continue;
+
+        const user = await s.User.get(candidate.id);
+        if (!user?.email || user.role === 'admin' || user.is_banned ||
+            user.onboarding_completed === true || user.reengagement_sent_at ||
+            !(Date.parse(user.created_date) < Date.parse(oneDayAgo)) ||
+            Date.parse(user.timeout_until) > Date.now()) continue;
         const displayName = user.display_name || user.full_name || 'there';
+        const htmlName = String(displayName)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;');
         await base44.asServiceRole.integrations.Core.SendEmail({
           to: user.email,
           subject: 'Finish setting up your NaliBase profile',
           html: `
             <div style="font-family: 'Inter', sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-              <h2 style="color: #9d50bb; margin-bottom: 16px;">Hey ${displayName}! 👋</h2>
+              <h2 style="color: #9d50bb; margin-bottom: 16px;">Hey ${htmlName}! 👋</h2>
               <p style="color: #333; line-height: 1.6;">
                 We noticed you haven't finished setting up your NaliBase profile yet.
                 It only takes a minute — just add your display name to unlock
@@ -144,7 +159,7 @@ export default async function(req) {
         await s.User.update(user.id, { reengagement_sent_at: new Date().toISOString() });
         sent++;
       } catch (err) {
-        console.error(`Failed to re-engage user ${user.id}:`, err);
+        console.error(`Failed to re-engage user ${candidate.id}:`, err);
         errors.push('delivery_failed');
       }
     }

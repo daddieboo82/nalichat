@@ -1021,12 +1021,16 @@ export default function Messages() {
               theme={activeChatTheme}
               initialComposeText={sharedComposeText}
               onInitialComposeConsumed={() => setSharedComposeText("")}
-              onSendMessage={(data) => {
+              onSendMessage={async (data) => {
                 if (isBlocked) {
                   toast.error(currentUser?.is_banned ? "You are banned from sending messages." : "You are timed out and cannot send messages right now.");
                   throw new Error(currentUser?.is_banned ? "banned" : "timed_out");
                 }
-                sendMessage.mutate({ ...data, conversation_id: selectedConvId });
+                const result = await sendMessage.mutateAsync({ ...data, conversation_id: selectedConvId });
+                // The mutation's onSuccess handler displays the moderation
+                // warning; reject here so ChatInput retains the unsent draft.
+                if (result?._flagged) throw new Error("moderated");
+                return result;
               }}
               onEditMessage={async (id, text) => {
                 const result = await editMessage.mutateAsync({ id, text, conversationId: selectedConvId });

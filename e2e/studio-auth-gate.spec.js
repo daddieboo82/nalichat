@@ -11,6 +11,17 @@ test.describe('Studio authentication routing', () => {
     expect(errors).toEqual([]);
   });
 
+  test('Studio registration link preserves the protected return destination', async ({ page }) => {
+    await page.goto('/studio');
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/login');
+    const signUp = page.getByRole('link', { name: /create.*account|sign up|register/i }).first();
+    await expect(signUp).toBeVisible();
+    await signUp.click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/register');
+    expect(new URL(page.url()).searchParams.get('returnTo')).toBe('/studio');
+    await expect(page.locator('input[type="email"]')).toBeVisible();
+  });
+
   test('Studio sign-in preserves the intended return destination', async ({ page }) => {
     await page.goto('/studio');
     await expect(page).toHaveURL(/\/login\?returnTo=%2Fstudio/, { timeout: 30_000 });

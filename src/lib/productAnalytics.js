@@ -131,7 +131,7 @@ function track(name, properties = {}) {
   const funnelEvents = new Set([
     "homepage_view", "homepage_demo_click", "signup_click", "registration_view", "registration_form_interaction", "registration_started",
     "registration_completed", "registration_failed", "login_started", "login_completed", "login_failed", "product_session_started", "product_session_engagement",
-    "otp_resend_success", "onboarding_view", "onboarding_form_interaction", "onboarding_submit", "onboarding_save_failed", "onboarding_session_refresh_failed", "onboarding_validation_blocked", "onboarding_complete", "post_login_action", "messenger_discovery_view",
+    "otp_resend_success", "onboarding_view", "onboarding_form_interaction", "onboarding_submit", "onboarding_save_failed", "onboarding_profile_saved", "onboarding_session_refresh_failed", "onboarding_validation_blocked", "onboarding_complete", "post_login_action", "messenger_discovery_view",
     "contact_added", "messenger_discovery_message_click", "first_message", "studio_open", "first_upload", "activation_complete", "return_visit", "creator_challenge_open", "creator_challenge_publish",
     "upgrade_click", "billing_review_click", "paywall_view", "paywall_tier_select", "paywall_primary_cta", "paywall_dismissed", "entitlement_prompt_view", "entitlement_prompt_convert", "checkout_started", "checkout_canceled", "purchase_completed", "purchase_failed", "checkout_error_diagnostic"
   ]);

@@ -383,6 +383,25 @@ describe('auth and onboarding flows', () => {
     expect(screen.getByText('2000-character limit reached.')).toBeTruthy();
   });
 
+  it('sends one onboarding request when the submit action fires twice before React updates', async () => {
+    const userId = '507f1f77bcf86cd799439012';
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: userId, full_name: 'New Artist', onboarding_completed: false },
+      isAuthenticated: true,
+      checkUserAuth: vi.fn().mockResolvedValue({ id: userId, onboarding_completed: true }),
+    };
+    let resolveSave;
+    mockBase44.functions.invoke.mockImplementationOnce(() => new Promise(resolve => { resolveSave = resolve; }));
+    renderInRouter(<Onboarding />);
+    const submit = screen.getByRole('button', { name: 'Enter NaliBase' });
+    fireEvent.submit(submit.closest('form'));
+    fireEvent.submit(submit.closest('form'));
+    expect(mockBase44.functions.invoke).toHaveBeenCalledTimes(1);
+    resolveSave({ data: { success: true, action: 'complete_onboarding', userId, onboardingCompleted: true } });
+    await waitFor(() => expect(mockAuthState.current.checkUserAuth).toHaveBeenCalledTimes(1));
+  });
+
   it('saves onboarding profile data and refreshes auth state', async () => {
     const checkUserAuth = vi.fn().mockResolvedValue({ id: '507f1f77bcf86cd799439012', onboarding_completed: true });
     mockAuthState.current = {

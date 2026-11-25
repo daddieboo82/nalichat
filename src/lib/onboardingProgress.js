@@ -29,6 +29,12 @@ export function summarizeOnboardingProgress(events) {
     const previous = latestByAccount.get(event.user_id);
     const timestamp = Date.parse(event.created_date || event.created_at) || 0;
     if (previous?.name === "onboarding_complete") continue;
+    // A confirmed backend save is durable. Later retry clicks, validation
+    // messages or legacy save-error events cannot undo that confirmation.
+    // Session-refresh failures remain a useful later stage until completion.
+    const previouslySaved = previous?.name === "onboarding_profile_saved" ||
+      previous?.name === "onboarding_session_refresh_failed";
+    if (previouslySaved && stageOrder.get(event.event_name) < stageOrder.get("onboarding_profile_saved")) continue;
     const completed = event.event_name === "onboarding_complete";
     const newer = !previous || timestamp > previous.timestamp;
     const sameTimeLaterStage = previous && timestamp === previous.timestamp &&

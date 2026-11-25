@@ -8,9 +8,9 @@ describe('member-scoped conversation reads', () => {
 
     // The member scope belongs in the query so each poll costs the user's own
     // conversations, not the whole table plus a browser-side filter.
-    expect(source).toContain('base44.entities.Conversation,');
-    expect(source).toContain('{ participant_ids: currentUser.id }');
-    expect(source).toContain('"-last_message_at"');
+    expect(source).toMatch(
+      /const requestingUserId = currentUser\.id;\s+const rows = await filterAll\(\s*base44\.entities\.Conversation,\s*\{ participant_ids: requestingUserId \},\s*"-last_message_at",\s*\)/,
+    );
     expect(source).not.toContain('async function listAll(');
     expect(source).not.toContain('action: "list_member_conversations"');
   });

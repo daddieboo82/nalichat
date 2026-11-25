@@ -44,6 +44,28 @@ test('existing customer keeps Premium plan and campaign context when switching f
   expect(protectedRequests).toEqual([]);
 });
 
+test('Premium Plus selection survives switching from registration to login and back', async ({ page }) => {
+  const protectedRequests = [];
+  page.on('request', request => {
+    if (/createPayPalSubscription|sendAgentMessage/.test(request.url())) protectedRequests.push(request.url());
+  });
+  await page.goto('/pricing?billing=annual&source=premium-plus-return-check');
+  await page.locator('#premium_plus-plan').getByRole('button', { name: /sign up for premium plus/i }).click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/register');
+  await expect(page.getByRole('heading', { name: /create your account for premium plus/i })).toBeVisible();
+  await page.getByRole('link', { name: /^log in$/i }).click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/login');
+  await page.getByRole('link', { name: /create a free account/i }).click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/register');
+  const destination = new URL(new URL(page.url()).searchParams.get('returnTo'), page.url());
+  expect(destination.pathname).toBe('/pricing');
+  expect(destination.searchParams.get('plan')).toBe('premium_plus');
+  expect(destination.searchParams.get('billing')).toBe('annual');
+  expect(destination.searchParams.get('source')).toBe('premium-plus-return-check');
+  await expect(page.getByRole('heading', { name: /create your account for premium plus/i })).toBeVisible();
+  expect(protectedRequests).toEqual([]);
+});
+
 test('anonymous mobile customer can choose annual Premium Plus without checkout', async ({ page }) => {
   const subscriptionCreationRequests = [];
   page.on('request', request => {

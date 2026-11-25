@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -351,8 +351,11 @@ describe('auth and onboarding flows', () => {
     rerender(<MemoryRouter><Onboarding /></MemoryRouter>);
     expect(screen.getByRole('textbox', { name: /display name/i }).value).toBe('Second Artist');
     expect(screen.getByRole('button', { name: 'Enter NaliBase' }).disabled).toBe(false);
-    resolveFirst({ data: { success: true, action: 'complete_onboarding', userId: 'account-first', onboardingCompleted: true } });
-    await waitFor(() => expect(mockBase44.functions.invoke).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      resolveFirst({ data: { success: true, action: 'complete_onboarding', userId: 'account-first', onboardingCompleted: true } });
+      await firstSave;
+    });
+    expect(mockBase44.functions.invoke).toHaveBeenCalledTimes(1);
     expect(mockAuthState.current.checkUserAuth).not.toHaveBeenCalled();
     expect(screen.queryByText(/Your profile is saved/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Enter NaliBase' }).disabled).toBe(false);

@@ -103,8 +103,13 @@ function OnboardingForm() {
       setFormOwnerId(user.id);
       setInitializing(false);
     } else if (isAuthenticated === false) {
-        setFormOwnerId(null);
-        window.location.href = onboardingLoginPath();
+      // Invalidate pending completion requests before redirecting away. Their
+      // eventual success or failure must not update a later signed-in account.
+      saveInFlightRef.current = null;
+      setLoading(false);
+      setSavedProfileOwner(null);
+      setFormOwnerId(null);
+      window.location.href = onboardingLoginPath();
     }
   }, [user, isAuthenticated, formOwnerId, onboardingInteractionTracked]);
 

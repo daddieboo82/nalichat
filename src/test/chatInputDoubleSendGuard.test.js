@@ -12,6 +12,14 @@ describe('message composer duplicate-submission guard', () => {
     expect(source).toContain('} finally {\n      sendInFlightRef.current = false;');
   });
 
+  it('keeps the guard active until the Messages send mutation settles', async () => {
+    const page = await readFile('src/pages/Messages.jsx', 'utf8');
+    const handler = page.slice(page.indexOf('onSendMessage={async (data) =>'), page.indexOf('onEditMessage={async (id, text) =>'));
+    expect(handler).toContain('await sendMessage.mutateAsync({ ...data, conversation_id: selectedConvId });');
+    expect(handler).toContain('if (result?._flagged) throw new Error("moderated");');
+    expect(handler).not.toContain('sendMessage.mutate({');
+  });
+
   it('preserves text added while an asynchronous message edit is being confirmed', async () => {
     const source = await readFile('src/components/messages/ChatInput.jsx', 'utf8');
     expect(source).toContain('const submittedText = text;');

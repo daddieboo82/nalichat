@@ -27,6 +27,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
+    // The initial save may succeed even if its response or subsequent auth
+    // refresh times out. Treat an already-completed profile as a successful
+    // retry without spending another rate-limit slot or overwriting edits.
+    if (user.onboarding_completed === true) {
+      return Response.json({
+        success: true,
+        action: 'complete_onboarding',
+        userId: user.id,
+        onboardingCompleted: true,
+      });
+    }
+
     const writeRate = await consumeHourlyLimit(
       base44.asServiceRole.entities,
       user.id,

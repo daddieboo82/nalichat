@@ -25,6 +25,7 @@ import { getChatTheme } from "@/lib/chatThemes";
 import { toast } from "sonner";
 import { useLockedChats } from "@/lib/LockedChatsContext";
 import useChatScroll from "@/hooks/useChatScroll";
+import { chatKeyboardOffset } from "@/lib/chatKeyboardOffset";
 
 import React from "react";
 
@@ -112,14 +113,10 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     const vv = window.visualViewport;
     const onResize = () => {
       if (!vv) return;
-      const layoutHeight = document.documentElement?.clientHeight || window.innerHeight;
-      const viewportAlreadyResized = layoutHeight < window.screen.height * 0.8;
-      const rawOffset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      // Modern Android commonly resizes the layout viewport for the keyboard;
-      // lifting again would double-shift the composer. Only compensate when the
-      // visual viewport is actually being overlaid (not already resized).
-      const offset = viewportAlreadyResized ? 0 : rawOffset;
-      setKeyboardOffset(offset > 80 ? offset : 0);
+      // Compare the visible viewport with the *current* layout viewport.
+      // Android viewport-resize mode yields almost no difference, whereas
+      // overlay keyboards need a lift even in short landscape viewports.
+      setKeyboardOffset(chatKeyboardOffset(window.innerHeight, vv.height, vv.offsetTop));
     };
     if (vv) {
       vv.addEventListener('resize', onResize);

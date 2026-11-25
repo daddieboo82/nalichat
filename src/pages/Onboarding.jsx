@@ -152,6 +152,9 @@ function OnboardingForm() {
 
     saveInFlightRef.current = true;
     setLoading(true);
+    // Once the backend confirms the profile, later auth-refresh failures
+    // must not be presented as a failed save to the creator.
+    let profileWriteConfirmed = profileSaved;
     try {
       if (!profileSaved) {
         trackProductEvent("onboarding_submit", { source: "profile_setup", user_id: submittingUserId, mode: displayNameOnly ? "name_only" : "full_form" });
@@ -168,6 +171,7 @@ function OnboardingForm() {
           res?.data?.userId !== submittingUserId ||
           res?.data?.onboardingCompleted !== true
         ) throw new Error("Profile setup was not confirmed");
+        profileWriteConfirmed = true;
         setSavedProfileOwner(submittingUserId);
       }
 
@@ -193,14 +197,16 @@ function OnboardingForm() {
       const httpStatus = Number(error?.response?.status ?? error?.status ?? 0);
       const isBadRequest = httpStatus === 400 || /status code 400/.test(String(error?.message || ""));
       const errorDetail = error?.response?.data?.error || error?.data?.error || error?.message || "Failed to complete setup";
-      const message = typeof errorDetail === "string" ? errorDetail : "Failed to complete setup";
+      const message = profileWriteConfirmed
+        ? "Your profile is saved. Select Continue to retry opening NaliBase."
+        : typeof errorDetail === "string" ? errorDetail : "Failed to complete setup";
       trackProductEvent("onboarding_save_failed", {
         source: "profile_setup",
         user_id: submittingUserId,
-        reason: isBadRequest ? "request_rejected" : "save_or_session_failed",
+        reason: profileWriteConfirmed ? "session_refresh_failed_after_save" : isBadRequest ? "request_rejected" : "save_or_session_failed",
       });
       setSetupError(message);
-      setValidationRecovery(isBadRequest && !displayNameOnly);
+      setValidationRecovery(!profileWriteConfirmed && isBadRequest && !displayNameOnly);
     } finally {
       saveInFlightRef.current = false;
       setLoading(false);

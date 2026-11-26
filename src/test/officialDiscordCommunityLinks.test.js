@@ -9,6 +9,8 @@ describe('official NaliChat Discord community invite', () => {
     ['src/components/GlobalHelpDialog.jsx', 'Join NaliChat Discord'],
     ['src/pages/CreatorMessagingLanding.jsx', 'Join Discord'],
     ['src/pages/Home.jsx', 'Join Discord'],
+    ['src/components/navigation/MobileHeader.jsx', 'NaliChat Discord'],
+    ['src/components/navigation/DesktopNav.jsx', 'NaliChat Discord'],
   ]) {
     it(`exposes the supplied invite on ${path} without replacing existing app navigation`, async () => {
       const source = await readFile(path, 'utf8');
@@ -26,5 +28,10 @@ describe('official NaliChat Discord community invite', () => {
     expect(landing).toContain('trackProductEvent("discord_invite_click", { source: "creator_messaging_landing", placement: "hero" })');
     expect(help).toContain('trackProductEvent("discord_invite_click", { source: "help_dialog", placement: "community_support" })');
     expect(home).toContain('trackProductEvent("discord_invite_click", { source: "public_home", placement: "footer" })');
+    const mobile = await readFile('src/components/navigation/MobileHeader.jsx', 'utf8');
+    const desktop = await readFile('src/components/navigation/DesktopNav.jsx', 'utf8');
+    expect(mobile).toContain('trackProductEvent("discord_invite_click", { source: "mobile_more_menu", placement: "community_link" })');
+    expect(desktop).toContain('trackProductEvent("discord_invite_click", { source: "desktop_more_menu", placement: "community_link" })');
+    expect(mobile).toContain('(!query || "discord community creators support".includes(query))');
   });
 });

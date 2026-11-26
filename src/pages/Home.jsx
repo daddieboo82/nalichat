@@ -952,6 +952,7 @@ export default function Home() {
               <Link to="/register" className="min-h-11 inline-flex items-center hover:text-foreground" onClick={() => trackProductEvent("signup_click", { source: "public_footer", cta: "create_account" })}>Create Account</Link>
               <Link to="/pricing" className="min-h-11 inline-flex items-center hover:text-foreground">Compare Plans</Link>
               <Link to="/download" className="min-h-11 inline-flex items-center hover:text-foreground">Download Apps</Link>
+              <a href="https://discord.gg/hU9WhHNWA" target="_blank" rel="noopener noreferrer" className="min-h-11 inline-flex items-center hover:text-foreground">Join Discord</a>
               <a href="mailto:support@nalichat.org" className="min-h-11 inline-flex items-center hover:text-foreground">Contact Support</a>
             </div>
             <p className="mt-2">NaliBase · Six connected worlds for creativity, entertainment, collaboration, and discovery</p>

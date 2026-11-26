@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  ChevronLeft, AudioLines, LogIn, LogOut, Menu, Settings, Gem, BarChart3, User
+  ChevronLeft, AudioLines, LogIn, LogOut, Menu, Settings, Gem, BarChart3, User, UsersRound, ExternalLink
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import NotificationBell from "@/components/notifications/NotificationBell";
@@ -224,6 +224,25 @@ export default function MobileHeader() {
                   <p className="text-xs text-muted-foreground">NALI.ai, Studio AI and more creator tools</p>
                 </div>
               </button>
+            )}
+
+            {/* Official external community — discoverable even in menu search. */}
+            {(!query || "discord community creators support".includes(query)) && (
+              <a
+                href="https://discord.gg/hU9WhHNWA"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  trackProductEvent("discord_invite_click", { source: "mobile_more_menu", placement: "community_link" });
+                  setMenuOpen(false);
+                }}
+                className="ui-hover flex min-h-14 w-full items-center gap-3 rounded-xl border border-primary/25 bg-primary/10 p-3 text-left text-foreground hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label="Join NaliChat Discord community (opens in a new tab)"
+              >
+                <UsersRound className="h-5 w-5 shrink-0 text-primary" />
+                <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">NaliChat Discord</span><span className="block text-xs text-muted-foreground">Join the official creator community</span></span>
+                <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              </a>
             )}
 
             {/* Recently Visited */}

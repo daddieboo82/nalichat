@@ -15,7 +15,7 @@ describe('official NaliChat Discord community invite', () => {
     it(`exposes the supplied invite on ${path} without replacing existing app navigation`, async () => {
       const source = await readFile(path, 'utf8');
       expect(source).toContain(`href="${invite}"`);
-      expect(source).toContain('target="_blank" rel="noopener noreferrer"');
+      expect(source).toMatch(/target="_blank"\s+rel="noopener noreferrer"/);
       expect(source).toContain(label);
     });
   }

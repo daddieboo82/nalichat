@@ -32,8 +32,9 @@ export default function GlobalHelpDialog({ open, onOpenChange }) {
             <div>
               <h3 className="font-semibold text-sm mb-1">Community Support</h3>
               <p className="text-xs text-muted-foreground mb-3">
-                Join the Network and ask other producers for tips, feedback, and support.
+                Connect with creators in NaliChat, or join our Discord community for discussions, tips, and feedback.
               </p>
+              <a href="https://discord.gg/hU9WhHNWA" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20">Join NaliChat Discord <ArrowRight className="h-4 w-4" /></a>
             </div>
           </div>
           <div className="nali-help-shortcuts grid grid-cols-1 gap-2 sm:grid-cols-2">

@@ -63,6 +63,15 @@ export default function CreatorMessagingLanding() {
             </Button>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">Start connecting immediately · Premium unlocks advanced messaging and creator tools</p>
+          <a
+            href="https://discord.gg/hU9WhHNWA"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackProductEvent("discord_invite_click", { source: "creator_messaging_landing", placement: "hero" })}
+            className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 py-2.5 text-sm font-bold text-primary transition hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Users className="h-4 w-4" /> Join Discord Community <ArrowRight className="h-4 w-4" />
+          </a>
         </div>
 
         <div className="mt-14 grid gap-4 md:grid-cols-2">

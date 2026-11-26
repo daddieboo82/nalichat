@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Sparkles, MessageCircle, HelpCircle, ArrowRight, Mic2, FolderOpen } from "lucide-react";
+import { trackProductEvent } from "@/lib/productAnalytics";
 
 export default function GlobalHelpDialog({ open, onOpenChange }) {
   return (
@@ -34,7 +35,7 @@ export default function GlobalHelpDialog({ open, onOpenChange }) {
               <p className="text-xs text-muted-foreground mb-3">
                 Connect with creators in NaliChat, or join our Discord community for discussions, tips, and feedback.
               </p>
-              <a href="https://discord.gg/hU9WhHNWA" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20">Join NaliChat Discord <ArrowRight className="h-4 w-4" /></a>
+              <a href="https://discord.gg/hU9WhHNWA" target="_blank" rel="noopener noreferrer" onClick={() => trackProductEvent("discord_invite_click", { source: "help_dialog", placement: "community_support" })} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20">Join NaliChat Discord <ArrowRight className="h-4 w-4" /></a>
             </div>
           </div>
           <div className="nali-help-shortcuts grid grid-cols-1 gap-2 sm:grid-cols-2">

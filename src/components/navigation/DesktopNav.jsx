@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import {
   Settings, LogOut, LogIn, HelpCircle, UserPlus, AudioLines, Plus, Gem, MoreHorizontal,
-  BarChart3
+  BarChart3, UsersRound, ExternalLink
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
@@ -105,6 +105,18 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                   </Link>
                 </DropdownMenuItem>
               ))}
+              <DropdownMenuItem asChild>
+                <a
+                  href="https://discord.gg/hU9WhHNWA"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Join NaliChat Discord community (opens in a new tab)"
+                  onClick={() => trackProductEvent("discord_invite_click", { source: "desktop_more_menu", placement: "community_link" })}
+                  className="min-h-11 cursor-pointer rounded-xl flex items-center gap-2.5 border-t border-border/40 text-primary"
+                >
+                  <UsersRound className="h-4 w-4 shrink-0" /> NaliChat Discord <ExternalLink className="ml-auto h-3.5 w-3.5" aria-hidden="true" />
+                </a>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

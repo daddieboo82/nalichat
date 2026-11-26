@@ -249,7 +249,7 @@ export default function MobileHeader() {
             {!query && <RecentlyVisited recent={recent} titles={TITLES} onNavigate={handleNavigate} currentPath={path} />}
 
             {/* Feature categories — clear, direct links with descriptions */}
-            {visibleGroups.length === 0 && <p role="status" className="text-sm text-muted-foreground">No matching features.</p>}
+            {visibleGroups.length === 0 && !("discord community creators support".includes(query)) && <p role="status" className="text-sm text-muted-foreground">No matching features.</p>}
             {visibleGroups.map((group) => (
               <div key={group.label}>
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2 px-1">

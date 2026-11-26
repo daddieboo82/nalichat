@@ -82,7 +82,7 @@ export default function CreatorMessagingLanding() {
         </section>
 
         <footer className="mt-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-sm text-muted-foreground">
-          <Link to="/">Home</Link><Link to="/pricing">Plans</Link><Link to="/privacy">Privacy Policy</Link><Link to="/terms">Terms of Service</Link><a href="mailto:support@nalichat.org">Contact Support</a>
+          <Link to="/">Home</Link><Link to="/pricing">Plans</Link><Link to="/privacy">Privacy Policy</Link><Link to="/terms">Terms of Service</Link><a href="https://discord.gg/hU9WhHNWA" target="_blank" rel="noopener noreferrer">Join Discord</a><a href="mailto:support@nalichat.org">Contact Support</a>
         </footer>
       </section>
     </main>

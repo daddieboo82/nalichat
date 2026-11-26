@@ -89,13 +89,14 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     if (!text.trim() || disabled || sendInFlightRef.current) return;
     sendInFlightRef.current = true;
     const submittedText = text;
-    // Reuse the same idempotency key for manual retries of an unchanged
-    // draft, including when the first attempt is already in the retry queue.
+    const replyId = replyTo?.id || null;
+    // Reuse a key only for the exact same text and reply target. Otherwise
+    // a new message must get a new identity, even if the words match.
     const pending = pendingTextSendRef.current;
-    const clientMessageKey = pending?.text === submittedText
+    const clientMessageKey = pending?.text === submittedText && pending?.replyId === replyId
       ? pending.key
       : createClientMessageKey();
-    if (!editingMessage) pendingTextSendRef.current = { text: submittedText, key: clientMessageKey };
+    if (!editingMessage) pendingTextSendRef.current = { text: submittedText, replyId, key: clientMessageKey };
     const payload = { text: text.trim(), type: "text" };
     if (!editingMessage) payload.client_message_key = clientMessageKey;
     if (replyTo) {

@@ -5,6 +5,7 @@ import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers, Music 
 import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";
 import { toast } from "sonner";
+import { createClientMessageKey } from "@/lib/messageCache";
 import { sounds } from "@/hooks/use-sound";
 import { motion } from "framer-motion";
 import EmojiReactionPicker from "./EmojiReactionPicker";
@@ -44,6 +45,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   const uploadRemovalTimersRef = useRef(new Set());
   const textareaRef = useRef(null);
   const sendInFlightRef = useRef(false);
+  const pendingTextSendRef = useRef(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -87,7 +89,15 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     if (!text.trim() || disabled || sendInFlightRef.current) return;
     sendInFlightRef.current = true;
     const submittedText = text;
+    // Reuse the same idempotency key for manual retries of an unchanged
+    // draft, including when the first attempt is already in the retry queue.
+    const pending = pendingTextSendRef.current;
+    const clientMessageKey = pending?.text === submittedText
+      ? pending.key
+      : createClientMessageKey();
+    if (!editingMessage) pendingTextSendRef.current = { text: submittedText, key: clientMessageKey };
     const payload = { text: text.trim(), type: "text" };
+    if (!editingMessage) payload.client_message_key = clientMessageKey;
     if (replyTo) {
       payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
       payload.reply_to_sender = replyTo.sender_name;
@@ -100,6 +110,9 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       // An edit may take time to confirm. Do not erase text typed while it
       // was in flight; only clear the exact draft that was submitted.
       setText((current) => current === submittedText ? "" : current);
+      if (pendingTextSendRef.current?.key === clientMessageKey) {
+        pendingTextSendRef.current = null;
+      }
       onCancelReply?.();
       onCancelEdit?.();
     } catch {
@@ -544,6 +557,9 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             ref={textareaRef}
             value={text}
             onChange={(e) => {
+              if (pendingTextSendRef.current?.text !== e.target.value) {
+                pendingTextSendRef.current = null;
+              }
               setText(e.target.value);
               onTyping?.();
             }}

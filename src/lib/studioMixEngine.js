@@ -10,6 +10,7 @@
 // CORS headers, or a browser that refuses createMediaElementSource) the engine
 // reports failure for that track and the caller falls back to element volume only.
 
+import { voxPitchRatio, voxPitchRate } from '@/lib/voxShift';
 import { studioFxStructureChanged } from '@/lib/studioFxStructure';
 import {
   connectMasterChain,
@@ -40,7 +41,17 @@ function disposeNode(node) {
   try { node.disconnect(); } catch { /* already disconnected */ }
 }
 
+function liveInsertTargets(fx, sampleRate) {
+  const rate = voxPitchRate(fx?.voxshift?.params, sampleRate);
+  return {...studioEqCompTargets(fx), voxPitch0: rate, voxPitch1: rate};
+}
+
 function canUpdateLiveInserts(beforeFx, afterFx, liveParams = {}) {
+  const beforeRatio = voxPitchRatio(beforeFx.voxshift?.params);
+  const afterRatio = voxPitchRatio(afterFx.voxshift?.params);
+  const canSlidePitch = !!(liveParams.voxPitch0 && liveParams.voxPitch1) &&
+    Math.sign(beforeRatio - 1) === Math.sign(afterRatio - 1) && beforeRatio !== 1;
+
   const strip = fx => {
     const copy = {...fx};
     for (const key of ['eq','comp','delay']) {
@@ -55,6 +66,7 @@ function canUpdateLiveInserts(beforeFx, afterFx, liveParams = {}) {
     }
     if (copy.voxshift?.params && !Array.isArray(copy.voxshift.params)) {
       const {Output, ...params} = copy.voxshift.params;
+      if (canSlidePitch) delete params.Pitch;
       copy.voxshift = {...copy.voxshift, params};
     }
     return copy;
@@ -302,7 +314,7 @@ export function createMixEngine() {
       };
       updateTarget(entry.trackGain?.gain, nextGain);
       if (beforeFx !== afterFx) {
-        const targets = studioEqCompTargets(afterFx);
+        const targets = liveInsertTargets(afterFx, context.sampleRate);
         for (const [key, param] of Object.entries(entry.liveParams)) updateTarget(param, targets[key]);
       }
       if (entry.panner) {
@@ -361,8 +373,8 @@ export function createMixEngine() {
           buildMaster();
           return;
         }
-        const targets = studioEqCompTargets(nextFx);
-        const previousTargets = studioEqCompTargets(previousFx);
+        const targets = liveInsertTargets(nextFx, context.sampleRate);
+        const previousTargets = liveInsertTargets(previousFx, context.sampleRate);
         for (const [key, param] of Object.entries(master.liveParams || {})) {
           if (Number.isFinite(targets[key]) && targets[key] !== previousTargets[key]) {
             param.setTargetAtTime(targets[key], context.currentTime, 0.01);

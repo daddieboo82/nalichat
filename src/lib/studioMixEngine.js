@@ -74,6 +74,7 @@ function canUpdateLiveInserts(beforeFx, afterFx, liveParams = {}) {
 export function createMixEngine() {
   let context = null;
   let master = null;
+  let masterMeter = null;
   let masterState = { masterVolume: 100, masterFx: null };
   const entries = new Map(); // trackId -> { element, source, nodes }
   let disposed = false;
@@ -88,6 +89,27 @@ export function createMixEngine() {
       masterVolume: masterState.masterVolume,
       destination: context.destination,
     });
+    masterMeter = null;
+    // Tap the actual post-fader signal without modifying the audible route.
+    if (typeof context.createAnalyser === 'function' && typeof context.createChannelSplitter === 'function') {
+      const nodes = [];
+      try {
+        const splitter = context.createChannelSplitter(2);
+        nodes.push(splitter);
+        const analysers = [0, 1].map(channel => {
+          const analyser = context.createAnalyser();
+          nodes.push(analyser);
+          analyser.fftSize = 2048;
+          splitter.connect(analyser, channel);
+          return analyser;
+        });
+        if (analysers.every(node => typeof node.getFloatTimeDomainData === 'function')) {
+          master.volume.connect(splitter);
+          master.nodes.push(...nodes);
+          masterMeter = {analysers, samples: new Float32Array(2048)};
+        } else nodes.forEach(disposeNode);
+      } catch { nodes.forEach(disposeNode); }
+    }
     // Re-attach every live channel strip to the rebuilt master bus.
     entries.forEach((entry, trackId) => {
       if (entry.track) rebuild(trackId, entry.track, entry.gain);
@@ -139,6 +161,19 @@ export function createMixEngine() {
       }
       if (context.state === 'suspended') context.resume().catch(() => {});
       return context;
+    },
+
+    readMasterPeaks() {
+      if (!masterMeter || context?.state !== 'running') return null;
+      const {analysers, samples} = masterMeter;
+      return analysers.map(analyser => {
+        analyser.getFloatTimeDomainData(samples);
+        let peak = 0;
+        for (let i = 0; i < samples.length; i++) {
+          if (Number.isFinite(samples[i])) peak = Math.max(peak, Math.abs(samples[i]));
+        }
+        return peak;
+      });
     },
 
     isReady() {
@@ -296,6 +331,7 @@ export function createMixEngine() {
       entries.clear();
       if (master) master.nodes.forEach(disposeNode);
       master = null;
+      masterMeter = null;
       if (context && context.state !== 'closed') context.close().catch(() => {});
       context = null;
     },

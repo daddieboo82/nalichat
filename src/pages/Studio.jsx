@@ -92,6 +92,7 @@ import { studioPlaybackTimeAfterStall } from '@/lib/studioPlaybackClock';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { compactStudioWaveform } from '@/lib/studioTrackStripWaveform';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
+import { analyzeStudioPcmWav } from '@/lib/studioPcmWaveform';
 import { appendStudioLiveWaveform, drawStudioLiveWaveform } from '@/lib/studioLiveWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings, studioMicrophoneErrorMessage } from '@/lib/sharedStudioCapture';
@@ -1749,14 +1750,22 @@ export default function Studio() {
         let waveformUnavailable = false;
         let waveformAudioCtx = null;
         try {
-          const arrayBuffer = await blob.arrayBuffer();
-          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-          if (!AudioContextClass) throw new Error("Web Audio is not supported");
-          waveformAudioCtx = new AudioContextClass();
-          const audioBuffer = await waveformAudioCtx.decodeAudioData(arrayBuffer);
-          recordedDuration = audioBuffer.duration;
-          realWaveform = studioRecordedWaveform(audioBuffer, WAVEFORM_POINTS);
-          captureQuality = analyzeStudioCaptureQuality(audioBuffer);
+          if (stoppedRecorder.incrementalStorage) {
+            // Native mono PCM WAV needs no full-file decoding or resampling.
+            const measured = await analyzeStudioPcmWav(blob, WAVEFORM_POINTS);
+            recordedDuration = measured.duration;
+            realWaveform = measured.waveform;
+            captureQuality = measured.captureQuality;
+          } else {
+            const arrayBuffer = await blob.arrayBuffer();
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) throw new Error("Web Audio is not supported");
+            waveformAudioCtx = new AudioContextClass();
+            const audioBuffer = await waveformAudioCtx.decodeAudioData(arrayBuffer);
+            recordedDuration = audioBuffer.duration;
+            realWaveform = studioRecordedWaveform(audioBuffer, WAVEFORM_POINTS);
+            captureQuality = analyzeStudioCaptureQuality(audioBuffer);
+          }
         } catch (e) {
           waveformUnavailable = true;
           console.error("Unable to decode recorded waveform; keeping original captured audio", e);

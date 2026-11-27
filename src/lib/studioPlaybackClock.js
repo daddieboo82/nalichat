@@ -52,3 +52,15 @@ export function studioPlaybackTimeAfterStall({
   if (latest - earliest > 0.15) return expectedTime;
   return candidates.reduce((total, time) => total + time, 0) / candidates.length;
 }
+
+// Correct only sustained, clearly measured playback drift. Never seek a
+// buffering, paused, stale or already-seeking element, or alter its pitch.
+export function studioPlaybackDriftTarget({audio, track, position, recording=false, tolerance=0.18}={}) {
+  if(recording || !position?.active || !audio || !track?.audioUrl ||
+      audio.dataset?.srcUrl !== track.audioUrl || audio.paused || audio.ended ||
+      audio.seeking || audio.readyState < 3 ||
+      !Number.isFinite(audio.currentTime) || !Number.isFinite(position.sourceTime) ||
+      position.sourceTime < 0 || !Number.isFinite(tolerance) || tolerance <= 0) return null;
+  if(Number.isFinite(audio.duration) && position.sourceTime >= audio.duration) return null;
+  return Math.abs(audio.currentTime-position.sourceTime) >= tolerance ? position.sourceTime : null;
+}

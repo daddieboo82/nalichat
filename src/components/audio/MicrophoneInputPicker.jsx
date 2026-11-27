@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Mic, RefreshCw } from "lucide-react";
 import { MICROPHONE_SELECTION_EVENT, preferredMicrophoneId } from "@/lib/microphoneCapture";
 
@@ -7,23 +7,31 @@ export default function MicrophoneInputPicker() {
   const [selected, setSelected] = useState(() => preferredMicrophoneId() || "default");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const mountedRef = useRef(false);
+  const scanVersionRef = useRef(0);
+  const permissionPendingRef = useRef(false);
 
   const refresh = useCallback(async () => {
+    const scanVersion = ++scanVersionRef.current;
     if (!navigator.mediaDevices?.enumerateDevices) {
-      setStatus("This browser does not support listing microphones. The device default may still work.");
+      if (mountedRef.current) setStatus("This browser does not support listing microphones. The device default may still work.");
       return;
     }
     try {
       const all = await navigator.mediaDevices.enumerateDevices();
+      if (!mountedRef.current || scanVersion !== scanVersionRef.current) return;
       const nextInputs = all.filter(device => device.kind === "audioinput" && device.deviceId);
       setInputs(nextInputs);
       setStatus("");
     } catch {
-      setStatus("Unable to list microphones. Check browser permissions.");
+      if (mountedRef.current && scanVersion === scanVersionRef.current) {
+        setStatus("Unable to list microphones. Check browser permissions.");
+      }
     }
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     void refresh();
     const handleDevicesChanged = () => { void refresh(); };
     const handleStorageChanged = (event) => {
@@ -34,6 +42,8 @@ export default function MicrophoneInputPicker() {
     const handleLocalChange = () => setSelected(preferredMicrophoneId() || "default");
     window.addEventListener(MICROPHONE_SELECTION_EVENT, handleLocalChange);
     return () => {
+      mountedRef.current = false;
+      scanVersionRef.current += 1;
       navigator.mediaDevices?.removeEventListener?.("devicechange", handleDevicesChanged);
       window.removeEventListener("storage", handleStorageChanged);
       window.removeEventListener(MICROPHONE_SELECTION_EVENT, handleLocalChange);
@@ -41,22 +51,27 @@ export default function MicrophoneInputPicker() {
   }, [refresh]);
 
   const enableAndRefresh = async () => {
+    if (permissionPendingRef.current) return;
     if (!navigator.mediaDevices?.getUserMedia) {
       setStatus("Microphone access is not supported here. Use a secure browser or the device's permissions settings.");
       return;
     }
+    permissionPendingRef.current = true;
     setBusy(true);
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      await refresh();
+      if (mountedRef.current) await refresh();
     } catch (error) {
-      setStatus(error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError"
-        ? "Microphone access was denied. Allow access in your browser or device settings."
-        : "Microphone is unavailable. Check that it is connected and not in use.");
+      if (mountedRef.current) {
+        setStatus(error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError"
+          ? "Microphone access was denied. Allow access in your browser or device settings."
+          : "Microphone is unavailable. Check that it is connected and not in use.");
+      }
     } finally {
       stream?.getTracks?.().forEach(track => track.stop());
-      setBusy(false);
+      permissionPendingRef.current = false;
+      if (mountedRef.current) setBusy(false);
     }
   };
 

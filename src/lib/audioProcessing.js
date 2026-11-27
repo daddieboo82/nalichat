@@ -599,10 +599,33 @@ export async function renderMixToBuffer(tracks, options = {}) {
   return offline.startRendering();
 }
 
+// Prevent PCM clipping on the final mix only. Use one gain across all
+// channels to retain stereo balance, dynamics and relative track levels.
+// Leave mixes that already fit the sample range unchanged.
+export function protectStudioMixPeaks(buffer) {
+  const channels = Array.from({length: buffer.numberOfChannels}, (_, i) => buffer.getChannelData(i));
+  let peak = 0;
+  for (const channel of channels) {
+    for (let i = 0; i < channel.length; i++) {
+      const value = channel[i];
+      if (!Number.isFinite(value)) throw new Error('Mix contains invalid audio samples.');
+      peak = Math.max(peak, Math.abs(value));
+    }
+  }
+  const gain = peak > 1 ? Math.pow(10, -1 / 20) / peak : 1;
+  if (gain < 1) {
+    for (const channel of channels) {
+      for (let i = 0; i < channel.length; i++) channel[i] *= gain;
+    }
+  }
+  return { peak, gain };
+}
+
 // Mix multiple studio tracks down to a single WAV Blob (offline render).
 export async function renderMixToWav(tracks, options = {}) {
   const rendered = await renderMixToBuffer(tracks, options);
   if (!rendered) return null;
+  if (options.peakProtection !== false) protectStudioMixPeaks(rendered);
   return audioBufferToWav(rendered);
 }
 
@@ -610,6 +633,7 @@ export async function renderMixToWav(tracks, options = {}) {
 export async function renderMixToMp3(tracks, options = {}) {
   const rendered = await renderMixToBuffer(tracks, options);
   if (!rendered) return null;
+  if (options.peakProtection !== false) protectStudioMixPeaks(rendered);
   const { Mp3Encoder } = await import('lamejs');
   const numChannels = rendered.numberOfChannels >= 2 ? 2 : 1;
   const encoder = new Mp3Encoder(numChannels, rendered.sampleRate, 128);

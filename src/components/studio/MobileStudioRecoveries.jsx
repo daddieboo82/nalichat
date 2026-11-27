@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { listStudioRecoveryTakes, getStudioRecoveryTake, deleteStudioRecoveryTake } from '@/lib/studioTakeRecovery';
+import { listStudioPcmSessions, openStudioPcmSpool } from '@/lib/studioPcmSpool';
 import { studioRecoveryStorageHealth } from '@/lib/studioRecoveryStorageHealth';
 
 // The user explicitly chooses which completed take to restore. This list
@@ -10,6 +11,21 @@ export default function MobileStudioRecoveries({
   ownerId, scope, onRestore, disabled = false,
 }) {
   const [rows, setRows] = useState([]);
+  const loadRows = async () => {
+    const completed = await listStudioRecoveryTakes(ownerId,scope);
+    // Experimental PCM recovery is independent of completed-take backups.
+    const sessions = await listStudioPcmSessions(ownerId,scope).catch(() => []);
+    return [...completed,...sessions.map(session => ({
+      ...session, id:'pcm:'+session.sessionId, name:'Interrupted PCM take',
+      createdAt:session.updatedAt, duration:session.bytes/(session.sampleRate*2),
+      partial:true, pcm:true,
+    }))];
+  };
+  const withPcm = async (row, action) => {
+    const spool = await openStudioPcmSpool(row.sessionId,{ownerId,scope,sampleRate:row.sampleRate,recoveryOnly:true});
+    try { return await action(spool); }
+    finally { await spool.close(); }
+  };
   const [working, setWorking] = useState(null);
   const [unavailable, setUnavailable] = useState(false);
   const [storageHealth, setStorageHealth] = useState(null);
@@ -17,7 +33,7 @@ export default function MobileStudioRecoveries({
     if (!ownerId || !scope) { setRows([]); return; }
     void studioRecoveryStorageHealth().then(setStorageHealth);
     try {
-      const items = await listStudioRecoveryTakes(ownerId,scope);
+      const items = await loadRows();
       setRows(items);
       setUnavailable(false);
     } catch {
@@ -31,7 +47,8 @@ export default function MobileStudioRecoveries({
     void studioRecoveryStorageHealth().then(health => {
       if (active) setStorageHealth(health);
     });
-    listStudioRecoveryTakes(ownerId,scope).then(items => {
+    setRows([]);
+    loadRows().then(items => {
       if (active) {setRows(items);setUnavailable(false);}
     }).catch(() => {
       if (active) setUnavailable(true);
@@ -63,7 +80,7 @@ export default function MobileStudioRecoveries({
           className="min-h-11 flex-1" onClick={async () => {
             setWorking(row.id);
             try {
-              const stored = await getStudioRecoveryTake(ownerId,scope,row.id);
+              const stored = row.pcm ? await withPcm(row, async spool => ({...row,...await spool.assembleWav(row.sampleRate)})) : await getStudioRecoveryTake(ownerId,scope,row.id);
               await onRestore(stored);
               toast.success(stored.partial ? 'Interrupted take restored from last checkpoint. Listen before saving to the cloud.' : 'Recovered audio added as a new track. Save to keep it in the cloud.');
             } catch (error) { toast.error(error?.message || 'Could not recover this take.'); }
@@ -73,7 +90,7 @@ export default function MobileStudioRecoveries({
           className="min-h-11" onClick={async () => {
             if (!window.confirm('Permanently delete this device-only backup? Saved cloud projects will not be changed.')) return;
             setWorking(row.id);
-            try { await deleteStudioRecoveryTake(ownerId,scope,row.id); await refresh(); }
+            try { if (row.pcm) await withPcm(row, spool => spool.remove()); else await deleteStudioRecoveryTake(ownerId,scope,row.id); await refresh(); }
             catch (error) { toast.error(error?.message || 'Could not delete recovery backup.'); }
             finally {setWorking(null);}
           }}>Delete backup</Button>

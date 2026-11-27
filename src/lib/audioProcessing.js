@@ -214,6 +214,7 @@ export function studioEqCompTargets(effects) {
     threshold: clamp(-60 + param(comp, 'Threshold', 60) * 0.5, -100, 0),
     ratio: clamp(1 + param(comp, 'Ratio', 40) / 20, 1, 20),
     makeup: Math.pow(10, ((param(comp, 'Gain', 50) - 50) / 10) / 20),
+    voxOutput: clamp(param(effects?.voxshift, 'Output', 100), 0, 100) / 100,
     reverbWet: clamp(param(reverb, 'Mix', 20) / 100, 0, 1),
     reverbDry: 1 - clamp(param(reverb, 'Mix', 20) / 100, 0, 1),
     delayMix: clamp(param(delay, 'Mix', 20) / 100, 0, 1),
@@ -230,7 +231,7 @@ export function connectPluginChain(context, input, effects, output, nodes = [], 
 
   const voxShift = fx.voxshift;
   if (voxShift && voxShift.enabled !== false) {
-    node = connectVoxShift(context, node, voxShift.params, nodes);
+    node = connectVoxShift(context, node, voxShift.params, nodes, liveParams);
   }
 
   const eq = fx.eq;

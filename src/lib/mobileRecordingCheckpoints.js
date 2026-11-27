@@ -57,7 +57,11 @@ export function startMobileRecordingCheckpoints({
         partial:true, replaceExisting:true,
       });
       lastBytes = audio.size;
-      if (!stopped) onSaved?.(duration);
+      // A saved checkpoint remains valid even if the UI cannot update its
+      // progress indicator. Never reclassify a successful write as an error.
+      if (!stopped) {
+        try { onSaved?.(duration); } catch { /* non-critical progress display */ }
+      }
     })().catch(reportError).finally(() => { busy = false; });
   };
   const timer = schedule(tick, intervalMs);

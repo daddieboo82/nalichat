@@ -72,6 +72,46 @@ function WaveformVuMeter({ track, isPlaying, currentTimeRef, isMaster = false, m
   );
 }
 
+// Actual post-fader stereo sample peaks. Unavailable routing is not silence.
+function MasterPeakMeter({ mixEngineRef, isPlaying }) {
+  const [peaks, setPeaks] = useState(null);
+  const [clipped, setClipped] = useState(false);
+  useEffect(() => {
+    if (!isPlaying) { setPeaks(null); return; }
+    const tick = () => {
+      const next = mixEngineRef?.current?.readMasterPeaks?.() ?? null;
+      setPeaks(next);
+      if (next?.some(peak => peak >= 1)) setClipped(true);
+    };
+    tick();
+    const timer = setInterval(tick, 50);
+    return () => clearInterval(timer);
+  }, [isPlaying, mixEngineRef]);
+  return (
+    <div className="flex flex-col items-center gap-1 h-full" aria-label="Master stereo sample peak meter">
+      <button type="button" onClick={() => setClipped(false)}
+        title="Reset sampled clipping indicator"
+        className={cn("text-[8px] font-bold rounded px-1", clipped ? "bg-red-600 text-white" : "text-muted-foreground")}>
+        {clipped ? "CLIP" : "PEAK"}
+      </button>
+      <div className="flex gap-1 flex-1 min-h-0">
+        {[0,1].map(channel => {
+          const peak = peaks?.[channel] || 0;
+          const db = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
+          const height = Math.max(0, Math.min(100, (db + 60) / 60 * 100));
+          return <div key={channel} className="flex flex-col items-center h-full gap-0.5">
+            <div className="w-2 flex-1 min-h-0 bg-studio-bg rounded overflow-hidden flex flex-col justify-end">
+              <div className={cn("w-full", db >= 0 ? "bg-red-500" : db >= -6 ? "bg-yellow-400" : "bg-green-500")} style={{height: height + "%"}} />
+            </div>
+            <span className="text-[8px]">{channel === 0 ? "L" : "R"}</span>
+            <span className="text-[8px] font-mono">{!peaks ? "—" : peak > 0 ? db.toFixed(1) : "−∞"}</span>
+          </div>;
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function MixerPanel({
   show,
   onClose,
@@ -89,6 +129,7 @@ export default function MixerPanel({
   updateTrack,
   isPlaying,
   currentTimeRef,
+  mixEngineRef,
 }) {
   const commit = () => onCommitTrack?.();
   const masterFxCount = countActiveEffects(masterFx);
@@ -226,8 +267,7 @@ export default function MixerPanel({
                   />
                 </div>
                 <div className="flex gap-0.5 h-full">
-                  <WaveformVuMeter track={tracks[0]} isPlaying={isPlaying} currentTimeRef={currentTimeRef} isMaster masterVolume={masterVolume} />
-                  <WaveformVuMeter track={tracks[1] || tracks[0]} isPlaying={isPlaying} currentTimeRef={currentTimeRef} isMaster masterVolume={masterVolume} />
+                  <MasterPeakMeter mixEngineRef={mixEngineRef} isPlaying={isPlaying} />
                 </div>
               </div>
 

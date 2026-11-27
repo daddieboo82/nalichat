@@ -59,7 +59,11 @@ export function startCompressedRecordingCheckpoints({
       await save({ownerId,scope,id,name,startTime,
         audio:playable.audio,duration:playable.duration,partial:true,replaceExisting:true});
       lastBytes = bytes;
-      if (!stopped) onSaved?.(playable.duration);
+      // A completed device write must not be reported as failed because a
+      // progress notification callback threw after persistence succeeded.
+      if (!stopped) {
+        try { onSaved?.(playable.duration); } catch { /* non-critical progress display */ }
+      }
     })().catch(reportError).finally(() => {busy=false;});
   };
   const timer = schedule(tick,intervalMs);

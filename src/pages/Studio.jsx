@@ -86,6 +86,7 @@ import { selectReconstructionTrack } from '@/lib/studioReconstructionSelection';
 import { isPrivateVoiceTrainingEnabled, setPrivateVoiceTrainingEnabled, shouldTrainNaliVoiceTake } from '@/lib/naliVoiceTrainingConsent';
 import { trainPrivateNaliVoiceFromRecording, forgetPrivateNaliVoiceTraining } from '@/lib/naliVoicePrivateTraining';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
+import { nextStudioTransportPosition } from '@/lib/studioTransportBoundary';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { appendStudioLiveWaveform, drawStudioLiveWaveform } from '@/lib/studioLiveWaveform';
@@ -987,18 +988,16 @@ export default function Studio() {
       const delta = (time - lastTime) / 1000;
       lastTime = time;
       
-      let newTime = currentTimeRef.current + delta;
-      let didWrap = false;
-      // Selection-based loop: when a selection is active and loop is on, loop within the selection
-      if (loopActiveRef.current && selectionStartRef.current !== null && selectionEndRef.current !== null) {
-        if (newTime >= selectionEndRef.current) {
-          newTime = selectionStartRef.current;
-          didWrap = true;
-        }
-      } else if (newTime > 100) {
-        newTime = 0; // Loop at 100s
-        didWrap = true;
-      }
+      const nextPosition = nextStudioTransportPosition({
+        nextTime: currentTimeRef.current + delta,
+        recording: isRecording,
+        looping: loopActiveRef.current,
+        selectionStart: selectionStartRef.current,
+        selectionEnd: selectionEndRef.current,
+        tracks: tracksRef.current,
+      });
+      const newTime = nextPosition.time;
+      const didWrap = nextPosition.wrapped;
 
       if (didWrap) {
         // A transport jump must reposition already-playing audio, not just

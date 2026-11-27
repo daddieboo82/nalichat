@@ -206,7 +206,7 @@ export function createReverbImpulse(context, { seconds = 2, decay = 2.5 } = {}) 
  */
 // Parameter targets shared by graph construction and future live updates.
 export function studioEqCompTargets(effects) {
-  const eq = effects?.eq, comp = effects?.comp;
+  const eq = effects?.eq, comp = effects?.comp, delay = effects?.delay;
   return {
     low: (param(eq, 'Low', 50) - 50) / 8,
     mid: (param(eq, 'Mid', 50) - 50) / 8,
@@ -214,6 +214,9 @@ export function studioEqCompTargets(effects) {
     threshold: clamp(-60 + param(comp, 'Threshold', 60) * 0.5, -100, 0),
     ratio: clamp(1 + param(comp, 'Ratio', 40) / 20, 1, 20),
     makeup: Math.pow(10, ((param(comp, 'Gain', 50) - 50) / 10) / 20),
+    delayMix: clamp(param(delay, 'Mix', 20) / 100, 0, 1),
+    delayTime: 0.05 + clamp(param(delay, 'Time', 30) / 100, 0, 1) * 0.45,
+    delayFeedback: clamp(param(delay, 'Feedback', 25) / 100, 0, 0.85),
   };
 }
 
@@ -295,14 +298,14 @@ export function connectPluginChain(context, input, effects, output, nodes = [], 
 
   const delay = fx.delay;
   if (delay && delay.enabled !== false) {
-    const mix = clamp(param(delay, 'Mix', 20) / 100, 0, 1);
+    const mix = targets.delayMix;
     const merge = context.createGain();
     const dry = context.createGain();
     dry.gain.value = 1;
     const delayNode = context.createDelay(2);
-    delayNode.delayTime.value = 0.05 + clamp(param(delay, 'Time', 30) / 100, 0, 1) * 0.45;
+    delayNode.delayTime.value = targets.delayTime;
     const feedback = context.createGain();
-    feedback.gain.value = clamp(param(delay, 'Feedback', 25) / 100, 0, 0.85);
+    feedback.gain.value = targets.delayFeedback;
     const wet = context.createGain();
     wet.gain.value = mix;
 
@@ -314,6 +317,7 @@ export function connectPluginChain(context, input, effects, output, nodes = [], 
     delayNode.connect(wet);
     wet.connect(merge);
     nodes.push(dry, delayNode, feedback, wet, merge);
+    if (liveParams) Object.assign(liveParams, { delayMix: wet.gain, delayTime: delayNode.delayTime, delayFeedback: feedback.gain });
     node = merge;
   }
 

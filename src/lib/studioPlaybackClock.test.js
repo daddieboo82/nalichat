@@ -53,10 +53,13 @@ describe('Studio playback resynchronization after a stalled animation frame', ()
     expect(studioPlaybackTimeAfterStall({
       ...base, elements: { 8: lead, 9: bassAudio(10) },
     })).toBe(50.25);
-    // A paused bass provides no conflicting playback clock.
+    // A muted or paused bass provides no conflicting playback clock.
     expect(studioPlaybackTimeAfterStall({
-      ...base, elements: { 8: lead, 9: bassAudio(10), },
+      ...base, elements: { 8: lead, 9: bassAudio(10) },
       tracks: [clip, { ...bass, muted: true }],
+    })).toBe(58);
+    expect(studioPlaybackTimeAfterStall({
+      ...base, elements: { 8: lead, 9: bassAudio(10, { paused: true }) },
     })).toBe(58);
   });
 

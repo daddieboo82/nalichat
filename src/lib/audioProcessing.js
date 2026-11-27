@@ -566,29 +566,26 @@ export async function renderMixToMp3(tracks, options = {}) {
   const left = rendered.getChannelData(0);
   const right = numChannels === 2 ? rendered.getChannelData(1) : null;
 
-  const toInt16 = (floatArr) => {
-    const out = new Int16Array(floatArr.length);
-    for (let i = 0; i < floatArr.length; i++) {
-      const s = Math.max(-1, Math.min(1, floatArr[i]));
-      out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-    }
-    return out;
-  };
-
-  const leftInt = toInt16(left);
-  const rightInt = right ? toInt16(right) : null;
-
+  // Convert one encoder frame at a time instead of allocating full-length
+  // copies of the rendered channels. Encoder input remains signed PCM16.
   const blockSize = 1152;
+  const leftInt = new Int16Array(blockSize);
+  const rightInt = right ? new Int16Array(blockSize) : null;
   const mp3Data = [];
-  for (let i = 0; i < leftInt.length; i += blockSize) {
-    const leftChunk = leftInt.subarray(i, i + blockSize);
-    let mp3buf;
-    if (numChannels === 2) {
-      const rightChunk = rightInt.subarray(i, i + blockSize);
-      mp3buf = encoder.encodeBuffer(leftChunk, rightChunk);
-    } else {
-      mp3buf = encoder.encodeBuffer(leftChunk);
+  for (let i = 0; i < left.length; i += blockSize) {
+    const count = Math.min(blockSize, left.length - i);
+    for (let j = 0; j < count; j++) {
+      const l = Math.max(-1, Math.min(1, left[i+j]));
+      leftInt[j] = l < 0 ? l * 0x8000 : l * 0x7fff;
+      if (rightInt) {
+        const r = Math.max(-1, Math.min(1, right[i+j]));
+        rightInt[j] = r < 0 ? r * 0x8000 : r * 0x7fff;
+      }
     }
+    const leftChunk = leftInt.subarray(0, count);
+    const mp3buf = rightInt
+      ? encoder.encodeBuffer(leftChunk, rightInt.subarray(0,count))
+      : encoder.encodeBuffer(leftChunk);
     if (mp3buf.length > 0) mp3Data.push(mp3buf);
   }
   const end = encoder.flush();

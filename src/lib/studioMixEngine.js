@@ -40,6 +40,24 @@ function disposeNode(node) {
   try { node.disconnect(); } catch { /* already disconnected */ }
 }
 
+function canUpdateEqComp(beforeFx, afterFx, liveParams = {}) {
+  const strip = fx => {
+    const copy = {...fx};
+    for (const key of ['eq','comp']) {
+      if (copy[key]) {
+        const {params, ...rest} = copy[key];
+        copy[key] = rest;
+      }
+    }
+    return copy;
+  };
+  const handlesReady = (!afterFx.eq || afterFx.eq.enabled === false ||
+    ['low','mid','high'].every(key => liveParams[key])) &&
+    (!afterFx.comp || afterFx.comp.enabled === false ||
+    ['threshold','ratio','makeup'].every(key => liveParams[key]));
+  return handlesReady && JSON.stringify(strip(beforeFx)) === JSON.stringify(strip(afterFx));
+}
+
 export function createMixEngine() {
   let context = null;
   let master = null;
@@ -158,21 +176,7 @@ export function createMixEngine() {
       let structureChanged = studioFxStructureChanged(prev, track);
       // Only EQ and compressor parameter edits may bypass a rebuild.
       if (structureChanged && prev && !!prev.autoPolish === !!track?.autoPolish) {
-        const strip = fx => {
-          const copy = {...fx};
-          for (const key of ['eq','comp']) {
-            if (copy[key]) {
-              const {params, ...rest} = copy[key];
-              copy[key] = rest;
-            }
-          }
-          return copy;
-        };
-        const handlesReady = (!afterFx.eq || afterFx.eq.enabled === false ||
-          ['low','mid','high'].every(key => entry.liveParams[key])) &&
-          (!afterFx.comp || afterFx.comp.enabled === false ||
-          ['threshold','ratio','makeup'].every(key => entry.liveParams[key]));
-        if (handlesReady && JSON.stringify(strip(beforeFx)) === JSON.stringify(strip(afterFx))) {
+        if (canUpdateEqComp(beforeFx, afterFx, entry.liveParams)) {
           structureChanged = false;
         }
       }
@@ -242,12 +246,23 @@ export function createMixEngine() {
     /** Update master fader / master inserts. Rebuilds the bus when inserts change. */
     syncMaster({ masterVolume, masterFx }) {
       const volumeChanged = masterVolume !== masterState.masterVolume;
-      const fxChanged = JSON.stringify(masterFx || {}) !== JSON.stringify(masterState.masterFx || {});
+      const previousFx = masterState.masterFx || {};
+      const nextFx = masterFx || {};
+      const fxChanged = JSON.stringify(nextFx) !== JSON.stringify(previousFx);
       masterState = { masterVolume, masterFx };
       if (!context || !master) return;
       if (fxChanged) {
-        buildMaster();
-        return;
+        if (!canUpdateEqComp(previousFx, nextFx, master.liveParams)) {
+          buildMaster();
+          return;
+        }
+        const targets = studioEqCompTargets(nextFx);
+        const previousTargets = studioEqCompTargets(previousFx);
+        for (const [key, param] of Object.entries(master.liveParams || {})) {
+          if (Number.isFinite(targets[key]) && targets[key] !== previousTargets[key]) {
+            param.setTargetAtTime(targets[key], context.currentTime, 0.01);
+          }
+        }
       }
       if (volumeChanged) {
         const value = Math.max(0, Math.min(100, masterVolume ?? 100)) / 100;

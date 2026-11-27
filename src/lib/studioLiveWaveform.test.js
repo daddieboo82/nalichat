@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
-  appendStudioLiveWaveform, shouldRedrawStudioWaveform,
+  appendStudioLiveWaveform, shouldRedrawStudioWaveform, drawStudioLiveWaveform,
   studioLiveCanvasWidth, studioLiveWaveformX, STUDIO_LIVE_WAVEFORM_LIMIT,
 } from './studioLiveWaveform';
 
@@ -33,6 +33,30 @@ describe('Studio live recording waveform rendering', () => {
     expect(shouldRedrawStudioWaveform(canvas, 4096, 4001, 1101)).toBe(true);
     expect(shouldRedrawStudioWaveform(canvas, 4095, 4001, 1050)).toBe(true);
     expect(shouldRedrawStudioWaveform(canvas, 4096, 1, 1101)).toBe(false);
+  });
+
+  it('never throws if canvas initialization or resizing fails under memory pressure', () => {
+    const points = [{ time: 0, peak: 0.5 }, { time: 1, peak: 0.8 }];
+    const unavailable = { width: 1, height: 200, dataset: {}, getContext: () => null };
+    expect(drawStudioLiveWaveform(unavailable, points, 1, 20, 1000)).toBe(false);
+    const throws = { width: 1, height: 200, dataset: {}, getContext: () => { throw new Error('out of memory'); } };
+    expect(drawStudioLiveWaveform(throws, points, 1, 20, 1000)).toBe(false);
+    const resizeFails = { width: 1, height: 200, dataset: {}, getContext: () => ({}),
+      set width(value) { throw new Error('canvas allocation failed'); } };
+    expect(drawStudioLiveWaveform(resizeFails, points, 1, 20, 1000)).toBe(false);
+  });
+
+  it('renders normal waveforms and records successful draw timestamps', () => {
+    const context = {
+      clearRect: vi.fn(), beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), stroke: vi.fn(),
+    };
+    const canvas = { width: 1, height: 100, dataset: {}, getContext: () => context };
+    const points = [{ time: 0, peak: 0.1 }, { time: 2, peak: 0.7 }];
+    expect(drawStudioLiveWaveform(canvas, points, 2, 40, 1000)).toBe(true);
+    expect(canvas.width).toBe(40);
+    expect(context.stroke).toHaveBeenCalledTimes(2);
+    expect(canvas.dataset.studioWaveformLastDrawMs).toBe('1000');
+    expect(drawStudioLiveWaveform(canvas, points, 2, 40, 1050)).toBe(false);
   });
 
   it('maps peaks by elapsed time after compaction rather than array index', () => {

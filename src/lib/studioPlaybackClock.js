@@ -11,6 +11,7 @@ export function studioPlaybackTimeAfterStall({
       !Array.isArray(tracks)) return expectedTime;
 
   const solo = tracks.some(track => track.solo);
+  const candidates = [];
   for (const track of tracks) {
     if (track.muted || (solo && !track.solo) || !track.audioUrl) continue;
     const audio = elements?.[track.id];
@@ -28,7 +29,14 @@ export function studioPlaybackTimeAfterStall({
     // elapsed gap. The transport may have been manually seeked meanwhile.
     if (mediaTimelineTime < expectedTime - 0.15 ||
         mediaTimelineTime > expectedTime + frameGapSeconds + 0.15) continue;
-    return mediaTimelineTime;
+    candidates.push(mediaTimelineTime);
   }
-  return expectedTime;
+  if (!candidates.length) return expectedTime;
+  // Do not let one drifting media element pull the whole transport away
+  // from other audible tracks. When multiple sources disagree, retain the
+  // bounded RAF fallback rather than choosing by track order.
+  const earliest = Math.min(...candidates);
+  const latest = Math.max(...candidates);
+  if (latest - earliest > 0.15) return expectedTime;
+  return candidates.reduce((total, time) => total + time, 0) / candidates.length;
 }

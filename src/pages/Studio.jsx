@@ -87,6 +87,7 @@ import { isPrivateVoiceTrainingEnabled, setPrivateVoiceTrainingEnabled, shouldTr
 import { trainPrivateNaliVoiceFromRecording, forgetPrivateNaliVoiceTraining } from '@/lib/naliVoicePrivateTraining';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { nextStudioTransportPosition } from '@/lib/studioTransportBoundary';
+import { studioTransportFrameDelta } from '@/lib/studioTransportDelta';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { appendStudioLiveWaveform, drawStudioLiveWaveform } from '@/lib/studioLiveWaveform';
@@ -985,7 +986,9 @@ export default function Studio() {
     let lastTime = performance.now();
     
     const updateTime = (time) => {
-      const delta = (time - lastTime) / 1000;
+      // Backgrounded browsers can pause RAF for seconds or minutes. Don't
+      // seek playback over that gap; keep real elapsed time for live capture.
+      const delta = studioTransportFrameDelta(time, lastTime, { recording: isRecording });
       lastTime = time;
       
       const nextPosition = nextStudioTransportPosition({

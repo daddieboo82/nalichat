@@ -20,6 +20,18 @@ describe('Studio long-session transport boundary', () => {
       .toEqual({ time: 820, wrapped: false });
   });
 
+  it('never rewinds an active recording when selection looping is enabled', () => {
+    expect(nextStudioTransportPosition({
+      nextTime: 13, recording: true, looping: true,
+      selectionStart: 5, selectionEnd: 12,
+    })).toEqual({ time: 13, wrapped: false });
+    expect(nextStudioTransportPosition({
+      nextTime: 350, recording: true, looping: true,
+      selectionStart: 5, selectionEnd: 12,
+      tracks: [{ startTime: 0, duration: 60 }],
+    })).toEqual({ time: 350, wrapped: false });
+  });
+
   it('preserves explicitly selected loop regions', () => {
     expect(nextStudioTransportPosition({ nextTime: 13, looping: true, selectionStart: 5, selectionEnd: 12 }))
       .toEqual({ time: 5, wrapped: true });

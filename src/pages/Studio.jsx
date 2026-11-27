@@ -91,7 +91,8 @@ import { studioTransportFrameDelta } from '@/lib/studioTransportDelta';
 import { studioPlaybackTimeAfterStall, studioPlaybackDriftTarget } from '@/lib/studioPlaybackClock';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { compactStudioWaveform } from '@/lib/studioTrackStripWaveform';
-import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
+import { studioRecordedWaveform, studioWaveformRegion } from '@/lib/studioRecordedWaveform';
+import { createStudioWaveformCache } from '@/lib/studioWaveformCache';
 import { analyzeStudioPcmWav } from '@/lib/studioPcmWaveform';
 import { appendStudioLiveWaveform, drawStudioLiveWaveform } from '@/lib/studioLiveWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
@@ -414,6 +415,73 @@ export default function Studio() {
   const { peers: livePeers, setActivity } = useStudioPresence(roomId || 'local_studio');
   
   const [tracks, setTracks] = useState([]);
+  const [waveformDetail, setWaveformDetail] = useState(null);
+  const detailCacheRef = useRef(null);
+  useEffect(() => {
+    const abort = new AbortController();
+    const cache = createStudioWaveformCache(async url => {
+      const response = await fetch(url, { signal: abort.signal });
+      if (!response.ok) return null;
+      const maxSourceBytes = 16 * 1024 * 1024;
+      const declared = Number(response.headers.get('content-length'));
+      if (declared > maxSourceBytes) return null;
+      const reader = response.body?.getReader();
+      if (!reader) return null;
+      const chunks = [];
+      let total = 0;
+      try {
+        while (true) {
+          const {done, value} = await reader.read();
+          if (done) break;
+          total += value.byteLength;
+          if (total > maxSourceBytes) { await reader.cancel(); return null; }
+          chunks.push(value);
+        }
+      } finally { reader.releaseLock(); }
+      if (abort.signal.aborted) return null;
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      if (!Ctor) return null;
+      const context = new Ctor();
+      try { return await context.decodeAudioData(await new Blob(chunks).arrayBuffer()); }
+      finally { if (context.state !== 'closed') await context.close().catch(() => {}); }
+    });
+    detailCacheRef.current = cache;
+    return () => { abort.abort(); cache.clear(); detailCacheRef.current = null; };
+  }, [roomId, studioStorageOwner]);
+
+  const detailClip = selectedTrackIds.length === 1
+    ? tracks.find(t => t.id === selectedTrackIds[0]) : null;
+  const detailId = detailClip?.id;
+  const detailUrl = detailClip?.audioUrl;
+  const detailStart = detailClip?.clipStart || 0;
+  const detailDuration = detailClip?.duration || 0;
+  const detailPeakCount = detailClip?.waveform?.length || 0;
+  const detailSourceDuration = detailClip?.fullDuration || detailDuration;
+  useEffect(() => {
+    setWaveformDetail(null);
+    if (!detailUrl || !detailPeakCount || !detailSourceDuration || isPlaying || isRecording ||
+        projectLoading || zoom < 8 || (isMobile && mobileStudioTab !== 'timeline')) return;
+    let active = true;
+    const timer = setTimeout(async () => {
+      const workspace = workspaceRef.current;
+      if (!workspace) return;
+      const track = detailClip;
+      const header = workspace.querySelector('.nali-studio-track-headers')?.getBoundingClientRect().width || 0;
+      const visibleWidth = Math.max(1, workspace.clientWidth - header);
+      const timelineStart = workspace.scrollLeft / (20 * zoom);
+      const start = Math.max(detailStart, detailStart + timelineStart - (track.startTime || 0));
+      const end = Math.min(detailStart + detailDuration, start + visibleWidth / (20 * zoom));
+      const points = Math.min(8192, Math.ceil(visibleWidth * 2));
+      if (end <= start || points <= (end - start) / detailSourceDuration * detailPeakCount * 2) return;
+      const buffer = await detailCacheRef.current?.get(detailUrl);
+      if (!active || !buffer) return;
+      const result = studioWaveformRegion(buffer, start, end, points);
+      if (active && result) setWaveformDetail({...result, id: detailId, url: detailUrl, zoom});
+    }, 250);
+    return () => { active = false; clearTimeout(timer); };
+  }, [detailId, detailUrl, detailStart, detailDuration, detailPeakCount, detailSourceDuration,
+    detailClip?.startTime, zoom, isPlaying, isRecording, projectLoading, isMobile, mobileStudioTab, roomId, studioStorageOwner]);
+
   // Studio Sound is ON by default for vocal recordings. Its reversible audio
   // insert is shared by live playback and the export renderer; originals stay dry.
   const [autoPolishVocals, setAutoPolishVocals] = useState(true);
@@ -5276,6 +5344,11 @@ export default function Studio() {
                       <div data-testid={`studio-waveform-${track.id}`} className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
                         <div style={{ position: 'absolute', inset: 0 }}>
                           {track.waveform?.length > 0 ? <TrackWaveformSVG track={track} cropToClip /> : <span className="text-xs text-muted-foreground px-2">Waveform unavailable</span>}
+                          {waveformDetail?.id === track.id && waveformDetail.url === track.audioUrl && waveformDetail.zoom === zoom && (
+                            <div className="absolute inset-y-0 bg-background" style={{ left: (waveformDetail.startTime - (track.clipStart || 0)) * 20 * zoom, width: waveformDetail.duration * 20 * zoom }}>
+                              <TrackWaveformSVG track={{ waveform: waveformDetail.waveform, color: track.color }} />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

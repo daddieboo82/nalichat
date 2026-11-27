@@ -1,3 +1,5 @@
+import { openPreferredMicrophone, preferredMicrophoneId } from './microphoneCapture';
+
 // Shared Studio microphone negotiation for Android, iOS and desktop.
 // Every browser can ignore ideal constraints; never claim hardware-level
 // quality or a lossless recording based only on the requested settings.
@@ -15,8 +17,12 @@ export const sharedStudioCaptureConstraints = Object.freeze({
 // a user from recording on their built-in microphone.
 export async function openStudioMicrophone(mediaDevices, constraints = sharedStudioCaptureConstraints) {
   if (!mediaDevices?.getUserMedia) throw new Error('This browser cannot access a microphone.');
+  const deviceId = preferredMicrophoneId();
+  const request = (audio) => deviceId
+    ? openPreferredMicrophone(mediaDevices, { audio, deviceId })
+    : mediaDevices.getUserMedia({ audio });
   try {
-    return await mediaDevices.getUserMedia(constraints);
+    return await request(constraints.audio);
   } catch (error) {
     if (!['OverconstrainedError', 'ConstraintNotSatisfiedError', 'TypeError'].includes(error?.name)) {
       throw error; // No retry after an explicit permission denial.
@@ -24,12 +30,10 @@ export async function openStudioMicrophone(mediaDevices, constraints = sharedStu
     // Keep the anti-call-processing flags when possible but drop ideal
     // sample-rate/channel requests unsupported by some mobile browsers.
     try {
-      return await mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-      });
+      return await request({ echoCancellation: false, noiseSuppression: false, autoGainControl: false });
     } catch (fallbackError) {
       if (!['OverconstrainedError', 'ConstraintNotSatisfiedError', 'TypeError'].includes(fallbackError?.name)) throw fallbackError;
-      return mediaDevices.getUserMedia({ audio: true });
+      return request(true);
     }
   }
 }

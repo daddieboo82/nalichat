@@ -204,8 +204,22 @@ export function createReverbImpulse(context, { seconds = 2, decay = 2.5 } = {}) 
  * Wire the insert chain described by `effects` between `input` and `output`.
  * Created nodes are pushed into `nodes` so callers can tear the chain down.
  */
+// Parameter targets shared by graph construction and future live updates.
+export function studioEqCompTargets(effects) {
+  const eq = effects?.eq, comp = effects?.comp;
+  return {
+    low: (param(eq, 'Low', 50) - 50) / 8,
+    mid: (param(eq, 'Mid', 50) - 50) / 8,
+    high: (param(eq, 'High', 50) - 50) / 8,
+    threshold: clamp(-60 + param(comp, 'Threshold', 60) * 0.5, -100, 0),
+    ratio: clamp(1 + param(comp, 'Ratio', 40) / 20, 1, 20),
+    makeup: Math.pow(10, ((param(comp, 'Gain', 50) - 50) / 10) / 20),
+  };
+}
+
 export function connectPluginChain(context, input, effects, output, nodes = []) {
   const fx = effects || {};
+  const targets = studioEqCompTargets(fx);
   let node = input;
   const insert = (next) => { node.connect(next); nodes.push(next); node = next; };
 
@@ -219,31 +233,31 @@ export function connectPluginChain(context, input, effects, output, nodes = []) 
     const low = context.createBiquadFilter();
     low.type = 'lowshelf';
     low.frequency.value = 180;
-    low.gain.value = (param(eq, 'Low', 50) - 50) / 8;
+    low.gain.value = targets.low;
     insert(low);
     const mid = context.createBiquadFilter();
     mid.type = 'peaking';
     mid.frequency.value = 1000;
     mid.Q.value = 0.8;
-    mid.gain.value = (param(eq, 'Mid', 50) - 50) / 8;
+    mid.gain.value = targets.mid;
     insert(mid);
     const high = context.createBiquadFilter();
     high.type = 'highshelf';
     high.frequency.value = 5000;
-    high.gain.value = (param(eq, 'High', 50) - 50) / 8;
+    high.gain.value = targets.high;
     insert(high);
   }
 
   const comp = fx.comp;
   if (comp && comp.enabled !== false) {
     const compressor = context.createDynamicsCompressor();
-    compressor.threshold.value = clamp(-60 + param(comp, 'Threshold', 60) * 0.5, -100, 0);
-    compressor.ratio.value = clamp(1 + param(comp, 'Ratio', 40) / 20, 1, 20);
+    compressor.threshold.value = targets.threshold;
+    compressor.ratio.value = targets.ratio;
     compressor.attack.value = 0.003;
     compressor.release.value = 0.15;
     insert(compressor);
     const makeup = context.createGain();
-    makeup.gain.value = Math.pow(10, ((param(comp, 'Gain', 50) - 50) / 10) / 20);
+    makeup.gain.value = targets.makeup;
     insert(makeup);
   }
 

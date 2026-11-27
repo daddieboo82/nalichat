@@ -31,10 +31,11 @@ describe('Studio recorder error event recovery', () => {
     expect(startup).toContain('mediaRecorder.onstop = () => {');
     expect(startup).toContain('recordingFinalizeInFlightRef.current');
     expect(startup).toContain('mediaRecorderRef.current !== mediaRecorder');
-    expect(startup).toContain('stopRecordingProcess(false, true)');
+    expect(startup).toContain('stopRecordingProcess(false, true, captureStartTime)');
     const finalize = source.slice(source.indexOf('const stopRecordingProcess ='),
       source.indexOf('const toggleRecord ='));
-    expect(finalize).toContain('recorderAlreadyStopped = false');
+    expect(finalize).toContain('recorderAlreadyStopped = false, originalStartTime = null');
+    expect(finalize).toContain('const stoppedStartTime = originalStartTime !== null ? originalStartTime :');
     expect(finalize).toContain("mediaRecorderRef.current.state !== 'inactive' || recorderAlreadyStopped");
     expect(finalize).toContain('if (recorderAlreadyStopped) void stoppedRecorder.onstop();');
     expect(finalize).toContain('else stoppedRecorder.stop();');

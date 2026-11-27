@@ -49,8 +49,13 @@ export async function createLosslessStudioRecorder(stream, {
     mute.connect(context.destination);
     await context.resume();
   } catch (error) {
-    try { source?.disconnect(); node?.disconnect(); mute?.disconnect(); } catch {}
-    await context.close().catch(() => {});
+    // Each node may fail to disconnect independently. Cleanup must not mask
+    // the original startup error or delay fallback to MediaRecorder when
+    // AudioContext.close() hangs or throws on a damaged browser audio device.
+    for (const audioNode of [source, node, mute]) {
+      try { audioNode?.disconnect(); } catch {}
+    }
+    void Promise.resolve().then(() => context.close()).catch(() => {});
     throw error;
   }
 

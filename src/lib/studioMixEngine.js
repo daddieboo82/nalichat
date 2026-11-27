@@ -185,7 +185,7 @@ export function createMixEngine() {
       const nextGain = typeof gain === 'number' ? gain : trackGainValue(track || {});
       const prev = entry.track;
       const beforeFx = getTrackEffects(prev);
-      const afterFx = getTrackEffects(track);
+      const afterFx = prev === track ? beforeFx : getTrackEffects(track);
       let structureChanged = studioFxStructureChanged(prev, track);
       // Only supported insert parameter edits may bypass a rebuild.
       if (structureChanged && prev && !!prev.autoPolish === !!track?.autoPolish) {
@@ -261,7 +261,7 @@ export function createMixEngine() {
       const volumeChanged = masterVolume !== masterState.masterVolume;
       const previousFx = masterState.masterFx || {};
       const nextFx = masterFx || {};
-      const fxChanged = JSON.stringify(nextFx) !== JSON.stringify(previousFx);
+      const fxChanged = nextFx !== previousFx && JSON.stringify(nextFx) !== JSON.stringify(previousFx);
       masterState = { masterVolume, masterFx };
       if (!context || !master) return;
       if (fxChanged) {

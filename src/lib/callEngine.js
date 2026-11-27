@@ -1,3 +1,5 @@
+import { openPreferredMicrophone } from './microphoneCapture';
+
 /**
  * WebRTC call engine — manages peer connections, local media capture,
  * and ICE/SDP signaling for 1:1 audio and video calls.
@@ -45,7 +47,7 @@ export class CallEngine {
         ? { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
         : false,
     };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const stream = await openPreferredMicrophone(navigator.mediaDevices, constraints);
     if (generation !== this.operationGeneration) {
       stream.getTracks().forEach((track) => track.stop());
       const error = new Error("Call setup cancelled");

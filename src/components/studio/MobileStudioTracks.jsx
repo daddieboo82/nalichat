@@ -1,11 +1,11 @@
 import React from 'react';
 import { Mic, VolumeX, Headphones, Plus, AudioLines, SlidersHorizontal, Upload, Wand2, PlayCircle, CheckCircle2 } from 'lucide-react';
 import TrackWaveformSVG from './TrackWaveformSVG';
+import { compactStudioWaveform } from '@/lib/studioTrackStripWaveform';
 import { cn } from '@/lib/utils';
 
 export function mobilePreviewWaveform(values, maxPoints = 160) {
-  if (!Array.isArray(values) || values.length <= maxPoints) return values || [];
-  return Array.from({ length: maxPoints }, (_, index) => values[Math.floor(index * values.length / maxPoints)] || 0);
+  return compactStudioWaveform(values, maxPoints);
 }
 
 // Phone-first track cards: no 2,000px timeline and no precision drag handles

@@ -90,6 +90,7 @@ import { nextStudioTransportPosition } from '@/lib/studioTransportBoundary';
 import { studioTransportFrameDelta } from '@/lib/studioTransportDelta';
 import { studioPlaybackTimeAfterStall } from '@/lib/studioPlaybackClock';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
+import { compactStudioWaveform } from '@/lib/studioTrackStripWaveform';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { appendStudioLiveWaveform, drawStudioLiveWaveform } from '@/lib/studioLiveWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
@@ -117,12 +118,6 @@ const nextTrackId = (tracks) => {
   return numericIds.length > 0 ? Math.max(...numericIds) + 1 : Date.now();
 };
 
-const compactWaveform = (waveform, maxPoints = 1000) => {
-  if (!Array.isArray(waveform) || waveform.length <= maxPoints) return waveform || [];
-  const step = waveform.length / maxPoints;
-  return Array.from({ length: maxPoints }, (_, i) => waveform[Math.floor(i * step)] || 0);
-};
-
 const portableTrackState = (track, audioUrl) => {
   const {
     _optimistic,
@@ -133,7 +128,7 @@ const portableTrackState = (track, audioUrl) => {
     ...rest,
     audioUrl,
     file_url: audioUrl,
-    waveform: compactWaveform(track.waveform),
+    waveform: compactStudioWaveform(track.waveform),
     ...(track._persistedTrackId ? { persisted_track_id: track._persistedTrackId } : {}),
   };
 };
@@ -2478,7 +2473,7 @@ export default function Studio() {
         name: `${current.name}.${String(playlists.length + 1).padStart(2, '0')}`,
         audioUrl: current.audioUrl || null,
         file_url: current.file_url || current.audioUrl || null,
-        waveform: compactWaveform(current.waveform),
+        waveform: compactStudioWaveform(current.waveform),
         startTime: current.startTime || 0,
         duration: current.duration || 0,
         clipGain: current.clipGain || 0,

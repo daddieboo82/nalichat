@@ -7,7 +7,7 @@ export function studioTrackStripWaveformBars(waveform, count = 60) {
   const length = waveform.length;
   return Array.from({ length: bars }, (_, index) => {
     const start = Math.floor(index * length / bars);
-    const end = Math.min(length, Math.max(start + 1, Math.ceil((index + 1) * length / bars)));
+    const end = Math.min(length, Math.max(start + 1, Math.floor((index + 1) * length / bars)));
     let peak = 0;
     for (let i = start; i < end; i++) {
       const sample = Number(waveform[i]);
@@ -15,4 +15,10 @@ export function studioTrackStripWaveformBars(waveform, count = 60) {
     }
     return Math.min(1, peak);
   });
+}
+
+export function compactStudioWaveform(waveform, maxPoints = 1000) {
+  if (!Array.isArray(waveform) && !(waveform instanceof Float32Array)) return [];
+  if (waveform.length <= maxPoints) return Array.isArray(waveform) ? waveform : Array.from(waveform);
+  return studioTrackStripWaveformBars(waveform, maxPoints);
 }

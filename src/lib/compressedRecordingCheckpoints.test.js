@@ -99,6 +99,48 @@ describe('mobile compressed recorder crash recovery', () => {
     expect(onError).not.toHaveBeenCalled();
     ctl.stop();
   });
+  it('only reads newly appended blob sizes across checkpoint intervals', async () => {
+    let tick;
+    let sizeReads = 0;
+    const a = new Blob([new Uint8Array(2000)], { type: 'audio/webm' });
+    const b = new Blob([new Uint8Array(2000)], { type: 'audio/webm' });
+    // Count size accesses without altering the underlying immutable Blobs.
+    const chunks = [new Proxy(a, { get(target, prop) {
+      if (prop === 'size') sizeReads += 1;
+      return Reflect.get(target, prop, target);
+    } })];
+    // instanceof Blob succeeds with the proxy, but no decoding is needed here.
+    const validate = vi.fn(async () => null);
+    const ctl = startCompressedRecordingCheckpoints({
+      recorder: { state: 'recording', mimeType: 'audio/webm' }, chunks,
+      ownerId: 'owner-123456', scope: 'draft', id: 'checkpoint-incremental-001',
+      validate, schedule: fn => { tick = fn; return 41; }, unschedule: () => {},
+    });
+    tick(); await ctl.wait();
+    const firstReads = sizeReads;
+    tick(); await ctl.wait();
+    expect(sizeReads).toBe(firstReads);
+    chunks.push(b);
+    tick(); await ctl.wait();
+    expect(validate).toHaveBeenCalledTimes(2);
+    ctl.stop();
+  });
+  it('bounds oversized recordings without changing the original captured chunks', async () => {
+    let tick;
+    const oversized = new Blob([new Uint8Array(55 * 1024 * 1024 + 1)], { type: 'audio/webm' });
+    const chunks = [oversized];
+    const validate = vi.fn();
+    const ctl = startCompressedRecordingCheckpoints({
+      recorder: { state: 'recording', mimeType: 'audio/webm' }, chunks,
+      ownerId: 'owner-123456', scope: 'draft', id: 'checkpoint-limit-001',
+      validate, schedule: fn => { tick = fn; return 42; }, unschedule: () => {},
+    });
+    tick(); await ctl.wait();
+    tick(); await ctl.wait();
+    expect(validate).not.toHaveBeenCalled();
+    expect(chunks[0]).toBe(oversized);
+    ctl.stop();
+  });
   it('writes validated media to one replaceable, private checkpoint',async()=>{
     let scheduled;const save=vi.fn(async()=>{});
     const recorder={state:'recording',mimeType:'audio/webm'};

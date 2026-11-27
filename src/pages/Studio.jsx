@@ -2059,7 +2059,20 @@ export default function Studio() {
         const captureChunks = [];
         audioChunksRef.current = captureChunks;
         mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) captureChunks.push(e.data);
+          if (e.data?.size > 0) captureChunks.push(e.data);
+        };
+        // A browser encoder can fail without ending the microphone track.
+        // Try to finish the bytes already captured, exactly once. Some PCM
+        // recorders emit error after turning inactive, then still emit onstop;
+        // in that case let normal finalization process their last WAV chunk.
+        mediaRecorder.onerror = event => {
+          if (!studioMountedRef.current || mediaRecorderRef.current !== mediaRecorder ||
+              recordingFinalizeInFlightRef.current) return;
+          console.warn('Studio recorder error:', event?.error?.message || 'Capture encoder interrupted');
+          if (mediaRecorder.state !== 'recording') return;
+          toast.warning('Audio capture was interrupted. Finishing the recorded audio available so far.');
+          setIsRecording(false);
+          stopRecordingProcess();
         };
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
         mobileCaptureAutoFinishRef.current = false;

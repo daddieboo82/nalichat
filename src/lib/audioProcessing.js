@@ -556,6 +556,26 @@ export async function separateStems(url) {
 
 // Mix multiple studio tracks down to a single AudioBuffer (offline render).
 // Respects startTime, volume/clip gain, mute/solo, pan, inserts, Send 1 and master FX.
+export async function decodeStudioMixSources(tracks, load, concurrency = 2) {
+  const urls = [...new Set(tracks.map(track => track.audioUrl))];
+  const buffers = new Map();
+  let cursor = 0;
+  let failed = false;
+  const limit = Math.max(1, Math.min(4, Number.isFinite(concurrency) ? Math.floor(concurrency) : 2));
+  async function worker() {
+    while (!failed && cursor < urls.length) {
+      const url = urls[cursor++];
+      try { buffers.set(url, await load(url)); }
+      catch (error) { failed = true; throw error; }
+    }
+  }
+  // Wait for already-started work to settle on failure; never leave detached decodes.
+  const results = await Promise.allSettled(Array.from({length: Math.min(limit, urls.length)}, worker));
+  const rejection = results.find(result => result.status === 'rejected');
+  if (rejection) throw rejection.reason;
+  return buffers;
+}
+
 export async function renderMixToBuffer(tracks, options = {}) {
   const { masterVolume = 100, masterFx = null, sampleRate = 44100 } = options;
   const audioTracks = (tracks || []).filter(t => t.audioUrl);
@@ -567,12 +587,11 @@ export async function renderMixToBuffer(tracks, options = {}) {
 
   // Split regions often reference the same underlying recording. Share one
   // decode per source for this render only; do not retain buffers across exports.
-  const sources = new Map();
-  const decoded = (await Promise.all(active.map(async (t) => {
-    if (!sources.has(t.audioUrl)) sources.set(t.audioUrl, fetchAudioBuffer(t.audioUrl));
-    const buffer = await sources.get(t.audioUrl);
+  const sources = await decodeStudioMixSources(active, fetchAudioBuffer);
+  const decoded = active.map(t => {
+    const buffer = sources.get(t.audioUrl);
     return { track: t, buffer, range: studioClipAudioRange(t, buffer.duration) };
-  }))).filter(item => item.range);
+  }).filter(item => item.range);
   sources.clear();
   if (decoded.length === 0) return null;
 

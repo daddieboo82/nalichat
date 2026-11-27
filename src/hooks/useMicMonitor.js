@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { openPreferredMicrophone } from '@/lib/microphoneCapture';
 
 /**
  * useMicMonitor — opens a live microphone stream for pre-flight level monitoring
@@ -42,12 +43,9 @@ export function useMicMonitor() {
     let acquiredAudioCtx = null;
     setError(null);
     try {
-      const constraints = {
-        audio: deviceId && deviceId !== 'default'
-          ? { deviceId: { exact: deviceId } }
-          : true
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const stream = await openPreferredMicrophone(navigator.mediaDevices, {
+        deviceId: deviceId && deviceId !== 'default' ? deviceId : null,
+      });
       acquiredStream = stream;
       if (requestId !== startRequestRef.current) {
         stream.getTracks().forEach((track) => track.stop());

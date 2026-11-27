@@ -117,6 +117,8 @@ export function createMixEngine() {
   };
 
   const teardownEntry = (entry) => {
+    entry.meter = null;
+    entry.meterOutput = null;
     entry.nodes?.forEach(disposeNode);
     entry.nodes = [];
     try { entry.source?.disconnect(); } catch { /* already gone */ }
@@ -141,6 +143,9 @@ export function createMixEngine() {
     entry.panner = built.nodes.find(n => n && n.pan);
     entry.parameterTargets = new Map();
     entry.liveParams = built.liveParams || {};
+    entry.meter = null;
+    entry.meterOutput = built.output;
+
   };
 
   return {
@@ -161,6 +166,30 @@ export function createMixEngine() {
       }
       if (context.state === 'suspended') context.resume().catch(() => {});
       return context;
+    },
+
+    // Create taps only for channels actually displayed in the mixer.
+    readTrackPeak(trackId) {
+      const entry = entries.get(trackId);
+      if (!entry?.meterOutput || context?.state !== 'running' || !context.createAnalyser) return null;
+      if (!entry.meter) {
+        let analyser;
+        try {
+          analyser = context.createAnalyser();
+          if (!analyser.getFloatTimeDomainData) { disposeNode(analyser); return null; }
+          analyser.fftSize = context.sampleRate > 96000 ? 16384 : context.sampleRate > 48000 ? 8192 : 4096;
+          entry.meterOutput.connect(analyser);
+          entry.nodes.push(analyser);
+          entry.meter = {analyser, samples: new Float32Array(analyser.fftSize)};
+        } catch { if (analyser) disposeNode(analyser); return null; }
+      }
+      const {analyser, samples} = entry.meter;
+      analyser.getFloatTimeDomainData(samples);
+      let peak = 0;
+      for (let i = 0; i < samples.length; i++) {
+        if (Number.isFinite(samples[i])) peak = Math.max(peak, Math.abs(samples[i]));
+      }
+      return peak;
     },
 
     readMasterPeaks() {

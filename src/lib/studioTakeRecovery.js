@@ -7,9 +7,10 @@ import { studioRecoveryStorageHealth, isStudioStorageQuotaError } from './studio
 
 const DB_NAME = 'nalichat-studio-take-recovery-v1';
 const STORE = 'takes';
-// Match the recorder's existing bounded PCM capacity plus the WAV header.
+// Match the experimental incremental PCM capacity plus its WAV header.
 // This is a recovery ceiling, not a promise of available browser quota.
-const MAX_BYTES = 80 * 1024 * 1024 + 44;
+const MAX_BYTES = 160 * 1024 * 1024 + 44;
+const MAX_PORTABLE_RETRY_BYTES = 80 * 1024 * 1024 + 44;
 const MAX_TAKES_PER_SCOPE = 8;
 
 function validOwner(ownerId) {
@@ -120,7 +121,7 @@ export async function saveStudioRecoveryTake({
     try {
       await runTransaction(db,'readwrite', store => replaceExisting ? store.put(record) : store.add(record));
     } catch (blobError) {
-      if (isStudioStorageQuotaError(blobError)) throw blobError;
+      if (isStudioStorageQuotaError(blobError) || audio.size > MAX_PORTABLE_RETRY_BYTES) throw blobError;
       // WebKit/Safari implementations may abort transactions when serializing
       // a Blob even though IndexedDB itself is available. Retry using a
       // standard ArrayBuffer; this preserves bytes and MIME without cloud IO.

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Camera, Music2 } from 'lucide-react';
+import { openPreferredMicrophone } from '@/lib/microphoneCapture';
 
 const supported = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/flac'];
 
@@ -38,7 +39,7 @@ export default function LiveBattles() {
     const request = ++mediaRequest.current;
     setCameraPending(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: { echoCancellation: true } });
+      const stream = await openPreferredMicrophone(navigator.mediaDevices, { video: { facingMode: 'user' }, audio: { echoCancellation: true } });
       if (request !== mediaRequest.current) {
         stream.getTracks().forEach(track => track.stop());
         return;

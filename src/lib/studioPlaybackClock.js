@@ -25,7 +25,13 @@ export function studioPlaybackTimeAfterStall({
     if (!Number.isFinite(start) || start < 0 || !Number.isFinite(clipStart) ||
         clipStart < 0 || !Number.isFinite(duration) || duration <= 0) continue;
     const mediaTimelineTime = start + audio.currentTime - clipStart;
-    if (mediaTimelineTime < start || mediaTimelineTime >= start + duration) continue;
+    if (mediaTimelineTime < start || mediaTimelineTime >= start + duration) {
+      // This current player is still marked as playing outside its own
+      // timeline clip. It cannot be a trustworthy playback clock, and its
+      // disagreement must not be hidden by another valid track.
+      conflictingPlayback = true;
+      continue;
+    }
     // Reject a player that could not have advanced to this point during the
     // elapsed gap. The transport may have been manually seeked meanwhile.
     if (mediaTimelineTime < expectedTime - 0.15 ||

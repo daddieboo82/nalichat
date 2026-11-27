@@ -58,11 +58,13 @@ function ChannelPeakMeter({ track, isPlaying, mixEngineRef }) {
 function MasterPeakMeter({ mixEngineRef, isPlaying }) {
   const [peaks, setPeaks] = useState(null);
   const [clipped, setClipped] = useState(false);
+  const [interSample, setInterSample] = useState(false);
   useEffect(() => {
     if (!isPlaying) { setPeaks(null); return; }
     const tick = () => {
       const next = mixEngineRef?.current?.readMasterPeaks?.() ?? null;
       setPeaks(next);
+      if (mixEngineRef?.current?.readMasterInterSample?.()) setInterSample(true);
       if (mixEngineRef?.current?.readMasterClipped?.() || next?.some(peak => peak >= 1)) setClipped(true);
     };
     tick();
@@ -71,10 +73,10 @@ function MasterPeakMeter({ mixEngineRef, isPlaying }) {
   }, [isPlaying, mixEngineRef]);
   return (
     <div className="flex flex-col items-center gap-1 h-full" aria-label="Master stereo sample peak meter">
-      <button type="button" onClick={() => { mixEngineRef?.current?.resetMasterClipped?.(); setClipped(false); }}
-        title="Reset clipping indicator"
-        className={cn("text-[8px] font-bold rounded px-1", clipped ? "bg-red-600 text-white" : "text-muted-foreground")}>
-        {clipped ? "CLIP" : "PEAK"}
+      <button type="button" onClick={() => { mixEngineRef?.current?.resetMasterClipped?.(); setClipped(false); setInterSample(false); }}
+        title="Reset sample clipping and estimated inter-sample overload indicators"
+        className={cn("text-[8px] font-bold rounded px-1", clipped ? "bg-red-600 text-white" : interSample ? "bg-yellow-500 text-black" : "text-muted-foreground")}>
+        {clipped ? "CLIP" : interSample ? "ISP" : "PEAK"}
       </button>
       <div className="flex gap-1 flex-1 min-h-0">
         {[0,1].map(channel => {

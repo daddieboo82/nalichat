@@ -12,7 +12,7 @@ export function startStudioBoundaryPlayback({
   } catch (error) {
     if (starting.get(trackId) === token && isCurrent()) {
       failed.add(trackId);
-      onError?.(error);
+      try { onError?.(error); } catch { /* nonfatal feedback */ }
     }
     if (starting.get(trackId) === token) starting.delete(trackId);
     return false;

@@ -9,7 +9,7 @@ import React from 'react';
  * @param {number} zoom - Current zoom level
  * @param {number} trackId - Track ID for keying
  */
-export default function CrossfadeOverlay({ clips, zoom, trackId }) {
+function CrossfadeOverlay({ clips, zoom, trackId }) {
   if (!clips || clips.length < 2) return null;
 
   // Sort by start time
@@ -54,3 +54,15 @@ export default function CrossfadeOverlay({ clips, zoom, trackId }) {
 
   return fades.length > 0 ? <>{fades}</> : null;
 }
+
+// Fade geometry only depends on clip ordering, timing and zoom.
+export function sameCrossfadeGeometry(previous, next) {
+  if (previous.zoom !== next.zoom || previous.trackId !== next.trackId) return false;
+  if (previous.clips === next.clips) return true;
+  const a = previous.clips || [], b = next.clips || [];
+  if (a.length !== b.length) return false;
+  return a.every((clip, index) => clip.id === b[index].id &&
+    clip.startTime === b[index].startTime && clip.duration === b[index].duration);
+}
+
+export default React.memo(CrossfadeOverlay, sameCrossfadeGeometry);

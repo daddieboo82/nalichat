@@ -40,6 +40,26 @@ describe('Studio playback resynchronization after a stalled animation frame', ()
     })).toBe(50.25);
   });
 
+  it('refuses to resynchronize if another current playing track is outside the possible frame window', () => {
+    const bass = { ...clip, id: 9, audioUrl: 'blob:bass' };
+    const base = { expectedTime: 50.25, frameGapSeconds: 8, tracks: [clip, bass] };
+    const lead = playing(33); // timeline 58, valid
+    const bassAudio = time => playing(time, { dataset: { srcUrl: 'blob:bass' } });
+    // A valid lead should not override an implausibly ahead bass.
+    expect(studioPlaybackTimeAfterStall({
+      ...base, elements: { 8: lead, 9: bassAudio(100) },
+    })).toBe(50.25);
+    // Nor should it override a bass positioned well behind the last playhead.
+    expect(studioPlaybackTimeAfterStall({
+      ...base, elements: { 8: lead, 9: bassAudio(10) },
+    })).toBe(50.25);
+    // A paused bass provides no conflicting playback clock.
+    expect(studioPlaybackTimeAfterStall({
+      ...base, elements: { 8: lead, 9: bassAudio(10), },
+      tracks: [clip, { ...bass, muted: true }],
+    })).toBe(58);
+  });
+
   it('does not re-anchor to paused, ended, stale or inaudible media', () => {
     const base = { expectedTime: 50.25, frameGapSeconds: 8, tracks: [clip] };
     expect(studioPlaybackTimeAfterStall({ ...base, elements: { 8: playing(33, { paused: true }) } })).toBe(50.25);

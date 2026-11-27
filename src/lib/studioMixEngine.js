@@ -10,6 +10,7 @@
 // CORS headers, or a browser that refuses createMediaElementSource) the engine
 // reports failure for that track and the caller falls back to element volume only.
 
+import { studioFxStructureChanged } from '@/lib/studioFxStructure';
 import {
   connectMasterChain,
   connectTrackChain,
@@ -147,10 +148,7 @@ export function createMixEngine() {
       if (!entry || !context) return false;
       const nextGain = typeof gain === 'number' ? gain : trackGainValue(track || {});
       const prev = entry.track;
-      const structureChanged =
-        !prev ||
-        JSON.stringify(prev.effects || prev.plugins || {}) !== JSON.stringify((track && (track.effects || track.plugins)) || {}) ||
-        !!prev.autoPolish !== !!track?.autoPolish;
+      const structureChanged = studioFxStructureChanged(prev, track);
 
       if (structureChanged) {
         rebuild(trackId, track || {}, nextGain);

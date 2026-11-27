@@ -62,7 +62,7 @@ function MasterPeakMeter({ mixEngineRef, isPlaying }) {
     const tick = () => {
       const next = mixEngineRef?.current?.readMasterPeaks?.() ?? null;
       setPeaks(next);
-      if (next?.some(peak => peak >= 1)) setClipped(true);
+      if (mixEngineRef?.current?.readMasterClipped?.() || next?.some(peak => peak >= 1)) setClipped(true);
     };
     tick();
     const timer = setInterval(tick, 50);
@@ -70,8 +70,8 @@ function MasterPeakMeter({ mixEngineRef, isPlaying }) {
   }, [isPlaying, mixEngineRef]);
   return (
     <div className="flex flex-col items-center gap-1 h-full" aria-label="Master stereo sample peak meter">
-      <button type="button" onClick={() => setClipped(false)}
-        title="Reset sampled clipping indicator"
+      <button type="button" onClick={() => { mixEngineRef?.current?.resetMasterClipped?.(); setClipped(false); }}
+        title="Reset clipping indicator"
         className={cn("text-[8px] font-bold rounded px-1", clipped ? "bg-red-600 text-white" : "text-muted-foreground")}>
         {clipped ? "CLIP" : "PEAK"}
       </button>

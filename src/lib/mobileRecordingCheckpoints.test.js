@@ -113,6 +113,25 @@ describe('incremental Mobile Studio take recovery', () => {
     await expect(controller.wait()).resolves.toBeUndefined();
     expect(onSaved).not.toHaveBeenCalled();
   });
+  it('keeps successful WAV backup valid when the progress UI throws', async () => {
+    let tick;
+    const save = vi.fn(async () => ({}));
+    const onError = vi.fn();
+    const onSaved = vi.fn(() => { throw new Error('progress component unmounted'); });
+    const recorder = { state: 'recording', snapshot: vi.fn().mockReturnValueOnce(wav(2)).mockReturnValueOnce(wav(2)) };
+    const controller = startMobileRecordingCheckpoints({
+      recorder, ownerId: 'owner-valid', scope: 'draft', id: 'snapshot-ui-001',
+      save, onSaved, onError, schedule: fn => { tick = fn; return 16; }, unschedule: () => {},
+    });
+    tick();
+    await expect(controller.wait()).resolves.toBeUndefined();
+    tick();
+    await controller.wait();
+    expect(save).toHaveBeenCalledOnce();
+    expect(onSaved).toHaveBeenCalledOnce();
+    expect(onError).not.toHaveBeenCalled();
+    controller.stop();
+  });
   it('never reports success when the IndexedDB write rejects', async () => {
     const onSaved = vi.fn(), onError = vi.fn();
     let tick;

@@ -16,6 +16,8 @@ import {
   connectTrackChain,
   trackGainValue,
   automatedTrackState,
+  studioEqCompTargets,
+  getTrackEffects,
 } from '@/lib/audioProcessing';
 
 const isSameOriginUrl = (url) => {
@@ -85,6 +87,7 @@ export function createMixEngine() {
     entry.gain = gain;
     entry.panner = built.nodes.find(n => n && n.pan);
     entry.parameterTargets = new Map();
+    entry.liveParams = built.liveParams || {};
   };
 
   return {
@@ -150,7 +153,29 @@ export function createMixEngine() {
       if (!entry || !context) return false;
       const nextGain = typeof gain === 'number' ? gain : trackGainValue(track || {});
       const prev = entry.track;
-      const structureChanged = studioFxStructureChanged(prev, track);
+      const beforeFx = getTrackEffects(prev);
+      const afterFx = getTrackEffects(track);
+      let structureChanged = studioFxStructureChanged(prev, track);
+      // Only EQ and compressor parameter edits may bypass a rebuild.
+      if (structureChanged && prev && !!prev.autoPolish === !!track?.autoPolish) {
+        const strip = fx => {
+          const copy = {...fx};
+          for (const key of ['eq','comp']) {
+            if (copy[key]) {
+              const {params, ...rest} = copy[key];
+              copy[key] = rest;
+            }
+          }
+          return copy;
+        };
+        const handlesReady = (!afterFx.eq || afterFx.eq.enabled === false ||
+          ['low','mid','high'].every(key => entry.liveParams[key])) &&
+          (!afterFx.comp || afterFx.comp.enabled === false ||
+          ['threshold','ratio','makeup'].every(key => entry.liveParams[key]));
+        if (handlesReady && JSON.stringify(strip(beforeFx)) === JSON.stringify(strip(afterFx))) {
+          structureChanged = false;
+        }
+      }
 
       if (structureChanged) {
         rebuild(trackId, track || {}, nextGain);
@@ -167,6 +192,10 @@ export function createMixEngine() {
         entry.parameterTargets.set(param, value);
       };
       updateTarget(entry.trackGain?.gain, nextGain);
+      if (beforeFx !== afterFx) {
+        const targets = studioEqCompTargets(afterFx);
+        for (const [key, param] of Object.entries(entry.liveParams)) updateTarget(param, targets[key]);
+      }
       if (entry.panner) {
         const value = Math.max(-1, Math.min(1, ((track?.pan ?? 50) - 50) / 50));
         updateTarget(entry.panner.pan, value);

@@ -14,9 +14,10 @@ export function applyStudioRecordedTake(tracks, { audioUrl, waveform, startTime,
       latencyCorrectionSeconds < duration * 0.1 ? latencyCorrectionSeconds : 0;
     const capture = {
       audioUrl, file_url: audioUrl, waveform, startTime, duration: duration - correction,
-      ...(captureQuality ? { captureQuality } : {}),
+      captureQuality: captureQuality || null,
       fullDuration: duration, clipStart: correction,
       latencyCompensationMs: Math.round(correction * 1000),
+      fadeIn: 0, fadeOut: 0, clipGain: 0,
       armed: false, recordedFromMicrophone: true,
     };
     if (occupied) {

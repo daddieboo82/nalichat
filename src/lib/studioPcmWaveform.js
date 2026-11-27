@@ -32,3 +32,56 @@ export async function analyzeStudioPcmWav(blob, pointCount) {
   else if(rmsDb<-35 && peakDb<-18){status='quiet';note='This take is very quiet. Move closer or raise microphone gain; do not boost background noise afterward.';}
   return {waveform,duration:frames/rate,captureQuality:{status,note,peakDb,rmsDb,clippingRatio,sampleRate:rate,channels:1}};
 }
+
+
+// Read only the requested source frames. The reader may be backed by a Blob
+// or a validated HTTP byte-range source; offsets are absolute file bytes.
+export function studioPcmRegionLayout(header, fileSize, startTime, endTime, requestedPoints = 2048) {
+  if (!(header instanceof DataView) || header.byteLength < 44 ||
+      !Number.isSafeInteger(fileSize) || !Number.isFinite(startTime) ||
+      !Number.isFinite(endTime) || endTime <= startTime ||
+      !Number.isFinite(requestedPoints) || requestedPoints < 1) return null;
+  const tag = (offset, value) => [...value].every((c,i) => header.getUint8(offset+i) === c.charCodeAt(0));
+  const rate = header.getUint32(24,true), bytes = header.getUint32(40,true);
+  const channels = header.getUint16(22,true), align = channels * 2;
+  if (!tag(0,'RIFF') || !tag(8,'WAVE') || !tag(12,'fmt ') || !tag(36,'data') ||
+      header.getUint32(16,true) !== 16 || header.getUint16(20,true) !== 1 ||
+      (channels !== 1 && channels !== 2) || header.getUint16(34,true) !== 16 ||
+      header.getUint16(32,true) !== align || header.getUint32(28,true) !== rate * align ||
+      rate < 8000 || rate > 192000 || !bytes || bytes % align ||
+      bytes + 44 !== fileSize || header.getUint32(4,true) !== bytes + 36) return null;
+  const frames = bytes / align;
+  const firstFrame = Math.max(0, Math.min(frames, Math.floor(startTime * rate)));
+  const endFrame = Math.max(firstFrame, Math.min(frames, Math.ceil(endTime * rate)));
+  const count = endFrame - firstFrame;
+  if (!count || count * channels > 2000000) return null;
+  return {rate, channels, align, firstFrame, endFrame, sourceDuration: frames/rate,
+    byteStart:44+firstFrame*align, byteEnd:44+endFrame*align,
+    points:Math.min(8192, Math.floor(requestedPoints), count)};
+}
+
+export function studioPcmRegionPeaks(data, layout) {
+  if (!layout || !(data instanceof DataView) || data.byteLength !== layout.byteEnd-layout.byteStart) return null;
+  const {rate,channels,align,firstFrame,endFrame,points,sourceDuration} = layout;
+  const count = endFrame-firstFrame;
+  const waveform = new Array(points).fill(0);
+  for (let i=0;i<points;i++) {
+    const start = Math.floor(i*count/points), end = Math.floor((i+1)*count/points);
+    let peak = 0;
+    for(let frame=start;frame<end;frame++) {
+      for(let channel=0;channel<channels;channel++) {
+        peak=Math.max(peak,Math.abs(data.getInt16(frame*align+channel*2,true))/32768);
+      }
+    }
+    waveform[i]=peak;
+  }
+  return {waveform,startTime:firstFrame/rate,duration:count/rate,firstFrame,endFrame,sourceDuration};
+}
+
+export async function analyzeStudioPcmRegion(blob, startTime, endTime, points) {
+  if (!blob || blob.size < 44) return null;
+  const header = new DataView(await blob.slice(0,44).arrayBuffer());
+  const layout = studioPcmRegionLayout(header,blob.size,startTime,endTime,points);
+  if (!layout) return null;
+  return studioPcmRegionPeaks(new DataView(await blob.slice(layout.byteStart,layout.byteEnd).arrayBuffer()),layout);
+}

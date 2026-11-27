@@ -33,6 +33,7 @@ export async function createLosslessStudioRecorder(stream, {
   moduleUrl = WORKLET_URL,
   // Experimental, caller-owned spool; default capture remains unchanged.
   pcmSpool = null,
+  createPcmSpool = null,
 } = {}) {
   if (pcmSpool && (typeof pcmSpool.append !== 'function' || typeof pcmSpool.assembleWav !== 'function')) throw new Error('Invalid PCM spool');
   if (!AudioContextType || !WorkletNodeType) throw new Error('AudioWorklet recording unavailable');
@@ -51,6 +52,12 @@ export async function createLosslessStudioRecorder(stream, {
     node.connect(mute);
     mute.connect(context.destination);
     await context.resume();
+    // Open storage only after the actual capture sample rate is known.
+    // Failure here falls back to the existing in-memory PCM path.
+    if (!pcmSpool && createPcmSpool) {
+      try { pcmSpool = await createPcmSpool(context.sampleRate); }
+      catch (error) { console.warn('Incremental PCM unavailable; using memory capture:', error?.message); }
+    }
   } catch (error) {
     // Each node may fail to disconnect independently. Cleanup must not mask
     // the original startup error or delay fallback to MediaRecorder when
@@ -83,6 +90,8 @@ export async function createLosslessStudioRecorder(stream, {
   const recorder = {
     mimeType: 'audio/wav', stream, state: 'inactive',
     get capturedByteLength() { return byteLength; },
+    get incrementalStorage() { return Boolean(pcmSpool); },
+    get persistedByteLength() { return pcmSpool?.totalBytes || 0; },
     ondataavailable: null, onstop: null, onerror: null,
     start() {
       // Unlike MediaRecorder, this single-use AudioWorklet cannot be restarted
@@ -225,10 +234,11 @@ export async function createLosslessStudioRecorder(stream, {
 export async function createPreferredStudioRecorder(stream, {
   MediaRecorderType = globalThis.MediaRecorder,
   createLossless = createLosslessStudioRecorder,
+  createPcmSpool = null,
 } = {}) {
   try {
-    const recorder = await createLossless(stream);
-    return { recorder, codec:'audio/wav', lossless:true, backend:'pcm-worklet' };
+    const recorder = await createLossless(stream, {createPcmSpool});
+    return { recorder, codec:'audio/wav', lossless:true, backend:recorder.incrementalStorage ? 'pcm-worklet-indexeddb' : 'pcm-worklet' };
   } catch {
     const fallback = createStudioMediaRecorder(stream, MediaRecorderType);
     return { ...fallback, backend:'media-recorder' };

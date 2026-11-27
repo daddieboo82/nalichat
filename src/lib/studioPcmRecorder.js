@@ -62,6 +62,19 @@ export async function createLosslessStudioRecorder(stream, {
     throw error;
   }
 
+  let spoolSettlement = null;
+  // The caller must acknowledge only after a durable backup succeeds.
+  // Without acknowledgement, closing retains the stored PCM for recovery.
+  const settleSpool = (saved = false) => {
+    if (!pcmSpool) return Promise.resolve();
+    if (spoolSettlement) return spoolSettlement;
+    if (!completed) return Promise.reject(new Error('Recording has not finalized'));
+    spoolSettlement = (async () => {
+      try { if (saved) await pcmSpool.remove(); }
+      finally { await pcmSpool.close(); }
+    })();
+    return spoolSettlement;
+  };
   let chunks = [];
   let byteLength = 0;
   let completed = false;
@@ -94,6 +107,7 @@ export async function createLosslessStudioRecorder(stream, {
       if (pcmSpool || completed || this.state !== 'recording' || byteLength < context.sampleRate * 2) return null;
       return pcm16WavBlob(chunks, context.sampleRate);
     },
+    settleRecoveryStorage(saved = false) { return settleSpool(saved); },
     requestData() { /* PCM is emitted on stop as a single valid WAV file. */ },
     dispose() {
       if (completed) return;
@@ -101,6 +115,7 @@ export async function createLosslessStudioRecorder(stream, {
       this.state = 'inactive';
       clearTimeout(watchdog);
       chunks = [];
+      if (pcmSpool) void settleSpool(false).catch(() => {});
       for (const audioNode of [source, node, mute]) {
         try { audioNode.disconnect(); } catch {}
       }

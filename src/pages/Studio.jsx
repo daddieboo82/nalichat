@@ -100,6 +100,7 @@ import { studioMidiNoteKey, studioMidiSustainKey } from '@/lib/studioMidiInputKe
 import { drainStudioDisconnectedMidiNotes } from '@/lib/studioMidiDisconnect';
 import { studioRecoverMidiOnAudioFailure } from '@/lib/studioRecoverMidiOnAudioFailure';
 import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
+import { hasStudioSaveRevisionChanged } from '@/lib/studioSaveRevision';
 
 const MAX_TRACKS = 999;
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
@@ -454,6 +455,12 @@ export default function Studio() {
   // FX target for the plugin rack: 'master' or a track id. null = follow selection.
   const [fxTarget, setFxTarget] = useState(null);
   const [masterFx, setMasterFx] = useState({});
+  // Synchronous save revision snapshot; include musical metadata as well as
+  // tracks so late uploads cannot misrepresent an older project as current.
+  const studioSaveRevisionRef = useRef(null);
+  useLayoutEffect(() => {
+    studioSaveRevisionRef.current = { tracks, projectName, bpm, songKey, timeSignature, masterFx, roomId, userId: user?.id };
+  }, [tracks, projectName, bpm, songKey, timeSignature, masterFx, roomId, user?.id]);
   const selectedPluginTrack = fxTarget === 'master'
     ? null
     : (tracks.find(t => t.id === fxTarget) || tracks.find(t => selectedTrackIds.includes(t.id)));
@@ -2914,6 +2921,7 @@ export default function Studio() {
       return false;
     }
 
+    const saveRevision = { tracks, projectName, bpm, songKey, timeSignature, masterFx, roomId, userId: user?.id };
     studioSaveInFlightRef.current = true;
     const toastId = toast.loading("Saving Studio project...");
     try {
@@ -3048,9 +3056,11 @@ export default function Studio() {
       // recovery with that older snapshot (including deleting it for a
       // zero-track save). Let the regular durable-only autosave handle edits.
       const editsDuringSave = tracksRef.current !== tracks;
+      const settingsChangedDuringSave = hasStudioSaveRevisionChanged(saveRevision, studioSaveRevisionRef.current);
+      const saveBecameStale = editsDuringSave || settingsChangedDuringSave;
       try {
         // Existing cloud rooms must never update another draft's local slot.
-        if (autosaveStorageKey && !roomId && !editsDuringSave) {
+        if (autosaveStorageKey && !roomId && !saveBecameStale) {
           // A successfully created cloud project is no longer an unsaved
           // standalone draft. Leave the draft recovery alone if newer edits
           // appeared during the save, so they are not discarded.
@@ -3115,7 +3125,7 @@ export default function Studio() {
       }));
 
       lastSavedStudioProjectRef.current = targetProjectId;
-      if (editsDuringSave) {
+      if (saveBecameStale) {
         // The prior snapshot was committed, but its PC link must not be
         // advertised as containing edits made during the upload. This also
         // prevents Exit Studio from navigating away with unsaved changes.

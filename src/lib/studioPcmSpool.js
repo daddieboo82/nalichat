@@ -141,7 +141,7 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
 }
 
  // Discover recoverable sessions without returning audio payloads to the caller.
- export async function listStudioPcmSessions(ownerId, scope, indexedDB = globalThis.indexedDB) {
+ export async function listStudioPcmSessions(ownerId, scope, indexedDB = globalThis.indexedDB, locks = globalThis.navigator?.locks) {
    if (typeof ownerId !== 'string' || ownerId.length < 3 || ownerId.length > 255 ||
        typeof scope !== 'string' || !/^(draft|room:[a-z0-9_-]{8,100})$/i.test(scope)) throw new Error('Invalid PCM recovery scope');
    if (!indexedDB?.open) throw new Error('PCM storage unavailable');
@@ -152,7 +152,7 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
      req.onerror = req.onblocked = () => reject(req.error || new Error('PCM storage unavailable'));
    });
    try {
-     return await new Promise((resolve,reject) => {
+     const discovered = await new Promise((resolve,reject) => {
        const sessions = new Map();
        const tx = db.transaction(STORE,'readonly');
        const req = tx.objectStore(STORE).openCursor();
@@ -175,5 +175,13 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
          cursor.continue();
        };
      });
+     // Avoid presenting active captures as interrupted backups. Opening a
+     // recovery handle still acquires an exclusive lock to close the race.
+     if (!locks?.query) return discovered;
+     try {
+       const snapshot = await locks.query();
+       const held = new Set((snapshot.held || []).map(lock => lock.name));
+       return discovered.filter(session => !held.has('nalichat-pcm:'+session.sessionId));
+     } catch { return discovered; }
    } finally { db.close(); }
  }

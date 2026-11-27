@@ -8,6 +8,7 @@ import { Mic, Square, Play, Pause, Save, Trash2, Loader2, Radio, HelpCircle, Dow
 import { motion, AnimatePresence } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
 import { useAudioDevices } from "@/hooks/useAudioDevices";
+import { openPreferredMicrophone } from "@/lib/microphoneCapture";
 import MicCheckPanel from "@/components/record/MicCheckPanel";
 import RecordingCountdown from "@/components/record/RecordingCountdown";
 import RecordingTips from "@/components/record/RecordingTips";
@@ -171,8 +172,10 @@ export default function Record() {
     let audioCtx = null;
     try {
       const devId = selectedDevices.input && selectedDevices.input !== "default" ? selectedDevices.input : undefined;
-      const constraints = { audio: devId ? { deviceId: { exact: devId } } : true };
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      stream = await openPreferredMicrophone(navigator.mediaDevices, {
+        deviceId: devId,
+        onFallback: () => toast.warning("Selected microphone unavailable. Using the device default."),
+      });
       if (recordingGeneration !== recordingGenerationRef.current) {
         stream.getTracks().forEach(track => track.stop());
         return;

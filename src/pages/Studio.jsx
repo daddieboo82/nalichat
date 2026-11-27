@@ -461,24 +461,37 @@ export default function Studio() {
     setWaveformDetail(null);
     if (!detailUrl || !detailPeakCount || !detailSourceDuration || isPlaying || isRecording ||
         projectLoading || zoom < 8 || (isMobile && mobileStudioTab !== 'timeline')) return;
-    let active = true;
-    const timer = setTimeout(async () => {
-      const workspace = workspaceRef.current;
+    let active = true, timer, revision = 0;
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+    const schedule = () => {
+      clearTimeout(timer);
+      const request = ++revision;
+      timer = setTimeout(async () => {
       if (!workspace) return;
       const track = detailClip;
       const header = workspace.querySelector('.nali-studio-track-headers')?.getBoundingClientRect().width || 0;
       const visibleWidth = Math.max(1, workspace.clientWidth - header);
       const timelineStart = workspace.scrollLeft / (20 * zoom);
       const start = Math.max(detailStart, detailStart + timelineStart - (track.startTime || 0));
-      const end = Math.min(detailStart + detailDuration, start + visibleWidth / (20 * zoom));
+      const end = Math.min(detailStart + detailDuration, detailStart + timelineStart + visibleWidth / (20 * zoom) - (track.startTime || 0));
       const points = Math.min(8192, Math.ceil(visibleWidth * 2));
       if (end <= start || points <= (end - start) / detailSourceDuration * detailPeakCount * 2) return;
       const buffer = await detailCacheRef.current?.get(detailUrl);
-      if (!active || !buffer) return;
+      if (!active || request !== revision || !buffer) return;
       const result = studioWaveformRegion(buffer, start, end, points);
-      if (active && result) setWaveformDetail({...result, id: detailId, url: detailUrl, zoom});
-    }, 250);
-    return () => { active = false; clearTimeout(timer); };
+      if (active && request === revision && result) setWaveformDetail({...result, id: detailId, url: detailUrl, zoom, clipStart: detailStart, clipDuration: detailDuration});
+      }, 250);
+    };
+    workspace.addEventListener('scroll', schedule, {passive: true});
+    window.addEventListener('resize', schedule);
+    schedule();
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      workspace.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+    };
   }, [detailId, detailUrl, detailStart, detailDuration, detailPeakCount, detailSourceDuration,
     detailClip?.startTime, zoom, isPlaying, isRecording, projectLoading, isMobile, mobileStudioTab, roomId, studioStorageOwner]);
 
@@ -5344,7 +5357,7 @@ export default function Studio() {
                       <div data-testid={`studio-waveform-${track.id}`} className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
                         <div style={{ position: 'absolute', inset: 0 }}>
                           {track.waveform?.length > 0 ? <TrackWaveformSVG track={track} cropToClip /> : <span className="text-xs text-muted-foreground px-2">Waveform unavailable</span>}
-                          {waveformDetail?.id === track.id && waveformDetail.url === track.audioUrl && waveformDetail.zoom === zoom && (
+                          {waveformDetail?.id === track.id && waveformDetail.url === track.audioUrl && waveformDetail.zoom === zoom && waveformDetail.clipStart === (track.clipStart || 0) && waveformDetail.clipDuration === track.duration && !isPlaying && !isRecording && selectedTrackIds.length === 1 && selectedTrackIds[0] === track.id && (
                             <div className="absolute inset-y-0 bg-background" style={{ left: (waveformDetail.startTime - (track.clipStart || 0)) * 20 * zoom, width: waveformDetail.duration * 20 * zoom }}>
                               <TrackWaveformSVG track={{ waveform: waveformDetail.waveform, color: track.color }} />
                             </div>

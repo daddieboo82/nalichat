@@ -22,6 +22,24 @@ describe('Studio playback resynchronization after a stalled animation frame', ()
     })).toBe(34);
   });
 
+  it('requires agreeing active tracks rather than trusting the first audio element', () => {
+    const bass = { ...clip, id: 9, audioUrl: 'blob:bass' };
+    const base = { expectedTime: 50.25, frameGapSeconds: 8, tracks: [clip, bass] };
+    const lead = playing(33); // timeline 58
+    const bassAudio = (time) => playing(time, { dataset: { srcUrl: 'blob:bass' } });
+    expect(studioPlaybackTimeAfterStall({
+      ...base, elements: { 8: lead, 9: bassAudio(33.1) },
+    })).toBeCloseTo(58.05);
+    // Even a seemingly valid track is not enough if the other audible track
+    // reports a different timeline position.
+    expect(studioPlaybackTimeAfterStall({
+      ...base, elements: { 8: lead, 9: bassAudio(30) },
+    })).toBe(50.25);
+    expect(studioPlaybackTimeAfterStall({
+      ...base, tracks: [bass, clip], elements: { 8: lead, 9: bassAudio(30) },
+    })).toBe(50.25);
+  });
+
   it('does not re-anchor to paused, ended, stale or inaudible media', () => {
     const base = { expectedTime: 50.25, frameGapSeconds: 8, tracks: [clip] };
     expect(studioPlaybackTimeAfterStall({ ...base, elements: { 8: playing(33, { paused: true }) } })).toBe(50.25);

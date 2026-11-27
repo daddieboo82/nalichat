@@ -10,12 +10,24 @@ function cubicOverload(b,p,q,z) {
   return exceeds((-2*q+root)/(6*z)) || exceeds((-2*q-root)/(6*z));
 }
 
-// 48 kHz K-weighted stereo measurement; fixed-size 100 ms energy blocks.
-// Other sample rates deliberately report unavailable until validated.
+// K-weighting coefficients in b0, b1, b2, a1, a2 order.
+// The 44.1 kHz stages preserve the analog response of the 48 kHz
+// stages by undoing and reapplying the bilinear transform.
+const K_WEIGHTING = {
+  44100: [
+    [1.5308803241355344, -2.6513512928671936, 1.1693440263289745, -1.663901800496319, 0.7127748580936344],
+    [0.9995600666184936, -1.9991201332369872, 0.9995600666184936, -1.9891696777723495, 0.9891990399071316],
+  ],
+  48000: [
+    [1.53512485958697, -2.69169618940638, 1.19839281085285, -1.69065929318241, 0.73248077421585],
+    [1, -2, 1, -1.99004745483398, 0.99007225036621],
+  ],
+};
+
 class NaliLoudnessWindow {
   constructor(rate) {
-    this.enabled = rate === 48000;
-    this.blockFrames = 4800;
+    this.coefficients = K_WEIGHTING[rate];
+    this.blockFrames = rate / 10;
     this.ring = new Float64Array(30);
     this.filters = [new Float64Array(8),new Float64Array(8)];
     this.position = 0;
@@ -24,10 +36,11 @@ class NaliLoudnessWindow {
     this.energy = 0;
   }
   filter(x,c) {
-    const s=this.filters[c];
-    const y=1.53512485958697*x-2.69169618940638*s[0]+1.19839281085285*s[1]+1.69065929318241*s[2]-0.73248077421585*s[3];
+    const s = this.filters[c];
+    const [shelf, highPass] = this.coefficients;
+    const y = shelf[0]*x + shelf[1]*s[0] + shelf[2]*s[1] - shelf[3]*s[2] - shelf[4]*s[3];
     s[1]=s[0];s[0]=x;s[3]=s[2];s[2]=y;
-    const z=y-2*s[4]+s[5]+1.99004745483398*s[6]-0.99007225036621*s[7];
+    const z = highPass[0]*y + highPass[1]*s[4] + highPass[2]*s[5] - highPass[3]*s[6] - highPass[4]*s[7];
     s[5]=s[4];s[4]=y;s[7]=s[6];s[6]=z;
     return z;
   }
@@ -38,7 +51,7 @@ class NaliLoudnessWindow {
     return sum>0 ? -0.691+10*Math.log10(sum/n) : null;
   }
   process(channels, report) {
-    if(!this.enabled || channels.length<1 || channels.length>2) return;
+    if(!this.coefficients || channels.length<1 || channels.length>2) return;
     for(let i=0;i<channels[0].length;i++) {
       let e=0;
       for(let c=0;c<channels.length;c++) {

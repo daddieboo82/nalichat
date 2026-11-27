@@ -4888,11 +4888,11 @@ export default function Studio() {
                                 // the session start, so startTime/duration/source offset stay coherent.
                                 const minAmount = Math.max(-initialClipStart, -initialStartTime);
                                 const amount = Math.max(minAmount, Math.min(initialDuration - 0.001, delta));
-                                return { ...t, startTime: initialStartTime + amount, duration: initialDuration - amount, clipStart: initialClipStart + amount };
+                                return { ...t, startTime: initialStartTime + amount, duration: initialDuration - amount, clipStart: initialClipStart + amount, fullDuration };
                               }
                               const maxRestore = fullDuration - (initialClipStart + initialDuration);
                               const amount = Math.max(-initialDuration + 0.001, Math.min(maxRestore, delta));
-                              return { ...t, duration: initialDuration + amount };
+                              return { ...t, duration: initialDuration + amount, fullDuration };
                             }));
                           };
                           const finishSmartTrim = (upEvent) => {
@@ -5053,6 +5053,7 @@ export default function Studio() {
                           const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
                           const initialDuration = track.duration !== undefined ? track.duration : 40;
                           const initialClipStart = track.clipStart || 0;
+                          const fullDuration = track.fullDuration || initialDuration;
                           
                           target.setPointerCapture(e.pointerId);
                           
@@ -5072,7 +5073,8 @@ export default function Studio() {
                                   ...t, 
                                   startTime: round(initialStartTime + trimAmount),
                                   duration: round(initialDuration - trimAmount),
-                                  clipStart: round(initialClipStart + trimAmount)
+                                  clipStart: round(initialClipStart + trimAmount),
+                                  fullDuration
                                   } : t
                                   ));
                                   showEditTooltip(moveEvent.clientX, moveEvent.clientY, initialStartTime + trimAmount);
@@ -5134,7 +5136,8 @@ export default function Studio() {
                                setTracks(prev => prev.map(t => 
                                 t.id === track.id ? { 
                                   ...t, 
-                                  duration: roundR(initialDuration - trimAmount)
+                                  duration: roundR(initialDuration - trimAmount),
+                                  fullDuration
                                   } : t
                                   ));
                                   showEditTooltip(moveEvent.clientX, moveEvent.clientY, (track.startTime || 0) + (initialDuration - trimAmount));

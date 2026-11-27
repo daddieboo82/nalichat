@@ -46,6 +46,38 @@ describe('incremental Mobile Studio take recovery', () => {
     expect(save).not.toHaveBeenCalled();
     controller.stop();
   });
+  it('reports synchronous snapshot failures without breaking later recovery ticks', async () => {
+    let tick;
+    const save = vi.fn(async () => ({}));
+    const onError = vi.fn();
+    const recorder = {
+      state: 'recording',
+      snapshot: vi.fn().mockImplementationOnce(() => { throw new Error('PCM memory limit'); })
+        .mockReturnValueOnce(wav(2)),
+    };
+    const controller = startMobileRecordingCheckpoints({
+      recorder, ownerId: 'owner-valid', scope: 'draft', id: 'snapshot-retry-001',
+      save, onError, schedule: fn => { tick = fn; return 9; }, unschedule: () => {},
+    });
+    expect(() => tick()).not.toThrow();
+    expect(onError).toHaveBeenCalledOnce();
+    expect(save).not.toHaveBeenCalled();
+    tick();
+    await controller.wait();
+    expect(save).toHaveBeenCalledOnce();
+    controller.stop();
+  });
+  it('does not break the timer if an error reporting callback itself fails', () => {
+    let tick;
+    const controller = startMobileRecordingCheckpoints({
+      recorder: { state: 'recording', snapshot: () => { throw new Error('snapshot failed'); } },
+      ownerId: 'owner-valid', scope: 'draft', id: 'snapshot-report-001',
+      onError: () => { throw new Error('reporting failed'); },
+      schedule: fn => { tick = fn; return 2; }, unschedule: () => {},
+    });
+    expect(() => tick()).not.toThrow();
+    controller.stop();
+  });
   it('never reports success when the IndexedDB write rejects', async () => {
     const onSaved = vi.fn(), onError = vi.fn();
     let tick;

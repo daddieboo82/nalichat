@@ -96,6 +96,7 @@ import { appendStudioLiveWaveform, drawStudioLiveWaveform } from '@/lib/studioLi
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings, studioMicrophoneErrorMessage } from '@/lib/sharedStudioCapture';
 import { createPreferredStudioRecorder } from '@/lib/studioPcmRecorder';
+import { openStudioPcmSpool } from '@/lib/studioPcmSpool';
 import NaliLatencyControl from '@/components/studio/NaliLatencyControl';
 import { readStudioLatencyProfile, safeNaliOverdubCompensation } from '@/lib/naliLatencyEngine';
 import { fetchAuthorizedStudioVoiceMessage } from '@/lib/studioMessageVoiceImport';
@@ -278,7 +279,9 @@ export default function Studio() {
         ? recorder.capturedByteLength
         : audioChunksRef.current.reduce((total,chunk)=>total+(chunk?.size||0),0);
       const pcm = typeof recorder.snapshot === 'function';
-      setMobileCaptureProgress(prev => ({...prev,elapsedSeconds:Math.max(0,elapsed),capturedBytes,pcm}));
+      setMobileCaptureProgress(prev => ({...prev,elapsedSeconds:Math.max(0,elapsed),capturedBytes,pcm,
+        ...(recorder.incrementalStorage && capturedBytes > 0 ? {checkpointSeconds: Math.max(prev.checkpointSeconds, elapsed * Math.min(1,recorder.persistedByteLength / capturedBytes))} : {}),
+      }));
       if (shouldFinalizeMobilePcm(capturedBytes,pcm) && !mobileCaptureAutoFinishRef.current &&
           !recordingFinalizeInFlightRef.current) {
         mobileCaptureAutoFinishRef.current = true;
@@ -2093,7 +2096,17 @@ export default function Studio() {
         gainNode.connect(audioCtx.destination);
         
         // Start actual recording with frequent chunks for memory efficiency
-        const { recorder: mediaRecorder, lossless } = await createPreferredStudioRecorder(stream, { MediaRecorderType: globalThis.MediaRecorder });
+        // Opt-in during browser validation. Unsupported storage falls back to RAM PCM.
+        let incrementalOptIn = false;
+        try { incrementalOptIn = window.localStorage.getItem('nalichat:incremental-pcm') === '1'; } catch {}
+        const createPcmSpool = incrementalOptIn && isMobile && user?.id
+          ? sampleRate => openStudioPcmSpool(crypto.randomUUID(), {
+              ownerId:user.id, scope:studioRecoveryScope(roomId), sampleRate,
+            })
+          : null;
+        const { recorder: mediaRecorder, lossless } = await createPreferredStudioRecorder(stream, {
+          MediaRecorderType: globalThis.MediaRecorder, createPcmSpool,
+        });
         // Lossless AudioWorklet initialization is asynchronous on some phones.
         // Never start a capture belonging to a canceled or replaced session.
         if (!studioMountedRef.current ||
@@ -2153,7 +2166,7 @@ export default function Studio() {
         // snapshots locally. A force-closed browser may recover its last
         // successful checkpoint, not necessarily the final few seconds.
         recordingCheckpointRef.current?.stop();
-        recordingCheckpointRef.current = isMobile && user?.id
+        recordingCheckpointRef.current = isMobile && user?.id && !mediaRecorder.incrementalStorage
           ? (typeof mediaRecorder.snapshot === 'function'
             ? startMobileRecordingCheckpoints
             : startCompressedRecordingCheckpoints)({
@@ -3942,7 +3955,7 @@ export default function Studio() {
   if (showWelcome) return (
     <>
       <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} handleSessionImport={handleSessionImport} navigate={navigate}
-        recoveryPanel={isMobile && user?.id ? <MobileStudioRecoveries ownerId={user.id} scope={studioRecoveryScope(roomId)} onRestore={restoreMobileTake} /> : null} />
+        recoveryPanel={isMobile && user?.id ? <MobileStudioRecoveries ownerId={user.id} scope={studioRecoveryScope(roomId)} onRestore={restoreMobileTake} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving || !canEditProject} /> : null} />
       <StudioVideoHelp />
     </>
   );

@@ -59,11 +59,13 @@ function MasterPeakMeter({ mixEngineRef, isPlaying }) {
   const [peaks, setPeaks] = useState(null);
   const [clipped, setClipped] = useState(false);
   const [interSample, setInterSample] = useState(false);
+  const [loudness, setLoudness] = useState(null);
   useEffect(() => {
-    if (!isPlaying) { setPeaks(null); return; }
+    if (!isPlaying) { setPeaks(null); setLoudness(null); return; }
     const tick = () => {
       const next = mixEngineRef?.current?.readMasterPeaks?.() ?? null;
       setPeaks(next);
+      setLoudness(mixEngineRef?.current?.readMasterLoudness?.() ?? null);
       if (mixEngineRef?.current?.readMasterInterSample?.()) setInterSample(true);
       if (mixEngineRef?.current?.readMasterClipped?.() || next?.some(peak => peak >= 1)) setClipped(true);
     };
@@ -92,6 +94,13 @@ function MasterPeakMeter({ mixEngineRef, isPlaying }) {
           </div>;
         })}
       </div>
+      {(loudness?.momentary != null || loudness?.shortTerm != null) && (
+        <div className="text-[8px] font-mono whitespace-nowrap" aria-label="Master loudness in LUFS">
+          <div title="Momentary loudness">M {loudness.momentary?.toFixed(1) ?? '—'}</div>
+          <div title="Short-term loudness">S {loudness.shortTerm?.toFixed(1) ?? '—'}</div>
+          <div>LUFS</div>
+        </div>
+      )}
     </div>
   );
 }

@@ -89,6 +89,7 @@ export function createMixEngine() {
   let masterMeter = null;
   let masterClipped = false;
   let masterInterSample = false;
+  let masterLoudness = null;
   let clipMonitor = null;
   let clipModule = null;
   const attachClipMonitor = () => {
@@ -105,8 +106,16 @@ export function createMixEngine() {
         node.connect(silent);
         silent.connect(ctx.destination);
         node.port.onmessage = event => {
-          if (clipMonitor === node && event.data === 'clip') masterClipped = true;
-          if (clipMonitor === node && event.data === 'inter-sample') masterInterSample = true;
+          if (clipMonitor !== node) return;
+          const data = event.data;
+          if (data === 'clip') masterClipped = true;
+          if (data === 'inter-sample') masterInterSample = true;
+          if (data?.type === 'loudness') {
+            masterLoudness = {
+              momentary: Number.isFinite(data.momentary) ? data.momentary : null,
+              shortTerm: Number.isFinite(data.shortTerm) ? data.shortTerm : null,
+            };
+          }
         };
         bus.volume.connect(node);
         bus.nodes.push(node,silent);
@@ -130,6 +139,7 @@ export function createMixEngine() {
       destination: context.destination,
     });
     masterMeter = null;
+    masterLoudness = null;
     clipMonitor = null;
     attachClipMonitor();
     // Tap the actual post-fader signal without modifying the audible route.
@@ -311,6 +321,7 @@ export function createMixEngine() {
 
     readMasterClipped() { return masterClipped; },
     readMasterInterSample() { return masterInterSample; },
+    readMasterLoudness() { return context?.state === 'running' ? masterLoudness : null; },
     resetMasterClipped() {
       masterClipped = false;
       masterInterSample = false;

@@ -27,6 +27,7 @@ function ChannelPeakMeter({ track, isPlaying, mixEngineRef }) {
     const tick = () => {
       const peak = readStudioLanePeak(mixEngineRef?.current, clipsRef.current);
       setLevel(peak);
+      if (clipsRef.current.some(clip => mixEngineRef?.current?.readTrackClipped?.(clip.id))) setClipped(true);
       if (peak !== null) {
         setHeld(previous => Math.max(previous, peak));
         if (peak >= 1) setClipped(true);
@@ -39,8 +40,8 @@ function ChannelPeakMeter({ track, isPlaying, mixEngineRef }) {
   const pct = peak => peak > 0 ? Math.max(0, Math.min(100, (20 * Math.log10(peak) + 60) / 60 * 100)) : 0;
   return (
     <div className="flex flex-col items-center h-full gap-1" aria-label={track.name + " channel peak meter"}>
-      <button type="button" onClick={() => { setClipped(false); setHeld(0); }}
-        title="Reset sampled channel peak and clipping indicator"
+      <button type="button" onClick={() => { clipsRef.current.forEach(clip => mixEngineRef?.current?.resetTrackClipped?.(clip.id)); setClipped(false); setHeld(0); }}
+        title="Reset channel peak and clipping indicator"
         className={cn("text-[8px] font-bold rounded px-1", clipped ? "bg-red-600 text-white" : "text-muted-foreground")}>
         {clipped ? "CLIP" : "PK"}
       </button>

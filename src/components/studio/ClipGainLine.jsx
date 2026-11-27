@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
  * Range: -12 dB to +12 dB. Default: 0 dB (center).
  * The line position maps: top = +12dB, bottom = -12dB, center = 0dB.
  */
-export default function ClipGainLine({ clipGain = 0, onChange, onCommit, activeTool }) {
+export default function ClipGainLine({ clipGain = 0, onCommit, activeTool }) {
   // Only show the gain line when the Smart or Trim tool is active (Pro Tools shows it contextually)
   const visible = activeTool === 'smart' || activeTool === 'trim';
 
@@ -21,7 +21,6 @@ export default function ClipGainLine({ clipGain = 0, onChange, onCommit, activeT
     e.stopPropagation();
     const target = e.currentTarget;
     const container = target.parentElement;
-    const rect = container.getBoundingClientRect();
     target.setPointerCapture(e.pointerId);
 
     const startY = e.clientY;
@@ -29,13 +28,14 @@ export default function ClipGainLine({ clipGain = 0, onChange, onCommit, activeT
 
     const handleMove = (moveEvent) => {
       const deltaY = moveEvent.clientY - startY;
-      // 1px ≈ 0.5 dB (24 dB range over ~48px of drag)
+      // Map each pixel of drag to a quarter decibel.
       const newGain = Math.max(-12, Math.min(12, Math.round((startGain - deltaY * 0.25) * 10) / 10));
       target.style.top = `${((12 - newGain) / 24) * 100}%`;
       // Update the gain badge
       const badge = container.querySelector('[data-gain-badge]');
       if (badge) {
-        badge.textContent = `${newGain > 0 ? '+' : ''}${newGain.toFixed(1)} dB`;
+        // Preserve the text node React owns while previewing the drag.
+        badge.firstChild.nodeValue = `${newGain > 0 ? '+' : ''}${newGain.toFixed(1)} dB`;
         badge.style.opacity = '1';
       }
       target.dataset.newGain = newGain;
@@ -48,8 +48,7 @@ export default function ClipGainLine({ clipGain = 0, onChange, onCommit, activeT
       const newGainStr = target.dataset.newGain;
       if (newGainStr !== undefined) {
         const newGain = parseFloat(newGainStr);
-        onChange(newGain);
-        if (onCommit) onCommit();
+        if (newGain !== startGain) onCommit(newGain);
         delete target.dataset.newGain;
       }
       // Fade out the badge after a delay
@@ -84,7 +83,7 @@ export default function ClipGainLine({ clipGain = 0, onChange, onCommit, activeT
           clipGain !== 0 ? "bg-yellow-400/20 text-yellow-400 opacity-100" : "bg-black/40 text-yellow-400/80 opacity-0"
         )}
       >
-        {clipGain > 0 ? '+' : ''}{clipGain.toFixed(1)} dB
+        {`${clipGain > 0 ? '+' : ''}${clipGain.toFixed(1)} dB`}
       </div>
     </>
   );

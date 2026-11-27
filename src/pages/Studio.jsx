@@ -5439,8 +5439,7 @@ export default function Studio() {
                       <ClipGainLine
                         clipGain={track.clipGain || 0}
                         activeTool={activeTool}
-                        onChange={(newGain) => setTracks(prev => prev.map(t => t.id === track.id ? { ...t, clipGain: newGain } : t))}
-                        onCommit={() => setTracksWithHistory(prev => prev)}
+                        onCommit={(newGain) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, clipGain: newGain } : t))}
                       />
 
                       <div data-testid={`studio-waveform-${track.id}`} className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>

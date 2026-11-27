@@ -34,8 +34,10 @@ function resolveColor(color) {
   return 'hsl(var(--primary))';
 }
 
-export default function TrackWaveformSVG({ track }) {
-  const wf = track.waveform || [];
+const EMPTY_WAVEFORM = Object.freeze([]);
+
+function TrackWaveformSVG({ track }) {
+  const wf = track.waveform || EMPTY_WAVEFORM;
   const gradId = React.useId();
   const color = resolveColor(track?.color);
 
@@ -46,12 +48,12 @@ export default function TrackWaveformSVG({ track }) {
     // Span both edges of each bin to avoid shifting transients as zoom changes.
     const commands = ['M 0,50'];
     for (let i = 0; i < wf.length; i++) {
-      const y = 50 - amplitude(wf[i]);
-      commands.push(`L ${i / wf.length * 10000},${y}`, `L ${(i + 1) / wf.length * 10000},${y}`);
+      const y = (50 - amplitude(wf[i])).toFixed(3);
+      commands.push(`L ${(i / wf.length * 10000).toFixed(3)},${y}`, `L ${((i + 1) / wf.length * 10000).toFixed(3)},${y}`);
     }
     for (let i = wf.length - 1; i >= 0; i--) {
-      const y = 50 + amplitude(wf[i]);
-      commands.push(`L ${(i + 1) / wf.length * 10000},${y}`, `L ${i / wf.length * 10000},${y}`);
+      const y = (50 + amplitude(wf[i])).toFixed(3);
+      commands.push(`L ${((i + 1) / wf.length * 10000).toFixed(3)},${y}`, `L ${(i / wf.length * 10000).toFixed(3)},${y}`);
     }
     return commands.join(' ') + ' Z';
   }, [wf]);
@@ -83,3 +85,8 @@ export default function TrackWaveformSVG({ track }) {
     </svg>
   );
 }
+
+// Geometry and color depend only on these two fields, not transport or mixer state.
+export default React.memo(TrackWaveformSVG, (previous, next) =>
+  previous.track.waveform === next.track.waveform && previous.track.color === next.track.color
+);

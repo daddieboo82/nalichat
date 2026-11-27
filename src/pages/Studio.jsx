@@ -88,7 +88,7 @@ import { trainPrivateNaliVoiceFromRecording, forgetPrivateNaliVoiceTraining } fr
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { nextStudioTransportPosition } from '@/lib/studioTransportBoundary';
 import { studioTransportFrameDelta } from '@/lib/studioTransportDelta';
-import { studioPlaybackTimeAfterStall } from '@/lib/studioPlaybackClock';
+import { studioPlaybackTimeAfterStall, studioPlaybackDriftTarget } from '@/lib/studioPlaybackClock';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { compactStudioWaveform } from '@/lib/studioTrackStripWaveform';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
@@ -1022,6 +1022,9 @@ export default function Studio() {
   useEffect(() => {
     let animationFrameId;
     let lastTime = performance.now();
+    let lastDriftScan = 0;
+    const driftHistory = new Map();
+    let driftAttempt = playbackAttemptRef.current;
     
     const updateTime = (time) => {
       // Backgrounded browsers can pause RAF for seconds or minutes. Don't
@@ -1106,6 +1109,12 @@ export default function Studio() {
       // started at the source offset when the playhead enters its range.
       // Do not reissue play() every frame while a start promise is pending.
       if (isPlaying || isRecording) {
+        if (driftAttempt !== playbackAttemptRef.current) {
+          driftHistory.clear();
+          driftAttempt = playbackAttemptRef.current;
+        }
+        const scanDrift = isPlaying && !isRecording && time - lastDriftScan >= 500;
+        if (scanDrift) lastDriftScan = time;
         const sessionTracks = tracksRef.current;
         const hasSolo = sessionTracks.some(t => t.solo);
         for (const track of sessionTracks) {
@@ -1118,6 +1127,24 @@ export default function Studio() {
           }
           const candidate = audio?.dataset?.srcUrl === track.audioUrl
             ? audio : getTrackAudioRef.current?.(track);
+          if (scanDrift) {
+            const target = studioPlaybackDriftTarget({audio:candidate,track,position,recording:isRecording});
+            const previous = driftHistory.get(track.id);
+            if (target === null) {
+              driftHistory.delete(track.id);
+            } else {
+              const direction = Math.sign(candidate.currentTime - target);
+              const sustained = previous?.audio === candidate && previous.direction === direction;
+              const lastCorrection = previous?.lastCorrection ?? -Infinity;
+              if (sustained && time - lastCorrection >= 2000 &&
+                  !playbackStartingRef.current.has(track.id)) {
+                try { candidate.currentTime = target; } catch {}
+                driftHistory.set(track.id,{audio:candidate,direction:0,lastCorrection:time});
+              } else {
+                driftHistory.set(track.id,{audio:candidate,direction,lastCorrection});
+              }
+            }
+          }
           if (!candidate || !candidate.paused ||
               playbackStartingRef.current.has(track.id) ||
               playbackFailedRef.current.has(track.id)) continue;

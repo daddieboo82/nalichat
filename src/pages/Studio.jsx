@@ -4682,7 +4682,8 @@ export default function Studio() {
                             target.removeEventListener('pointermove', handleZoomMove);
                             target.removeEventListener('pointerup', finishZoom);
                             const workspace = workspaceRef.current;
-                            const viewportWidth = Math.max(320, (workspace?.clientWidth || 1200) - 384);
+                            const headerWidth = workspace?.querySelector('.nali-studio-track-headers')?.getBoundingClientRect().width || 0;
+                            const viewportWidth = Math.max(1, (workspace?.clientWidth || 1200) - headerWidth);
                             if (dragged && Math.abs(endTime - anchorTime) > 0.01) {
                               const start = Math.min(anchorTime, endTime);
                               const range = Math.abs(endTime - anchorTime);

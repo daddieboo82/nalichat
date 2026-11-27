@@ -93,7 +93,7 @@ import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { compactStudioWaveform } from '@/lib/studioTrackStripWaveform';
 import { studioRecordedWaveform, studioWaveformRegion } from '@/lib/studioRecordedWaveform';
 import { createStudioWaveformCache } from '@/lib/studioWaveformCache';
-import { analyzeStudioPcmWav } from '@/lib/studioPcmWaveform';
+import { analyzeStudioPcmWav, analyzeStudioRemotePcmRegion } from '@/lib/studioPcmWaveform';
 import { appendStudioLiveWaveform, drawStudioLiveWaveform } from '@/lib/studioLiveWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings, studioMicrophoneErrorMessage } from '@/lib/sharedStudioCapture';
@@ -461,11 +461,12 @@ export default function Studio() {
     setWaveformDetail(null);
     if (!detailUrl || !detailPeakCount || !detailSourceDuration || isPlaying || isRecording ||
         projectLoading || zoom < 8 || (isMobile && mobileStudioTab !== 'timeline')) return;
-    let active = true, timer, revision = 0;
+    let active = true, timer, revision = 0, rangeController = null;
     const workspace = workspaceRef.current;
     if (!workspace) return;
     const schedule = () => {
       clearTimeout(timer);
+      rangeController?.abort();
       const request = ++revision;
       timer = setTimeout(async () => {
       if (!workspace) return;
@@ -477,11 +478,29 @@ export default function Studio() {
       const end = Math.min(detailStart + detailDuration, detailStart + timelineStart + visibleWidth / (20 * zoom) - (track.startTime || 0));
       const points = Math.min(8192, Math.ceil(visibleWidth * 2));
       if (end <= start || points <= (end - start) / detailSourceDuration * detailPeakCount * 2) return;
-      const buffer = await detailCacheRef.current?.get(detailUrl);
-      if (!active || request !== revision || !buffer) return;
-      // Reject mismatched source timing rather than overlaying misleading peaks.
-      if (Math.abs(buffer.duration - detailSourceDuration) > Math.max(0.05, 2 / buffer.sampleRate)) return;
-      const result = studioWaveformRegion(buffer, start, end, points);
+      let result = null;
+      // HTTP sources can support bounded byte-range PCM reads.
+      // Unsupported layouts, missing range validators or network errors fall back.
+      if (typeof detailUrl === 'string' && /^https?:/i.test(detailUrl)) {
+        const controller = new AbortController();
+        rangeController = controller;
+        const deadline = setTimeout(() => controller.abort(), 4000);
+        try {
+          result = await analyzeStudioRemotePcmRegion(detailUrl, start, end, points, {signal: controller.signal});
+        } finally {
+          clearTimeout(deadline);
+          if (rangeController === controller) rangeController = null;
+        }
+      }
+      if (!active || request !== revision) return;
+      if (result && Math.abs(result.sourceDuration - detailSourceDuration) > 0.05) result = null;
+      if (!result) {
+        const buffer = await detailCacheRef.current?.get(detailUrl);
+        if (!active || request !== revision || !buffer) return;
+        // Reject mismatched source timing rather than overlaying misleading peaks.
+        if (Math.abs(buffer.duration - detailSourceDuration) > Math.max(0.05, 2 / buffer.sampleRate)) return;
+        result = studioWaveformRegion(buffer, start, end, points);
+      }
       if (active && request === revision && result && result.waveform.length > (end - start) / detailSourceDuration * detailPeakCount) setWaveformDetail({...result, id: detailId, url: detailUrl, zoom, clipStart: detailStart, clipDuration: detailDuration});
       }, 250);
     };
@@ -491,6 +510,7 @@ export default function Studio() {
     return () => {
       active = false;
       clearTimeout(timer);
+      rangeController?.abort();
       workspace.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
     };

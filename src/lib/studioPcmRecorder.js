@@ -31,7 +31,10 @@ export async function createLosslessStudioRecorder(stream, {
   AudioContextType = globalThis.AudioContext || globalThis.webkitAudioContext,
   WorkletNodeType = globalThis.AudioWorkletNode,
   moduleUrl = WORKLET_URL,
+  // Experimental, caller-owned spool; default capture remains unchanged.
+  pcmSpool = null,
 } = {}) {
+  if (pcmSpool && (typeof pcmSpool.append !== 'function' || typeof pcmSpool.assembleWav !== 'function')) throw new Error('Invalid PCM spool');
   if (!AudioContextType || !WorkletNodeType) throw new Error('AudioWorklet recording unavailable');
   const context = new AudioContextType({latencyHint:'interactive'});
   let source;
@@ -87,7 +90,8 @@ export async function createLosslessStudioRecorder(stream, {
     // ongoing recording. Each result contains its own complete WAV header.
     // This is used for optional device-local crash recovery, not cloud upload.
     snapshot() {
-      if (completed || this.state !== 'recording' || byteLength < context.sampleRate * 2) return null;
+      // Spool assembly seals writes; never invoke it for an active snapshot.
+      if (pcmSpool || completed || this.state !== 'recording' || byteLength < context.sampleRate * 2) return null;
       return pcm16WavBlob(chunks, context.sampleRate);
     },
     requestData() { /* PCM is emitted on stop as a single valid WAV file. */ },
@@ -134,10 +138,16 @@ export async function createLosslessStudioRecorder(stream, {
     // recovery handler can preserve the captured samples. Never claim an
     // empty or unencodable recording was saved.
     let encodeError = null;
-    if (!error || chunks.length > 0) {
+    if (!error || chunks.length > 0 || (pcmSpool && byteLength > 0)) {
       let audio = null;
       try {
-        audio = pcm16WavBlob(chunks, context.sampleRate);
+        if (pcmSpool) {
+          const assembled = await pcmSpool.assembleWav(context.sampleRate);
+          audio = assembled.audio;
+          if (assembled.partial && !error) error = new Error('PCM storage interrupted; recovered partial recording');
+        } else {
+          audio = pcm16WavBlob(chunks, context.sampleRate);
+        }
       } catch (caught) {
         encodeError = caught;
       }
@@ -162,6 +172,18 @@ export async function createLosslessStudioRecorder(stream, {
       const chunk = data.buffer;
       if (!(chunk instanceof ArrayBuffer) || chunk.byteLength % 2) {
         void finish(new Error('Invalid PCM samples'));
+        return;
+      }
+      if (pcmSpool) {
+        // Keep the existing total capture limit until browser assembly is validated.
+        if (byteLength + chunk.byteLength > MAX_PCM_BYTES) {
+          void finish(new Error('Recording length exceeds current capture limit'));
+          return;
+        }
+        byteLength += chunk.byteLength;
+        try {
+          Promise.resolve(pcmSpool.append(chunk)).catch(error => { void finish(error); });
+        } catch (error) { void finish(error); }
         return;
       }
       const remaining = MAX_PCM_BYTES - byteLength;

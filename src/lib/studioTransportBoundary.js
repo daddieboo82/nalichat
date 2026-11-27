@@ -20,11 +20,13 @@ export function nextStudioTransportPosition({
   const next = Number.isFinite(nextTime) ? Math.max(0, nextTime) : 0;
   const selectionValid = looping && Number.isFinite(selectionStart) && Number.isFinite(selectionEnd) &&
     selectionStart >= 0 && selectionEnd > selectionStart;
+  // A live microphone capture is a continuous take. Even with a selection
+  // loop enabled, rewinding the timeline would misalign its captured bytes,
+  // punch-in/out boundary and overdub placement.
+  if (recording) return { time: next, wrapped: false };
   if (selectionValid && next >= selectionEnd) {
     return { time: selectionStart, wrapped: true };
   }
-  // Never rewind an active capture in the middle of a long vocal take.
-  if (recording) return { time: next, wrapped: false };
   const end = studioProjectEndSeconds(tracks);
   if (!selectionValid && next > end) return { time: 0, wrapped: true };
   return { time: next, wrapped: false };

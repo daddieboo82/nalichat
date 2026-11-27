@@ -107,19 +107,29 @@ const param = (effect, key, fallback) => num(effect?.params?.[key], fallback);
 
 /** Evaluate sorted automation breakpoints at a transport time. Mute uses stepped values. */
 export function automationValueAt(points, time, fallback = 0, { step = false } = {}) {
-  const valid = (points || []).filter(p => Number.isFinite(p?.time) && Number.isFinite(p?.value)).sort((a, b) => a.time - b.time);
+  // Normal editor lanes are already sorted. Avoid allocating and sorting
+  // a new array on every transport frame, while retaining dirty-input handling.
+  const input = points || [];
+  let ordered = true;
+  for (let i = 0; i < input.length; i++) {
+    const p = input[i];
+    if (!Number.isFinite(p?.time) || !Number.isFinite(p?.value) ||
+        (i > 0 && p.time < input[i-1].time)) { ordered = false; break; }
+  }
+  const valid = ordered ? input : input.filter(p => Number.isFinite(p?.time) && Number.isFinite(p?.value)).sort((a,b)=>a.time-b.time);
   if (!valid.length) return fallback;
   if (time <= valid[0].time) return valid[0].value;
-  for (let i = 1; i < valid.length; i++) {
-    const right = valid[i];
-    const left = valid[i - 1];
-    if (time <= right.time) {
-      if (step || right.time === left.time) return left.value;
-      const ratio = (time - left.time) / (right.time - left.time);
-      return left.value + (right.value - left.value) * ratio;
-    }
+  if (!(time <= valid[valid.length - 1].time)) return valid[valid.length - 1].value;
+  let lo = 1, hi = valid.length - 1;
+  while (lo < hi) {
+    const mid = lo + Math.floor((hi-lo)/2);
+    if (time <= valid[mid].time) hi = mid;
+    else lo = mid + 1;
   }
-  return valid[valid.length - 1].value;
+  const right = valid[lo], left = valid[lo-1];
+  if (step || right.time === left.time) return left.value;
+  const ratio = (time - left.time) / (right.time - left.time);
+  return left.value + (right.value - left.value) * ratio;
 }
 
 export function automatedTrackState(track, time) {

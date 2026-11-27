@@ -591,6 +591,44 @@ export default function Studio() {
     }
 
     let cancelled = false;
+    const waveformAbort = new AbortController();
+    const recoverSavedWaveforms = async (savedTracks) => {
+      const missing = savedTracks.filter(track => track.audioUrl && !track.waveform?.length);
+      if (!missing.length) return savedTracks;
+      const sources = [...new Set(missing.map(track => track.audioUrl))];
+      const recovered = new Map();
+      const deadline = setTimeout(() => waveformAbort.abort(), 8000);
+      let context;
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return savedTracks;
+        context = new AudioContextClass();
+        for (const source of sources) {
+          if (cancelled || waveformAbort.signal.aborted) break;
+          try {
+            const response = await fetch(source, { signal: waveformAbort.signal });
+            if (!response.ok) continue;
+            const buffer = await context.decodeAudioData(await response.arrayBuffer());
+            if (cancelled || waveformAbort.signal.aborted) break;
+            const waveform = studioRecordedWaveform(buffer, waveformPointsRef.current);
+            if (waveform.length && Number.isFinite(buffer.duration) && buffer.duration > 0) {
+              recovered.set(source, { waveform, fullDuration: buffer.duration });
+            }
+          } catch {
+            // Keep the original clip when its source cannot be decoded.
+          }
+        }
+      } catch {
+        // Waveform recovery must never prevent opening the project.
+      } finally {
+        clearTimeout(deadline);
+        if (context && context.state !== 'closed') void context.close().catch(() => {});
+      }
+      return savedTracks.map(track => {
+        const result = !track.waveform?.length && recovered.get(track.audioUrl);
+        return result ? { ...track, ...result } : track;
+      });
+    };
     masterFxLoadedRef.current = false;
     setProjectLoading(true);
     setProjectLoadError(false);
@@ -642,7 +680,7 @@ export default function Studio() {
         // An explicitly saved empty track list is authoritative. Fall back
         // to legacy Track rows only when no modern track list was saved.
         if (Array.isArray(savedState?.tracks)) {
-          const hydrated = hydrateStudioTracks(savedState.tracks);
+          const hydrated = await recoverSavedWaveforms(hydrateStudioTracks(savedState.tracks));
           if (cancelled) return;
           historyEpochRef.current += 1;
           historyRef.current = [hydrated];
@@ -658,7 +696,7 @@ export default function Studio() {
           if (cancelled) return;
           {
             // An empty cloud project must clear the previous session too.
-            const hydrated = persistedTracks.map((track) => ({
+            const hydrated = await recoverSavedWaveforms(persistedTracks.map((track) => ({
               id: track.id,
               _persistedTrackId: track.id,
               name: track.name,
@@ -682,7 +720,8 @@ export default function Studio() {
               elasticAudio: false,
               fadeIn: 0,
               fadeOut: 0,
-            }));
+            })));
+            if (cancelled) return;
             historyEpochRef.current += 1;
             historyRef.current = [hydrated];
             historyIndexRef.current = 0;
@@ -711,7 +750,7 @@ export default function Studio() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; waveformAbort.abort(); };
   }, [roomId, inviteToken, user?.id, projectLoadRetryKey, setSearchParams]);
 
   const handleStartBlank = () => {

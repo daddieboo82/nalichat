@@ -156,6 +156,31 @@ export function createMixEngine() {
     });
   };
 
+  // Allocate continuous monitors only for displayed channel meters.
+  const attachTrackClipMonitor = (entry, meter) => {
+    const ctx = context, output = entry.meterOutput;
+    if (!clipModule || !ctx || !output || meter.clipPending || meter.clipNode) return;
+    meter.clipPending = true;
+    clipModule.then(() => {
+      if (disposed || context !== ctx || entry.meter !== meter || entry.meterOutput !== output) return;
+      let node, silent;
+      try {
+        node = new globalThis.AudioWorkletNode(ctx, 'nali-master-clip-monitor', {numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1]});
+        silent = ctx.createGain();
+        silent.gain.value = 0;
+        node.connect(silent);
+        silent.connect(ctx.destination);
+        node.port.onmessage = event => {
+          if (entry.meter === meter && meter.clipNode === node && event.data === 'clip') entry.clipped = true;
+        };
+        output.connect(node);
+        meter.clipNode = node;
+        meter.clipSilent = silent;
+        entry.nodes.push(node,silent);
+      } catch { if (node) disposeNode(node); if (silent) disposeNode(silent); }
+    }).catch(() => {});
+  };
+
   const teardownEntry = (entry) => {
     entry.meter = null;
     entry.meterOutput = null;
@@ -217,6 +242,18 @@ export function createMixEngine() {
         try { entry.meterOutput.disconnect(meter.splitter); }
         catch { return; } // Keep ownership for normal graph teardown.
         const nodes = [meter.splitter, ...meter.analysers];
+        if (meter.clipNode) {
+          // If targeted disconnect is unsupported, silence and keep ownership
+          // until ordinary graph teardown, rather than disconnecting audio.
+          try {
+            entry.meterOutput.disconnect(meter.clipNode);
+            nodes.push(meter.clipNode, meter.clipSilent);
+          } catch {
+            meter.clipNode.port.onmessage = null;
+            disposeNode(meter.clipNode);
+            disposeNode(meter.clipSilent);
+          }
+        }
         nodes.forEach(disposeNode);
         entry.nodes = entry.nodes.filter(node => !nodes.includes(node));
         entry.meter = null;
@@ -247,6 +284,7 @@ export function createMixEngine() {
           entry.meterOutput.connect(splitter);
           entry.nodes.push(...nodes);
           entry.meter = {splitter, analysers, samples};
+          attachTrackClipMonitor(entry, entry.meter);
         } catch { nodes.forEach(disposeNode); return null; }
       }
       const {analysers, samples} = entry.meter;
@@ -257,7 +295,16 @@ export function createMixEngine() {
           if (Number.isFinite(samples[i])) peak = Math.max(peak, Math.abs(samples[i]));
         }
       }
+      if (peak >= 1) entry.clipped = true;
       return peak;
+    },
+
+    readTrackClipped(trackId) { return entries.get(trackId)?.clipped === true; },
+    resetTrackClipped(trackId) {
+      const entry = entries.get(trackId);
+      if (!entry) return;
+      entry.clipped = false;
+      try { entry.meter?.clipNode?.port.postMessage('reset'); } catch {}
     },
 
     readMasterClipped() { return masterClipped; },

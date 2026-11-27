@@ -91,8 +91,9 @@ export function safeNaliOverdubCompensation(profile, { micDeviceId, outputLatenc
       !Number.isFinite(profile.confidence) || profile.confidence < 0.6 ||
       !Number.isFinite(duration) || duration < 1 ||
       !profile.micDeviceId || !micDeviceId || profile.micDeviceId !== micDeviceId ||
-      (Number.isFinite(profile.browserOutputLatencyMs) && Number.isFinite(outputLatencyMs) &&
-        Math.abs(profile.browserOutputLatencyMs - outputLatencyMs) > 20) ||
+      (Number.isFinite(profile.browserOutputLatencyMs) &&
+        (!Number.isFinite(outputLatencyMs) || outputLatencyMs < 0 ||
+          Math.abs(profile.browserOutputLatencyMs - outputLatencyMs) > 20)) ||
       !Number.isFinite(profile.calibratedAt) || Date.now() - profile.calibratedAt > 24 * 3600000 ||
       profile.calibratedAt > Date.now()) return 0;
   return Math.min(profile.roundTripMs / 1000, duration * 0.09);

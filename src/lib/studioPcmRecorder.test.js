@@ -161,6 +161,55 @@ describe('NaliChat genuine 16-bit lossless PCM recording', () => {
     expect(node.port.postMessage).toBeDefined();
   });
 
+  it('falls back without waiting for a stuck audio-context close after worklet initialization fails', async () => {
+    const close = vi.fn(() => new Promise(() => {}));
+    class Context {
+      constructor() {
+        this.audioWorklet = { addModule: async () => { throw new Error('Worklet module unavailable'); } };
+      }
+      close() { return close(); }
+    }
+    const Fallback = vi.fn(function() { this.mimeType = 'audio/mp4'; });
+    Fallback.isTypeSupported = mime => mime === 'audio/mp4';
+    const result = await createPreferredStudioRecorder({}, {
+      MediaRecorderType: Fallback,
+      createLossless: stream => createLosslessStudioRecorder(stream, {
+        AudioContextType: Context, WorkletNodeType: function() {},
+      }),
+    });
+    expect(result.backend).toBe('media-recorder');
+    expect(result.recorder.mimeType).toBe('audio/mp4');
+    await vi.waitFor(() => expect(close).toHaveBeenCalledOnce());
+  });
+
+  it('preserves the initial worklet error and disconnects other nodes if one throws', async () => {
+    const disconnected = [];
+    const close = vi.fn(() => { throw new Error('Audio service unavailable'); });
+    class Context {
+      constructor() {
+        this.destination = {};
+        this.audioWorklet = { addModule: async () => {} };
+      }
+      createMediaStreamSource() {
+        return { connect() {}, disconnect() { disconnected.push('source'); throw new Error('disconnect failed'); } };
+      }
+      createGain() {
+        return { gain: {}, connect() { throw new Error('Gain connect failed'); },
+          disconnect() { disconnected.push('gain'); } };
+      }
+      close() { return close(); }
+    }
+    class WorkletNode {
+      connect() {}
+      disconnect() { disconnected.push('worklet'); }
+    }
+    await expect(createLosslessStudioRecorder({}, {
+      AudioContextType: Context, WorkletNodeType: WorkletNode,
+    })).rejects.toThrow('Gain connect failed');
+    expect(disconnected).toEqual(['source', 'worklet', 'gain']);
+    await vi.waitFor(() => expect(close).toHaveBeenCalledOnce());
+  });
+
   it('cleans up the worklet and audio context if initialization fails', async () => {
     const close = vi.fn().mockResolvedValue(undefined);
     class Context {

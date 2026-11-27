@@ -34,6 +34,8 @@ async function decodeAudio(blob) {
   const audio = new AudioContextClass();
   try {
     return await audio.decodeAudioData(await blob.arrayBuffer());
+  } catch (error) {
+    throw new Error('Studio could not read this audio. Try a playable WAV or MP3 file.', { cause: error });
   } finally {
     await audio.close().catch(() => {});
   }

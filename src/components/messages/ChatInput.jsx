@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";
 import { toast } from "sonner";
 import { createClientMessageKey } from "@/lib/messageCache";
+import { openPreferredMicrophone } from "@/lib/microphoneCapture";
 import { sounds } from "@/hooks/use-sound";
 import { motion } from "framer-motion";
 import EmojiReactionPicker from "./EmojiReactionPicker";
@@ -218,7 +219,9 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     }
     let stream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await openPreferredMicrophone(navigator.mediaDevices, {
+        onFallback: () => toast.warning("Selected microphone unavailable. Using the device default."),
+      });
       if (!mountedRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         return;

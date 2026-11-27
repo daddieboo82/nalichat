@@ -19,10 +19,13 @@ export async function calibrateNaliStudioLatency({
   let stream = null;
   let context = null, input = null, worklet = null, mute = null, volume = null;
   let sources = [];
+  let routeChanged = false;
+  const onDeviceChange = () => { routeChanged = true; };
   try {
     onStatus?.('Opening microphone for a short speaker test…');
     stream = await openStudioMicrophone(mediaDevices);
     signal?.throwIfAborted();
+    mediaDevices?.addEventListener?.('devicechange', onDeviceChange);
     context = new AudioContextType({ latencyHint: 'interactive' });
     if (!context.audioWorklet?.addModule) throw new Error('AudioWorklet is unavailable.');
     await context.audioWorklet.addModule('/audio/nali-latency-probe.worklet.js');
@@ -75,6 +78,10 @@ export async function calibrateNaliStudioLatency({
     }
     worklet.port.postMessage({type:'flush'});
     await new Promise(resolve => setTimeout(resolve, 90));
+    signal?.throwIfAborted();
+    if (routeChanged || context.state !== 'running' || stream.getAudioTracks?.().some(track => track.readyState === 'ended')) {
+      throw new Error('Audio device changed or disconnected during calibration. Please try again.');
+    }
     if (!chunks) throw new Error('Your microphone did not provide calibration audio.');
     onStatus?.('Checking microphone and speaker timing…');
     const result = estimateStudioRoundTrip({ captured: capture, reference: pulse, pulseFrames: frames, sampleRate: rate });
@@ -85,6 +92,7 @@ export async function calibrateNaliStudioLatency({
       micDeviceId: stream.getAudioTracks?.()[0]?.getSettings?.().deviceId || null,
     };
   } finally {
+    mediaDevices?.removeEventListener?.('devicechange', onDeviceChange);
     for (const source of sources) { try { source.stop(); } catch {} try { source.disconnect(); } catch {} }
     try { input?.disconnect(); worklet?.disconnect(); mute?.disconnect(); volume?.disconnect(); } catch {}
     stream?.getTracks().forEach(track => track.stop());

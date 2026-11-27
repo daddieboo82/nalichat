@@ -20,7 +20,8 @@ export async function polishVocalLocally(sourceBlob, signal) {
     await decoder.close().catch(() => {});
   }
   signal?.throwIfAborted();
-  if (!input.length || input.duration < 1 || input.duration > 60) {
+  // Browser resampling can round an exact one-second clip down by one frame.
+  if (!input.length || input.length + 1 < input.sampleRate || input.duration > 60) {
     throw new Error('Choose 1–60 seconds of isolated vocal.');
   }
 

@@ -39,7 +39,7 @@ class FakeOfflineAudioContext {
   }
   createBuffer(_channels, length, rate) {
     const samples = new Float32Array(length);
-    return { ...makeBuffer(samples, rate), copyToChannel: data => samples.set(data) };
+    return { ...makeBuffer(samples, rate), copyToChannel: data => samples.set(data.subarray(0, length)) };
   }
   async startRendering() { return output; }
 }
@@ -83,6 +83,20 @@ describe('VoxShift local vocal polish', () => {
     expect(result.duration).toBe(1);
     expect(rendered[0]).toBeGreaterThan(0);
     expect(rendered.at(-1)).toBeLessThan(0);
+  });
+
+  it('accepts a one-second take rounded down by one decoded frame', async () => {
+    const decode = vi.spyOn(FakeAudioContext.prototype, 'decodeAudioData');
+    try {
+      decode.mockResolvedValueOnce(makeBuffer(new Float32Array(23999)));
+      output = makeBuffer(new Float32Array(23999 + 144));
+      const result = await polishVocalLocally(new Blob(['voice']));
+      expect(result.duration).toBeCloseTo(23999 / 24000);
+      decode.mockResolvedValueOnce(makeBuffer(new Float32Array(23998)));
+      await expect(polishVocalLocally(new Blob(['voice']))).rejects.toThrow('1–60 seconds');
+    } finally {
+      decode.mockRestore();
+    }
   });
 
   it('honors cancellation', async () => {

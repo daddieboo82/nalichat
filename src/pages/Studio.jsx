@@ -1260,6 +1260,12 @@ export default function Studio() {
   getTrackAudioRef.current = getTrackAudio;
 
   const updateCurrentTime = (newTime) => {
+    if (!Number.isFinite(newTime)) return;
+    newTime = Math.max(0, newTime);
+    if (newTime + 15 > transportHorizonRef.current) {
+      transportHorizonRef.current = Math.ceil((newTime + 30) / 60) * 60;
+      setTransportHorizon(transportHorizonRef.current);
+    }
     currentTimeRef.current = newTime;
     if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
     if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
@@ -4352,7 +4358,7 @@ export default function Studio() {
       </div>
 
       {/* Main Workspace */}
-      <div ref={workspaceRef} className={cn("studio-mobile-timeline flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-foreground/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]", mobileStudioTab !== "timeline" && "max-md:hidden")} style={isMobile?{display:mobileStudioTab==="timeline"?"block":"none"}:undefined}> 
+      <div ref={workspaceRef} className={cn("studio-mobile-timeline flex-1 min-h-0 overflow-auto touch-auto overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-foreground/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]", mobileStudioTab !== "timeline" && "max-md:hidden")} style={isMobile?{display:mobileStudioTab==="timeline"?"block":"none"}:undefined}> 
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} roomId={roomId} />
         {/* Unified scroll — left pane + waveforms move together in one container */}
@@ -4430,8 +4436,8 @@ export default function Studio() {
                 const updatePosition = (cX, cY) => { const t = Math.max(0, (cX - target.getBoundingClientRect().left) / (20 * zoom)); updateCurrentTime(t); showEditTooltip(cX, cY, t); };
                 updatePosition(e.clientX, e.clientY);
                 const handleMove = (moveEvent) => updatePosition(moveEvent.clientX, moveEvent.clientY);
-                const handleUp = () => { window.removeEventListener('pointermove', handleMove); window.removeEventListener('pointerup', handleUp); hideEditTooltip(); };
-                window.addEventListener('pointermove', handleMove); window.addEventListener('pointerup', handleUp);
+                const handleUp = () => { window.removeEventListener('pointermove', handleMove); window.removeEventListener('pointerup', handleUp); window.removeEventListener('pointercancel', handleUp); hideEditTooltip(); };
+                window.addEventListener('pointermove', handleMove); window.addEventListener('pointerup', handleUp); window.addEventListener('pointercancel', handleUp);
               }}
             >
               {loopActive && (() => {

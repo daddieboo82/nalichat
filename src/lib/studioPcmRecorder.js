@@ -109,16 +109,26 @@ export async function createLosslessStudioRecorder(stream, {
     // empty or unencodable recording was saved.
     let encodeError = null;
     if (!error || chunks.length > 0) {
+      let audio = null;
       try {
-        const audio = pcm16WavBlob(chunks, context.sampleRate);
-        recorder.ondataavailable?.({data:audio});
+        audio = pcm16WavBlob(chunks, context.sampleRate);
       } catch (caught) {
         encodeError = caught;
       }
+      if (audio) {
+        try { recorder.ondataavailable?.({data:audio}); }
+        catch (callbackError) { console.warn('Studio PCM audio delivery callback failed:', callbackError); }
+      }
     }
-    if (error || encodeError) recorder.onerror?.({error: error || encodeError});
+    if (error || encodeError) {
+      try { recorder.onerror?.({error: error || encodeError}); }
+      catch (callbackError) { console.warn('Studio PCM error callback failed:', callbackError); }
+    }
     chunks = [];
-    recorder.onstop?.();
+    // Always deliver completion, even if the hosting UI's other callbacks
+    // throw. Otherwise its recording-finalization guard may remain locked.
+    try { recorder.onstop?.(); }
+    catch (callbackError) { console.warn('Studio PCM stop callback failed:', callbackError); }
   };
   node.port.onmessage = ({data}) => {
     if (completed) return;

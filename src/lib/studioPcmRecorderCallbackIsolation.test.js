@@ -31,6 +31,27 @@ async function makeRecorder({ close = () => Promise.resolve() } = {}) {
 }
 
 describe('Studio PCM callback isolation during shutdown', () => {
+  it('rejects restarting a recorder while its Stop flush is still pending', async () => {
+    const { recorder, node } = await makeRecorder();
+    const stopped = vi.fn();
+    recorder.onstop = stopped;
+    recorder.stop();
+    expect(() => recorder.start()).toThrow('Recorder has already stopped');
+    node.port.onmessage({ data: { type: 'flushed' } });
+    await vi.waitFor(() => expect(stopped).toHaveBeenCalledOnce());
+    expect(() => recorder.start()).toThrow('Recorder has already stopped');
+  });
+
+  it('rejects restarting after an unexpected failure or disposal', async () => {
+    const failed = await makeRecorder();
+    failed.node.port.onmessageerror();
+    expect(() => failed.recorder.start()).toThrow('Recorder has already stopped');
+    const disposed = await makeRecorder();
+    disposed.recorder.dispose();
+    expect(() => disposed.recorder.start()).toThrow('Recorder has already stopped');
+  });
+
+
   it('delivers the captured WAV and Stop even when AudioContext.close never settles', async () => {
     const close = vi.fn(() => new Promise(() => {}));
     const { recorder, node } = await makeRecorder({ close });

@@ -424,7 +424,7 @@ export default function Studio() {
       if (!response.ok) return null;
       const maxSourceBytes = 16 * 1024 * 1024;
       const declared = Number(response.headers.get('content-length'));
-      if (declared > maxSourceBytes) return null;
+      if (declared > maxSourceBytes) { await response.body?.cancel().catch(() => {}); return null; }
       const reader = response.body?.getReader();
       if (!reader) return null;
       const chunks = [];
@@ -479,8 +479,10 @@ export default function Studio() {
       if (end <= start || points <= (end - start) / detailSourceDuration * detailPeakCount * 2) return;
       const buffer = await detailCacheRef.current?.get(detailUrl);
       if (!active || request !== revision || !buffer) return;
+      // Reject mismatched source timing rather than overlaying misleading peaks.
+      if (Math.abs(buffer.duration - detailSourceDuration) > Math.max(0.05, 2 / buffer.sampleRate)) return;
       const result = studioWaveformRegion(buffer, start, end, points);
-      if (active && request === revision && result) setWaveformDetail({...result, id: detailId, url: detailUrl, zoom, clipStart: detailStart, clipDuration: detailDuration});
+      if (active && request === revision && result && result.waveform.length > (end - start) / detailSourceDuration * detailPeakCount) setWaveformDetail({...result, id: detailId, url: detailUrl, zoom, clipStart: detailStart, clipDuration: detailDuration});
       }, 250);
     };
     workspace.addEventListener('scroll', schedule, {passive: true});

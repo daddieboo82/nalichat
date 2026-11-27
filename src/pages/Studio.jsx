@@ -87,6 +87,7 @@ import { trainPrivateNaliVoiceFromRecording, forgetPrivateNaliVoiceTraining } fr
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
+import { appendStudioLiveWaveform, shouldRedrawStudioWaveform } from '@/lib/studioLiveWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from '@/lib/sharedStudioCapture';
 import { createPreferredStudioRecorder } from '@/lib/studioPcmRecorder';
@@ -1087,21 +1088,21 @@ export default function Studio() {
              sum += val * val;
           }
           const rms = Math.sqrt(sum / dataArrayRef.current.length);
-          liveWaveformRef.current.push(rms * 4); // Scale up for visibility
+          liveWaveformRef.current = appendStudioLiveWaveform(liveWaveformRef.current, rms * 4); // Preview only; audio is unchanged.
           
           Object.values(recordingCanvasRefs.current).forEach(canvas => {
             if (canvas && currentWidth > 0) {
                const ctx = canvas.getContext('2d');
                const height = canvas.height;
                
-               // Draw only the latest sample at its time-based x position — O(1) per frame, no canvas clearing
-               // Match canvas internal resolution to recording pixel width for crisp 1:1 rendering
+               // Only redraw on a new timeline pixel, not on every 60fps
+               // animation tick. The displayed amplitudes are bounded.
                const targetW = Math.max(1, Math.ceil(currentWidth));
-               if (canvas.width !== targetW) canvas.width = targetW;
-               ctx.clearRect(0, 0, canvas.width, height);
-
                const pts = liveWaveformRef.current;
-               if (pts.length < 2) return;
+               if (!shouldRedrawStudioWaveform(canvas, targetW, pts.length)) return;
+               if (canvas.width !== targetW) canvas.width = targetW;
+               canvas.dataset.studioWaveformSamples = String(pts.length);
+               ctx.clearRect(0, 0, canvas.width, height);
 
                const centerY = height / 2;
                const maxAmp = height * 0.42;
@@ -4503,7 +4504,7 @@ export default function Studio() {
                         <canvas 
                           ref={el => { recordingCanvasRefs.current[track.id] = el; }} 
                           className="absolute top-0 bottom-0 left-0 h-full" 
-                          width={20000}
+                          width={1}
                           height={200} 
                         />
                       )}

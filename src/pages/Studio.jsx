@@ -88,6 +88,7 @@ import { trainPrivateNaliVoiceFromRecording, forgetPrivateNaliVoiceTraining } fr
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { nextStudioTransportPosition } from '@/lib/studioTransportBoundary';
 import { studioTransportFrameDelta } from '@/lib/studioTransportDelta';
+import { studioPlaybackTimeAfterStall } from '@/lib/studioPlaybackClock';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { appendStudioLiveWaveform, drawStudioLiveWaveform } from '@/lib/studioLiveWaveform';
@@ -988,11 +989,20 @@ export default function Studio() {
     const updateTime = (time) => {
       // Backgrounded browsers can pause RAF for seconds or minutes. Don't
       // seek playback over that gap; keep real elapsed time for live capture.
+      const frameGapSeconds = (time - lastTime) / 1000;
       const delta = studioTransportFrameDelta(time, lastTime, { recording: isRecording });
       lastTime = time;
-      
+      // When the tab resumes, use actual media progress if a current clip
+      // demonstrably continued playing. Otherwise retain the safe RAF cap.
+      const mediaAlignedTime = studioPlaybackTimeAfterStall({
+        expectedTime: currentTimeRef.current + delta,
+        frameGapSeconds,
+        tracks: tracksRef.current,
+        elements: audioElementsRef.current,
+        recording: isRecording,
+      });
       const nextPosition = nextStudioTransportPosition({
-        nextTime: currentTimeRef.current + delta,
+        nextTime: mediaAlignedTime,
         recording: isRecording,
         looping: loopActiveRef.current,
         selectionStart: selectionStartRef.current,

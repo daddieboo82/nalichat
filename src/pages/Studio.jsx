@@ -3898,13 +3898,15 @@ export default function Studio() {
     }
   };
 
-  const [_isDownloading, setIsDownloading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const stemExportInFlightRef = useRef(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState('wav');
 
   // Render each audible track and package the stems in one browser download.
   // Multiple programmatic downloads can be blocked by mobile/desktop browsers.
   const handleExportStems = async () => {
+    if (stemExportInFlightRef.current) return;
     const audioLanes = groupStudioClipLanes(
       tracks.filter(t => (t.audioUrl || t.file_url) && !t.muted),
     );
@@ -3912,8 +3914,9 @@ export default function Studio() {
       toast.error("No audio tracks to export as stems.");
       return;
     }
+    stemExportInFlightRef.current = true;
     setIsDownloading(true);
-    toast.info(`Exporting ${audioLanes.length} stems...`);
+    const stemToast = toast.loading(`Exporting 0 of ${audioLanes.length} stems...`);
     try {
       const zip = new JSZip();
       const usedNames = new Set();
@@ -3935,6 +3938,7 @@ export default function Studio() {
         }
         usedNames.add(filename.toLowerCase());
         zip.file(filename, blob);
+        toast.loading(`Exporting ${index + 1} of ${audioLanes.length} stems...`, { id: stemToast });
       }
       if (Object.keys(zip.files).length !== audioLanes.length) {
         throw new Error("Stem archive is missing one or more tracks.");
@@ -3951,11 +3955,12 @@ export default function Studio() {
       // Keep the URL alive while the browser's download manager accepts it.
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
       sounds.success();
-      toast.success(`${audioLanes.length} stems packaged into one ZIP download.`);
+      toast.success(`${audioLanes.length} stems packaged into one ZIP download.`, { id: stemToast });
     } catch (e) {
       console.error("Stem export failed", e);
-      toast.error("Failed to export all stems. No complete archive was created.");
+      toast.error("Failed to export all stems. No complete archive was created.", { id: stemToast });
     } finally {
+      stemExportInFlightRef.current = false;
       setIsDownloading(false);
     }
   };
@@ -4211,7 +4216,7 @@ export default function Studio() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={() => { setExportFormat('wav'); setExportDialogOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Download Mix (WAV)</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setExportFormat('mp3'); setExportDialogOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Download Mix (MP3)</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExportStems()} className="cursor-pointer py-2"><Layers className="w-4 h-4 mr-2" /> Export Stems (Each Track)</DropdownMenuItem>
+                <DropdownMenuItem disabled={isDownloading} onClick={() => handleExportStems()} className="cursor-pointer py-2"><Layers className="w-4 h-4 mr-2" /> {isDownloading ? "Exporting stems..." : "Export Stems (Each Track)"}</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleConsolidateClips} className="cursor-pointer py-2"><Layers className="w-4 h-4 mr-2" /> Consolidate Clips <kbd className="ml-auto bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+K</kbd></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { if (selectedTrackIds.length > 0) setShowAudioSuite(true); else toast.error("Select a track first"); }} className="cursor-pointer py-2"><Wand2 className="w-4 h-4 mr-2" /> AudioSuite (Offline FX) <kbd className="ml-auto bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+U</kbd></DropdownMenuItem>

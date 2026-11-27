@@ -40,10 +40,10 @@ function disposeNode(node) {
   try { node.disconnect(); } catch { /* already disconnected */ }
 }
 
-function canUpdateEqComp(beforeFx, afterFx, liveParams = {}) {
+function canUpdateLiveInserts(beforeFx, afterFx, liveParams = {}) {
   const strip = fx => {
     const copy = {...fx};
-    for (const key of ['eq','comp']) {
+    for (const key of ['eq','comp','delay']) {
       if (copy[key]) {
         const {params, ...rest} = copy[key];
         copy[key] = rest;
@@ -54,7 +54,9 @@ function canUpdateEqComp(beforeFx, afterFx, liveParams = {}) {
   const handlesReady = (!afterFx.eq || afterFx.eq.enabled === false ||
     ['low','mid','high'].every(key => liveParams[key])) &&
     (!afterFx.comp || afterFx.comp.enabled === false ||
-    ['threshold','ratio','makeup'].every(key => liveParams[key]));
+    ['threshold','ratio','makeup'].every(key => liveParams[key])) &&
+    (!afterFx.delay || afterFx.delay.enabled === false ||
+    ['delayMix','delayTime','delayFeedback'].every(key => liveParams[key]));
   return handlesReady && JSON.stringify(strip(beforeFx)) === JSON.stringify(strip(afterFx));
 }
 
@@ -174,9 +176,9 @@ export function createMixEngine() {
       const beforeFx = getTrackEffects(prev);
       const afterFx = getTrackEffects(track);
       let structureChanged = studioFxStructureChanged(prev, track);
-      // Only EQ and compressor parameter edits may bypass a rebuild.
+      // Only supported insert parameter edits may bypass a rebuild.
       if (structureChanged && prev && !!prev.autoPolish === !!track?.autoPolish) {
-        if (canUpdateEqComp(beforeFx, afterFx, entry.liveParams)) {
+        if (canUpdateLiveInserts(beforeFx, afterFx, entry.liveParams)) {
           structureChanged = false;
         }
       }
@@ -252,7 +254,7 @@ export function createMixEngine() {
       masterState = { masterVolume, masterFx };
       if (!context || !master) return;
       if (fxChanged) {
-        if (!canUpdateEqComp(previousFx, nextFx, master.liveParams)) {
+        if (!canUpdateLiveInserts(previousFx, nextFx, master.liveParams)) {
           buildMaster();
           return;
         }

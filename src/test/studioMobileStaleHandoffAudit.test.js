@@ -8,7 +8,7 @@ describe('Studio PC handoff rejects stale cloud snapshots',()=>{
   const save=src.slice(saveStart,saveEnd);
   expect(save).toContain('const editsDuringSave = tracksRef.current !== tracks;');
   expect(save).toContain('lastSavedStudioProjectRef.current = targetProjectId;');
-  const warning=save.indexOf('if (editsDuringSave) {\n        // The prior snapshot');
+  const warning=save.indexOf('if (saveBecameStale) {\n        // The prior snapshot');
   expect(warning).toBeGreaterThan(save.indexOf('lastSavedStudioProjectRef.current = targetProjectId;'));
   expect(save.slice(warning,warning+500)).toContain('return false;');
   expect(save.indexOf('toast.success(',warning)).toBeGreaterThan(save.indexOf('return false;',warning));

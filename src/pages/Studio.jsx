@@ -1100,13 +1100,11 @@ export default function Studio() {
         
         if (analyserRef.current && dataArrayRef.current) {
           analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
-          let sum = 0;
-          for(let i=0; i<dataArrayRef.current.length; i++) {
-             const val = (dataArrayRef.current[i] - 128) / 128;
-             sum += val * val;
+          let peak = 0;
+          for (let i = 0; i < dataArrayRef.current.length; i++) {
+            peak = Math.max(peak, Math.abs((dataArrayRef.current[i] - 128) / 128));
           }
-          const rms = Math.sqrt(sum / dataArrayRef.current.length);
-          liveWaveformRef.current = appendStudioLiveWaveform(liveWaveformRef.current, rms * 4, Math.max(0, realElapsed)); // Preview only; audio is unchanged.
+          liveWaveformRef.current = appendStudioLiveWaveform(liveWaveformRef.current, peak, Math.max(0, realElapsed)); // Preview only; audio is unchanged.
           
           // Preview rendering is best-effort; canvas failures must not
           // interrupt the audio recorder or Studio's transport animation.
@@ -2024,7 +2022,7 @@ export default function Studio() {
         analyser.fftSize = 256;
         source.connect(analyser);
         analyserRef.current = analyser;
-        dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
+        dataArrayRef.current = new Uint8Array(analyser.fftSize);
         liveWaveformRef.current = [];
         recordingStartRealRef.current = performance.now();
 

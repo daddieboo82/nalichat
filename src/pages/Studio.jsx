@@ -2626,12 +2626,15 @@ export default function Studio() {
         if (rightDuration > 0.001) nextTracks.push({ ...t, id: nextId++, name: `${t.name} (After Clear)`, startTime: editMode === 'shuffle' ? cutStart : cutEnd, duration: rightDuration, fullDuration: t.fullDuration || duration, clipStart: (t.clipStart || 0) + (cutEnd - start), splitFrom: lineage });
       });
       if (!changed) { toast.error("The selection does not overlap a selected clip"); return; }
-      if (editMode === 'shuffle') {
-        nextTracks.forEach(t => {
-          if (!selectedTrackIds.includes(t.id) && (t.startTime || 0) >= rangeEnd) t.startTime = Math.max(0, (t.startTime || 0) - rangeDuration);
-        });
-      }
-      setTracksWithHistory(nextTracks);
+      const editedTracks = editMode === 'shuffle'
+        ? nextTracks.map(t => {
+          const start = t.startTime || 0;
+          return !selectedTrackIds.includes(t.id) && start >= rangeEnd
+            ? { ...t, startTime: Math.max(0, start - rangeDuration) }
+            : t;
+        })
+        : nextTracks;
+      setTracksWithHistory(editedTracks);
       setSelectedTrackIds([]);
       setSelectionStart(null);
       setSelectionEnd(null);

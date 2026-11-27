@@ -17,6 +17,8 @@ export function preferredMicrophoneId(storage) {
   }
 }
 
+export const MICROPHONE_SELECTION_EVENT = 'nalichat:microphone-selection-changed';
+
 export function microphoneConstraints(audio = true, deviceId = preferredMicrophoneId()) {
   if (!deviceId) return { audio };
   const settings = audio === true ? {} : { ...(audio || {}) };

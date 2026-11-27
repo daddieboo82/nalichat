@@ -122,7 +122,9 @@ describe('mobile compressed recorder crash recovery', () => {
     expect(sizeReads).toBe(firstReads);
     chunks.push(b);
     tick(); await ctl.wait();
-    expect(validate).toHaveBeenCalledTimes(2);
+    // Undecodable snapshots are intentionally revalidated on later ticks;
+    // only blob size accounting should be incremental.
+    expect(validate).toHaveBeenCalledTimes(3);
     ctl.stop();
   });
   it('bounds oversized recordings without changing the original captured chunks', async () => {

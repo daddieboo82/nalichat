@@ -1123,6 +1123,7 @@ export default function Studio() {
           const audible = (!isRecording || !isStudioArmedLane(track, sessionTracks)) && !track.muted && (!hasSolo || track.solo);
           if (!position.active || !audible || !(track.audioUrl || track.file_url)) {
             if (audio && !audio.paused) audio.pause();
+            driftHistory.delete(track.id);
             continue;
           }
           const candidate = audio?.dataset?.srcUrl === track.audioUrl
@@ -1131,11 +1132,17 @@ export default function Studio() {
             const target = studioPlaybackDriftTarget({audio:candidate,track,position,recording:isRecording});
             const previous = driftHistory.get(track.id);
             if (target === null) {
-              driftHistory.delete(track.id);
+              // Reset consecutive drift evidence, but keep the cooldown for
+              // the same player even while a correction is seeking.
+              if (previous?.audio === candidate) {
+                driftHistory.set(track.id,{...previous,direction:0});
+              } else {
+                driftHistory.delete(track.id);
+              }
             } else {
               const direction = Math.sign(candidate.currentTime - target);
               const sustained = previous?.audio === candidate && previous.direction === direction;
-              const lastCorrection = previous?.lastCorrection ?? -Infinity;
+              const lastCorrection = previous?.audio === candidate ? previous.lastCorrection : -Infinity;
               if (sustained && time - lastCorrection >= 2000 &&
                   !playbackStartingRef.current.has(track.id)) {
                 try { candidate.currentTime = target; } catch {}

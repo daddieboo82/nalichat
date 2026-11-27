@@ -2,7 +2,7 @@
 // The caller owns a unique session ID and must explicitly remove its data.
 const DB_NAME = 'nalichat-pcm-spool-v1';
 const STORE = 'chunks';
-export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.indexedDB, maxPendingBytes = 4 * 1024 * 1024 } = {}) {
+export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.indexedDB, maxPendingBytes = 4 * 1024 * 1024, recoveryOnly = false } = {}) {
   if (typeof sessionId !== 'string' || !/^[a-z0-9_-]{16,128}$/i.test(sessionId)) throw new Error('Invalid PCM session ID');
   if (!indexedDB?.open) throw new Error('PCM storage unavailable');
   if (!Number.isSafeInteger(maxPendingBytes) || maxPendingBytes < 8192) throw new Error('Invalid PCM queue limit');
@@ -43,8 +43,16 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
     });
   }
   let sequence = 0, pendingBytes = 0, totalBytes = 0, failure = null, closed = false;
-  let sealed = false;
+  let sealed = Boolean(recoveryOnly);
   let tail = Promise.resolve();
+  // Never append to a previous session: sequence numbers start at zero.
+  // A recovery handle is read-only except for explicit removal.
+  if (!recoveryOnly) {
+    let exists = false;
+    try { await walkSession(() => { exists = true; }); }
+    catch (error) { db.close(); throw error; }
+    if (exists) { db.close(); throw new Error('PCM session already exists; open for recovery instead'); }
+  }
   return {
     get pendingBytes() { return pendingBytes; },
     get totalBytes() { return totalBytes; },
@@ -88,7 +96,7 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
       tag(12,'fmt '); view.setUint32(16,16,true); view.setUint16(20,1,true);
       view.setUint16(22,1,true); view.setUint32(24,rate,true); view.setUint32(28,rate*2,true);
       view.setUint16(32,2,true); view.setUint16(34,16,true); tag(36,'data'); view.setUint32(40,bytes,true);
-      return {audio:new Blob([header,...parts],{type:'audio/wav'}),duration:bytes/(rate*2),partial:Boolean(failure)};
+      return {audio:new Blob([header,...parts],{type:'audio/wav'}),duration:bytes/(rate*2),partial:Boolean(failure || recoveryOnly)};
     },
     async remove() {
       if (closed) throw new Error('PCM spool closed');

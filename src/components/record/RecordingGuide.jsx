@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useMicMonitor } from '@/hooks/useMicMonitor';
 import { useAudioDevices } from '@/hooks/useAudioDevices';
+import { openPreferredMicrophone } from '@/lib/microphoneCapture';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'nali_rec_guide_done';
@@ -131,7 +132,7 @@ export default function RecordingGuide({ open, onClose }) {
 
     let stream = null;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await openPreferredMicrophone(navigator.mediaDevices, { deviceId: selectedDevices.input === 'default' ? null : selectedDevices.input });
       practiceStreamRef.current = stream;
       const mimeType = getPracticeMimeType();
       const rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);

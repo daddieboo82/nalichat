@@ -85,3 +85,51 @@ export async function analyzeStudioPcmRegion(blob, startTime, endTime, points) {
   if (!layout) return null;
   return studioPcmRegionPeaks(new DataView(await blob.slice(layout.byteStart,layout.byteEnd).arrayBuffer()),layout);
 }
+
+
+// Require an exact 206 response. Never consume a full-file 200 fallback here.
+export async function readStudioPcmHttpRange(url, start, end, {fetcher = globalThis.fetch, signal, expectedSize, validator} = {}) {
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end <= start || end-start > 4000000) return null;
+  const headers = {Range: 'bytes=' + start + '-' + (end-1)};
+  if (validator) headers['If-Range'] = validator;
+  const response = await fetcher(url, {headers, signal});
+  const reject = async () => { try { await response.body?.cancel(); } catch {} return null; };
+  if (response.status !== 206) return reject();
+  const range = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(response.headers.get('content-range') || '');
+  if (!range) return reject();
+  const [first,last,size] = range.slice(1).map(Number);
+  if (![first,last,size].every(Number.isSafeInteger) || first !== start || last !== end-1 ||
+      size < end || (expectedSize !== undefined && expectedSize !== size)) return reject();
+  const etag = response.headers.get('etag');
+  const version = etag && /^"[^"]*"$/.test(etag) ? etag : null;
+  if (validator && version !== validator) return reject();
+  const reader = response.body?.getReader();
+  if (!reader) return null;
+  const bytes = new Uint8Array(end-start);
+  let offset = 0;
+  try {
+    while (true) {
+      const {done,value} = await reader.read();
+      if (done) break;
+      if (!value || offset+value.byteLength > bytes.length) { await reader.cancel(); return null; }
+      bytes.set(value,offset);
+      offset += value.byteLength;
+    }
+  } finally { reader.releaseLock(); }
+  if (offset !== bytes.length) return null;
+  return {data:new DataView(bytes.buffer),size,validator:version};
+}
+
+export async function analyzeStudioRemotePcmRegion(url, startTime, endTime, points, options = {}) {
+  try {
+    const header = await readStudioPcmHttpRange(url,0,44,options);
+    // Require a strong ETag across both reads: never combine different file versions.
+    if (!header?.validator) return null;
+    const layout = studioPcmRegionLayout(header.data,header.size,startTime,endTime,points);
+    if (!layout) return null;
+    const region = await readStudioPcmHttpRange(url,layout.byteStart,layout.byteEnd,{
+      ...options,expectedSize:header.size,validator:header.validator,
+    });
+    return region ? studioPcmRegionPeaks(region.data,layout) : null;
+  } catch { return null; }
+}

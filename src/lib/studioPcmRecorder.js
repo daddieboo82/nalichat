@@ -97,8 +97,10 @@ export async function createLosslessStudioRecorder(stream, {
       this.state = 'inactive';
       clearTimeout(watchdog);
       chunks = [];
-      try { source.disconnect(); node.disconnect(); mute.disconnect(); } catch {}
-      void context.close().catch(() => {});
+      for (const audioNode of [source, node, mute]) {
+        try { audioNode.disconnect(); } catch {}
+      }
+      void Promise.resolve().then(() => context.close()).catch(() => {});
     },
     stop() {
       if (this.state !== 'recording') return;
@@ -120,9 +122,9 @@ export async function createLosslessStudioRecorder(stream, {
     completed = true;
     recorder.state = 'inactive';
     clearTimeout(watchdog);
-    try {
-      source.disconnect(); node.disconnect(); mute.disconnect();
-    } catch {}
+    for (const audioNode of [source, node, mute]) {
+      try { audioNode.disconnect(); } catch {}
+    }
     // Closing an AudioContext can remain pending when a browser suspends
     // audio services. Disconnect immediately, but do not block delivery of
     // captured bytes or onstop on the context's asynchronous close promise.

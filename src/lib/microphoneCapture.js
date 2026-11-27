@@ -7,9 +7,10 @@ const MISSING_DEVICE_ERRORS = new Set([
   'ConstraintNotSatisfiedError',
 ]);
 
-export function preferredMicrophoneId(storage = globalThis.localStorage) {
+export function preferredMicrophoneId(storage) {
   try {
-    const id = storage?.getItem?.('audioInputDevice');
+    const source = storage === undefined ? globalThis.localStorage : storage;
+    const id = source?.getItem?.('audioInputDevice');
     return typeof id === 'string' && id && id !== 'default' ? id : null;
   } catch {
     return null;

@@ -171,7 +171,12 @@ export function createReverbImpulse(context, { seconds = 2, decay = 2.5 } = {}) 
   const key = `${safeSeconds.toFixed(2)}:${safeDecay.toFixed(2)}:${context.sampleRate}`;
   let cache = impulseCache.get(context);
   if (!cache) { cache = new Map(); impulseCache.set(context, cache); }
-  if (cache.has(key)) return cache.get(key);
+  if (cache.has(key)) {
+    const cached = cache.get(key);
+    cache.delete(key);
+    cache.set(key, cached);
+    return cached;
+  }
 
   const length = Math.max(1, Math.floor(context.sampleRate * safeSeconds));
   const impulse = context.createBuffer(2, length, context.sampleRate);
@@ -182,6 +187,16 @@ export function createReverbImpulse(context, { seconds = 2, decay = 2.5 } = {}) 
     }
   }
   cache.set(key, impulse);
+  // Bound retained impulse buffers per context. Connected convolvers retain
+  // their own references; eviction never changes a currently playing effect.
+  let retainedBytes = 0;
+  for (const value of cache.values()) retainedBytes += value.length * value.numberOfChannels * 4;
+  while (cache.size > 1 && (cache.size > 12 || retainedBytes > 16 * 1024 * 1024)) {
+    const oldest = cache.keys().next().value;
+    const value = cache.get(oldest);
+    retainedBytes -= value.length * value.numberOfChannels * 4;
+    cache.delete(oldest);
+  }
   return impulse;
 }
 

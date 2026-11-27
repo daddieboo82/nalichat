@@ -2,8 +2,11 @@
 // The caller owns a unique session ID and must explicitly remove its data.
 const DB_NAME = 'nalichat-pcm-spool-v1';
 const STORE = 'chunks';
-export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.indexedDB, maxPendingBytes = 4 * 1024 * 1024, recoveryOnly = false } = {}) {
+export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.indexedDB, maxPendingBytes = 4 * 1024 * 1024, recoveryOnly = false, ownerId, scope, sampleRate } = {}) {
   if (typeof sessionId !== 'string' || !/^[a-z0-9_-]{16,128}$/i.test(sessionId)) throw new Error('Invalid PCM session ID');
+  if (typeof ownerId !== 'string' || ownerId.length < 3 || ownerId.length > 255 ||
+      typeof scope !== 'string' || !/^(draft|room:[a-z0-9_-]{8,100})$/i.test(scope) ||
+      !Number.isInteger(sampleRate) || sampleRate < 8000 || sampleRate > 192000) throw new Error('Invalid PCM session metadata');
   if (!indexedDB?.open) throw new Error('PCM storage unavailable');
   if (!Number.isSafeInteger(maxPendingBytes) || maxPendingBytes < 8192) throw new Error('Invalid PCM queue limit');
   const db = await new Promise((resolve, reject) => {
@@ -36,7 +39,10 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
         const cursor = req.result;
         if (!cursor) return;
         try {
-          if (cursor.value.sessionId === sessionId) consume(cursor);
+          if (cursor.value.sessionId === sessionId) {
+            if (cursor.value.ownerId !== ownerId || cursor.value.scope !== scope || cursor.value.sampleRate !== sampleRate) throw new Error('PCM session metadata mismatch');
+            consume(cursor);
+          }
           cursor.continue();
         } catch (error) { try { tx.abort(); } catch {} reject(error); }
       };
@@ -66,7 +72,7 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
       pendingBytes += bytes;
       const write = tail.then(async () => {
         if (failure) throw failure;
-        await transaction('readwrite', store => store.add({sessionId,sequence:index,data}));
+        await transaction('readwrite', store => store.add({sessionId,ownerId,scope,sampleRate,sequence:index,data,createdAt:Date.now()}));
         totalBytes += bytes;
       });
       tail = write.catch(error => { failure = error; }).finally(() => { pendingBytes -= bytes; });
@@ -76,7 +82,7 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
     async assembleWav(sampleRate) {
       if (closed) throw new Error('PCM spool closed');
       const rate = Number(sampleRate);
-      if (!Number.isInteger(rate) || rate < 8000 || rate > 192000) throw new Error('Unsupported PCM sample rate');
+      if (rate !== sampleRate || !Number.isInteger(rate) || rate < 8000 || rate > 192000) throw new Error('Unsupported PCM sample rate');
       sealed = true;
       await tail;
       // A failed write may leave a valid contiguous prefix worth recovering.
@@ -108,3 +114,41 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
     async close() { closed = true; await tail; db.close(); if (failure) throw failure; },
   };
 }
+
+ // Discover recoverable sessions without returning audio payloads to the caller.
+ export async function listStudioPcmSessions(ownerId, scope, indexedDB = globalThis.indexedDB) {
+   if (typeof ownerId !== 'string' || ownerId.length < 3 || ownerId.length > 255 ||
+       typeof scope !== 'string' || !/^(draft|room:[a-z0-9_-]{8,100})$/i.test(scope)) throw new Error('Invalid PCM recovery scope');
+   if (!indexedDB?.open) throw new Error('PCM storage unavailable');
+   const db = await new Promise((resolve,reject) => {
+     const req = indexedDB.open(DB_NAME,1);
+     req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE,{keyPath:['sessionId','sequence']}); };
+     req.onsuccess = () => resolve(req.result);
+     req.onerror = req.onblocked = () => reject(req.error || new Error('PCM storage unavailable'));
+   });
+   try {
+     return await new Promise((resolve,reject) => {
+       const sessions = new Map();
+       const tx = db.transaction(STORE,'readonly');
+       const req = tx.objectStore(STORE).openCursor();
+       tx.onerror = tx.onabort = () => reject(tx.error || new Error('PCM discovery failed'));
+       tx.oncomplete = () => resolve([...sessions.values()].filter(s => !s.invalid).sort((a,b) => b.updatedAt-a.updatedAt).map(({invalid,...s})=>s));
+       req.onsuccess = () => {
+         const cursor = req.result;
+         if (!cursor) return;
+         const row = cursor.value;
+         if (row.ownerId === ownerId && row.scope === scope) {
+           const entry = sessions.get(row.sessionId) || {sessionId:row.sessionId,sampleRate:row.sampleRate,bytes:0,chunks:0,updatedAt:0,invalid:false};
+           if (!Number.isInteger(row.sampleRate) || row.sampleRate < 8000 || row.sampleRate > 192000 ||
+               entry.sampleRate !== row.sampleRate || row.sequence !== entry.chunks ||
+               !(row.data instanceof ArrayBuffer) || !row.data.byteLength || row.data.byteLength % 2) entry.invalid = true;
+           entry.chunks++;
+           entry.bytes += row.data?.byteLength || 0;
+           entry.updatedAt = Math.max(entry.updatedAt,Number(row.createdAt)||0);
+           sessions.set(row.sessionId,entry);
+         }
+         cursor.continue();
+       };
+     });
+   } finally { db.close(); }
+ }

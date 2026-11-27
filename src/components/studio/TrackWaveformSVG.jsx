@@ -36,20 +36,30 @@ function resolveColor(color) {
 
 export default function TrackWaveformSVG({ track }) {
   const wf = track.waveform || [];
-  const last = wf.length - 1;
-  const span = Math.max(1, last);
   const gradId = React.useId();
   const color = resolveColor(track?.color);
 
-  let peakPath = `M 0,50 `;
-  for (let i = 0; i <= last; i++) peakPath += `L ${(i / span) * 10000},${50 - Math.max(0.001, wf[i]) * 49} `;
-  for (let i = last; i >= 0; i--) peakPath += `L ${(i / span) * 10000},${50 + Math.max(0.001, wf[i]) * 49} `;
-  peakPath += 'Z';
+  const peakPath = React.useMemo(() => {
+    if (!wf.length) return '';
+    const amplitude = value => Number.isFinite(value) ? Math.min(1, Math.abs(value)) * 49 : 0;
+    // Each peak summarizes a time bin, not an instantaneous sample.
+    // Span both edges of each bin to avoid shifting transients as zoom changes.
+    const commands = ['M 0,50'];
+    for (let i = 0; i < wf.length; i++) {
+      const y = 50 - amplitude(wf[i]);
+      commands.push(`L ${i / wf.length * 10000},${y}`, `L ${(i + 1) / wf.length * 10000},${y}`);
+    }
+    for (let i = wf.length - 1; i >= 0; i--) {
+      const y = 50 + amplitude(wf[i]);
+      commands.push(`L ${(i + 1) / wf.length * 10000},${y}`, `L ${i / wf.length * 10000},${y}`);
+    }
+    return commands.join(' ') + ' Z';
+  }, [wf]);
 
   return (
     <svg
       className={cn("w-full h-full")}
-      style={{ color, filter: `drop-shadow(0px 0px 4px ${color})` }}
+      style={{ color }}
       preserveAspectRatio="none"
       viewBox="0 0 10000 100"
     >

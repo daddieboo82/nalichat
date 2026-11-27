@@ -103,15 +103,20 @@ export async function createLosslessStudioRecorder(stream, {
       source.disconnect(); node.disconnect(); mute.disconnect();
     } catch {}
     await context.close().catch(() => {});
-    if (error) recorder.onerror?.({error});
-    else {
+    // An unexpected worklet shutdown can still leave valid PCM in memory.
+    // Emit that partial WAV before the error/stop notifications so Studio's
+    // recovery handler can preserve the captured samples. Never claim an
+    // empty or unencodable recording was saved.
+    let encodeError = null;
+    if (!error || chunks.length > 0) {
       try {
         const audio = pcm16WavBlob(chunks, context.sampleRate);
         recorder.ondataavailable?.({data:audio});
-      } catch (encodeError) {
-        recorder.onerror?.({error:encodeError});
+      } catch (caught) {
+        encodeError = caught;
       }
     }
+    if (error || encodeError) recorder.onerror?.({error: error || encodeError});
     chunks = [];
     recorder.onstop?.();
   };

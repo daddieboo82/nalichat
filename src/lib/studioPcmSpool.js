@@ -79,9 +79,9 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
       return write;
     },
     async flush() { await tail; if (failure) throw failure; return totalBytes; },
-    async assembleWav(sampleRate) {
+    async assembleWav(requestedRate = sampleRate) {
       if (closed) throw new Error('PCM spool closed');
-      const rate = Number(sampleRate);
+      const rate = Number(requestedRate);
       if (rate !== sampleRate || !Number.isInteger(rate) || rate < 8000 || rate > 192000) throw new Error('Unsupported PCM sample rate');
       sealed = true;
       await tail;

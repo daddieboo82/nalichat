@@ -2,7 +2,7 @@
 // The caller owns a unique session ID and must explicitly remove its data.
 const DB_NAME = 'nalichat-pcm-spool-v1';
 const STORE = 'chunks';
-export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.indexedDB, maxPendingBytes = 4 * 1024 * 1024, recoveryOnly = false, ownerId, scope, sampleRate, locks = globalThis.navigator?.locks } = {}) {
+export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.indexedDB, maxPendingBytes = 4 * 1024 * 1024, recoveryOnly = false, ownerId, scope, sampleRate, locks = globalThis.navigator?.locks, keyRange = globalThis.IDBKeyRange } = {}) {
   if (typeof sessionId !== 'string' || !/^[a-z0-9_-]{16,128}$/i.test(sessionId)) throw new Error('Invalid PCM session ID');
   if (typeof ownerId !== 'string' || ownerId.length < 3 || ownerId.length > 255 ||
       typeof scope !== 'string' || !/^(draft|room:[a-z0-9_-]{8,100})$/i.test(scope) ||
@@ -48,7 +48,8 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
   function walkSession(consume, mode = 'readonly') {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, mode);
-      const req = tx.objectStore(STORE).openCursor();
+      const range = keyRange?.bound([sessionId,0], [sessionId,Number.MAX_SAFE_INTEGER]);
+      const req = tx.objectStore(STORE).openCursor(range);
       tx.oncomplete = () => resolve();
       tx.onerror = tx.onabort = () => reject(tx.error || new Error('PCM session scan failed'));
       req.onsuccess = () => {
@@ -103,14 +104,22 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
       await tail;
       // A failed write may leave a valid contiguous prefix worth recovering.
       const parts = [];
+      let batch = [], batchBytes = 0;
+      const flushBatch = () => {
+        if (!batchBytes) return;
+        parts.push(new Blob(batch));
+        batch = []; batchBytes = 0;
+      };
       let bytes = 0, expected = 0;
       await walkSession(cursor => {
         const {sequence: index, data} = cursor.value;
         if (index !== expected++ || !(data instanceof ArrayBuffer) || !data.byteLength || data.byteLength % 2) throw new Error('Invalid or missing PCM chunk');
         bytes += data.byteLength;
         if (bytes > 0xffffffff - 36) throw new Error('WAV size exceeds RIFF limit');
-        parts.push(new Blob([data]));
+        batch.push(data); batchBytes += data.byteLength;
+        if (batchBytes >= 1024 * 1024) flushBatch();
       });
+      flushBatch();
       if (!bytes) throw new Error('No captured PCM to assemble');
       const header = new ArrayBuffer(44), view = new DataView(header);
       const tag = (offset, value) => { for (let i = 0; i < value.length; i++) view.setUint8(offset + i, value.charCodeAt(i)); };

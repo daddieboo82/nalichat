@@ -1126,16 +1126,41 @@ export default function Studio() {
     setHistoryIndex(historyIndexRef.current);
   };
 
+  // Publish history only for committed track state, not speculative React renders.
+  const pendingHistoryRef = useRef(new Map());
+  useLayoutEffect(() => {
+    const pending = pendingHistoryRef.current;
+    let matched = false;
+    for (const entry of pending.values()) {
+      if (entry.epoch === historyEpochRef.current && entry.next === tracks) matched = true;
+    }
+    for (const [key, entry] of pending) {
+      if (entry.epoch !== historyEpochRef.current) { pending.delete(key); continue; }
+      if (!matched) continue;
+      pending.delete(key);
+      pushToHistory(entry.next);
+      if (entry.next === tracks) break;
+    }
+  }, [tracks]);
+
   const undo = () => { if (historyIndexRef.current > 0) { historyIndexRef.current -= 1; setHistoryIndex(historyIndexRef.current); setTracks(historyRef.current[historyIndexRef.current]); } };
   const redo = () => { if (historyIndexRef.current < historyRef.current.length - 1) { historyIndexRef.current += 1; setHistoryIndex(historyIndexRef.current); setTracks(historyRef.current[historyIndexRef.current]); } };
 
   const setTracksWithHistory = (updater) => {
+    const key = {};
+    const epoch = historyEpochRef.current;
     setTracks(prev => {
+      if (epoch !== historyEpochRef.current) return prev;
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      const historyEpoch = historyEpochRef.current;
-      setTimeout(() => {
-        if (historyEpochRef.current === historyEpoch) pushToHistory(next);
-      }, 0);
+      pendingHistoryRef.current.set(key, { epoch, next });
+      if (next === prev) {
+        setTimeout(() => {
+          const entry = pendingHistoryRef.current.get(key);
+          if (!entry) return;
+          pendingHistoryRef.current.delete(key);
+          if (entry.epoch === historyEpochRef.current && tracksRef.current === entry.next) pushToHistory(entry.next);
+        }, 0);
+      }
       return next;
     });
   };

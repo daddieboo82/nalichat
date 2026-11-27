@@ -554,10 +554,15 @@ export async function renderMixToBuffer(tracks, options = {}) {
   const active = audioTracks.filter(t => !t.muted && (!hasSolo || t.solo));
   if (active.length === 0) return null;
 
+  // Split regions often reference the same underlying recording. Share one
+  // decode per source for this render only; do not retain buffers across exports.
+  const sources = new Map();
   const decoded = (await Promise.all(active.map(async (t) => {
-    const buffer = await fetchAudioBuffer(t.audioUrl);
+    if (!sources.has(t.audioUrl)) sources.set(t.audioUrl, fetchAudioBuffer(t.audioUrl));
+    const buffer = await sources.get(t.audioUrl);
     return { track: t, buffer, range: studioClipAudioRange(t, buffer.duration) };
   }))).filter(item => item.range);
+  sources.clear();
   if (decoded.length === 0) return null;
 
   const totalSeconds = Math.max(...decoded.map(d => d.range.endsAt));

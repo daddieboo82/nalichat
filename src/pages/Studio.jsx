@@ -1575,7 +1575,7 @@ export default function Studio() {
     };
   }, []);
 
-  const stopRecordingProcess = (keepPlaying = false, recorderAlreadyStopped = false) => {
+  const stopRecordingProcess = (keepPlaying = false, recorderAlreadyStopped = false, originalStartTime = null) => {
     if (midiRecordingRef.current && (!mediaRecorderRef.current ||
         (mediaRecorderRef.current.state === 'inactive' && !recorderAlreadyStopped))) {
       midiRecordingRef.current = false;
@@ -1624,7 +1624,8 @@ export default function Studio() {
       const stoppedChunks = audioChunksRef.current;
       const stoppedArmedIds = new Set(tracksRef.current.filter(t => t.armed).map(t => String(t.id)));
       const stoppedOverdub = { ...recordingOverdubRef.current };
-      const stoppedStartTime = recordingStartTime !== null ? recordingStartTime : currentTimeRef.current;
+      const stoppedStartTime = originalStartTime !== null ? originalStartTime :
+        (recordingStartTime !== null ? recordingStartTime : currentTimeRef.current);
       const stoppedEndTime = currentTimeRef.current;
       const stoppedSessionEpoch = historyEpochRef.current;
       const stoppedMidiEnabled = midiRecordingRef.current;
@@ -2061,6 +2062,9 @@ export default function Studio() {
         startupRecorder = mediaRecorder;
         mediaRecorderRef.current = mediaRecorder;
         const captureChunks = [];
+        // The spontaneous onstop handler captures this value before React
+        // updates recordingStartTime; it must not place the take at error time.
+        const captureStartTime = currentTimeRef.current;
         audioChunksRef.current = captureChunks;
         mediaRecorder.ondataavailable = (e) => {
           if (e.data?.size > 0) captureChunks.push(e.data);
@@ -2086,7 +2090,7 @@ export default function Studio() {
               recordingFinalizeInFlightRef.current) return;
           toast.warning('Recording stopped unexpectedly. Recovering the captured take.');
           setIsRecording(false);
-          stopRecordingProcess(false, true);
+          stopRecordingProcess(false, true, captureStartTime);
         };
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
         mobileCaptureAutoFinishRef.current = false;
@@ -2139,7 +2143,7 @@ export default function Studio() {
         
         microphoneStartupRef.current.pending = false;
         setIsRecording(true);
-        setRecordingStartTime(currentTimeRef.current);
+        setRecordingStartTime(captureStartTime);
         setActivity(hasArmedMidi && midiRecordingRef.current ? "Recording Audio + MIDI 🎙️🎹" : "Recording 🎙️");
         toast.success(hasArmedMidi && midiRecordingRef.current ? "Audio + MIDI recording started" : "Recording started (Mic active)");
         sounds.recStart();

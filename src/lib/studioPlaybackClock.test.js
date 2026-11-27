@@ -63,6 +63,26 @@ describe('Studio playback resynchronization after a stalled animation frame', ()
     })).toBe(58);
   });
 
+  it('rejects a current playing clip beyond its timeline boundaries even if another is valid', () => {
+    const short = { ...clip, id: 9, audioUrl: 'blob:short', duration: 25 };
+    const long = playing(33); // timeline 58, within the lead clip
+    const shortAudio = position => playing(position, { dataset: { srcUrl: 'blob:short' } });
+    const base = { expectedTime: 50.25, frameGapSeconds: 8, tracks: [clip, short] };
+    expect(studioPlaybackTimeAfterStall({
+      ...base, elements: { 8: long, 9: shortAudio(31) }, // timeline 56 exceeds 55s clip end
+    })).toBe(50.25);
+    expect(studioPlaybackTimeAfterStall({
+      ...base, elements: { 8: long, 9: shortAudio(4) }, // before clip's source start
+    })).toBe(50.25);
+    expect(studioPlaybackTimeAfterStall({
+      ...base, elements: { 8: long, 9: { ...shortAudio(31), paused: true } },
+    })).toBe(58);
+    expect(studioPlaybackTimeAfterStall({
+      ...base, tracks: [clip, { ...short, muted: true }],
+      elements: { 8: long, 9: shortAudio(31) },
+    })).toBe(58);
+  });
+
   it('does not re-anchor to paused, ended, stale or inaudible media', () => {
     const base = { expectedTime: 50.25, frameGapSeconds: 8, tracks: [clip] };
     expect(studioPlaybackTimeAfterStall({ ...base, elements: { 8: playing(33, { paused: true }) } })).toBe(50.25);

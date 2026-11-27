@@ -87,6 +87,32 @@ export function createMixEngine() {
   let context = null;
   let master = null;
   let masterMeter = null;
+  let masterClipped = false;
+  let clipMonitor = null;
+  let clipModule = null;
+  const attachClipMonitor = () => {
+    const ctx = context, bus = master;
+    if (!ctx?.audioWorklet || typeof globalThis.AudioWorkletNode !== 'function' || !bus) return;
+    if (!clipModule) clipModule = ctx.audioWorklet.addModule('/audio/nali-master-clip-monitor.worklet.js');
+    clipModule.then(() => {
+      if (disposed || context !== ctx || master !== bus || clipMonitor) return;
+      let node, silent;
+      try {
+        node = new globalThis.AudioWorkletNode(ctx, 'nali-master-clip-monitor', {numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1]});
+        silent = ctx.createGain();
+        silent.gain.value = 0;
+        node.connect(silent);
+        silent.connect(ctx.destination);
+        node.port.onmessage = event => {
+          if (clipMonitor === node && event.data === 'clip') masterClipped = true;
+        };
+        bus.volume.connect(node);
+        bus.nodes.push(node,silent);
+        clipMonitor = node;
+      } catch { if (node) disposeNode(node); if (silent) disposeNode(silent); }
+    }).catch(() => {});
+  };
+
   let masterState = { masterVolume: 100, masterFx: null };
   const entries = new Map(); // trackId -> { element, source, nodes }
   let disposed = false;
@@ -102,6 +128,8 @@ export function createMixEngine() {
       destination: context.destination,
     });
     masterMeter = null;
+    clipMonitor = null;
+    attachClipMonitor();
     // Tap the actual post-fader signal without modifying the audible route.
     if (typeof context.createAnalyser === 'function' && typeof context.createChannelSplitter === 'function') {
       const nodes = [];
@@ -230,6 +258,12 @@ export function createMixEngine() {
         }
       }
       return peak;
+    },
+
+    readMasterClipped() { return masterClipped; },
+    resetMasterClipped() {
+      masterClipped = false;
+      try { clipMonitor?.port.postMessage('reset'); } catch {}
     },
 
     readMasterPeaks() {
@@ -401,6 +435,9 @@ export function createMixEngine() {
       if (master) master.nodes.forEach(disposeNode);
       master = null;
       masterMeter = null;
+      clipMonitor = null;
+      clipModule = null;
+      masterClipped = false;
       if (context && context.state !== 'closed') context.close().catch(() => {});
       context = null;
     },

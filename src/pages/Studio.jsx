@@ -25,6 +25,7 @@ import StudioStatusBanners, { StudioPerformanceNotice } from '@/components/studi
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderTunedVocal, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
+import { startStudioBoundaryPlayback } from '@/lib/studioBoundaryPlayback';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import { useAuth } from '@/lib/AuthContext';
@@ -310,7 +311,7 @@ export default function Studio() {
   const newlyCreatedProjectHandoffRef = useRef(null);
   const audioElementsRef = useRef({});
   const getTrackAudioRef = useRef(null);
-  const playbackStartingRef = useRef(new Set());
+  const playbackStartingRef = useRef(new Map());
   const playbackFailedRef = useRef(new Set());
   const playbackAttemptRef = useRef(0);
   const mixEngineRef = useRef(null);
@@ -1010,6 +1011,8 @@ export default function Studio() {
           else if (!audio.paused) audio.pause();
         }
         playbackFailedRef.current.clear();
+        playbackStartingRef.current.clear();
+        playbackAttemptRef.current += 1;
       }
 
       currentTimeRef.current = newTime;
@@ -1064,11 +1067,19 @@ export default function Studio() {
               playbackStartingRef.current.has(track.id) ||
               playbackFailedRef.current.has(track.id)) continue;
           candidate.currentTime = position.sourceTime;
-          playbackStartingRef.current.add(track.id);
-          Promise.resolve(candidate.play()).catch((error) => {
-            console.error("Studio clip boundary playback error:", error);
-            playbackFailedRef.current.add(track.id);
-          }).finally(() => playbackStartingRef.current.delete(track.id));
+          const boundaryAttempt = playbackAttemptRef.current;
+          const boundaryEpoch = historyEpochRef.current;
+          startStudioBoundaryPlayback({
+            trackId: track.id,
+            audio: candidate,
+            starting: playbackStartingRef.current,
+            failed: playbackFailedRef.current,
+            isCurrent: () => studioMountedRef.current &&
+              playbackAttemptRef.current === boundaryAttempt &&
+              historyEpochRef.current === boundaryEpoch &&
+              audioElementsRef.current[track.id] === candidate,
+            onError: error => console.error("Studio clip boundary playback error:", error),
+          });
         }
       }
       
@@ -1216,6 +1227,8 @@ export default function Studio() {
       if (position.active) audio.currentTime = position.sourceTime;
       else audio.pause();
     });
+    playbackAttemptRef.current += 1;
+    playbackStartingRef.current.clear();
     playbackFailedRef.current.clear();
     // Scrubbing/seeking must immediately audition the automation state at the destination.
     mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
@@ -1233,6 +1246,7 @@ export default function Studio() {
     }
     // Each Play/Pause action invalidates promises from earlier starts.
     const playbackAttempt = ++playbackAttemptRef.current;
+    playbackStartingRef.current.clear();
     const playbackEpoch = historyEpochRef.current;
     if (isRecording) {
       setIsRecording(false);
@@ -1286,6 +1300,8 @@ export default function Studio() {
     studioMountedRef.current = true;
     return () => {
       studioMountedRef.current = false;
+      playbackAttemptRef.current += 1;
+      playbackStartingRef.current.clear();
       // A pending getUserMedia permission result can arrive after this
       // component has left the page. Mark it stale before it resolves.
       microphoneStartupRef.current.token += 1;
@@ -2147,6 +2163,7 @@ export default function Studio() {
 
   const stop = () => {
     playbackAttemptRef.current += 1;
+    playbackStartingRef.current.clear();
     // Invalidate an in-flight permission request before it resolves.
     microphoneStartupRef.current.token += 1;
     microphoneStartupRef.current.pending = false;

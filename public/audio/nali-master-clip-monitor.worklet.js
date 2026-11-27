@@ -1,5 +1,15 @@
 // Sample overload latch plus optional cubic inter-sample estimate.
 // This estimate is not an ITU-R BS.1770 compliant true-peak meter.
+function cubicOverload(b,p,q,z) {
+  const exceeds = t => t > 0 && t < 1 && Math.abs(b+t*(p+t*(q+t*z))) >= 1;
+  // derivative p + 2*q*t + 3*z*t*t
+  if (Math.abs(z)<1e-12) return Math.abs(q)>1e-12 && exceeds(-p/(2*q));
+  const discriminant = 4*q*q-12*z*p;
+  if (discriminant<0) return false;
+  const root = Math.sqrt(discriminant);
+  return exceeds((-2*q+root)/(6*z)) || exceeds((-2*q-root)/(6*z));
+}
+
 class NaliMasterClipMonitor extends AudioWorkletProcessor {
   constructor(options) {
     super();
@@ -34,13 +44,12 @@ class NaliMasterClipMonitor extends AudioWorkletProcessor {
           const a=h[0], b=h[1], cc=h[2];
           // Catmull-Rom interpolant between b and cc, with one sample lookahead.
           const p=(cc-a)*0.5, q=a-2.5*b+2*cc-0.5*d, z=0.5*(d-a)+1.5*(b-cc);
-          for (let phase=1;phase<=3;phase++) {
-            const t=phase*0.25;
-            if (Math.abs(b+t*(p+t*(q+t*z))) >= 1 && Math.abs(b)<1 && Math.abs(cc)<1) {
-              this.interSampleLatched=true;
-              this.port.postMessage('inter-sample');
-              break;
-            }
+          // Evaluate the actual stationary points of the cubic instead of
+          // sampling only three fixed phases. This remains an approximation
+          // of the reconstructed signal, not a band-limited true-peak meter.
+          if (Math.abs(b)<1 && Math.abs(cc)<1 && cubicOverload(b,p,q,z)) {
+            this.interSampleLatched=true;
+            this.port.postMessage('inter-sample');
           }
         }
         h[0]=h[1]; h[1]=h[2]; h[2]=d;

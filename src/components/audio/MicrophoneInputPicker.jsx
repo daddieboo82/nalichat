@@ -86,7 +86,7 @@ export default function MicrophoneInputPicker() {
           </option>
         ))}
       </select>
-      {!selectedAvailable && <p className="text-xs text-amber-500">Previously selected microphone is disconnected. The system default will be used.</p>}
+      {!selectedAvailable && <p className="text-xs text-amber-500">The saved microphone is not currently listed. It may be disconnected or hidden until permission is granted; recording will try it, then the system default if unavailable.</p>}
       <button
         type="button"
         disabled={busy}

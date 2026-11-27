@@ -36,13 +36,14 @@ function resolveColor(color) {
 
 export default function TrackWaveformSVG({ track }) {
   const wf = track.waveform || [];
-  const wLen = wf.length - 1 || 1;
-  const gradId = `studio-wf-grad-${track.id}`;
+  const last = wf.length - 1;
+  const span = Math.max(1, last);
+  const gradId = React.useId();
   const color = resolveColor(track?.color);
 
   let peakPath = `M 0,50 `;
-  for (let i = 0; i <= wLen; i++) peakPath += `L ${(i / wLen) * 10000},${50 - Math.max(0.001, wf[i]) * 49} `;
-  for (let i = wLen; i >= 0; i--) peakPath += `L ${(i / wLen) * 10000},${50 + Math.max(0.001, wf[i]) * 49} `;
+  for (let i = 0; i <= last; i++) peakPath += `L ${(i / span) * 10000},${50 - Math.max(0.001, wf[i]) * 49} `;
+  for (let i = last; i >= 0; i--) peakPath += `L ${(i / span) * 10000},${50 + Math.max(0.001, wf[i]) * 49} `;
   peakPath += 'Z';
 
   return (

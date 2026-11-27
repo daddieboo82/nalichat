@@ -6,7 +6,8 @@ describe('Studio loop boundary sync', () => {
   it('seeks active audio at transport wrap instead of leaving elements at their old positions', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
     const raf = source.slice(source.indexOf('const updateTime = (time) => {'), source.indexOf('// Latch keeps the last touched value'));
-    expect(raf).toContain('let didWrap = false;');
+    expect(raf).toContain('nextStudioTransportPosition({');
+    expect(raf).toContain('const didWrap = nextPosition.wrapped;');
     expect(raf).toContain('if (didWrap) {');
     expect(raf).toContain('studioPlaybackPosition(track, newTime)');
     expect(raf).toContain('audio.currentTime = position.sourceTime');

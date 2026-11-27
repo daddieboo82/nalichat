@@ -95,7 +95,7 @@ export function createMixEngine() {
   const attachClipMonitor = () => {
     const ctx = context, bus = master;
     if (!ctx?.audioWorklet || typeof globalThis.AudioWorkletNode !== 'function' || !bus) return;
-    if (!clipModule) clipModule = ctx.audioWorklet.addModule('/audio/nali-master-clip-monitor.worklet.js');
+    if (!clipModule) clipModule = ctx.audioWorklet.addModule('/audio/nali-master-clip-monitor.worklet.js?v=2');
     clipModule.then(() => {
       if (disposed || context !== ctx || master !== bus || clipMonitor) return;
       let node, silent;

@@ -115,7 +115,10 @@ export async function createLosslessStudioRecorder(stream, {
     try {
       source.disconnect(); node.disconnect(); mute.disconnect();
     } catch {}
-    await context.close().catch(() => {});
+    // Closing an AudioContext can remain pending when a browser suspends
+    // audio services. Disconnect immediately, but do not block delivery of
+    // captured bytes or onstop on the context's asynchronous close promise.
+    void Promise.resolve().then(() => context.close()).catch(() => {});
     // An unexpected worklet shutdown can still leave valid PCM in memory.
     // Emit that partial WAV before the error/stop notifications so Studio's
     // recovery handler can preserve the captured samples. Never claim an

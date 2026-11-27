@@ -2,20 +2,36 @@
 // The caller owns a unique session ID and must explicitly remove its data.
 const DB_NAME = 'nalichat-pcm-spool-v1';
 const STORE = 'chunks';
-export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.indexedDB, maxPendingBytes = 4 * 1024 * 1024, recoveryOnly = false, ownerId, scope, sampleRate } = {}) {
+export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.indexedDB, maxPendingBytes = 4 * 1024 * 1024, recoveryOnly = false, ownerId, scope, sampleRate, locks = globalThis.navigator?.locks } = {}) {
   if (typeof sessionId !== 'string' || !/^[a-z0-9_-]{16,128}$/i.test(sessionId)) throw new Error('Invalid PCM session ID');
   if (typeof ownerId !== 'string' || ownerId.length < 3 || ownerId.length > 255 ||
       typeof scope !== 'string' || !/^(draft|room:[a-z0-9_-]{8,100})$/i.test(scope) ||
       !Number.isInteger(sampleRate) || sampleRate < 8000 || sampleRate > 192000) throw new Error('Invalid PCM session metadata');
   if (!indexedDB?.open) throw new Error('PCM storage unavailable');
   if (!Number.isSafeInteger(maxPendingBytes) || maxPendingBytes < 8192) throw new Error('Invalid PCM queue limit');
-  const db = await new Promise((resolve, reject) => {
+  // Fail closed when exclusive cross-tab ownership cannot be guaranteed.
+  if (!locks?.request) throw new Error('Exclusive PCM session locking unavailable');
+  let release;
+  const hold = new Promise(resolve => { release = resolve; });
+  let lockTask;
+  await new Promise((resolve,reject) => {
+    try {
+      lockTask = locks.request('nalichat-pcm:'+sessionId, {mode:'exclusive',ifAvailable:true}, lock => {
+        if (!lock) { reject(new Error('PCM session is active in another tab')); return; }
+        resolve();
+        return hold;
+      });
+      Promise.resolve(lockTask).catch(reject);
+    } catch (error) { reject(error); }
+  });
+  let db;
+  try { db = await new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1);
     req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE, {keyPath:['sessionId','sequence']}); };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error || new Error('PCM storage open failed'));
     req.onblocked = () => reject(new Error('PCM storage blocked'));
-  });
+  }); } catch (error) { release(); await lockTask; throw error; }
   function transaction(mode, action) {
     return new Promise((resolve,reject) => {
       const tx = db.transaction(STORE, mode);
@@ -56,8 +72,8 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
   if (!recoveryOnly) {
     let exists = false;
     try { await walkSession(() => { exists = true; }); }
-    catch (error) { db.close(); throw error; }
-    if (exists) { db.close(); throw new Error('PCM session already exists; open for recovery instead'); }
+    catch (error) { db.close(); release(); await lockTask; throw error; }
+    if (exists) { db.close(); release(); await lockTask; throw new Error('PCM session already exists; open for recovery instead'); }
   }
   return {
     get pendingBytes() { return pendingBytes; },
@@ -111,7 +127,7 @@ export async function openStudioPcmSpool(sessionId, { indexedDB = globalThis.ind
       await walkSession(cursor => cursor.delete(), 'readwrite');
       totalBytes = 0;
     },
-    async close() { closed = true; await tail; db.close(); if (failure) throw failure; },
+    async close() { closed = true; await tail; db.close(); release(); await lockTask; if (failure) throw failure; },
   };
 }
 

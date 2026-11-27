@@ -225,8 +225,10 @@ describe("NaliStudio portable exports", () => {
   it("invalidates queued history callbacks when restoring another session", async () => {
     const studio = await source();
     expect(studio).toContain("const historyEpochRef = useRef(0)");
-    expect(studio).toContain("const historyEpoch = historyEpochRef.current");
-    expect(studio).toContain("if (historyEpochRef.current === historyEpoch) pushToHistory(next)");
+    expect(studio).toContain("const epoch = historyEpochRef.current");
+    expect(studio).toContain("if (epoch !== historyEpochRef.current) return previous");
+    expect(studio).toContain("if (entry.epoch !== historyEpochRef.current) continue");
+    expect(studio).toContain("consumedHistoryRef.current.add(entry.key)");
     expect(studio).toContain("historyEpochRef.current += 1");
   });
 

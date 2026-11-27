@@ -1575,8 +1575,9 @@ export default function Studio() {
     };
   }, []);
 
-  const stopRecordingProcess = (keepPlaying = false) => {
-    if (midiRecordingRef.current && (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive')) {
+  const stopRecordingProcess = (keepPlaying = false, recorderAlreadyStopped = false) => {
+    if (midiRecordingRef.current && (!mediaRecorderRef.current ||
+        (mediaRecorderRef.current.state === 'inactive' && !recorderAlreadyStopped))) {
       midiRecordingRef.current = false;
       const stoppedMidiEpoch = historyEpochRef.current;
       const stoppedMidiArmedIds = new Set(tracksRef.current
@@ -1608,7 +1609,7 @@ export default function Studio() {
       toast.success('MIDI recording stopped');
       return;
     }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+    if (mediaRecorderRef.current && (mediaRecorderRef.current.state !== 'inactive' || recorderAlreadyStopped)) {
       // Keep one unfinished capture per editor. A second Stop must not
       // overwrite the first callback while its bytes are being finalized.
       if (recordingFinalizeInFlightRef.current) return;
@@ -1816,7 +1817,10 @@ export default function Studio() {
         }
       };
       try {
-        stoppedRecorder.stop();
+        // Browser-initiated stops already delivered their final dataavailable
+        // event. Reuse the same completion path without calling stop() twice.
+        if (recorderAlreadyStopped) void stoppedRecorder.onstop();
+        else stoppedRecorder.stop();
       } catch (error) {
         console.error("Studio MediaRecorder stop failed", error);
         stoppedRecorder.onstop = null;
@@ -2073,6 +2077,16 @@ export default function Studio() {
           toast.warning('Audio capture was interrupted. Finishing the recorded audio available so far.');
           setIsRecording(false);
           stopRecordingProcess();
+        };
+        // Native MediaRecorder errors may set state=inactive before onerror,
+        // then deliver the last chunk and a spontaneous onstop. Finalize that
+        // take here instead of discarding the already collected audio.
+        mediaRecorder.onstop = () => {
+          if (!studioMountedRef.current || mediaRecorderRef.current !== mediaRecorder ||
+              recordingFinalizeInFlightRef.current) return;
+          toast.warning('Recording stopped unexpectedly. Recovering the captured take.');
+          setIsRecording(false);
+          stopRecordingProcess(false, true);
         };
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
         mobileCaptureAutoFinishRef.current = false;

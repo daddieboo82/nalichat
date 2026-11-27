@@ -33,7 +33,7 @@ export function audioBufferToWav(buffer) {
     throw new Error('WAV export exceeds the RIFF file size limit.');
   }
   const channels = Array.from({length:numChannels}, (_, ch) => buffer.getChannelData(ch));
-  const ab = new ArrayBuffer(44 + dataSize);
+  const ab = new ArrayBuffer(44);
   const view = new DataView(ab);
 
   const writeString = (offset, str) => {
@@ -54,15 +54,25 @@ export function audioBufferToWav(buffer) {
   writeString(36, 'data');
   view.setUint32(40, dataSize, true);
 
-  let offset = 44;
-  for (let i = 0; i < numFrames; i++) {
-    for (let ch = 0; ch < numChannels; ch++) {
-      let sample = Math.max(-1, Math.min(1, channels[ch][i]));
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
-      offset += 2;
+  // Assemble frame-aligned PCM blocks without requiring a contiguous
+  // full-size ArrayBuffer. Blob retains the same canonical WAV bytes.
+  const parts = [ab];
+  const framesPerBlock = Math.max(1, Math.floor((1024 * 1024) / blockAlign));
+  for (let start = 0; start < numFrames; start += framesPerBlock) {
+    const count = Math.min(framesPerBlock, numFrames - start);
+    const block = new ArrayBuffer(count * blockAlign);
+    const pcm = new DataView(block);
+    let offset = 0;
+    for (let i = start; i < start + count; i++) {
+      for (let ch = 0; ch < numChannels; ch++) {
+        const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+        pcm.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+        offset += 2;
+      }
     }
+    parts.push(block);
   }
-  return new Blob([ab], { type: 'audio/wav' });
+  return new Blob(parts, { type: 'audio/wav' });
 }
 
 // Build a peak waveform array (0..1) from an AudioBuffer

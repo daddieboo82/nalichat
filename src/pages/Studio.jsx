@@ -2474,8 +2474,8 @@ export default function Studio() {
         const lineage = t.splitFrom || t.id;
         const leftDuration = cutStart - start;
         const rightDuration = end - cutEnd;
-        if (leftDuration > 0.001) nextTracks.push({ ...t, duration: leftDuration, splitFrom: lineage });
-        if (rightDuration > 0.001) nextTracks.push({ ...t, id: nextId++, name: `${t.name} (After Clear)`, startTime: editMode === 'shuffle' ? cutStart : cutEnd, duration: rightDuration, clipStart: (t.clipStart || 0) + (cutEnd - start), splitFrom: lineage });
+        if (leftDuration > 0.001) nextTracks.push({ ...t, duration: leftDuration, fullDuration: t.fullDuration || duration, splitFrom: lineage });
+        if (rightDuration > 0.001) nextTracks.push({ ...t, id: nextId++, name: `${t.name} (After Clear)`, startTime: editMode === 'shuffle' ? cutStart : cutEnd, duration: rightDuration, fullDuration: t.fullDuration || duration, clipStart: (t.clipStart || 0) + (cutEnd - start), splitFrom: lineage });
       });
       if (!changed) { toast.error("The selection does not overlap a selected clip"); return; }
       if (editMode === 'shuffle') {

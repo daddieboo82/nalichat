@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { sharedStudioCaptureConstraints, inspectSharedStudioCaptureSettings, openStudioMicrophone } from './sharedStudioCapture';
+import { sharedStudioCaptureConstraints, inspectSharedStudioCaptureSettings, openStudioMicrophone, studioMicrophoneErrorMessage } from './sharedStudioCapture';
 import { analyzeSharedStudioRecordedBlob } from './sharedStudioCaptureQuality';
 
 describe('remote Studio microphone capture', () => {
@@ -36,6 +36,19 @@ describe('remote Studio microphone capture', () => {
     const devices = { getUserMedia: vi.fn().mockRejectedValue(denied) };
     await expect(openStudioMicrophone(devices)).rejects.toBe(denied);
     expect(devices.getUserMedia).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['NotAllowedError', /access is blocked/],
+    ['NotFoundError', /no microphone was detected/i],
+    ['NotReadableError', /found a microphone but could not start it/],
+  ])('explains a microphone failure with %s', (name, expected) => {
+    expect(studioMicrophoneErrorMessage({ name })).toMatch(expected);
+  });
+
+  it('explains when microphone capture is unsupported', async () => {
+    const error = await openStudioMicrophone({}).catch(error => error);
+    expect(studioMicrophoneErrorMessage(error)).toMatch(/browser that supports recording/);
   });
 
   it('warns if a mobile browser overrides the mic processing request', () => {

@@ -93,7 +93,7 @@ import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
 import { appendStudioLiveWaveform, drawStudioLiveWaveform } from '@/lib/studioLiveWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
-import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from '@/lib/sharedStudioCapture';
+import { openStudioMicrophone, inspectSharedStudioCaptureSettings, studioMicrophoneErrorMessage } from '@/lib/sharedStudioCapture';
 import { createPreferredStudioRecorder } from '@/lib/studioPcmRecorder';
 import NaliLatencyControl from '@/components/studio/NaliLatencyControl';
 import { readStudioLatencyProfile, safeNaliOverdubCompensation } from '@/lib/naliLatencyEngine';
@@ -2184,7 +2184,7 @@ export default function Studio() {
           console.error("Studio recording startup failed", err);
           toast.error(startupStream
             ? "Recording couldn't start. Your microphone was released; please try again."
-            : "Microphone access was denied or unavailable. Check your browser permissions.");
+            : studioMicrophoneErrorMessage(err));
         }
       } finally {
         if (microphoneStartupRef.current.token === startupToken) {

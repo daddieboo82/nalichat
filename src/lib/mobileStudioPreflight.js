@@ -1,4 +1,4 @@
-import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from './sharedStudioCapture';
+import { openStudioMicrophone, inspectSharedStudioCaptureSettings, studioMicrophoneErrorMessage } from './sharedStudioCapture';
 import { createPreferredStudioRecorder } from './studioPcmRecorder';
 import { studioRecoveryStorageHealth } from './studioRecoveryStorageHealth';
 
@@ -56,12 +56,7 @@ export async function runMobileStudioPreflight({
   } catch (error) {
     if (signal?.aborted) throw error;
     result.microphone = 'unavailable';
-    const type = error?.name;
-    result.issues.push(type === 'NotAllowedError' || type === 'PermissionDeniedError'
-      ? 'Microphone access was denied. Allow this site to use your microphone in browser settings.'
-      : type === 'NotFoundError' || type === 'DevicesNotFoundError'
-        ? 'No microphone was detected. Connect one and retry.'
-        : error?.message || 'This browser could not open the microphone.');
+    result.issues.push(studioMicrophoneErrorMessage(error));
   } finally {
     try {recorder?.dispose?.();} catch {}
     try {stream?.getTracks?.().forEach(track => track.stop());} catch {}

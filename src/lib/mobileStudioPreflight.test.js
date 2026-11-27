@@ -30,7 +30,7 @@ describe('mobile Studio microphone preflight',()=>{
       storage,openMicrophone:async()=>{throw error;},selectRecorder,
     });
     expect(result.microphone).toBe('unavailable');
-    expect(result.issues.join(' ')).toMatch(/denied/i);
+    expect(result.issues.join(' ')).toMatch(/access is blocked/i);
     expect(selectRecorder).not.toHaveBeenCalled();
   });
   it('releases microphone even when recording engine initialization fails',async()=>{

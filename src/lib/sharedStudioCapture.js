@@ -16,7 +16,7 @@ export const sharedStudioCaptureConstraints = Object.freeze({
 // Overconstrained and unsupported optional properties must never prevent
 // a user from recording on their built-in microphone.
 export async function openStudioMicrophone(mediaDevices, constraints = sharedStudioCaptureConstraints) {
-  if (!mediaDevices?.getUserMedia) throw new Error('This browser cannot access a microphone.');
+  if (!mediaDevices?.getUserMedia) throw new DOMException('This browser cannot access a microphone.', 'NotSupportedError');
   const deviceId = preferredMicrophoneId();
   const request = (audio) => deviceId
     ? openPreferredMicrophone(mediaDevices, { audio, deviceId })
@@ -35,6 +35,26 @@ export async function openStudioMicrophone(mediaDevices, constraints = sharedStu
       if (!['OverconstrainedError', 'ConstraintNotSatisfiedError', 'TypeError'].includes(fallbackError?.name)) throw fallbackError;
       return request(true);
     }
+  }
+}
+
+export function studioMicrophoneErrorMessage(error) {
+  switch (error?.name) {
+    case 'NotAllowedError':
+    case 'PermissionDeniedError':
+    case 'SecurityError':
+      return 'Microphone access is blocked. Allow NaliChat to use your microphone in your browser or device settings, then try again.';
+    case 'NotFoundError':
+    case 'DevicesNotFoundError':
+      return 'No microphone was detected. Connect a microphone or enable your built-in microphone, then try again.';
+    case 'NotReadableError':
+    case 'TrackStartError':
+    case 'AbortError':
+      return 'Your browser found a microphone but could not start it. Close other apps using it or reconnect it, then try again.';
+    case 'NotSupportedError':
+      return 'This browser cannot access a microphone. Try opening Studio in a browser that supports recording.';
+    default:
+      return error?.message || 'This browser could not open the microphone.';
   }
 }
 

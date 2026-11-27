@@ -461,7 +461,7 @@ export default function Studio() {
     setWaveformDetail(null);
     if (!detailUrl || !detailPeakCount || !detailSourceDuration || isPlaying || isRecording ||
         projectLoading || zoom < 8 || (isMobile && mobileStudioTab !== 'timeline')) return;
-    let active = true, timer, revision = 0, rangeController = null;
+    let active = true, timer, revision = 0, rangeController = null, lastRegion = null;
     const workspace = workspaceRef.current;
     if (!workspace) return;
     const schedule = () => {
@@ -478,6 +478,16 @@ export default function Studio() {
       const end = Math.min(detailStart + detailDuration, detailStart + timelineStart + visibleWidth / (20 * zoom) - (track.startTime || 0));
       const points = Math.min(8192, Math.ceil(visibleWidth * 2));
       if (end <= start || points <= (end - start) / detailSourceDuration * detailPeakCount * 2) return;
+      // Reuse the last measured region when it already covers the viewport.
+      // Keep it local to this effect (same clip, source, zoom and project).
+      if (lastRegion && lastRegion.startTime <= start &&
+          lastRegion.startTime + lastRegion.duration >= end &&
+          lastRegion.waveform.length / lastRegion.duration >= points / (end - start) * 0.9) return;
+      // Prefetch a small margin to avoid repeated reads during nearby scrolling.
+      const margin = (end - start) * 0.25;
+      const regionStart = Math.max(detailStart, start - margin);
+      const regionEnd = Math.min(detailStart + detailDuration, end + margin);
+      const regionPoints = Math.min(8192, Math.ceil(points * (regionEnd - regionStart) / (end - start)));
       let result = null;
       // Local Blob and HTTP sources can support bounded byte-range PCM reads.
       // Unsupported layouts, missing range validators or network errors fall back.
@@ -487,7 +497,7 @@ export default function Studio() {
         const deadline = setTimeout(() => controller.abort(), 4000);
         try {
           const analyzeRegion = detailUrl.startsWith('blob:') ? analyzeStudioLocalPcmRegion : analyzeStudioRemotePcmRegion;
-          result = await analyzeRegion(detailUrl, start, end, points, {signal: controller.signal});
+          result = await analyzeRegion(detailUrl, regionStart, regionEnd, regionPoints, {signal: controller.signal});
         } finally {
           clearTimeout(deadline);
           if (rangeController === controller) rangeController = null;
@@ -500,9 +510,13 @@ export default function Studio() {
         if (!active || request !== revision || !buffer) return;
         // Reject mismatched source timing rather than overlaying misleading peaks.
         if (Math.abs(buffer.duration - detailSourceDuration) > Math.max(0.05, 2 / buffer.sampleRate)) return;
-        result = studioWaveformRegion(buffer, start, end, points);
+        result = studioWaveformRegion(buffer, regionStart, regionEnd, regionPoints);
       }
-      if (active && request === revision && result && result.waveform.length > (end - start) / detailSourceDuration * detailPeakCount) setWaveformDetail({...result, id: detailId, url: detailUrl, zoom, clipStart: detailStart, clipDuration: detailDuration});
+      if (active && request === revision && result && result.duration > 0 &&
+          result.waveform.length / result.duration > detailPeakCount / detailSourceDuration) {
+        lastRegion = result;
+        setWaveformDetail({...result, id: detailId, url: detailUrl, zoom, clipStart: detailStart, clipDuration: detailDuration});
+      }
       }, 250);
     };
     workspace.addEventListener('scroll', schedule, {passive: true});

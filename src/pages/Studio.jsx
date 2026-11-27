@@ -2646,7 +2646,7 @@ export default function Studio() {
       const [left, right] = (track.startTime || 0) <= (candidate.startTime || 0) ? [track, candidate] : [candidate, track];
       const timelineContiguous = Math.abs(((left.startTime || 0) + (left.duration || 0)) - (right.startTime || 0)) < 0.002;
       const sourceContiguous = Math.abs(((left.clipStart || 0) + (left.duration || 0)) - (right.clipStart || 0)) < 0.002;
-      return timelineContiguous && sourceContiguous;
+      return timelineContiguous && sourceContiguous && !!left.audioUrl && left.audioUrl === right.audioUrl;
     });
     if (!sibling) {
       toast.error("Heal requires adjacent clips from the same original source.");
@@ -2656,7 +2656,7 @@ export default function Studio() {
     const mergedDuration = (left.duration || 0) + (right.duration || 0);
     const remainingInLineage = lineage.filter(t => t.id !== left.id && t.id !== right.id);
     setTracksWithHistory(prev => prev
-      .map(t => t.id === left.id ? { ...t, duration: mergedDuration, splitFrom: remainingInLineage.length ? track.splitFrom : undefined, clipStart: left.clipStart || 0, fullDuration: left.fullDuration || mergedDuration } : t)
+      .map(t => t.id === left.id ? { ...t, duration: mergedDuration, splitFrom: remainingInLineage.length ? track.splitFrom : undefined, clipStart: left.clipStart || 0, fullDuration: Math.max(left.fullDuration || 0, right.fullDuration || 0, (left.clipStart || 0) + mergedDuration) } : t)
       .filter(t => t.id !== right.id)
     );
     setSelectedTrackIds([left.id]);
@@ -2830,7 +2830,7 @@ export default function Studio() {
           name: `${t.name} (Cut)`,
           startTime: curr,
           duration: clipDuration - splitDuration,
-          fullDuration: t.fullDuration || t.duration,
+          fullDuration: Math.max(t.fullDuration || 0, (t.clipStart || 0) + clipDuration),
           clipStart: (t.clipStart || 0) + splitDuration,
           splitFrom: lineage
         };
@@ -2838,7 +2838,7 @@ export default function Studio() {
         newTracksList.push(right);
         eligibleIds.add(right.id);
         splitCount++;
-        return { ...t, duration: splitDuration, fullDuration: t.fullDuration || t.duration, splitFrom: lineage };
+        return { ...t, duration: splitDuration, fullDuration: Math.max(t.fullDuration || 0, (t.clipStart || 0) + clipDuration), splitFrom: lineage };
       });
       updatedTracks = [...updatedTracks, ...additions];
     });

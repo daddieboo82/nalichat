@@ -32,7 +32,16 @@ export function startMobileRecordingCheckpoints({
   let lastBytes = 0;
   const tick = () => {
     if (stopped || busy || recorder.state !== 'recording') return;
-    const audio = recorder.snapshot();
+    // Snapshot creation may throw synchronously when PCM buffers reach the
+    // recorder's memory limit or a browser worklet fails. Keep the timer
+    // alive and surface the failure through the same recovery warning path.
+    let audio;
+    try {
+      audio = recorder.snapshot();
+    } catch (error) {
+      try { onError?.(error); } catch { /* best-effort recovery feedback */ }
+      return;
+    }
     if (!audio || audio.size <= lastBytes) return;
     busy = true;
     pending = (async () => {

@@ -78,6 +78,37 @@ describe('incremental Mobile Studio take recovery', () => {
     expect(() => tick()).not.toThrow();
     controller.stop();
   });
+  it('keeps final-save wait safe when recovery persistence and warning callbacks both fail', async () => {
+    let tick;
+    const originalError = new Error('IndexedDB failed');
+    const onError = vi.fn(() => { throw new Error('warning UI unavailable'); });
+    const controller = startMobileRecordingCheckpoints({
+      recorder: { state: 'recording', snapshot: () => wav(2) },
+      ownerId: 'owner-valid', scope: 'draft', id: 'snapshot-safe-wait-001',
+      save: async () => { throw originalError; }, onError,
+      schedule: fn => { tick = fn; return 14; }, unschedule: () => {},
+    });
+    tick(); controller.stop();
+    await expect(controller.wait()).resolves.toBeUndefined();
+    expect(onError).toHaveBeenCalledWith(originalError);
+  });
+  it('does not announce a partial save that finishes after Stop', async () => {
+    let tick, finishWrite;
+    const onSaved = vi.fn();
+    const controller = startMobileRecordingCheckpoints({
+      recorder: { state: 'recording', snapshot: () => wav(2) },
+      ownerId: 'owner-valid', scope: 'draft', id: 'snapshot-stop-001',
+      save: () => new Promise(resolve => { finishWrite = resolve; }), onSaved,
+      schedule: fn => { tick = fn; return 15; }, unschedule: () => {},
+    });
+    tick();
+    // Header validation is async. Allow it to reach the deferred write.
+    await vi.waitFor(() => expect(finishWrite).toBeTypeOf('function'));
+    controller.stop();
+    finishWrite();
+    await expect(controller.wait()).resolves.toBeUndefined();
+    expect(onSaved).not.toHaveBeenCalled();
+  });
   it('never reports success when the IndexedDB write rejects', async () => {
     const onSaved = vi.fn(), onError = vi.fn();
     let tick;

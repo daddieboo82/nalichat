@@ -2597,6 +2597,9 @@ export default function Studio() {
         waveform: compactStudioWaveform(current.waveform),
         startTime: current.startTime || 0,
         duration: current.duration || 0,
+        clipStart: current.clipStart || 0,
+        fullDuration: Math.max(current.fullDuration || 0, (current.clipStart || 0) + (current.duration || 0)),
+        waveformVersion: current.waveformVersion,
         clipGain: current.clipGain || 0,
         fadeIn: current.fadeIn || 0,
         fadeOut: current.fadeOut || 0,
@@ -2624,6 +2627,9 @@ export default function Studio() {
         audioUrl: currentTake.audioUrl, file_url: currentTake.file_url || currentTake.audioUrl,
         waveform: currentTake.waveform || [], startTime: currentTake.startTime || 0,
         duration: currentTake.duration || 0, clipGain: currentTake.clipGain || 0,
+        clipStart: currentTake.clipStart || 0,
+        fullDuration: Math.max(currentTake.fullDuration || 0, (currentTake.clipStart || 0) + (currentTake.duration || 0)),
+        waveformVersion: currentTake.waveformVersion,
         fadeIn: currentTake.fadeIn || 0, fadeOut: currentTake.fadeOut || 0,
       };
     }));

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createLosslessStudioRecorder } from './studioPcmRecorder';
 
-async function makeRecorder({ close = () => Promise.resolve() } = {}) {
+async function makeRecorder({ close = () => Promise.resolve(), disconnect = () => {} } = {}) {
   let node;
   class Context {
     constructor() {
@@ -9,8 +9,8 @@ async function makeRecorder({ close = () => Promise.resolve() } = {}) {
       this.destination = {};
       this.audioWorklet = { addModule: async () => {} };
     }
-    createMediaStreamSource() { return { connect() {}, disconnect() {} }; }
-    createGain() { return { gain: {}, connect() {}, disconnect() {} }; }
+    createMediaStreamSource() { return { connect() {}, disconnect() { disconnect('source'); } }; }
+    createGain() { return { gain: {}, connect() {}, disconnect() { disconnect('gain'); } }; }
     resume() { return Promise.resolve(); }
     close() { return close(); }
   }
@@ -20,7 +20,7 @@ async function makeRecorder({ close = () => Promise.resolve() } = {}) {
       this.port = { postMessage() {}, onmessage: null, onmessageerror: null };
     }
     connect() {}
-    disconnect() {}
+    disconnect() { disconnect('worklet'); }
   }
   const recorder = await createLosslessStudioRecorder({}, {
     AudioContextType: Context, WorkletNodeType: WorkletNode,
@@ -31,6 +31,31 @@ async function makeRecorder({ close = () => Promise.resolve() } = {}) {
 }
 
 describe('Studio PCM callback isolation during shutdown', () => {
+  it('disconnects every audio node when a normal Stop encounters a failed disconnect', async () => {
+    const disconnected = [];
+    const { recorder, node } = await makeRecorder({ disconnect(name) {
+      disconnected.push(name);
+      if (name === 'source') throw new Error('Device disconnected');
+    } });
+    const stopped = vi.fn();
+    recorder.onstop = stopped;
+    recorder.stop();
+    node.port.onmessage({ data: { type: 'flushed' } });
+    await vi.waitFor(() => expect(stopped).toHaveBeenCalledOnce());
+    expect(disconnected).toEqual(['source', 'worklet', 'gain']);
+  });
+
+  it('disconnects every audio node during disposal, even when cleanup throws', async () => {
+    const disconnected = [];
+    const { recorder } = await makeRecorder({ disconnect(name) {
+      disconnected.push(name);
+      if (name === 'source') throw new Error('Device disconnected');
+    } });
+    expect(() => recorder.dispose()).not.toThrow();
+    expect(disconnected).toEqual(['source', 'worklet', 'gain']);
+    expect(recorder.state).toBe('inactive');
+  });
+
   it('rejects restarting a recorder while its Stop flush is still pending', async () => {
     const { recorder, node } = await makeRecorder();
     const stopped = vi.fn();

@@ -69,6 +69,9 @@ export async function createLosslessStudioRecorder(stream, {
     get capturedByteLength() { return byteLength; },
     ondataavailable: null, onstop: null, onerror: null,
     start() {
+      // Unlike MediaRecorder, this single-use AudioWorklet cannot be restarted
+      // after a Stop, failure or disposal. Its nodes may already be closed.
+      if (completed || pending) throw new Error('Recorder has already stopped');
       if (this.state !== 'inactive') throw new Error('Recorder already started');
       this.state = 'recording';
       try {

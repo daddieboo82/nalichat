@@ -157,7 +157,7 @@ describe('NaliChat genuine 16-bit lossless PCM recording', () => {
     recorder.dispose();
     expect(onStop).not.toHaveBeenCalled();
     expect(disconnect).toHaveBeenCalledTimes(3);
-    expect(close).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(close).toHaveBeenCalledOnce());
     expect(node.port.postMessage).toBeDefined();
   });
 

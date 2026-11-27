@@ -81,14 +81,18 @@ describe('incremental Mobile Studio take recovery', () => {
   it('keeps final-save wait safe when recovery persistence and warning callbacks both fail', async () => {
     let tick;
     const originalError = new Error('IndexedDB failed');
+    let rejectWrite;
     const onError = vi.fn(() => { throw new Error('warning UI unavailable'); });
     const controller = startMobileRecordingCheckpoints({
       recorder: { state: 'recording', snapshot: () => wav(2) },
       ownerId: 'owner-valid', scope: 'draft', id: 'snapshot-safe-wait-001',
-      save: async () => { throw originalError; }, onError,
+      save: () => new Promise((resolve, reject) => { rejectWrite = reject; }), onError,
       schedule: fn => { tick = fn; return 14; }, unschedule: () => {},
     });
-    tick(); controller.stop();
+    tick();
+    await vi.waitFor(() => expect(rejectWrite).toBeTypeOf('function'));
+    controller.stop();
+    rejectWrite(originalError);
     await expect(controller.wait()).resolves.toBeUndefined();
     expect(onError).toHaveBeenCalledWith(originalError);
   });

@@ -279,13 +279,13 @@ export default function Studio() {
         ? recorder.capturedByteLength
         : audioChunksRef.current.reduce((total,chunk)=>total+(chunk?.size||0),0);
       const pcm = typeof recorder.snapshot === 'function';
-      setMobileCaptureProgress(prev => ({...prev,elapsedSeconds:Math.max(0,elapsed),capturedBytes,pcm,
+      setMobileCaptureProgress(prev => ({...prev,elapsedSeconds:Math.max(0,elapsed),capturedBytes,pcm,incremental:Boolean(recorder.incrementalStorage),
         ...(recorder.incrementalStorage && capturedBytes > 0 ? {checkpointSeconds: Math.max(prev.checkpointSeconds, elapsed * Math.min(1,recorder.persistedByteLength / capturedBytes))} : {}),
       }));
-      if (shouldFinalizeMobilePcm(capturedBytes,pcm) && !mobileCaptureAutoFinishRef.current &&
+      if (shouldFinalizeMobilePcm(capturedBytes,pcm,Boolean(recorder.incrementalStorage)) && !mobileCaptureAutoFinishRef.current &&
           !recordingFinalizeInFlightRef.current) {
         mobileCaptureAutoFinishRef.current = true;
-        toast.warning('Recording is approaching the phone memory limit. Finishing this take to preserve the audio captured.');
+        toast.warning(recorder.incrementalStorage ? 'Recording is approaching the incremental capture limit. Finishing this take to preserve the audio captured.' : 'Recording is approaching the phone memory limit. Finishing this take to preserve the audio captured.');
         void toggleRecordRef.current?.();
       }
     };
@@ -2161,7 +2161,7 @@ export default function Studio() {
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
         mobileCaptureAutoFinishRef.current = false;
         if (isMobile) setMobileCaptureProgress({elapsedSeconds:0,checkpointSeconds:0,capturedBytes:0,
-          pcm:typeof mediaRecorder.snapshot === 'function',checkpointError:false});
+          pcm:typeof mediaRecorder.snapshot === 'function',incremental:Boolean(mediaRecorder.incrementalStorage),checkpointError:false});
         // On supported PCM recorders, periodically persist complete WAV
         // snapshots locally. A force-closed browser may recover its last
         // successful checkpoint, not necessarily the final few seconds.

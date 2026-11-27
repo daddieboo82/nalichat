@@ -45,6 +45,82 @@ describe('NaliChat genuine 16-bit lossless PCM recording', () => {
     expect(result.recorder.mimeType).toBe('audio/mp4');
   });
 
+  it('emits buffered PCM as partial WAV before signaling a worklet failure and stop', async () => {
+    let node;
+    const close = vi.fn().mockResolvedValue(undefined);
+    class Context {
+      constructor() {
+        this.sampleRate = 48000;
+        this.destination = {};
+        this.audioWorklet = { addModule: vi.fn().mockResolvedValue(undefined) };
+      }
+      createMediaStreamSource() { return { connect: vi.fn(), disconnect: vi.fn() }; }
+      createGain() { return { gain: { value: 1 }, connect: vi.fn(), disconnect: vi.fn() }; }
+      resume() { return Promise.resolve(); }
+      close() { return close(); }
+    }
+    class WorkletNode {
+      constructor() {
+        node = this;
+        this.port = { postMessage: vi.fn(), onmessage: null, onmessageerror: null };
+      }
+      connect() {}
+      disconnect() {}
+    }
+    const recorder = await createLosslessStudioRecorder({}, {
+      AudioContextType: Context, WorkletNodeType: WorkletNode,
+    });
+    const events = [];
+    let recovered;
+    recorder.ondataavailable = event => { recovered = event.data; events.push('data'); };
+    recorder.onerror = () => events.push('error');
+    recorder.onstop = () => events.push('stop');
+    recorder.start();
+    const pcm = new Int16Array([123, -456, 789]);
+    node.port.onmessage({ data: { type: 'pcm', buffer: pcm.buffer } });
+    node.port.onmessageerror();
+    await vi.waitFor(() => expect(events).toEqual(['data', 'error', 'stop']));
+    const bytes = new DataView(await recovered.arrayBuffer());
+    expect(recovered.type).toBe('audio/wav');
+    expect(bytes.getUint32(40, true)).toBe(pcm.byteLength);
+    expect(bytes.getInt16(44, true)).toBe(123);
+    expect(recorder.state).toBe('inactive');
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it('does not emit a fake empty WAV after a worklet failure before audio arrives', async () => {
+    let node;
+    class Context {
+      constructor() {
+        this.sampleRate = 48000;
+        this.destination = {};
+        this.audioWorklet = { addModule: async () => {} };
+      }
+      createMediaStreamSource() { return { connect() {}, disconnect() {} }; }
+      createGain() { return { gain: {}, connect() {}, disconnect() {} }; }
+      resume() { return Promise.resolve(); }
+      close() { return Promise.resolve(); }
+    }
+    class WorkletNode {
+      constructor() {
+        node = this;
+        this.port = { postMessage() {}, onmessage: null, onmessageerror: null };
+      }
+      connect() {}
+      disconnect() {}
+    }
+    const recorder = await createLosslessStudioRecorder({}, {
+      AudioContextType: Context, WorkletNodeType: WorkletNode,
+    });
+    const events = [];
+    recorder.ondataavailable = () => events.push('data');
+    recorder.onerror = () => events.push('error');
+    recorder.onstop = () => events.push('stop');
+    recorder.start();
+    node.port.onmessageerror();
+    await vi.waitFor(() => expect(events).toEqual(['error', 'stop']));
+  });
+
   it('cleans up the worklet and audio context if initialization fails', async () => {
     const close = vi.fn().mockResolvedValue(undefined);
     class Context {

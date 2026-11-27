@@ -33,6 +33,7 @@ import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
 const MixerPanel = lazy(() => import('@/components/studio/MixerPanel'));
 import KeyboardShortcutsDialog from '@/components/studio/KeyboardShortcutsDialog';
+import { studioLaneHeight, studioVisibleWaveformLanes } from '@/lib/studioVisibleWaveformLanes';
 import { studioClipWaveformVisible } from '@/lib/studioClipWaveformVisible';
 import { studioVisibleRulerTicks } from '@/lib/studioVisibleRulerTicks';
 import { studioTimelineZoomLimit } from '@/lib/studioTimelineZoom';
@@ -434,6 +435,7 @@ export default function Studio() {
   }, [maxTimelineZoom]);
 
   const timelineLanes = useMemo(() => visibleStudioClipLanes(tracks), [tracks]);
+  const visibleWaveformLanes = useMemo(() => studioVisibleWaveformLanes(timelineLanes, rulerViewport), [timelineLanes, rulerViewport]);
   const allStudioLanes = useMemo(() => groupStudioClipLanes(tracks), [tracks]);
   const mixerLanes = useMemo(() => allStudioLanes.map(lane => ({
     ...lane.primary, laneClips: lane.clips,
@@ -4133,7 +4135,9 @@ export default function Studio() {
       const header = workspace.querySelector('.nali-studio-track-headers')?.getBoundingClientRect().width || 0;
       const left = workspace.scrollLeft;
       const width = workspace.clientWidth - header;
-      setRulerViewport(previous => previous?.left === left && previous?.width === width ? previous : {left,width});
+      const top = workspace.scrollTop, height = workspace.clientHeight;
+      setRulerViewport(previous => previous?.left === left && previous?.width === width &&
+        previous?.top === top && previous?.height === height ? previous : {left,width,top,height});
     };
     const schedule = () => { if (frame === null) frame = requestAnimationFrame(update); };
     update();
@@ -4766,12 +4770,12 @@ export default function Studio() {
             {(() => { const projectEnd = projectEndMarker; return <div className="absolute top-0 bottom-0 w-[1px] bg-red-500/30 border-r border-red-500/10 pointer-events-none z-0" style={{ left: `${projectEnd * 20 * zoom}px` }} />; })()}
             {/* Waveform Rows */}
             <div className="flex flex-col">
-              {timelineLanes.map(({ primary: track, clips: laneClips }) => (
+              {timelineLanes.map(({ primary: track, clips: laneClips, primary: lanePrimary }) => (
                 <div
                   key={track.id}
                   onClick={(e) => handleTrackClick(e, track.id)}
                   data-testid={`studio-track-row-${track.id}`}
-                  ref={(el) => { laneRefsRef.current[track.id] = el; }} style={{ height: track.trackType === 'vca' ? '96px' : track.trackType === 'folder' ? '48px' : (track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px')), flexShrink: 0 }}
+                  ref={(el) => { laneRefsRef.current[track.id] = el; }} style={{ height: `${studioLaneHeight(track)}px`, flexShrink: 0 }}
                   className={cn(
                     "border-b border-border/20 relative group transition-none shrink-0",
                     String(track.id) === String(draggedTrackId) && "z-30 ring-2 ring-primary/50 shadow-xl opacity-90",
@@ -5441,7 +5445,7 @@ export default function Studio() {
 
                       <div data-testid={`studio-waveform-${track.id}`} className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
                         <div style={{ position: 'absolute', inset: 0 }}>
-                          {track.waveform?.length > 0 ? (studioClipWaveformVisible(track, zoom, rulerViewport, selectedTrackIds.includes(track.id)) ? <TrackWaveformSVG track={track} cropToClip /> : null) : <span className="text-xs text-muted-foreground px-2">Waveform unavailable</span>}
+                          {track.waveform?.length > 0 ? (((!visibleWaveformLanes || visibleWaveformLanes.has(lanePrimary.id) || selectedTrackIds.includes(track.id) || draggedTrackId !== null) && studioClipWaveformVisible(track, zoom, rulerViewport, selectedTrackIds.includes(track.id))) ? <TrackWaveformSVG track={track} cropToClip /> : null) : <span className="text-xs text-muted-foreground px-2">Waveform unavailable</span>}
                           {waveformDetail?.id === track.id && waveformDetail.url === track.audioUrl && waveformDetail.zoom === zoom && waveformDetail.clipStart === (track.clipStart || 0) && waveformDetail.clipDuration === track.duration && !isPlaying && !isRecording && selectedTrackIds.length === 1 && selectedTrackIds[0] === track.id && (
                             <div className="absolute inset-y-0 bg-background" style={{ left: (waveformDetail.startTime - (track.clipStart || 0)) * 20 * zoom, width: waveformDetail.duration * 20 * zoom }}>
                               <TrackWaveformSVG track={{ waveform: waveformDetail.waveform, color: track.color }} />

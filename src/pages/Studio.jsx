@@ -642,10 +642,7 @@ export default function Studio() {
         // An explicitly saved empty track list is authoritative. Fall back
         // to legacy Track rows only when no modern track list was saved.
         if (Array.isArray(savedState?.tracks)) {
-          const hydrated = hydrateStudioTracks(
-            savedState.tracks,
-            () => generateWaveform(waveformPointsRef.current),
-          );
+          const hydrated = hydrateStudioTracks(savedState.tracks);
           if (cancelled) return;
           historyEpochRef.current += 1;
           historyRef.current = [hydrated];
@@ -674,7 +671,7 @@ export default function Studio() {
               armed: false,
               waveform: Array.isArray(track.waveform_data) && track.waveform_data.length > 0
                 ? track.waveform_data
-                : generateWaveform(waveformPointsRef.current),
+                : [],
               startTime: 0,
               duration: track.duration || 0,
               audioUrl: track.file_url || "",
@@ -4564,7 +4561,7 @@ export default function Studio() {
                       <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none z-10">
                         <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60 italic">
                           <Mic className="w-3.5 h-3.5 shrink-0" />
-                          <span>Empty — upload a file or record to fill this track</span>
+                          <span>{track.audioUrl ? "Audio available — waveform unavailable" : "Empty — upload a file or record to fill this track"}</span>
                         </div>
                       </div>
                     )
@@ -4592,7 +4589,7 @@ export default function Studio() {
                       Individual clip records still drive playback, save, and export. */}
                   {laneClips.map((clip) => {
                     const track = clip;
-                    return track.waveform && track.waveform.length > 0 ? (
+                    return (track.waveform?.length > 0 || track.audioUrl) ? (
                     <div
                       key={track.id}
                       onClick={(event) => { event.stopPropagation(); handleTrackClick(event, track.id); }}
@@ -5130,7 +5127,7 @@ export default function Studio() {
 
                       <div data-testid={`studio-waveform-${track.id}`} className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
                         <div style={{ position: 'absolute', left: `${-(track.clipStart || 0) * 20 * zoom}px`, width: `${(track.fullDuration || track.duration || 40) * 20 * zoom}px`, height: '100%' }}>
-                          <TrackWaveformSVG track={track} />
+                          {track.waveform?.length > 0 ? <TrackWaveformSVG track={track} /> : <span className="text-xs text-muted-foreground px-2">Waveform unavailable</span>}
                         </div>
                       </div>
                     </div>

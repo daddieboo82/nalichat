@@ -5,6 +5,8 @@ import { createStudioMediaRecorder } from './studioRecorderCodec';
 
 const WORKLET_URL = '/audio/nali-pcm-capture.worklet.js';
 const MAX_PCM_BYTES = 80 * 1024 * 1024;
+// Experimental ceiling: final WAV assembly and decoding still require memory.
+export const MAX_SPOOLED_PCM_BYTES = 160 * 1024 * 1024;
 
 export function pcm16WavBlob(chunks, sampleRate) {
   const rate = Math.round(sampleRate);
@@ -199,14 +201,14 @@ export async function createLosslessStudioRecorder(stream, {
         return;
       }
       if (pcmSpool) {
-        // Keep the existing total capture limit until browser assembly is validated.
-        if (byteLength + chunk.byteLength > MAX_PCM_BYTES) {
-          void finish(new Error('Recording length exceeds current capture limit'));
-          return;
-        }
-        byteLength += chunk.byteLength;
+        const remaining = MAX_SPOOLED_PCM_BYTES - byteLength;
+        const accepted = chunk.byteLength > remaining ? chunk.slice(0, remaining) : chunk;
         try {
-          Promise.resolve(pcmSpool.append(chunk)).catch(error => { void finish(error); });
+          if (accepted.byteLength) {
+            byteLength += accepted.byteLength;
+            Promise.resolve(pcmSpool.append(accepted)).catch(error => { void finish(error); });
+          }
+          if (chunk.byteLength > remaining) void finish(new Error('Recording reached incremental capture limit'));
         } catch (error) { void finish(error); }
         return;
       }

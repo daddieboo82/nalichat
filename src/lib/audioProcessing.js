@@ -217,7 +217,7 @@ export function studioEqCompTargets(effects) {
   };
 }
 
-export function connectPluginChain(context, input, effects, output, nodes = []) {
+export function connectPluginChain(context, input, effects, output, nodes = [], liveParams = null) {
   const fx = effects || {};
   const targets = studioEqCompTargets(fx);
   let node = input;
@@ -246,6 +246,7 @@ export function connectPluginChain(context, input, effects, output, nodes = []) 
     high.frequency.value = 5000;
     high.gain.value = targets.high;
     insert(high);
+    if (liveParams) Object.assign(liveParams, { low: low.gain, mid: mid.gain, high: high.gain });
   }
 
   const comp = fx.comp;
@@ -259,6 +260,7 @@ export function connectPluginChain(context, input, effects, output, nodes = []) 
     const makeup = context.createGain();
     makeup.gain.value = targets.makeup;
     insert(makeup);
+    if (liveParams) Object.assign(liveParams, { threshold: compressor.threshold, ratio: compressor.ratio, makeup: makeup.gain });
   }
 
   const reverb = fx.reverb;
@@ -428,7 +430,8 @@ export function connectTrackChain(context, source, track, { destination, reverbB
     nodes.push(highpass, compressor, makeup);
     insertsInput = makeup;
   }
-  connectPluginChain(context, insertsInput, getTrackEffects(track), insertsOut, nodes);
+  const liveParams = {};
+  connectPluginChain(context, insertsInput, getTrackEffects(track), insertsOut, nodes, liveParams);
 
   let output = insertsOut;
   if (typeof context.createStereoPanner === 'function') {
@@ -482,7 +485,7 @@ export function connectTrackChain(context, source, track, { destination, reverbB
     });
   }
 
-  return { nodes, trackGain, output, sendGain, sendGains };
+  return { nodes, trackGain, output, sendGain, sendGains, liveParams };
 }
 
 /** Master bus: send return + master inserts + master fader. */

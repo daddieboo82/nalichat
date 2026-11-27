@@ -66,7 +66,14 @@ export async function createLosslessStudioRecorder(stream, {
     start() {
       if (this.state !== 'inactive') throw new Error('Recorder already started');
       this.state = 'recording';
-      node.port.postMessage({type:'start'});
+      try {
+        node.port.postMessage({type:'start'});
+      } catch (error) {
+        // A closed worklet port must not leave a phantom active recording.
+        // Studio's startup catch will release its microphone stream.
+        this.dispose();
+        throw error;
+      }
     },
     // Snapshot only PCM already received from the worklet; never clear the
     // ongoing recording. Each result contains its own complete WAV header.

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { MICROPHONE_SELECTION_EVENT } from '@/lib/microphoneCapture';
 
 function safeGet(key, fallback = null) {
   try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
@@ -65,6 +66,17 @@ export function useAudioDevices() {
 
     enumerateDevices();
 
+    // Keep selections synchronized when changed by Help & Support in the
+    // same tab, or by another tab through the browser's storage event.
+    const syncInputSelection = () => {
+      setSelectedDevices(prev => ({ ...prev, input: safeGet('audioInputDevice', 'default') }));
+    };
+    const handleStorage = (event) => {
+      if (event.key === 'audioInputDevice') syncInputSelection();
+    };
+    window.addEventListener(MICROPHONE_SELECTION_EVENT, syncInputSelection);
+    window.addEventListener('storage', handleStorage);
+
     // Listen for device changes
     const handleDeviceChange = () => enumerateDevices();
     navigator.mediaDevices?.addEventListener?.('devicechange', handleDeviceChange);
@@ -73,12 +85,17 @@ export function useAudioDevices() {
       cancelled = true;
       requestId += 1;
       navigator.mediaDevices?.removeEventListener?.('devicechange', handleDeviceChange);
+      window.removeEventListener(MICROPHONE_SELECTION_EVENT, syncInputSelection);
+      window.removeEventListener('storage', handleStorage);
     };
   }, []);
 
   const selectDevice = (type, deviceId) => {
     setSelectedDevices(prev => ({ ...prev, [type]: deviceId }));
-    if (type === 'input') safeSet('audioInputDevice', deviceId);
+    if (type === 'input') {
+      safeSet('audioInputDevice', deviceId);
+      window.dispatchEvent(new Event(MICROPHONE_SELECTION_EVENT));
+    }
     if (type === 'output') safeSet('audioOutputDevice', deviceId);
     if (type === 'midi') safeSet('midiInputDevice', deviceId);
   };

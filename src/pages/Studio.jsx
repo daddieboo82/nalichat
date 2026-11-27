@@ -205,6 +205,8 @@ export default function Studio() {
   const liveWaveformRef = useRef([]);
   const recordingStartRealRef = useRef(null); // performance.now() at recording start for accurate sync
   const [zoom, setZoom] = useState(1);
+  const [transportHorizon, setTransportHorizon] = useState(100);
+  const transportHorizonRef = useRef(100);
   const playheadRef = useRef(null);
   const headerPlayheadRef = useRef(null);
 
@@ -1059,6 +1061,10 @@ export default function Studio() {
       }
 
       currentTimeRef.current = newTime;
+      if (newTime + 15 > transportHorizonRef.current) {
+        transportHorizonRef.current = Math.ceil((newTime + 30) / 60) * 60;
+        setTransportHorizon(transportHorizonRef.current);
+      }
       
       // Update DOM directly for maximum 60fps performance without React reconciliation
       if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
@@ -3880,6 +3886,13 @@ export default function Studio() {
     }
   };
 
+  const timelineSeconds = Math.max(100, transportHorizon, ...tracks.map(t => (Number(t.startTime) || 0) + (Number(t.duration) || 0) + 15));
+  const timelineWidth = timelineSeconds * 20 * zoom;
+  const rulerBeatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
+  const rulerBeatCount = Math.ceil(timelineSeconds * bpm / 60) + 1;
+  const rulerStride = rulerBeatCount > 2000
+    ? Math.ceil(rulerBeatCount / (2000 * rulerBeatsPerBar)) * rulerBeatsPerBar
+    : (zoom > 1.5 ? 1 : rulerBeatsPerBar);
   if (roomId && projectLoading) return (
     <div className="flex h-screen h-[100dvh] items-center justify-center bg-background text-foreground">
       <div className="text-center" aria-live="polite">
@@ -4411,7 +4424,7 @@ export default function Studio() {
           {/* Timeline Header */}
           <div className="h-8 shrink-0 border-b border-foreground/10 bg-foreground/[0.04] backdrop-blur-md sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
             {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[2px] bg-red-500/50 z-10 pointer-events-none" style={{ left: `${projectEnd * 20 * zoom}px` }}><div className="absolute top-0 -translate-x-1/2 bg-red-500/80 text-white text-[8px] px-1 rounded-b shadow-md font-bold">END</div></div>; })()}
-            <div className="h-full relative cursor-pointer select-none" style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}
+            <div className="h-full relative cursor-pointer select-none" style={{ width: `${timelineWidth}px`, minWidth: `${timelineWidth}px` }}
               onPointerDown={(e) => {
                 const target = e.currentTarget;
                 const updatePosition = (cX, cY) => { const t = Math.max(0, (cX - target.getBoundingClientRect().left) / (20 * zoom)); updateCurrentTime(t); showEditTooltip(cX, cY, t); };
@@ -4431,7 +4444,7 @@ export default function Studio() {
                 </div>
                 );
               })()}
-              {Array.from({ length: Math.max(1000, Math.ceil(2000/(60/bpm))) }).slice(0, 2000).map((_, i) => {
+              {Array.from({ length: Math.ceil(rulerBeatCount / rulerStride) }, (_, index) => index * rulerStride).map((i) => {
                 const beatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
                 const secondsPerBeat = 60 / bpm;
                 const position = i * secondsPerBeat * 20 * zoom;
@@ -4460,7 +4473,7 @@ export default function Studio() {
           </div>
 
           {/* Tracks Area */}
-          <div style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}>
+          <div style={{ width: `${timelineWidth}px`, minWidth: `${timelineWidth}px` }}>
             <div 
               className="relative w-full min-h-full cursor-text select-none" 
               onPointerDown={(e) => {

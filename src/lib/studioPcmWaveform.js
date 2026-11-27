@@ -133,3 +133,20 @@ export async function analyzeStudioRemotePcmRegion(url, startTime, endTime, poin
     return region ? studioPcmRegionPeaks(region.data,layout) : null;
   } catch { return null; }
 }
+
+
+// Blob object URLs are immutable for their lifetime. They do not need an HTTP
+// ETag, but still require exact byte ranges and a consistent total size.
+export async function analyzeStudioLocalPcmRegion(url, startTime, endTime, points, options = {}) {
+  if (typeof url !== 'string' || !url.startsWith('blob:')) return null;
+  try {
+    const header = await readStudioPcmHttpRange(url,0,44,options);
+    if (!header || options.signal?.aborted) return null;
+    const layout = studioPcmRegionLayout(header.data,header.size,startTime,endTime,points);
+    if (!layout) return null;
+    const region = await readStudioPcmHttpRange(url,layout.byteStart,layout.byteEnd,{
+      ...options,expectedSize:header.size,
+    });
+    return region && !options.signal?.aborted ? studioPcmRegionPeaks(region.data,layout) : null;
+  } catch { return null; }
+}

@@ -83,6 +83,8 @@ export function createMixEngine() {
     entry.sendGains = built.sendGains;
     entry.track = track;
     entry.gain = gain;
+    entry.panner = built.nodes.find(n => n && n.pan);
+    entry.parameterTargets = new Map();
   };
 
   return {
@@ -157,18 +159,22 @@ export function createMixEngine() {
 
       entry.track = track;
       entry.gain = nextGain;
-      if (entry.trackGain) {
-        entry.trackGain.gain.setTargetAtTime(nextGain, context.currentTime, 0.01);
-      }
-      const panner = entry.nodes.find(n => n && n.pan);
-      if (panner) {
+      // Repeated identical targets restart AudioParam smoothing and enqueue
+      // redundant events on every animation frame. Only schedule changes.
+      const updateTarget = (param, value) => {
+        if (!param || !Number.isFinite(value) || entry.parameterTargets.get(param) === value) return;
+        param.setTargetAtTime(value, context.currentTime, 0.01);
+        entry.parameterTargets.set(param, value);
+      };
+      updateTarget(entry.trackGain?.gain, nextGain);
+      if (entry.panner) {
         const value = Math.max(-1, Math.min(1, ((track?.pan ?? 50) - 50) / 50));
-        panner.pan.setTargetAtTime(value, context.currentTime, 0.01);
+        updateTarget(entry.panner.pan, value);
       }
       entry.sendGains?.forEach((sendGain, index) => {
         if (!sendGain) return;
         const value = Math.max(0, Math.min(100, track?.[`send${index + 1}`] ?? 0)) / 100;
-        sendGain.gain.setTargetAtTime(value, context.currentTime, 0.01);
+        updateTarget(sendGain.gain, value);
       });
       return true;
     },

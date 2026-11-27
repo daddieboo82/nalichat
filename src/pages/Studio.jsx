@@ -87,7 +87,7 @@ import { trainPrivateNaliVoiceFromRecording, forgetPrivateNaliVoiceTraining } fr
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { studioRecordedWaveform } from '@/lib/studioRecordedWaveform';
-import { appendStudioLiveWaveform, shouldRedrawStudioWaveform, studioLiveCanvasWidth, studioLiveWaveformX } from '@/lib/studioLiveWaveform';
+import { appendStudioLiveWaveform, drawStudioLiveWaveform } from '@/lib/studioLiveWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings } from '@/lib/sharedStudioCapture';
 import { createPreferredStudioRecorder } from '@/lib/studioPcmRecorder';
@@ -1090,46 +1090,11 @@ export default function Studio() {
           const rms = Math.sqrt(sum / dataArrayRef.current.length);
           liveWaveformRef.current = appendStudioLiveWaveform(liveWaveformRef.current, rms * 4, Math.max(0, realElapsed)); // Preview only; audio is unchanged.
           
+          // Preview rendering is best-effort; canvas failures must not
+          // interrupt the audio recorder or Studio's transport animation.
+          const drawTime = performance.now();
           Object.values(recordingCanvasRefs.current).forEach(canvas => {
-            if (canvas && currentWidth > 0) {
-               const ctx = canvas.getContext('2d');
-               const height = canvas.height;
-               
-               // Only redraw on a new timeline pixel, not on every 60fps
-               // animation tick. The displayed amplitudes are bounded.
-               const targetW = studioLiveCanvasWidth(currentWidth);
-               const pts = liveWaveformRef.current;
-               const drawTime = performance.now();
-               if (!shouldRedrawStudioWaveform(canvas, targetW, pts.length, drawTime)) return;
-               if (canvas.width !== targetW) canvas.width = targetW;
-               canvas.dataset.studioWaveformSamples = String(pts.length);
-               canvas.dataset.studioWaveformLastDrawMs = String(drawTime);
-               ctx.clearRect(0, 0, canvas.width, height);
-
-               const centerY = height / 2;
-               const maxAmp = height * 0.42;
-               // Use elapsed capture time rather than treating compressed
-               // preview history as evenly spaced after older peaks merge.
-
-               ctx.strokeStyle = 'rgba(239, 68, 68, 0.9)';
-               ctx.lineWidth = 1;
-               ctx.beginPath();
-               for (let i = 0; i < pts.length; i++) {
-                 const px = studioLiveWaveformX(pts[i].time, Math.max(0, realElapsed), canvas.width);
-                 const amp = Math.min(1, Math.max(0.002, pts[i].peak)) * maxAmp;
-                 ctx.moveTo(px, centerY - amp);
-                 ctx.lineTo(px, centerY + amp);
-               }
-               ctx.stroke();
-
-               // Center reference line for zero-crossing precision
-               ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-               ctx.lineWidth = 1;
-               ctx.beginPath();
-               ctx.moveTo(0, centerY);
-               ctx.lineTo(canvas.width, centerY);
-               ctx.stroke();
-            }
+            drawStudioLiveWaveform(canvas, liveWaveformRef.current, Math.max(0, realElapsed), currentWidth, drawTime);
           });
         }
       }

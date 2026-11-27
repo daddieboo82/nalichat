@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Mic, RefreshCw } from "lucide-react";
-import { preferredMicrophoneId } from "@/lib/microphoneCapture";
+import { MICROPHONE_SELECTION_EVENT, preferredMicrophoneId } from "@/lib/microphoneCapture";
 
 export default function MicrophoneInputPicker() {
   const [inputs, setInputs] = useState([]);
@@ -31,9 +31,12 @@ export default function MicrophoneInputPicker() {
     };
     navigator.mediaDevices?.addEventListener?.("devicechange", handleDevicesChanged);
     window.addEventListener("storage", handleStorageChanged);
+    const handleLocalChange = () => setSelected(preferredMicrophoneId() || "default");
+    window.addEventListener(MICROPHONE_SELECTION_EVENT, handleLocalChange);
     return () => {
       navigator.mediaDevices?.removeEventListener?.("devicechange", handleDevicesChanged);
       window.removeEventListener("storage", handleStorageChanged);
+      window.removeEventListener(MICROPHONE_SELECTION_EVENT, handleLocalChange);
     };
   }, [refresh]);
 
@@ -66,12 +69,13 @@ export default function MicrophoneInputPicker() {
       </label>
       <select
         id="nali-help-microphone"
-        value={selectedAvailable ? selected : "default"}
+        value={selected}
         onChange={event => {
           const value = event.target.value;
           try {
             localStorage.setItem("audioInputDevice", value);
             setSelected(value);
+            window.dispatchEvent(new Event(MICROPHONE_SELECTION_EVENT));
             setStatus(value === "default" ? "Using your device's default microphone." : "Microphone saved for future recordings and calls.");
           } catch {
             setStatus("This browser could not save your microphone preference.");
@@ -80,6 +84,7 @@ export default function MicrophoneInputPicker() {
         className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground"
       >
         <option value="default">System default microphone</option>
+        {!selectedAvailable && <option value={selected}>Saved microphone (currently unavailable)</option>}
         {inputs.filter(input => input.deviceId !== "default").map((input, index) => (
           <option key={input.deviceId} value={input.deviceId}>
             {input.label || `Microphone ${index + 1}`}

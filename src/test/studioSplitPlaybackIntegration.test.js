@@ -9,7 +9,9 @@ describe('Studio transport follows split clip boundaries', () => {
     expect(raf).toContain('studioPlaybackPosition(track, newTime)');
     expect(raf).toContain('getTrackAudioRef.current?.(track)');
     expect(raf).toContain('candidate.currentTime = position.sourceTime');
-    expect(raf).toContain('Promise.resolve(candidate.play())');
+    expect(raf).toContain('startStudioBoundaryPlayback({');
+    expect(raf).toContain('audio: candidate');
+    expect(raf).toContain('playbackAttemptRef.current === boundaryAttempt');
     expect(raf).toContain('if (audio && !audio.paused) audio.pause()');
     expect(raf).toContain('playbackStartingRef.current.has(track.id)');
     expect(raf).toContain('playbackFailedRef.current.has(track.id)');

@@ -33,6 +33,7 @@ import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
 const MixerPanel = lazy(() => import('@/components/studio/MixerPanel'));
 import KeyboardShortcutsDialog from '@/components/studio/KeyboardShortcutsDialog';
+import { studioClipWaveformVisible } from '@/lib/studioClipWaveformVisible';
 import { studioVisibleRulerTicks } from '@/lib/studioVisibleRulerTicks';
 import { studioTimelineZoomLimit } from '@/lib/studioTimelineZoom';
 import TrackWaveformSVG from '@/components/studio/TrackWaveformSVG';
@@ -5440,7 +5441,7 @@ export default function Studio() {
 
                       <div data-testid={`studio-waveform-${track.id}`} className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
                         <div style={{ position: 'absolute', inset: 0 }}>
-                          {track.waveform?.length > 0 ? <TrackWaveformSVG track={track} cropToClip /> : <span className="text-xs text-muted-foreground px-2">Waveform unavailable</span>}
+                          {track.waveform?.length > 0 ? (studioClipWaveformVisible(track, zoom, rulerViewport, selectedTrackIds.includes(track.id)) ? <TrackWaveformSVG track={track} cropToClip /> : null) : <span className="text-xs text-muted-foreground px-2">Waveform unavailable</span>}
                           {waveformDetail?.id === track.id && waveformDetail.url === track.audioUrl && waveformDetail.zoom === zoom && waveformDetail.clipStart === (track.clipStart || 0) && waveformDetail.clipDuration === track.duration && !isPlaying && !isRecording && selectedTrackIds.length === 1 && selectedTrackIds[0] === track.id && (
                             <div className="absolute inset-y-0 bg-background" style={{ left: (waveformDetail.startTime - (track.clipStart || 0)) * 20 * zoom, width: waveformDetail.duration * 20 * zoom }}>
                               <TrackWaveformSVG track={{ waveform: waveformDetail.waveform, color: track.color }} />

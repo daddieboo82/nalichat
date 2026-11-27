@@ -30,6 +30,11 @@ export function startMobileRecordingCheckpoints({
   let busy = false;
   let pending = Promise.resolve();
   let lastBytes = 0;
+  // Reporting errors must never reject wait(): Studio awaits it before
+  // replacing this partial checkpoint with the completed recording.
+  const reportError = error => {
+    try { onError?.(error); } catch { /* reporting cannot block final backup */ }
+  };
   const tick = () => {
     if (stopped || busy || recorder.state !== 'recording') return;
     // Snapshot creation may throw synchronously when PCM buffers reach the
@@ -39,7 +44,7 @@ export function startMobileRecordingCheckpoints({
     try {
       audio = recorder.snapshot();
     } catch (error) {
-      try { onError?.(error); } catch { /* best-effort recovery feedback */ }
+      reportError(error);
       return;
     }
     if (!audio || audio.size <= lastBytes) return;
@@ -52,8 +57,8 @@ export function startMobileRecordingCheckpoints({
         partial:true, replaceExisting:true,
       });
       lastBytes = audio.size;
-      onSaved?.(duration);
-    })().catch(error => onError?.(error)).finally(() => { busy = false; });
+      if (!stopped) onSaved?.(duration);
+    })().catch(reportError).finally(() => { busy = false; });
   };
   const timer = schedule(tick, intervalMs);
   return {

@@ -7,7 +7,9 @@ import { studioRecoveryStorageHealth, isStudioStorageQuotaError } from './studio
 
 const DB_NAME = 'nalichat-studio-take-recovery-v1';
 const STORE = 'takes';
-const MAX_BYTES = 60 * 1024 * 1024;
+// Match the recorder's existing bounded PCM capacity plus the WAV header.
+// This is a recovery ceiling, not a promise of available browser quota.
+const MAX_BYTES = 80 * 1024 * 1024 + 44;
 const MAX_TAKES_PER_SCOPE = 8;
 
 function validOwner(ownerId) {

@@ -112,6 +112,10 @@ export default function MixerPanel({
   currentTimeRef,
   mixEngineRef,
 }) {
+  useEffect(() => {
+    if (!show || !isPlaying) mixEngineRef?.current?.releaseTrackMeters?.();
+    return () => { mixEngineRef?.current?.releaseTrackMeters?.(); };
+  }, [show, isPlaying, mixEngineRef]);
   const commit = () => onCommitTrack?.();
   const masterFxCount = countActiveEffects(masterFx);
   const soloActive = (tracks || []).some(t => t.solo);
@@ -198,7 +202,7 @@ export default function MixerPanel({
                         className="h-full"
                       />
                     </div>
-                  <ChannelPeakMeter track={track} isPlaying={isPlaying} mixEngineRef={mixEngineRef} />
+                  <ChannelPeakMeter track={track} isPlaying={show && isPlaying} mixEngineRef={mixEngineRef} />
                 </div>
 
                 <div className="text-[10px] font-mono text-center font-semibold mb-2">{track.volume === 0 ? '-∞' : (20 * Math.log10(track.volume / 100)).toFixed(1)} dB</div>

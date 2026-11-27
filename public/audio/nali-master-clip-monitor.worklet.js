@@ -10,12 +10,61 @@ function cubicOverload(b,p,q,z) {
   return exceeds((-2*q+root)/(6*z)) || exceeds((-2*q-root)/(6*z));
 }
 
+// 48 kHz K-weighted stereo measurement; fixed-size 100 ms energy blocks.
+// Other sample rates deliberately report unavailable until validated.
+class NaliLoudnessWindow {
+  constructor(rate) {
+    this.enabled = rate === 48000;
+    this.blockFrames = 4800;
+    this.ring = new Float64Array(30);
+    this.filters = [new Float64Array(8),new Float64Array(8)];
+    this.position = 0;
+    this.blocks = 0;
+    this.frames = 0;
+    this.energy = 0;
+  }
+  filter(x,c) {
+    const s=this.filters[c];
+    const y=1.53512485958697*x-2.69169618940638*s[0]+1.19839281085285*s[1]+1.69065929318241*s[2]-0.73248077421585*s[3];
+    s[1]=s[0];s[0]=x;s[3]=s[2];s[2]=y;
+    const z=y-2*s[4]+s[5]+1.99004745483398*s[6]-0.99007225036621*s[7];
+    s[5]=s[4];s[4]=y;s[7]=s[6];s[6]=z;
+    return z;
+  }
+  value(n) {
+    if(this.blocks<n) return null;
+    let sum=0;
+    for(let i=1;i<=n;i++) sum+=this.ring[(this.position+30-i)%30];
+    return sum>0 ? -0.691+10*Math.log10(sum/n) : null;
+  }
+  process(channels, report) {
+    if(!this.enabled || channels.length<1 || channels.length>2) return;
+    for(let i=0;i<channels[0].length;i++) {
+      let e=0;
+      for(let c=0;c<channels.length;c++) {
+        const x=channels[c][i];
+        const y=this.filter(Number.isFinite(x)?x:0,c);
+        e+=y*y;
+      }
+      this.energy+=e;
+      if(++this.frames===this.blockFrames) {
+        this.ring[this.position]=this.energy/this.frames;
+        this.position=(this.position+1)%30;
+        this.blocks=Math.min(30,this.blocks+1);
+        this.frames=0;this.energy=0;
+        report({type:'loudness',momentary:this.value(4),shortTerm:this.value(30)});
+      }
+    }
+  }
+}
+
 class NaliMasterClipMonitor extends AudioWorkletProcessor {
   constructor(options) {
     super();
     this.latched = false;
     this.interSampleLatched = false;
     this.estimate = options?.processorOptions?.estimateInterSample === true;
+    this.loudness = this.estimate ? new NaliLoudnessWindow(sampleRate) : null;
     this.history = [new Float32Array(3), new Float32Array(3)];
     this.count = [0,0];
     this.port.onmessage = event => {
@@ -27,6 +76,7 @@ class NaliMasterClipMonitor extends AudioWorkletProcessor {
   }
   process(inputs) {
     const channels = inputs[0] || [];
+    this.loudness?.process(channels, value => this.port.postMessage(value));
     for (let c=0;c<channels.length;c++) {
       const channel = channels[c];
       if (!this.estimate && this.latched) break;

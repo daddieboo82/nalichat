@@ -99,14 +99,14 @@ export function createMixEngine() {
         const analysers = [0, 1].map(channel => {
           const analyser = context.createAnalyser();
           nodes.push(analyser);
-          analyser.fftSize = 2048;
+          analyser.fftSize = context.sampleRate > 96000 ? 16384 : context.sampleRate > 48000 ? 8192 : 4096;
           splitter.connect(analyser, channel);
           return analyser;
         });
         if (analysers.every(node => typeof node.getFloatTimeDomainData === 'function')) {
           master.volume.connect(splitter);
           master.nodes.push(...nodes);
-          masterMeter = {analysers, samples: new Float32Array(2048)};
+          masterMeter = {analysers, samples: new Float32Array(analysers[0].fftSize)};
         } else nodes.forEach(disposeNode);
       } catch { nodes.forEach(disposeNode); }
     }

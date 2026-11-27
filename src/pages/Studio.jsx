@@ -5474,6 +5474,7 @@ export default function Studio() {
         masterFx={masterFx}
         fxTarget={showPluginRack ? fxTarget : null}
         isPlaying={isPlaying}
+        mixEngineRef={mixEngineRef}
         currentTimeRef={currentTimeRef}
       />
       </Suspense>

@@ -107,7 +107,7 @@ import { retriggerStudioMidiNote, finalizeStudioMidiNote } from '@/lib/studioMid
 import { studioMidiNoteKey, studioMidiSustainKey } from '@/lib/studioMidiInputKeys';
 import { drainStudioDisconnectedMidiNotes } from '@/lib/studioMidiDisconnect';
 import { studioRecoverMidiOnAudioFailure } from '@/lib/studioRecoverMidiOnAudioFailure';
-import { hydrateStudioTracks } from '@/lib/studioTrackPersistence';
+import { hydrateStudioTracks, needsStudioWaveformRefresh, applyStudioWaveformRefresh } from '@/lib/studioTrackPersistence';
 import { hasStudioSaveRevisionChanged } from '@/lib/studioSaveRevision';
 
 const MAX_TRACKS = 999;
@@ -600,7 +600,7 @@ export default function Studio() {
     let cancelled = false;
     const waveformAbort = new AbortController();
     const recoverSavedWaveforms = async (savedTracks) => {
-      const missing = savedTracks.filter(track => track.audioUrl && !track.waveform?.length);
+      const missing = savedTracks.filter(needsStudioWaveformRefresh);
       if (!missing.length) return savedTracks;
       const sources = [...new Set(missing.map(track => track.audioUrl))];
       const recovered = new Map();
@@ -632,8 +632,7 @@ export default function Studio() {
         if (context && context.state !== 'closed') void context.close().catch(() => {});
       }
       return savedTracks.map(track => {
-        const result = !track.waveform?.length && recovered.get(track.audioUrl);
-        return result ? { ...track, ...result } : track;
+        return applyStudioWaveformRefresh(track, recovered.get(track.audioUrl));
       });
     };
     masterFxLoadedRef.current = false;

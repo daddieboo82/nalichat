@@ -6,8 +6,10 @@ describe('Studio mixer treats split clips as one lane', () => {
   it('passes one mixer strip per visible timeline lane, with clips for VU metering', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
     const mixer = source.slice(source.indexOf('<MixerPanel'), source.indexOf('</Suspense>', source.indexOf('<MixerPanel')));
-    expect(mixer).toContain('tracks={groupStudioClipLanes(tracks).map(lane => ({');
-    expect(mixer).toContain('...lane.primary, laneClips: lane.clips');
+    expect(mixer).toContain('tracks={mixerLanes}');
+    expect(source).toContain('const mixerLanes = useMemo(() => allStudioLanes.map(lane => ({');
+    expect(source).toContain('...lane.primary, laneClips: lane.clips');
+    expect(source).toContain('const allStudioLanes = useMemo(() => groupStudioClipLanes(tracks), [tracks])');
     const lanes = groupStudioClipLanes([
       { id: 1, startTime: 0 }, { id: 2, splitFrom: 1, startTime: 4 }, { id: 3, startTime: 0 },
     ]);
@@ -29,8 +31,10 @@ describe('Studio mixer treats split clips as one lane', () => {
   });
   it('meter follows the currently active split clip rather than root only', async () => {
     const source = await readFile('src/components/studio/MixerPanel.jsx', 'utf8');
-    expect(source).toContain('track?.laneClips?.length ? track.laneClips : [track]');
-    expect(source).toContain('const activeClip = clips.find(clip =>');
-    expect(source).toContain('activeClip.clipStart || 0');
+    expect(source).toContain('track.laneClips?.length ? track.laneClips : [track]');
+    expect(source).toContain('readStudioLanePeak(mixEngineRef?.current, clipsRef.current)');
+    expect(source).toContain('for (const clip of clips || [])');
+    expect(source).toContain('engine?.readTrackPeak?.(clip.id)');
+    expect(source).toContain('Math.max(peak ?? 0, value)');
   });
 });

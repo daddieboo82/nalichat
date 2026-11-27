@@ -39,8 +39,8 @@ describe('Studio cloud project split-clip round trip', () => {
 
   it('wires cloud restoration to the helper without altering legacy fallback', async () => {
     const source = await readFile('src/pages/Studio.jsx','utf8');
-    expect(source).toContain('const hydrated = hydrateStudioTracks(');
-    expect(source).toContain('savedState.tracks,');
+    expect(source).toContain('const hydrated = await recoverSavedWaveforms(hydrateStudioTracks(savedState.tracks))');
+    expect(source).toContain('const hydrated = await recoverSavedWaveforms(persistedTracks.map((track) => ({');
     expect(source).toContain('const persistedTracks = await listPersistedTracks(roomId)');
   });
 });

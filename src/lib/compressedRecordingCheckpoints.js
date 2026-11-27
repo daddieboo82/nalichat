@@ -59,18 +59,20 @@ export function startCompressedRecordingCheckpoints({
       countedChunks = 0;
       capturedBytes = 0;
     }
+    let nextBytes = capturedBytes;
     for (let index = countedChunks; index < chunks.length; index += 1) {
       const chunk = chunks[index];
       if (!(chunk instanceof Blob) || !Number.isFinite(chunk.size)) {
         reportError(new Error('Invalid audio capture chunk.'));
         return;
       }
-      capturedBytes += chunk.size;
-      if (capturedBytes > MAX_CHECKPOINT_BYTES) {
+      nextBytes += chunk.size;
+      if (nextBytes > MAX_CHECKPOINT_BYTES) {
         exceededLimit = true;
         return;
       }
     }
+    capturedBytes = nextBytes;
     countedChunks = chunks.length;
     if (capturedBytes <= lastBytes) return;
     // Snapshot only after bounding its size. No original audio chunks change.

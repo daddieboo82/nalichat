@@ -171,23 +171,37 @@ export function createMixEngine() {
     // Create taps only for channels actually displayed in the mixer.
     readTrackPeak(trackId) {
       const entry = entries.get(trackId);
-      if (!entry?.meterOutput || context?.state !== 'running' || !context.createAnalyser) return null;
+      if (!entry?.meterOutput || context?.state !== 'running' ||
+          !context.createAnalyser || !context.createChannelSplitter) return null;
       if (!entry.meter) {
-        let analyser;
+        const nodes = [];
         try {
-          analyser = context.createAnalyser();
-          if (!analyser.getFloatTimeDomainData) { disposeNode(analyser); return null; }
-          analyser.fftSize = context.sampleRate > 96000 ? 16384 : context.sampleRate > 48000 ? 8192 : 4096;
-          entry.meterOutput.connect(analyser);
-          entry.nodes.push(analyser);
-          entry.meter = {analyser, samples: new Float32Array(analyser.fftSize)};
-        } catch { if (analyser) disposeNode(analyser); return null; }
+          const splitter = context.createChannelSplitter(2);
+          nodes.push(splitter);
+          const analysers = [0, 1].map(channel => {
+            const analyser = context.createAnalyser();
+            nodes.push(analyser);
+            analyser.fftSize = context.sampleRate > 96000 ? 16384 : context.sampleRate > 48000 ? 8192 : 4096;
+            splitter.connect(analyser, channel);
+            return analyser;
+          });
+          if (!analysers.every(node => typeof node.getFloatTimeDomainData === 'function')) {
+            nodes.forEach(disposeNode);
+            return null;
+          }
+          const samples = new Float32Array(analysers[0].fftSize);
+          entry.meterOutput.connect(splitter);
+          entry.nodes.push(...nodes);
+          entry.meter = {analysers, samples};
+        } catch { nodes.forEach(disposeNode); return null; }
       }
-      const {analyser, samples} = entry.meter;
-      analyser.getFloatTimeDomainData(samples);
+      const {analysers, samples} = entry.meter;
       let peak = 0;
-      for (let i = 0; i < samples.length; i++) {
-        if (Number.isFinite(samples[i])) peak = Math.max(peak, Math.abs(samples[i]));
+      for (const analyser of analysers) {
+        analyser.getFloatTimeDomainData(samples);
+        for (let i = 0; i < samples.length; i++) {
+          if (Number.isFinite(samples[i])) peak = Math.max(peak, Math.abs(samples[i]));
+        }
       }
       return peak;
     },

@@ -300,6 +300,7 @@ export default function Studio() {
     return () => document.removeEventListener('visibilitychange', updateVisibility);
   }, []);
   const recordingOverdubRef = useRef({ hasBackingTrack: false, micDeviceId: null });
+  const audioRouteEpochRef = useRef(0);
   const microphoneStartupRef = useRef({ token: 0, pending: false });
   const studioMountedRef = useRef(true);
   const midiActiveNotesRef = useRef(new Map());
@@ -1636,16 +1637,20 @@ export default function Studio() {
       }
     };
 
+    const onAudioDeviceChange = () => {
+      audioRouteEpochRef.current += 1;
+      checkDevices();
+    };
     checkDevices();
     if (navigator.mediaDevices) {
-      navigator.mediaDevices.addEventListener('devicechange', checkDevices);
+      navigator.mediaDevices.addEventListener('devicechange', onAudioDeviceChange);
     }
     
     return () => {
       mounted = false;
       latestHardwareScan += 1;
       if (navigator.mediaDevices) {
-        navigator.mediaDevices.removeEventListener('devicechange', checkDevices);
+        navigator.mediaDevices.removeEventListener('devicechange', onAudioDeviceChange);
       }
       if (midiAccess) {
         midiAccess.onstatechange = null;
@@ -1705,6 +1710,7 @@ export default function Studio() {
       const stoppedChunks = audioChunksRef.current;
       const stoppedArmedIds = new Set(tracksRef.current.filter(t => t.armed).map(t => String(t.id)));
       const stoppedOverdub = { ...recordingOverdubRef.current };
+      const stoppedRouteUnchanged = stoppedOverdub.routeEpoch === audioRouteEpochRef.current;
       const stoppedStartTime = originalStartTime !== null ? originalStartTime :
         (recordingStartTime !== null ? recordingStartTime : currentTimeRef.current);
       const stoppedEndTime = currentTimeRef.current;
@@ -1839,9 +1845,9 @@ export default function Studio() {
             })),
             {
               audioUrl, waveform: realWaveform, captureQuality,
-              latencyCorrectionSeconds: safeNaliOverdubCompensation(readStudioLatencyProfile(), {
+              latencyCorrectionSeconds: stoppedRouteUnchanged ? safeNaliOverdubCompensation(stoppedOverdub.latencyProfile, {
                 ...stoppedOverdub, duration: recordedDuration || Math.max(1, stoppedEndTime - stoppedStartTime),
-              }),
+              }) : 0,
               startTime: stoppedStartTime,
               duration: recordedDuration || Math.max(1, stoppedEndTime - stoppedStartTime),
               nextId: nextTrackId(prev),
@@ -2098,6 +2104,8 @@ export default function Studio() {
         }
         mediaStreamRef.current = stream;
         recordingOverdubRef.current = {
+          routeEpoch: audioRouteEpochRef.current,
+          latencyProfile: readStudioLatencyProfile(),
           micDeviceId: stream.getAudioTracks?.()[0]?.getSettings?.().deviceId || null,
           hasBackingTrack: tracks.some(track => !isStudioArmedLane(track, tracks) && track.audioUrl &&
             !track.muted && (!tracks.some(t => t.solo) || track.solo) &&

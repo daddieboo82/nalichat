@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
  * @param {number} zoom - Current zoom level
  * @param {number} height - Height of the overlay area (optional)
  */
-export default function SelectionRegion({ selectionStart, selectionEnd, zoom, className }) {
+function SelectionRegion({ selectionStart, selectionEnd, zoom, className }) {
   if (selectionStart === null || selectionEnd === null || selectionStart >= selectionEnd) return null;
 
   const left = selectionStart * 20 * zoom;
@@ -40,3 +40,5 @@ export default function SelectionRegion({ selectionStart, selectionEnd, zoom, cl
     </div>
   );
 }
+
+export default React.memo(SelectionRegion);

@@ -18,7 +18,16 @@ const minimumDelay = 0.005;
 
 // Adapt VoxShift's two overlapping delay taps to native stereo Web Audio nodes.
 // The fade hides each tap's delay reset, preserving the clip's tempo.
-function connectPitchShifter(context, input, ratio, nodes) {
+export function voxPitchRatio(params) {
+  const preset = Object.hasOwn(VOX_SHIFT_PRESETS, params?.Preset) ? VOX_SHIFT_PRESETS[params.Preset] : VOX_SHIFT_PRESETS.natural;
+  return Math.max(60, Math.min(160, Number.isFinite(params?.Pitch) ? params.Pitch : preset.pitch)) / 100;
+}
+
+export function voxPitchRate(params, sampleRate) {
+  return (4096 / sampleRate) * Math.abs(1 - voxPitchRatio(params)) / delaySweep;
+}
+
+function connectPitchShifter(context, input, ratio, nodes, liveParams = null) {
   const rising = ratio < 1;
   let cache = modulationBuffers.get(context);
   if (!cache) {
@@ -42,11 +51,12 @@ function connectPitchShifter(context, input, ratio, nodes) {
   const start = context.currentTime;
   nodes.push(output);
 
-  for (const offset of [0, modulation.duration / 2]) {
+  for (const [index, offset] of [0, modulation.duration / 2].entries()) {
     const control = context.createBufferSource();
     control.buffer = modulation;
     control.loop = true;
     control.playbackRate.value = modulation.duration * Math.abs(1 - ratio) / delaySweep;
+    if (liveParams) liveParams['voxPitch' + index] = control.playbackRate;
     const split = context.createChannelSplitter(2);
     const delay = context.createDelay(minimumDelay + delaySweep + 0.01);
     const windowGain = context.createGain();
@@ -137,10 +147,9 @@ export function connectVoxShift(context, input, params, nodes, liveParams = null
   const preset = Object.hasOwn(VOX_SHIFT_PRESETS, presetId)
     ? VOX_SHIFT_PRESETS[presetId]
     : VOX_SHIFT_PRESETS.natural;
-  const pitch = Number.isFinite(params?.Pitch) ? params.Pitch : preset.pitch;
-  const ratio = Math.max(60, Math.min(160, pitch)) / 100;
+  const ratio = voxPitchRatio(params);
   const level = Number.isFinite(params?.Output) ? params.Output : 100;
-  let signal = ratio === 1 ? input : connectPitchShifter(context, input, ratio, nodes);
+  let signal = ratio === 1 ? input : connectPitchShifter(context, input, ratio, nodes, liveParams);
 
   if (presetId === 'polished' || presetId === 'warm') {
     signal = connectVocalPolish(context, signal, nodes, presetId === 'warm');

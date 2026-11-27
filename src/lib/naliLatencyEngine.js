@@ -8,6 +8,10 @@ export function makeLatencyProbe(sampleRate, samples = 2048) {
   if (!Number.isFinite(sampleRate) || sampleRate < 8000 || sampleRate > 192000) {
     throw new Error('Unsupported calibration sample rate.');
   }
+  // Keep the probe shorter than the quiet interval between search windows,
+  // including at low sample rates. Preserve the existing length at normal rates.
+  if (!Number.isSafeInteger(samples) || samples < 2) throw new Error('Invalid calibration probe length.');
+  samples = Math.min(samples, Math.floor(sampleRate * 0.18));
   const reference = new Float32Array(samples);
   // Band-limited exponential-ish sweep survives real phone speakers and mic
   // processing better than full-band pseudo-random noise. A smooth envelope

@@ -5,6 +5,7 @@ vi.mock('./audioProcessing', () => ({
   bufferToWaveform: vi.fn(() => [0.3, 0.6]),
 }));
 
+import { audioBufferToWav } from './audioProcessing';
 import { polishVocalLocally } from './localVocalPolish';
 
 const makeBuffer = (samples, sampleRate = 24000) => ({
@@ -36,6 +37,10 @@ class FakeOfflineAudioContext {
   createDynamicsCompressor() {
     return { connect: vi.fn(), threshold: {}, knee: {}, ratio: {}, attack: {}, release: {} };
   }
+  createBuffer(_channels, length, rate) {
+    const samples = new Float32Array(length);
+    return { ...makeBuffer(samples, rate), copyToChannel: data => samples.set(data) };
+  }
   async startRendering() { return output; }
 }
 
@@ -43,7 +48,7 @@ describe('VoxShift local vocal polish', () => {
   beforeEach(() => {
     vi.stubGlobal('window', { AudioContext: FakeAudioContext, OfflineAudioContext: FakeOfflineAudioContext });
     vi.stubGlobal('OfflineAudioContext', FakeOfflineAudioContext);
-    output = makeBuffer(new Float32Array(24000).fill(0.2));
+    output = makeBuffer(new Float32Array(24144).fill(0.2));
   });
   afterEach(() => vi.unstubAllGlobals());
 
@@ -55,17 +60,29 @@ describe('VoxShift local vocal polish', () => {
   });
 
   it('protects output peaks from clipping', async () => {
-    const samples = new Float32Array(24000).fill(1.2);
+    const samples = new Float32Array(24144).fill(1.2);
     output = makeBuffer(samples);
     await polishVocalLocally(new Blob(['voice']));
-    expect(Math.max(...samples)).toBeLessThanOrEqual(0.931);
+    expect(Math.max(...audioBufferToWav.mock.lastCall[0].getChannelData(0))).toBeLessThanOrEqual(0.931);
   });
 
   it('does not boost silence', async () => {
-    const samples = new Float32Array(24000);
+    const samples = new Float32Array(24144);
     output = makeBuffer(samples);
     await polishVocalLocally(new Blob(['voice']));
-    expect(samples.some(sample => sample !== 0)).toBe(false);
+    expect(audioBufferToWav.mock.lastCall[0].getChannelData(0).every(sample => sample === 0)).toBe(true);
+  });
+
+  it('aligns compressor output and preserves the final source sample', async () => {
+    const samples = new Float32Array(24144);
+    samples[144] = 0.2;
+    samples[24143] = -0.3;
+    output = makeBuffer(samples);
+    const result = await polishVocalLocally(new Blob(['voice']));
+    const rendered = audioBufferToWav.mock.lastCall[0].getChannelData(0);
+    expect(result.duration).toBe(1);
+    expect(rendered[0]).toBeGreaterThan(0);
+    expect(rendered.at(-1)).toBeLessThan(0);
   });
 
   it('honors cancellation', async () => {

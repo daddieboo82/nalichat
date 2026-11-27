@@ -25,7 +25,9 @@ export async function polishVocalLocally(sourceBlob, signal) {
   }
 
   const channels = Math.min(input.numberOfChannels, 2);
-  const context = new OfflineAudioContext(channels, input.length, input.sampleRate);
+  // Render the compressor's 6 ms lookahead tail before aligning the take.
+  const lookahead = Math.floor(input.sampleRate * 0.006);
+  const context = new OfflineAudioContext(channels, input.length + lookahead, input.sampleRate);
   const source = context.createBufferSource();
   source.buffer = input;
 
@@ -45,8 +47,12 @@ export async function polishVocalLocally(sourceBlob, signal) {
   highPass.connect(compressor);
   compressor.connect(context.destination);
   source.start(0);
-  const processed = await context.startRendering();
+  const rendered = await context.startRendering();
   signal?.throwIfAborted();
+  const processed = context.createBuffer(channels, input.length, input.sampleRate);
+  for (let channel = 0; channel < channels; channel++) {
+    processed.copyToChannel(rendered.getChannelData(channel).subarray(lookahead), channel);
+  }
 
   let peak = 0;
   let sum = 0;

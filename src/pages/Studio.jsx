@@ -33,6 +33,7 @@ import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
 const MixerPanel = lazy(() => import('@/components/studio/MixerPanel'));
 import KeyboardShortcutsDialog from '@/components/studio/KeyboardShortcutsDialog';
+import { studioTimelineZoomLimit } from '@/lib/studioTimelineZoom';
 import TrackWaveformSVG from '@/components/studio/TrackWaveformSVG';
 import StudioExtras from '@/components/studio/StudioExtras';
 import StudioWelcome from '@/components/studio/StudioWelcome';
@@ -207,7 +208,7 @@ export default function Studio() {
   const dataArrayRef = useRef(null);
   const liveWaveformRef = useRef([]);
   const recordingStartRealRef = useRef(null); // performance.now() at recording start for accurate sync
-  const [zoom, setZoom] = useState(1);
+  const [requestedZoom, setRequestedZoom] = useState(1);
   const [transportHorizon, setTransportHorizon] = useState(100);
   const transportHorizonRef = useRef(100);
   const playheadRef = useRef(null);
@@ -415,6 +416,20 @@ export default function Studio() {
   const { peers: livePeers, setActivity } = useStudioPresence(roomId || 'local_studio');
   
   const [tracks, setTracks] = useState([]);
+  const timelineSeconds = useMemo(() => tracks.reduce((end, t) =>
+    Math.max(end, (Number(t.startTime) || 0) + (Number(t.duration) || 0) + 15),
+    Math.max(100, transportHorizon)), [tracks, transportHorizon]);
+  const maxTimelineZoom = studioTimelineZoomLimit(timelineSeconds);
+  const zoom = Math.min(requestedZoom, maxTimelineZoom);
+  const setZoom = value => setRequestedZoom(previous => {
+    const current = Math.min(previous, maxTimelineZoom);
+    const next = typeof value === 'function' ? value(current) : value;
+    return Number.isFinite(next) ? Math.max(0.5, Math.min(maxTimelineZoom, next)) : current;
+  });
+  useEffect(() => {
+    setRequestedZoom(previous => Math.min(previous, maxTimelineZoom));
+  }, [maxTimelineZoom]);
+
   const timelineLanes = useMemo(() => visibleStudioClipLanes(tracks), [tracks]);
   const allStudioLanes = useMemo(() => groupStudioClipLanes(tracks), [tracks]);
   const mixerLanes = useMemo(() => allStudioLanes.map(lane => ({
@@ -4105,7 +4120,7 @@ export default function Studio() {
     }
   };
 
-  const timelineSeconds = Math.max(100, transportHorizon, ...tracks.map(t => (Number(t.startTime) || 0) + (Number(t.duration) || 0) + 15));
+
   const timelineWidth = timelineSeconds * 20 * zoom;
   const rulerBeatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
   const rulerBeatCount = Math.ceil(timelineSeconds * bpm / 60) + 1;
@@ -4411,7 +4426,7 @@ export default function Studio() {
         songKey={songKey} setSongKey={setSongKey}
         editMode={editMode} setEditMode={setEditMode} activeTool={activeTool} setActiveTool={setActiveTool}
         toggleTrackProperty={toggleTrackProperty} splitSelectedTracks={splitSelectedTracks} duplicateSelectedTracks={duplicateSelectedTracks}
-        deleteSelectedTracks={deleteSelectedTracks} zoom={zoom} setZoom={setZoom}
+        deleteSelectedTracks={deleteSelectedTracks} zoom={zoom} setZoom={setZoom} maxTimelineZoom={maxTimelineZoom}
         gridSize={gridSize} setGridSize={setGridSize}
       />
       </div>
@@ -4916,13 +4931,13 @@ export default function Studio() {
                             if (dragged && Math.abs(endTime - anchorTime) > 0.01) {
                               const start = Math.min(anchorTime, endTime);
                               const range = Math.abs(endTime - anchorTime);
-                              const nextZoom = Math.max(0.5, Math.min(5000, viewportWidth / (range * 20)));
+                              const nextZoom = Math.max(0.5, Math.min(maxTimelineZoom, viewportWidth / (range * 20)));
                               setZoom(nextZoom);
                               setTimeout(() => {
                                 if (workspaceRef.current) workspaceRef.current.scrollLeft = Math.max(0, start * 20 * nextZoom);
                               }, 0);
                             } else {
-                              const nextZoom = e.altKey ? Math.max(0.5, zoom / 2) : Math.min(5000, zoom * 2);
+                              const nextZoom = e.altKey ? Math.max(0.5, zoom / 2) : Math.min(maxTimelineZoom, zoom * 2);
                               setZoom(nextZoom);
                               setTimeout(() => {
                                 if (workspaceRef.current) workspaceRef.current.scrollLeft = Math.max(0, anchorTime * 20 * nextZoom - viewportWidth / 2);

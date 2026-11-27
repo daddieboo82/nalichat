@@ -5,7 +5,9 @@ describe('Studio recording finalization cleanup after error', () => {
   it('disarms only the failed recording targets without modifying existing clips', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
     const start = source.indexOf('console.error("Studio recording finalization failed"');
-    const end = source.indexOf('} finally {\n          // If finalization failed before ownership passed to a track', start);
+    const end = source.indexOf('} finally {', start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
     const block = source.slice(start,end);
     expect(block).toContain('if (historyEpochRef.current === stoppedSessionEpoch)');
     expect(block).toContain('studioRecoverMidiOnAudioFailure(prev, {');

@@ -17,7 +17,8 @@ describe('Studio recording finalization exclusion', () => {
     const end = source.indexOf('    } else {', source.indexOf('stoppedRecorder.stop();', start));
     const handler = source.slice(start,end);
     expect(handler).toContain('try {');
-    expect(handler).toContain('} finally {\n          // If finalization failed before ownership passed to a track');
+    expect(handler).toContain('} finally {');
+    expect(handler).toContain('// If finalization failed before ownership passed to a track');
     expect(handler).toContain('recordingFinalizeInFlightRef.current = false;');
     expect(handler).toContain('stoppedRecorder.stop();');
     expect(handler).toContain('catch (error) {\n        console.error("Studio MediaRecorder stop failed", error);');
@@ -26,10 +27,11 @@ describe('Studio recording finalization exclusion', () => {
 
   it('uses a dedicated chunk array in each recorder callback instead of mutable shared ref', async () => {
     const source = await readFile('src/pages/Studio.jsx','utf8');
-    const start = source.indexOf('const { recorder: mediaRecorder, lossless } = await createPreferredStudioRecorder(stream, { MediaRecorderType: globalThis.MediaRecorder })');
+    const start = source.indexOf('const { recorder: mediaRecorder, lossless } = await createPreferredStudioRecorder(stream, {');
     expect(start).toBeGreaterThan(-1);
     const end = source.indexOf('mediaRecorder.start(200)',start);
     const setup = source.slice(start,end);
+    expect(setup).toContain('MediaRecorderType: globalThis.MediaRecorder, createPcmSpool');
     expect(setup).toContain('const captureChunks = []');
     expect(setup).toContain('audioChunksRef.current = captureChunks');
     expect(setup).toContain('captureChunks.push(e.data)');

@@ -132,7 +132,7 @@ const vocalLayers = {
   octave: [{ ratio: 0.5, delay: 0, gain: 0.22 }],
 };
 
-export function connectVoxShift(context, input, params, nodes) {
+export function connectVoxShift(context, input, params, nodes, liveParams = null) {
   const presetId = params?.Preset;
   const preset = Object.hasOwn(VOX_SHIFT_PRESETS, presetId)
     ? VOX_SHIFT_PRESETS[presetId]
@@ -172,10 +172,11 @@ export function connectVoxShift(context, input, params, nodes) {
     signal = modulated;
   }
 
-  if (level === 100) return signal;
+  if (level === 100 && !liveParams) return signal;
   const output = context.createGain();
   output.gain.value = Math.max(0, Math.min(100, level)) / 100;
   signal.connect(output);
   nodes.push(output);
+  if (liveParams) liveParams.voxOutput = output.gain;
   return output;
 }

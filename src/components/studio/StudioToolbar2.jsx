@@ -13,7 +13,7 @@ import { sounds } from '@/hooks/use-sound';
 export default function StudioToolbar2({
   addTrack, addVcaTrack, addFolderTrack, selectedTrackIds, tracks, handleSeparateStems, isProcessing, handleGenerateMelody, undo, redo, historyIndex, historyLength,
   bpm, setBpm, bpmInput, setBpmInput, timeSignature, setTimeSignature, songKey, setSongKey, editMode, setEditMode,
-  activeTool, setActiveTool, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom,
+  activeTool, setActiveTool, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom, maxTimelineZoom = 5000,
   gridSize, setGridSize
 }) {
   const isMobile = useIsMobile();
@@ -200,8 +200,8 @@ export default function StudioToolbar2({
           </TooltipProvider>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-studio-raised rounded text-xs">−</Button>
-            <Slider value={[zoom]} min={0.5} max={5000} step={0.5} onValueChange={(v) => setZoom(v[0])} className="w-28" />
-            <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.min(5000, z * 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-studio-raised rounded text-xs">+</Button>
+            <Slider value={[zoom]} min={0.5} max={maxTimelineZoom} step={0.5} onValueChange={(v) => setZoom(v[0])} className="w-28" />
+            <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.min(maxTimelineZoom, z * 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-studio-raised rounded text-xs">+</Button>
           </div>
           <span className="w-12 text-right font-mono text-[10px] text-primary/80">{zoom >= 50 ? `${(1/(20*zoom)*1000).toFixed(1)}ms/px` : `${Math.round(zoom * 100)}%`}</span>
         </div>

@@ -3332,33 +3332,18 @@ export default function Studio() {
   };
 
   const decodeWaveform = async (file) => {
+    let audioCtx;
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-      const channelData = audioBuffer.getChannelData(0);
-      const numPoints = WAVEFORM_POINTS;
-      const blockSize = Math.max(1, Math.floor(channelData.length / numPoints));
-      const stride = Math.max(1, Math.floor(blockSize / 64));
-      const waveform = new Float32Array(numPoints);
-      let maxVal = 0;
-      for (let i = 0; i < numPoints; i++) {
-        const start = i * blockSize;
-        let sum = 0, samples = 0;
-        for (let j = 0; j < blockSize; j += stride) {
-          sum += Math.abs(channelData[start + j] || 0);
-          samples++;
-        }
-        const val = sum / (samples || 1);
-        waveform[i] = val;
-        if (val > maxVal) maxVal = val;
-      }
-      audioCtx.close();
-      const normalized = maxVal > 0 ? Array.from(waveform).map(v => v / maxVal) : Array.from(waveform).map(() => 0.05);
-      return { waveform: normalized, duration: audioBuffer.duration };
+      if (!Number.isFinite(audioBuffer.duration) || audioBuffer.duration <= 0) throw new Error("Invalid audio duration");
+      return { waveform: studioRecordedWaveform(audioBuffer, WAVEFORM_POINTS), duration: audioBuffer.duration };
     } catch (err) {
       console.error("Failed to decode audio file", err);
-      return { waveform: generateWaveform(WAVEFORM_POINTS), duration: 40 };
+      return null;
+    } finally {
+      if (audioCtx && audioCtx.state !== 'closed') await audioCtx.close().catch(() => {});
     }
   };
 
@@ -3382,20 +3367,29 @@ export default function Studio() {
       let nextId = nextTrackId(tracks);
       const imported = [];
       for (const file of filesToImport) {
+        const decoded = await decodeWaveform(file);
+        if (!decoded) {
+          toast.error(`${file.name}: Audio could not be decoded. Try converting it to WAV or another supported format.`);
+          continue;
+        }
+        const { waveform, duration } = decoded;
         const fileUrl = URL.createObjectURL(file);
-        const { waveform, duration } = await decodeWaveform(file);
         imported.push({
           id: nextId++, name: file.name, color: "bg-green-500", volume: 75, pan: 50,
           muted: false, solo: false, armed: false, waveform, startTime: 0,
-          duration: Math.max(1, duration), audioUrl: fileUrl, locked: false, grouped: false,
+          duration, audioUrl: fileUrl, locked: false, grouped: false,
           showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0
         });
-        trackProductEvent("studio_audio_import", { file_type: file.type || "unknown", duration_seconds: Math.round(Math.max(1, duration)) });
+        trackProductEvent("studio_audio_import", { file_type: file.type || "unknown", duration_seconds: Math.round(duration) });
+      }
+      if (!imported.length) {
+        e.target.value = null;
+        return;
       }
       setTracksWithHistory([...tracks, ...imported]);
       setSelectedTrackIds(imported.map(track => track.id));
       toast.success(`Imported ${imported.length} track${imported.length === 1 ? '' : 's'}`);
-      const file = filesToImport[0];
+      const file = filesToImport.find(candidate => candidate.name === imported[0].name) || filesToImport[0];
       try {
         const key = `nali_activation_first_upload:${user?.id || "unknown"}`;
         if (localStorage.getItem(key) !== "1") {

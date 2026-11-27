@@ -164,17 +164,24 @@ export async function createLosslessStudioRecorder(stream, {
         void finish(new Error('Invalid PCM samples'));
         return;
       }
-      byteLength += chunk.byteLength;
-      if (byteLength > MAX_PCM_BYTES) {
+      const remaining = MAX_PCM_BYTES - byteLength;
+      if (chunk.byteLength > remaining) {
+        // Retain every complete sample that fits before finalizing the take.
+        if (remaining > 0) {
+          chunks.push(chunk.slice(0, remaining));
+          byteLength += remaining;
+        }
         void finish(new Error('Recording length exceeds device memory limit'));
         return;
       }
       chunks.push(chunk);
+      byteLength += chunk.byteLength;
     } else if (data?.type === 'flushed' && pending) {
       void finish();
     }
   };
   node.port.onmessageerror = () => { void finish(new Error('PCM capture stopped unexpectedly')); };
+  node.onprocessorerror = () => { void finish(new Error('Audio processor stopped unexpectedly')); };
   return recorder;
 }
 

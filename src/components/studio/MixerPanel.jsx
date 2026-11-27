@@ -6,68 +6,49 @@ import { Square, Settings2, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { countActiveEffects, getTrackEffects } from '@/lib/audioProcessing';
 
-/**
- * Pro Tools-style mixer panel with REAL metering.
- * Reads actual amplitude from each track's waveform data at the current
- * playback position — gives content-accurate VU levels, not random noise.
- */
-function WaveformVuMeter({ track, isPlaying, currentTimeRef, isMaster = false, masterVolume, silenced = false }) {
-  const [level, setLevel] = useState(0);
-  const peakRef = useRef(0);
-  const rafRef = useRef(null);
+// A lane may contain multiple split clips, each with its own live strip.
+export function readStudioLanePeak(engine, clips) {
+  let peak = null;
+  for (const clip of clips || []) {
+    const value = engine?.readTrackPeak?.(clip.id);
+    if (Number.isFinite(value) && value >= 0) peak = Math.max(peak ?? 0, value);
+  }
+  return peak;
+}
 
+function ChannelPeakMeter({ track, isPlaying, mixEngineRef }) {
+  const [level, setLevel] = useState(null);
+  const [held, setHeld] = useState(0);
+  const [clipped, setClipped] = useState(false);
+  const clipsRef = useRef(track.laneClips?.length ? track.laneClips : [track]);
+  clipsRef.current = track.laneClips?.length ? track.laneClips : [track];
   useEffect(() => {
+    if (!isPlaying) { setLevel(null); return; }
     const tick = () => {
-      if (isPlaying && !silenced && !track?.muted) {
-        const t = currentTimeRef?.current || 0;
-        // A mixer strip represents the entire lane; its VU meter must follow
-        // whichever split clip is currently active, not only the root clip.
-        const clips = track?.laneClips?.length ? track.laneClips : [track];
-        const activeClip = clips.find(clip =>
-          clip.waveform?.length > 0 &&
-          t >= (clip.startTime ?? 0) &&
-          t < (clip.startTime ?? 0) + (clip.duration ?? 0));
-        if (activeClip) {
-          const posInTrack = t - (activeClip.startTime ?? 0);
-          const fullDuration = activeClip.fullDuration || activeClip.duration || 40;
-          const offset = activeClip.clipStart || 0;
-          const waveformIdx = Math.max(0, Math.min(activeClip.waveform.length - 1,
-            Math.floor(((offset + posInTrack) / fullDuration) * activeClip.waveform.length)));
-          const rawLevel = activeClip.waveform[waveformIdx] || 0;
-          const volScale = isMaster ? (masterVolume / 100) : (track.volume / 100) * (masterVolume / 100);
-          const scaled = Math.min(1, rawLevel * volScale * 1.5);
-          setLevel(scaled);
-          if (scaled > peakRef.current) peakRef.current = scaled;
-          else peakRef.current = Math.max(0, peakRef.current - 0.008);
-        } else {
-          setLevel(0);
-          peakRef.current = Math.max(0, peakRef.current - 0.01);
-        }
-      } else {
-        setLevel(0);
-        peakRef.current = Math.max(0, peakRef.current - 0.01);
+      const peak = readStudioLanePeak(mixEngineRef?.current, clipsRef.current);
+      setLevel(peak);
+      if (peak !== null) {
+        setHeld(previous => Math.max(previous, peak));
+        if (peak >= 1) setClipped(true);
       }
-      rafRef.current = requestAnimationFrame(tick);
     };
     tick();
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [isPlaying, track, masterVolume, isMaster, currentTimeRef, silenced]);
-
-  const pct = Math.round(level * 100);
-  const peakPct = Math.round(peakRef.current * 100);
-
+    const timer = setInterval(tick, 50);
+    return () => clearInterval(timer);
+  }, [isPlaying, mixEngineRef, track.id]);
+  const pct = peak => peak > 0 ? Math.max(0, Math.min(100, (20 * Math.log10(peak) + 60) / 60 * 100)) : 0;
   return (
-    <div className="w-2 h-full bg-studio-bg rounded-full overflow-hidden flex flex-col justify-end border border-foreground/10 shadow-inner relative">
-      <div
-        className={cn('w-full transition-all duration-75', pct > 85 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : pct > 60 ? 'bg-yellow-400' : 'bg-green-500')}
-        style={{ height: `${pct}%` }}
-      />
-      {peakPct > 5 && (
-        <div
-          className="absolute left-0 right-0 h-0.5 bg-foreground/60 pointer-events-none"
-          style={{ bottom: `${peakPct}%` }}
-        />
-      )}
+    <div className="flex flex-col items-center h-full gap-1" aria-label={track.name + " channel peak meter"}>
+      <button type="button" onClick={() => { setClipped(false); setHeld(0); }}
+        title="Reset sampled channel peak and clipping indicator"
+        className={cn("text-[8px] font-bold rounded px-1", clipped ? "bg-red-600 text-white" : "text-muted-foreground")}>
+        {clipped ? "CLIP" : "PK"}
+      </button>
+      <div className="w-2 flex-1 min-h-0 bg-studio-bg rounded overflow-hidden flex flex-col justify-end relative">
+        <div className={cn("w-full", level >= 1 ? "bg-red-500" : level >= 0.501187 ? "bg-yellow-400" : "bg-green-500")} style={{height: pct(level) + "%"}} />
+        {held > 0 && <div className="absolute left-0 right-0 h-0.5 bg-foreground/70 pointer-events-none" style={{bottom: Math.min(99, pct(held)) + "%"}} />}
+      </div>
+      <span className="text-[8px] font-mono">{level === null ? "—" : level > 0 ? (20 * Math.log10(level)).toFixed(1) : "−∞"}</span>
     </div>
   );
 }
@@ -217,7 +198,7 @@ export default function MixerPanel({
                         className="h-full"
                       />
                     </div>
-                  <WaveformVuMeter track={track} isPlaying={isPlaying} currentTimeRef={currentTimeRef} masterVolume={masterVolume} silenced={soloActive && !track.solo} />
+                  <ChannelPeakMeter track={track} isPlaying={isPlaying} mixEngineRef={mixEngineRef} />
                 </div>
 
                 <div className="text-[10px] font-mono text-center font-semibold mb-2">{track.volume === 0 ? '-∞' : (20 * Math.log10(track.volume / 100)).toFixed(1)} dB</div>

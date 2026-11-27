@@ -29,6 +29,10 @@ export function audioBufferToWav(buffer) {
   const bytesPerSample = 2;
   const blockAlign = numChannels * bytesPerSample;
   const dataSize = numFrames * blockAlign;
+  if (!Number.isSafeInteger(dataSize) || dataSize < 0 || dataSize > 0xffffffff - 36) {
+    throw new Error('WAV export exceeds the RIFF file size limit.');
+  }
+  const channels = Array.from({length:numChannels}, (_, ch) => buffer.getChannelData(ch));
   const ab = new ArrayBuffer(44 + dataSize);
   const view = new DataView(ab);
 
@@ -53,7 +57,7 @@ export function audioBufferToWav(buffer) {
   let offset = 44;
   for (let i = 0; i < numFrames; i++) {
     for (let ch = 0; ch < numChannels; ch++) {
-      let sample = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+      let sample = Math.max(-1, Math.min(1, channels[ch][i]));
       view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
       offset += 2;
     }

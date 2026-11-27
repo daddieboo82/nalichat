@@ -55,7 +55,13 @@ export function estimateStudioRoundTrip({
   captured, reference, pulseFrames, sampleRate, maxDelayMs = 350,
 } = {}) {
   if (!(captured instanceof Float32Array) || !(reference instanceof Float32Array) ||
-      !Array.isArray(pulseFrames) || pulseFrames.length < 3 || !Number.isFinite(sampleRate)) {
+      !Array.isArray(pulseFrames) || pulseFrames.length < 3 || pulseFrames.length > 16 ||
+      !Number.isFinite(sampleRate) || sampleRate < 8000 || sampleRate > 192000 ||
+      !Number.isFinite(maxDelayMs) || maxDelayMs < 4 || maxDelayMs > 350 ||
+      reference.length < 2 || reference.length > sampleRate ||
+      !pulseFrames.every((frame,i) => Number.isSafeInteger(frame) && frame >= 0 &&
+        frame + reference.length <= captured.length &&
+        (i === 0 || frame - pulseFrames[i-1] > reference.length + Math.round(sampleRate * maxDelayMs / 1000)))) {
     return { valid: false, reason: 'Calibration audio is unavailable.' };
   }
   const candidates = pulseFrames.map(frame =>

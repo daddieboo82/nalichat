@@ -65,6 +65,23 @@ describe('Studio PCM callback isolation during shutdown', () => {
     }
   });
 
+  it('finalizes buffered audio if the worklet rejects the flush command synchronously', async () => {
+    const { recorder, node } = await makeRecorder();
+    const events = [];
+    let recovered;
+    recorder.ondataavailable = event => { recovered = event.data; events.push('data'); };
+    recorder.onerror = ({ error }) => { expect(error.message).toBe('MessagePort closed'); events.push('error'); };
+    recorder.onstop = () => events.push('stop');
+    node.port.postMessage = () => { throw new Error('MessagePort closed'); };
+    expect(() => recorder.stop()).not.toThrow();
+    await vi.waitFor(() => expect(events).toEqual(['data', 'error', 'stop']));
+    const bytes = new DataView(await recovered.arrayBuffer());
+    expect(bytes.getUint32(40, true)).toBe(6);
+    expect(recorder.state).toBe('inactive');
+    node.port.onmessageerror();
+    expect(events).toEqual(['data', 'error', 'stop']);
+  });
+
   it('keeps a normal successful WAV completion even if its data callback fails', async () => {
     const { recorder, node } = await makeRecorder();
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});

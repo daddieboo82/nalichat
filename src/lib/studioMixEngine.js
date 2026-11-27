@@ -191,10 +191,19 @@ export function createMixEngine() {
 
     /** Apply a whole automation frame in O(n), avoiding per-track rescans. */
     syncAutomationFrame(tracks = [], time = 0) {
-      const automatedTracks = (tracks || []).map(track => automatedTrackState(track, time));
-      const hasSolo = automatedTracks.some(track => track.solo);
+      const automatedTracks = (tracks || []).map(track => {
+        // Static channels need no automation projection on each frame.
+        // Keep the original object so insert configuration identity is stable.
+        if (!track || ![track.automationPoints, track.panAutomationPoints,
+          track.send1AutomationPoints, track.send2AutomationPoints,
+          track.send3AutomationPoints, track.muteAutomationPoints].some(points => points?.length)) {
+          return track;
+        }
+        return automatedTrackState(track, time);
+      });
+      const hasSolo = automatedTracks.some(track => track?.solo);
       automatedTracks.forEach(track => {
-        if (!entries.has(track.id)) return;
+        if (!track || !entries.has(track.id)) return;
         const audible = !track.muted && (!hasSolo || !!track.solo);
         this.syncTrack(track.id, track, { gain: audible ? trackGainValue(track) : 0 });
       });

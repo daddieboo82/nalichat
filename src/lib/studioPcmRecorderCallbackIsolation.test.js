@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createLosslessStudioRecorder } from './studioPcmRecorder';
 
-async function makeRecorder() {
+async function makeRecorder({ close = () => Promise.resolve() } = {}) {
   let node;
   class Context {
     constructor() {
@@ -12,7 +12,7 @@ async function makeRecorder() {
     createMediaStreamSource() { return { connect() {}, disconnect() {} }; }
     createGain() { return { gain: {}, connect() {}, disconnect() {} }; }
     resume() { return Promise.resolve(); }
-    close() { return Promise.resolve(); }
+    close() { return close(); }
   }
   class WorkletNode {
     constructor() {
@@ -31,6 +31,32 @@ async function makeRecorder() {
 }
 
 describe('Studio PCM callback isolation during shutdown', () => {
+  it('delivers the captured WAV and Stop even when AudioContext.close never settles', async () => {
+    const close = vi.fn(() => new Promise(() => {}));
+    const { recorder, node } = await makeRecorder({ close });
+    const events = [];
+    let recovered;
+    recorder.ondataavailable = ({ data }) => { recovered = data; events.push('data'); };
+    recorder.onstop = () => events.push('stop');
+    recorder.stop();
+    node.port.onmessage({ data: { type: 'flushed' } });
+    await vi.waitFor(() => expect(events).toEqual(['data', 'stop']));
+    expect(recovered.type).toBe('audio/wav');
+    expect(close).toHaveBeenCalledOnce();
+    expect(recorder.state).toBe('inactive');
+  });
+
+  it('delivers recording completion when AudioContext.close throws synchronously', async () => {
+    const close = vi.fn(() => { throw new Error('Device lost'); });
+    const { recorder, node } = await makeRecorder({ close });
+    const stopped = vi.fn();
+    recorder.onstop = stopped;
+    recorder.stop();
+    node.port.onmessage({ data: { type: 'flushed' } });
+    await vi.waitFor(() => expect(stopped).toHaveBeenCalledOnce());
+    expect(close).toHaveBeenCalledOnce();
+  });
+
   it('delivers stop even when partial audio and error callbacks both throw', async () => {
     const { recorder, node } = await makeRecorder();
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});

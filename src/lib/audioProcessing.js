@@ -1,5 +1,6 @@
 // Real client-side audio processing helpers (Web Audio API).
 import { connectVoxShift } from './voxShift.js';
+import { studioRecordedWaveform } from './studioRecordedWaveform.js';
 import { studioClipAudioRange } from './studioClipAudioRange.js';
 // These operate on actual audio data — no simulation.
 
@@ -75,25 +76,9 @@ export function audioBufferToWav(buffer) {
   return new Blob(parts, { type: 'audio/wav' });
 }
 
-// Build a peak waveform array (0..1) from an AudioBuffer
+// Use the same measured, multichannel peaks as recorded and imported clips.
 export function bufferToWaveform(buffer, numPoints = 2000) {
-  const data = buffer.getChannelData(0);
-  const blockSize = Math.max(1, Math.floor(data.length / numPoints));
-  const wf = new Array(numPoints);
-  let maxVal = 0;
-  for (let i = 0; i < numPoints; i++) {
-    const start = i * blockSize;
-    let sum = 0, n = 0;
-    for (let j = 0; j < blockSize; j += Math.max(1, Math.floor(blockSize / 64))) {
-      sum += Math.abs(data[start + j] || 0);
-      n++;
-    }
-
-    const v = sum / (n || 1);
-    wf[i] = v;
-    if (v > maxVal) maxVal = v;
-  }
-  return maxVal > 0 ? wf.map(v => v / maxVal) : wf.map(() => 0.05);
+  return studioRecordedWaveform(buffer, numPoints);
 }
 
 /* ------------------------------------------------------------------ *

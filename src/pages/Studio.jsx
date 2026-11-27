@@ -319,6 +319,7 @@ export default function Studio() {
   // A newly created project already has this tab's working tracks. Skip only
   // its first route-triggered hydration so edits made during upload survive.
   const newlyCreatedProjectHandoffRef = useRef(null);
+  const pendingStudioProjectRef = useRef(null);
   const audioElementsRef = useRef({});
   const getTrackAudioRef = useRef(null);
   const playbackStartingRef = useRef(new Map());
@@ -3221,6 +3222,7 @@ export default function Studio() {
     }
 
     const saveRevision = { tracks, projectName, bpm, songKey, timeSignature, masterFx, roomId, userId: user?.id };
+    const saveSessionEpoch = historyEpochRef.current;
     studioSaveInFlightRef.current = true;
     const toastId = toast.loading("Saving Studio project...");
     try {
@@ -3305,6 +3307,11 @@ export default function Studio() {
       let localPersistenceFailed = false;
       let targetProjectId = roomId;
       let createdNewProject = false;
+      const pendingProject = pendingStudioProjectRef.current;
+      if (!targetProjectId && pendingProject?.owner === user?.id && pendingProject?.epoch === saveSessionEpoch) {
+        targetProjectId = pendingProject.id;
+        createdNewProject = true;
+      }
       if (!targetProjectId) {
         if (!user?.id) throw new Error("Sign in to save this Studio session to your session library.");
         const requestedTitle = projectName.trim() || "Untitled Project";
@@ -3324,6 +3331,7 @@ export default function Studio() {
         ) throw new Error("Studio session project was not created.");
         targetProjectId = project.id;
         createdNewProject = true;
+        pendingStudioProjectRef.current = { id: project.id, owner: user.id, epoch: saveSessionEpoch };
       }
 
       if (targetProjectId) {
@@ -3380,6 +3388,7 @@ export default function Studio() {
       }
 
       if (createdNewProject && targetProjectId) {
+        pendingStudioProjectRef.current = null;
         newlyCreatedProjectHandoffRef.current = targetProjectId;
         const nextParams = new URLSearchParams(searchParams);
         nextParams.set("room", targetProjectId);

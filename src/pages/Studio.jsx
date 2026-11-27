@@ -1032,7 +1032,9 @@ export default function Studio() {
       // When the tab resumes, use actual media progress if a current clip
       // demonstrably continued playing. Otherwise retain the safe RAF cap.
       const mediaAlignedTime = studioPlaybackTimeAfterStall({
-        expectedTime: currentTimeRef.current + delta,
+        expectedTime: isRecording && recordingStartTime !== null && recordingStartRealRef.current !== null
+          ? Math.max(currentTimeRef.current, recordingStartTime + Math.max(0, (time - recordingStartRealRef.current) / 1000))
+          : currentTimeRef.current + delta,
         frameGapSeconds,
         tracks: tracksRef.current,
         elements: audioElementsRef.current,

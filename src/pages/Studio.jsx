@@ -93,7 +93,7 @@ import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { compactStudioWaveform } from '@/lib/studioTrackStripWaveform';
 import { studioRecordedWaveform, studioWaveformRegion } from '@/lib/studioRecordedWaveform';
 import { createStudioWaveformCache } from '@/lib/studioWaveformCache';
-import { analyzeStudioPcmWav, analyzeStudioRemotePcmRegion } from '@/lib/studioPcmWaveform';
+import { analyzeStudioPcmWav, analyzeStudioRemotePcmRegion, analyzeStudioLocalPcmRegion } from '@/lib/studioPcmWaveform';
 import { appendStudioLiveWaveform, drawStudioLiveWaveform } from '@/lib/studioLiveWaveform';
 import { analyzeStudioCaptureQuality } from '@/lib/studioCaptureQuality';
 import { openStudioMicrophone, inspectSharedStudioCaptureSettings, studioMicrophoneErrorMessage } from '@/lib/sharedStudioCapture';
@@ -479,14 +479,15 @@ export default function Studio() {
       const points = Math.min(8192, Math.ceil(visibleWidth * 2));
       if (end <= start || points <= (end - start) / detailSourceDuration * detailPeakCount * 2) return;
       let result = null;
-      // HTTP sources can support bounded byte-range PCM reads.
+      // Local Blob and HTTP sources can support bounded byte-range PCM reads.
       // Unsupported layouts, missing range validators or network errors fall back.
-      if (typeof detailUrl === 'string' && /^https?:/i.test(detailUrl)) {
+      if (typeof detailUrl === 'string' && /^(https?:|blob:)/i.test(detailUrl)) {
         const controller = new AbortController();
         rangeController = controller;
         const deadline = setTimeout(() => controller.abort(), 4000);
         try {
-          result = await analyzeStudioRemotePcmRegion(detailUrl, start, end, points, {signal: controller.signal});
+          const analyzeRegion = detailUrl.startsWith('blob:') ? analyzeStudioLocalPcmRegion : analyzeStudioRemotePcmRegion;
+          result = await analyzeRegion(detailUrl, start, end, points, {signal: controller.signal});
         } finally {
           clearTimeout(deadline);
           if (rangeController === controller) rangeController = null;

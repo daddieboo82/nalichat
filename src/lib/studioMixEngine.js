@@ -169,6 +169,20 @@ export function createMixEngine() {
     },
 
     // Create taps only for channels actually displayed in the mixer.
+    releaseTrackMeters() {
+      entries.forEach(entry => {
+        const meter = entry.meter;
+        if (!meter) return;
+        // Disconnect only the monitoring branch, never the audible output.
+        try { entry.meterOutput.disconnect(meter.splitter); }
+        catch { return; } // Keep ownership for normal graph teardown.
+        const nodes = [meter.splitter, ...meter.analysers];
+        nodes.forEach(disposeNode);
+        entry.nodes = entry.nodes.filter(node => !nodes.includes(node));
+        entry.meter = null;
+      });
+    },
+
     readTrackPeak(trackId) {
       const entry = entries.get(trackId);
       if (!entry?.meterOutput || context?.state !== 'running' ||
@@ -192,7 +206,7 @@ export function createMixEngine() {
           const samples = new Float32Array(analysers[0].fftSize);
           entry.meterOutput.connect(splitter);
           entry.nodes.push(...nodes);
-          entry.meter = {analysers, samples};
+          entry.meter = {splitter, analysers, samples};
         } catch { nodes.forEach(disposeNode); return null; }
       }
       const {analysers, samples} = entry.meter;

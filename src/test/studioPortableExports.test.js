@@ -24,7 +24,7 @@ describe("NaliStudio portable exports", () => {
     const studio = await source();
     expect(studio).toContain("if (!autosaveStorageKey || roomId || !tracks");
     expect(studio).toContain("}, [tracks, autosaveStorageKey, roomId]);");
-    expect(studio).toContain("if (autosaveStorageKey && !roomId && !editsDuringSave)");
+    expect(studio).toContain("if (autosaveStorageKey && !roomId && !saveBecameStale)");
   });
 
   it("does not advertise expired object-URL autosaves as recoverable", async () => {
@@ -95,7 +95,7 @@ describe("NaliStudio portable exports", () => {
     const end = studio.indexOf("const handleImportClick =", start);
     const save = studio.slice(start, end);
     expect(save).toContain("const editsDuringSave = tracksRef.current !== tracks");
-    expect(save).toContain("if (autosaveStorageKey && !roomId && !editsDuringSave)");
+    expect(save).toContain("if (autosaveStorageKey && !roomId && !saveBecameStale)");
     expect(save).toContain("Newer edits are not yet saved to My Sessions; save again before leaving or continuing on PC.");
     expect(save.indexOf("Project save was not confirmed."))
       .toBeLessThan(save.indexOf("const editsDuringSave ="));
@@ -106,7 +106,7 @@ describe("NaliStudio portable exports", () => {
     const start = studio.indexOf("const handleSave = async () => {");
     const end = studio.indexOf("const handleImportClick =", start);
     const save = studio.slice(start, end);
-    expect(save).toContain("if (autosaveStorageKey && !roomId && !editsDuringSave)");
+    expect(save).toContain("if (autosaveStorageKey && !roomId && !saveBecameStale)");
     expect(save).toContain("if (createdNewProject || portableTracks.length === 0)");
     expect(save).toContain("localStorage.removeItem(autosaveStorageKey)");
     expect(save.indexOf("Project save was not confirmed."))

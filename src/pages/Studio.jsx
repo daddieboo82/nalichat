@@ -2148,8 +2148,10 @@ export default function Studio() {
         // initialization failed. Release every resource acquired for THIS
         // startup without touching a newer capture.
         if (startupRecorder) {
-          startupRecorder.dispose?.();
+          startupRecorder.onstop = null;
+          startupRecorder.onerror = null;
           startupRecorder.ondataavailable = null;
+          startupRecorder.dispose?.();
           if (startupRecorder.state !== 'inactive') {
             try { startupRecorder.stop(); } catch { /* invalid recorder state */ }
           }

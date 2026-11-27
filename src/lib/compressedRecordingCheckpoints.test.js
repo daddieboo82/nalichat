@@ -43,6 +43,38 @@ describe('mobile compressed recorder crash recovery', () => {
     expect(save).not.toHaveBeenCalled();
     ctl.stop();
   });
+  it('never blocks final backup after a checkpoint write and warning callback both fail', async () => {
+    let tick;
+    const originalError = new Error('Storage rejected partial recording');
+    const onError = vi.fn(() => { throw new Error('warning handler failed'); });
+    const ctl = startCompressedRecordingCheckpoints({
+      recorder: { state: 'recording', mimeType: 'audio/webm' }, chunks,
+      ownerId: 'owner-123456', scope: 'draft', id: 'checkpoint-safe-wait-001',
+      validate: async parts => ({ audio: new Blob(parts, { type: 'audio/webm' }), duration: 2.5 }),
+      save: async () => { throw originalError; }, onError,
+      schedule: fn => { tick = fn; return 35; }, unschedule: () => {},
+    });
+    tick(); ctl.stop();
+    await expect(ctl.wait()).resolves.toBeUndefined();
+    expect(onError).toHaveBeenCalledWith(originalError);
+  });
+  it('does not send a stale saved notification after recording stopped', async () => {
+    let tick, finishWrite;
+    const onSaved = vi.fn();
+    const ctl = startCompressedRecordingCheckpoints({
+      recorder: { state: 'recording', mimeType: 'audio/webm' }, chunks,
+      ownerId: 'owner-123456', scope: 'draft', id: 'checkpoint-stop-001',
+      validate: async parts => ({ audio: new Blob(parts, { type: 'audio/webm' }), duration: 2.5 }),
+      save: () => new Promise(resolve => { finishWrite = resolve; }), onSaved,
+      schedule: fn => { tick = fn; return 36; }, unschedule: () => {},
+    });
+    tick();
+    await vi.waitFor(() => expect(finishWrite).toBeTypeOf('function'));
+    ctl.stop();
+    finishWrite();
+    await ctl.wait();
+    expect(onSaved).not.toHaveBeenCalled();
+  });
   it('writes validated media to one replaceable, private checkpoint',async()=>{
     let scheduled;const save=vi.fn(async()=>{});
     const recorder={state:'recording',mimeType:'audio/webm'};

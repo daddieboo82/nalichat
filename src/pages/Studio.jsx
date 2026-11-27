@@ -2038,7 +2038,6 @@ export default function Studio() {
         midiRecordingRef.current = true;
         setIsRecording(true);
         setRecordingStartTime(currentTimeRef.current);
-        recordingStartRealRef.current = performance.now();
         setActivity('Recording MIDI 🎹');
         toast.success('MIDI recording started');
         sounds.recStart();
@@ -2071,18 +2070,6 @@ export default function Studio() {
         const micSettings = inspectSharedStudioCaptureSettings(stream.getAudioTracks?.()[0]?.getSettings?.());
         if (micSettings.warning) toast.warning(micSettings.warning);
 
-        // Overdub: play back existing (non-armed) tracks while recording
-        tracks.forEach(track => {
-          const position = studioPlaybackPosition(track, currentTimeRef.current);
-          if (!isStudioArmedLane(track, tracks) && track.audioUrl && !track.muted &&
-              (!tracks.some(t => t.solo) || track.solo) && position.active) {
-            const audio = getTrackAudio(track);
-            if (!audio) return;
-            audio.currentTime = position.sourceTime;
-            audio.play().catch(e => console.error("Overdub playback error:", e));
-          }
-        });
-        
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
         startupContext = audioCtx;
         audioContextRef.current = audioCtx;
@@ -2125,14 +2112,6 @@ export default function Studio() {
           stream.getTracks().forEach(track => track.stop());
           return;
         }
-        // Only compensate a take against backing audio that actually started.
-        // An available but blocked/paused backing clip is not an overdub.
-        recordingOverdubRef.current.hasBackingTrack = recordingOverdubRef.current.hasBackingTrack &&
-          tracks.some(track => {
-            if (isStudioArmedLane(track, tracks) || !track.audioUrl || track.muted) return false;
-            const player = getTrackAudio(track);
-            return Boolean(player && player.paused === false);
-          });
         if (lossless) toast.info('Recording lossless WAV on this device.');
         startupRecorder = mediaRecorder;
         mediaRecorderRef.current = mediaRecorder;
@@ -2167,7 +2146,27 @@ export default function Studio() {
           setIsRecording(false);
           stopRecordingProcess(false, true, captureStartTime);
         };
-        mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
+        // Do not advance the backing track during asynchronous recorder setup.
+        // Start the transport only after the microphone recorder is ready.
+        recordingStartRealRef.current = performance.now();
+        mediaRecorder.start(200);
+        recordingOverdubRef.current.hasBackingTrack = false;
+        tracks.forEach(track => {
+          const position = studioPlaybackPosition(track, captureStartTime);
+          if (isStudioArmedLane(track, tracks) || !track.audioUrl || track.muted ||
+              (tracks.some(t => t.solo) && !track.solo) || !position.active) return;
+          try {
+            const audio = getTrackAudio(track);
+            if (!audio) return;
+            audio.currentTime = position.sourceTime;
+            const playback = audio.play();
+            Promise.resolve(playback).then(() => {
+              if (mediaRecorderRef.current === mediaRecorder && mediaRecorder.state === 'recording' && !audio.paused) {
+                recordingOverdubRef.current.hasBackingTrack = true;
+              }
+            }).catch(error => console.warn('Overdub playback unavailable:', error));
+          } catch (error) { console.warn('Overdub playback unavailable:', error); }
+        });
         mobileCaptureAutoFinishRef.current = false;
         if (isMobile) setMobileCaptureProgress({elapsedSeconds:0,checkpointSeconds:0,capturedBytes:0,
           pcm:typeof mediaRecorder.snapshot === 'function',incremental:Boolean(mediaRecorder.incrementalStorage),checkpointError:false});

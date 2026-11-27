@@ -496,13 +496,14 @@ export function connectMasterChain(context, { masterFx, masterVolume = 100, dest
   const volume = context.createGain();
   volume.gain.value = clamp(num(masterVolume, 100), 0, 100) / 100;
   nodes.push(input, volume);
-  connectPluginChain(context, input, masterFx, volume, nodes);
+  const liveParams = {};
+  connectPluginChain(context, input, masterFx, volume, nodes, liveParams);
   volume.connect(target);
   const reverbBus = createReverbBus(context, input);
   const delayBus = createDelayBus(context, input);
   const cueBus = createCueBus(context, input);
   nodes.push(...reverbBus.nodes, ...delayBus.nodes, ...cueBus.nodes);
-  return { input, volume, reverbBus: reverbBus.input, delayBus: delayBus.input, cueBus: cueBus.input, nodes };
+  return { input, volume, reverbBus: reverbBus.input, delayBus: delayBus.input, cueBus: cueBus.input, nodes, liveParams };
 }
 
 // Apply a biquad filter offline (real DSP) and return new AudioBuffer

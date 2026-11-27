@@ -121,6 +121,46 @@ describe('NaliChat genuine 16-bit lossless PCM recording', () => {
     await vi.waitFor(() => expect(events).toEqual(['error', 'stop']));
   });
 
+  it('releases the worklet if the Start message fails instead of leaving a phantom recording', async () => {
+    let node;
+    const close = vi.fn().mockResolvedValue(undefined);
+    const disconnect = vi.fn();
+    class Context {
+      constructor() {
+        this.sampleRate = 48000;
+        this.destination = {};
+        this.audioWorklet = { addModule: async () => {} };
+      }
+      createMediaStreamSource() { return { connect() {}, disconnect }; }
+      createGain() { return { gain: {}, connect() {}, disconnect }; }
+      resume() { return Promise.resolve(); }
+      close() { return close(); }
+    }
+    class WorkletNode {
+      constructor() {
+        node = this;
+        this.port = { postMessage: () => { throw new Error('Start port closed'); } };
+      }
+      connect() {}
+      disconnect() { disconnect(); }
+    }
+    const recorder = await createLosslessStudioRecorder({}, {
+      AudioContextType: Context, WorkletNodeType: WorkletNode,
+    });
+    const onStop = vi.fn();
+    recorder.onstop = onStop;
+    expect(() => recorder.start()).toThrow('Start port closed');
+    expect(recorder.state).toBe('inactive');
+    expect(recorder.snapshot()).toBeNull();
+    expect(recorder.capturedByteLength).toBe(0);
+    recorder.stop();
+    recorder.dispose();
+    expect(onStop).not.toHaveBeenCalled();
+    expect(disconnect).toHaveBeenCalledTimes(3);
+    expect(close).toHaveBeenCalledOnce();
+    expect(node.port.postMessage).toBeDefined();
+  });
+
   it('cleans up the worklet and audio context if initialization fails', async () => {
     const close = vi.fn().mockResolvedValue(undefined);
     class Context {

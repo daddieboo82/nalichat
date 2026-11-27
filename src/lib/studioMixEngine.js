@@ -88,6 +88,7 @@ export function createMixEngine() {
   let master = null;
   let masterMeter = null;
   let masterClipped = false;
+  let masterInterSample = false;
   let clipMonitor = null;
   let clipModule = null;
   const attachClipMonitor = () => {
@@ -98,13 +99,14 @@ export function createMixEngine() {
       if (disposed || context !== ctx || master !== bus || clipMonitor) return;
       let node, silent;
       try {
-        node = new globalThis.AudioWorkletNode(ctx, 'nali-master-clip-monitor', {numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1]});
+        node = new globalThis.AudioWorkletNode(ctx, 'nali-master-clip-monitor', {numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1],processorOptions:{estimateInterSample:true}});
         silent = ctx.createGain();
         silent.gain.value = 0;
         node.connect(silent);
         silent.connect(ctx.destination);
         node.port.onmessage = event => {
           if (clipMonitor === node && event.data === 'clip') masterClipped = true;
+          if (clipMonitor === node && event.data === 'inter-sample') masterInterSample = true;
         };
         bus.volume.connect(node);
         bus.nodes.push(node,silent);
@@ -308,8 +310,10 @@ export function createMixEngine() {
     },
 
     readMasterClipped() { return masterClipped; },
+    readMasterInterSample() { return masterInterSample; },
     resetMasterClipped() {
       masterClipped = false;
+      masterInterSample = false;
       try { clipMonitor?.port.postMessage('reset'); } catch {}
     },
 
@@ -485,6 +489,7 @@ export function createMixEngine() {
       clipMonitor = null;
       clipModule = null;
       masterClipped = false;
+      masterInterSample = false;
       if (context && context.state !== 'closed') context.close().catch(() => {});
       context = null;
     },

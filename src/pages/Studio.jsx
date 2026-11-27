@@ -1682,6 +1682,7 @@ export default function Studio() {
       stoppedRecorder.onstop = async () => {
         let transientRecordedUrl = null;
         let recordedUrlTransferred = false;
+        let durableRecoverySaved = false;
         try {
         if (historyEpochRef.current !== stoppedSessionEpoch) return;
         const recordingMimeType =
@@ -1731,6 +1732,7 @@ export default function Studio() {
               startTime: stoppedStartTime, name: tracksRef.current.find(t => stoppedArmedIds.has(String(t.id)) &&
                 !['midi', 'instrument'].includes(t.type))?.name || 'Mobile vocal',
             });
+            durableRecoverySaved = true;
             window.dispatchEvent(new Event('nalichat:mobile-take-recovered'));
           } catch (error) {
             console.warn('Device-only Studio take backup unavailable:', error?.message);
@@ -1844,6 +1846,14 @@ export default function Studio() {
             toast.error("Recording could not be finalized. Your existing tracks were preserved.");
           }
         } finally {
+          // Only remove incremental PCM after the complete device backup commits.
+          // Always release the session lock, even on early return or save failure.
+          try {
+            await stoppedRecorder.settleRecoveryStorage?.(durableRecoverySaved);
+          } catch (error) {
+            console.warn('PCM recovery cleanup unavailable:', error?.message);
+          }
+          if (studioMountedRef.current) window.dispatchEvent(new Event('nalichat:mobile-take-recovered'));
           // If finalization failed before ownership passed to a track, do
           // not retain a temporary blob URL that no player can reference.
           if (transientRecordedUrl && !recordedUrlTransferred) {
@@ -1866,6 +1876,8 @@ export default function Studio() {
       } catch (error) {
         console.error("Studio MediaRecorder stop failed", error);
         stoppedRecorder.onstop = null;
+        stoppedRecorder.dispose?.();
+        void stoppedRecorder.settleRecoveryStorage?.(false)?.catch(() => {});
         if (mediaRecorderRef.current === stoppedRecorder) {
           mediaRecorderRef.current = null;
         }

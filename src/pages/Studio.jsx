@@ -2083,7 +2083,6 @@ export default function Studio() {
         analyserRef.current = analyser;
         dataArrayRef.current = new Uint8Array(analyser.fftSize);
         liveWaveformRef.current = [];
-        recordingStartRealRef.current = performance.now();
 
         // Monitor audio with reduced volume to prevent loud feedback
         const gainNode = audioCtx.createGain();

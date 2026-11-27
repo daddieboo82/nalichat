@@ -49,6 +49,10 @@ function canUpdateLiveInserts(beforeFx, afterFx, liveParams = {}) {
         copy[key] = rest;
       }
     }
+    if (copy.reverb?.params && !Array.isArray(copy.reverb.params)) {
+      const {Mix, ...params} = copy.reverb.params;
+      copy.reverb = {...copy.reverb, params};
+    }
     return copy;
   };
   const handlesReady = (!afterFx.eq || afterFx.eq.enabled === false ||
@@ -56,7 +60,9 @@ function canUpdateLiveInserts(beforeFx, afterFx, liveParams = {}) {
     (!afterFx.comp || afterFx.comp.enabled === false ||
     ['threshold','ratio','makeup'].every(key => liveParams[key])) &&
     (!afterFx.delay || afterFx.delay.enabled === false ||
-    ['delayMix','delayTime','delayFeedback'].every(key => liveParams[key]));
+    ['delayMix','delayTime','delayFeedback'].every(key => liveParams[key])) &&
+    (!afterFx.reverb || afterFx.reverb.enabled === false ||
+    ['reverbWet','reverbDry'].every(key => liveParams[key]));
   return handlesReady && JSON.stringify(strip(beforeFx)) === JSON.stringify(strip(afterFx));
 }
 

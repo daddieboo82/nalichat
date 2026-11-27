@@ -33,6 +33,7 @@ import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
 const MixerPanel = lazy(() => import('@/components/studio/MixerPanel'));
 import KeyboardShortcutsDialog from '@/components/studio/KeyboardShortcutsDialog';
+import { studioVisibleRulerTicks } from '@/lib/studioVisibleRulerTicks';
 import { studioTimelineZoomLimit } from '@/lib/studioTimelineZoom';
 import TrackWaveformSVG from '@/components/studio/TrackWaveformSVG';
 import StudioExtras from '@/components/studio/StudioExtras';
@@ -335,6 +336,7 @@ export default function Studio() {
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
   const [pianoRollTrackId, setPianoRollTrackId] = useState(null);
   const workspaceRef = useRef(null);
+  const [rulerViewport, setRulerViewport] = useState(null);
 
   const maxTracks = MAX_TRACKS;
   const [recordingStartTime, setRecordingStartTime] = useState(null);
@@ -4121,6 +4123,30 @@ export default function Studio() {
   };
 
 
+  useLayoutEffect(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+    let frame = null;
+    const update = () => {
+      frame = null;
+      const header = workspace.querySelector('.nali-studio-track-headers')?.getBoundingClientRect().width || 0;
+      const left = workspace.scrollLeft;
+      const width = workspace.clientWidth - header;
+      setRulerViewport(previous => previous?.left === left && previous?.width === width ? previous : {left,width});
+    };
+    const schedule = () => { if (frame === null) frame = requestAnimationFrame(update); };
+    update();
+    workspace.addEventListener('scroll', schedule, {passive:true});
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(schedule) : null;
+    observer?.observe(workspace);
+    window.addEventListener('resize', schedule);
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      observer?.disconnect();
+      workspace.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+    };
+  }, [projectLoading, projectLoadError, mobileStudioTab, isMobile]);
   const timelineWidth = timelineSeconds * 20 * zoom;
   const rulerBeatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
   const rulerBeatCount = Math.ceil(timelineSeconds * bpm / 60) + 1;
@@ -4678,7 +4704,7 @@ export default function Studio() {
                 </div>
                 );
               })()}
-              {Array.from({ length: Math.ceil(rulerBeatCount / rulerStride) }, (_, index) => index * rulerStride).map((i) => {
+              {studioVisibleRulerTicks(rulerBeatCount, rulerStride, 60 / bpm * 20 * zoom, rulerViewport).map((i) => {
                 const beatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
                 const secondsPerBeat = 60 / bpm;
                 const position = i * secondsPerBeat * 20 * zoom;

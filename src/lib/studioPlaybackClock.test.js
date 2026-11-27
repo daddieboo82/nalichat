@@ -44,7 +44,7 @@ describe('Studio playback resynchronization after a stalled animation frame', ()
     const bass = { ...clip, id: 9, audioUrl: 'blob:bass' };
     const base = { expectedTime: 50.25, frameGapSeconds: 8, tracks: [clip, bass] };
     const lead = playing(33); // timeline 58, valid
-    const bassAudio = time => playing(time, { dataset: { srcUrl: 'blob:bass' } });
+    const bassAudio = (time, extra = {}) => playing(time, { dataset: { srcUrl: 'blob:bass' }, ...extra });
     // A valid lead should not override an implausibly ahead bass.
     expect(studioPlaybackTimeAfterStall({
       ...base, elements: { 8: lead, 9: bassAudio(100) },

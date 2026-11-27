@@ -89,9 +89,15 @@ export async function createLosslessStudioRecorder(stream, {
       if (this.state !== 'recording') return;
       this.state = 'inactive';
       pending = true;
-      node.port.postMessage({type:'flush'});
-      // Never deadlock a stopped capture when a browser suspends its worklet.
-      watchdog = setTimeout(() => finish(new Error('Lossless capture could not finalize safely')), 1500);
+      // Install the watchdog before communicating with the worklet. A closed
+      // MessagePort can throw synchronously, so recover buffered audio through
+      // the regular finalizer instead of leaving Studio waiting for onstop.
+      watchdog = setTimeout(() => { void finish(new Error('Lossless capture could not finalize safely')); }, 1500);
+      try {
+        node.port.postMessage({type:'flush'});
+      } catch (error) {
+        void finish(error);
+      }
     },
   };
   const finish = async (error) => {

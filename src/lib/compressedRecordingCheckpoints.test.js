@@ -79,6 +79,26 @@ describe('mobile compressed recorder crash recovery', () => {
     await ctl.wait();
     expect(onSaved).not.toHaveBeenCalled();
   });
+  it('keeps a successful compressed checkpoint despite a broken progress callback', async () => {
+    let tick;
+    const save = vi.fn(async () => ({}));
+    const onSaved = vi.fn(() => { throw new Error('UI unmounted'); });
+    const onError = vi.fn();
+    const recorder = { state: 'recording', mimeType: 'audio/webm' };
+    const ctl = startCompressedRecordingCheckpoints({
+      recorder, chunks, ownerId: 'owner-123456', scope: 'draft', id: 'checkpoint-ui-001',
+      validate: async parts => ({ audio: new Blob(parts, { type: 'audio/webm' }), duration: 2.5 }),
+      save, onSaved, onError, schedule: fn => { tick = fn; return 37; }, unschedule: () => {},
+    });
+    tick();
+    await expect(ctl.wait()).resolves.toBeUndefined();
+    tick();
+    await ctl.wait();
+    expect(save).toHaveBeenCalledOnce();
+    expect(onSaved).toHaveBeenCalledOnce();
+    expect(onError).not.toHaveBeenCalled();
+    ctl.stop();
+  });
   it('writes validated media to one replaceable, private checkpoint',async()=>{
     let scheduled;const save=vi.fn(async()=>{});
     const recorder={state:'recording',mimeType:'audio/webm'};

@@ -41,6 +41,11 @@ export function startCompressedRecordingCheckpoints({
       !Array.isArray(chunks) || !ownerId || !scope ||
       typeof id !== 'string' || !id) return null;
   let stopped = false, busy = false, lastBytes = 0, pending = Promise.resolve();
+  // A failing notification callback must not reject wait() and prevent
+  // Studio from saving the final, complete recording.
+  const reportError = error => {
+    try { onError?.(error); } catch { /* reporting cannot block final backup */ }
+  };
   const tick = () => {
     if (stopped || busy || recorder.state !== 'recording') return;
     // A capture slice must never be modified while decoding.
@@ -54,8 +59,8 @@ export function startCompressedRecordingCheckpoints({
       await save({ownerId,scope,id,name,startTime,
         audio:playable.audio,duration:playable.duration,partial:true,replaceExisting:true});
       lastBytes = bytes;
-      onSaved?.(playable.duration);
-    })().catch(error => onError?.(error)).finally(() => {busy=false;});
+      if (!stopped) onSaved?.(playable.duration);
+    })().catch(reportError).finally(() => {busy=false;});
   };
   const timer = schedule(tick,intervalMs);
   return {id,tick,stop(){stopped=true;unschedule(timer);},wait(){return pending;}};

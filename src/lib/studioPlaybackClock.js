@@ -12,6 +12,7 @@ export function studioPlaybackTimeAfterStall({
 
   const solo = tracks.some(track => track.solo);
   const candidates = [];
+  let conflictingPlayback = false;
   for (const track of tracks) {
     if (track.muted || (solo && !track.solo) || !track.audioUrl) continue;
     const audio = elements?.[track.id];
@@ -28,10 +29,15 @@ export function studioPlaybackTimeAfterStall({
     // Reject a player that could not have advanced to this point during the
     // elapsed gap. The transport may have been manually seeked meanwhile.
     if (mediaTimelineTime < expectedTime - 0.15 ||
-        mediaTimelineTime > expectedTime + frameGapSeconds + 0.15) continue;
+        mediaTimelineTime > expectedTime + frameGapSeconds + 0.15) {
+      // A current, playing track disagreeing with the allowed frame window
+      // makes the transport clock ambiguous, even if another track looks valid.
+      conflictingPlayback = true;
+      continue;
+    }
     candidates.push(mediaTimelineTime);
   }
-  if (!candidates.length) return expectedTime;
+  if (conflictingPlayback || !candidates.length) return expectedTime;
   // Do not let one drifting media element pull the whole transport away
   // from other audible tracks. When multiple sources disagree, retain the
   // bounded RAF fallback rather than choosing by track order.

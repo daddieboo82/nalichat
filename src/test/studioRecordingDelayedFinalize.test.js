@@ -4,8 +4,8 @@ import { readFile } from 'node:fs/promises';
 describe('Studio delayed MediaRecorder completion isolation', () => {
   it('snapshots the stopped recorder, chunk array, destinations and timeline', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
-    const from = source.indexOf('if (mediaRecorderRef.current && mediaRecorderRef.current.state !==');
-    const to = source.indexOf('    } else {', source.indexOf('stoppedRecorder.stop();', from));
+    const from = source.indexOf('if (mediaRecorderRef.current && (mediaRecorderRef.current.state !==');
+    const to = source.indexOf('  const toggleRecord =', from);
     const handler = source.slice(from, to);
     expect(handler).toContain('const stoppedRecorder = mediaRecorderRef.current');
     expect(handler).toContain('const stoppedChunks = audioChunksRef.current');

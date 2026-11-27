@@ -41,6 +41,9 @@ export function startCompressedRecordingCheckpoints({
       !Array.isArray(chunks) || !ownerId || !scope ||
       typeof id !== 'string' || !id) return null;
   let stopped = false, busy = false, lastBytes = 0, pending = Promise.resolve();
+  // MediaRecorder appends immutable blobs. Account for new chunks once instead
+  // of rescanning every captured slice throughout a long mobile session.
+  let countedChunks = 0, capturedBytes = 0, exceededLimit = false;
   // A failing notification callback must not reject wait() and prevent
   // Studio from saving the final, complete recording.
   const reportError = error => {
@@ -48,10 +51,31 @@ export function startCompressedRecordingCheckpoints({
   };
   const tick = () => {
     if (stopped || busy || recorder.state !== 'recording') return;
-    // A capture slice must never be modified while decoding.
+    // Never decode partial recordings larger than the bounded recovery size.
+    // The final recording is handled separately at Stop.
+    if (exceededLimit) return;
+    if (chunks.length < countedChunks) {
+      // Defensive reset if a caller replaced the capture buffer.
+      countedChunks = 0;
+      capturedBytes = 0;
+    }
+    for (let index = countedChunks; index < chunks.length; index += 1) {
+      const chunk = chunks[index];
+      if (!(chunk instanceof Blob) || !Number.isFinite(chunk.size)) {
+        reportError(new Error('Invalid audio capture chunk.'));
+        return;
+      }
+      capturedBytes += chunk.size;
+      if (capturedBytes > MAX_CHECKPOINT_BYTES) {
+        exceededLimit = true;
+        return;
+      }
+    }
+    countedChunks = chunks.length;
+    if (capturedBytes <= lastBytes) return;
+    // Snapshot only after bounding its size. No original audio chunks change.
     const copy = chunks.slice();
-    const bytes = copy.reduce((sum, chunk) => sum + (chunk?.size || 0), 0);
-    if (bytes <= lastBytes || bytes > MAX_CHECKPOINT_BYTES) return;
+    const bytes = capturedBytes;
     busy = true;
     pending = (async () => {
       const playable = await validate(copy, recorder.mimeType);

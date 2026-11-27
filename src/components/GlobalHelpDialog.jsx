@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Sparkles, MessageCircle, HelpCircle, ArrowRight, Mic2, FolderOpen } from "lucide-react";
 import { trackProductEvent } from "@/lib/productAnalytics";
+import MicrophoneInputPicker from "@/components/audio/MicrophoneInputPicker";
 
 export default function GlobalHelpDialog({ open, onOpenChange }) {
   return (
@@ -38,6 +39,7 @@ export default function GlobalHelpDialog({ open, onOpenChange }) {
               <a href="https://discord.gg/hU9WhHNWA" target="_blank" rel="noopener noreferrer" onClick={() => trackProductEvent("discord_invite_click", { source: "help_dialog", placement: "community_support" })} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20">Join NaliChat Discord <ArrowRight className="h-4 w-4" /></a>
             </div>
           </div>
+          <MicrophoneInputPicker />
           <div className="nali-help-shortcuts grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button asChild variant="outline" className="ui-hover min-h-12 justify-between rounded-xl px-4"><a href="/studio"><span className="flex items-center gap-2"><Mic2 className="h-4 w-4 text-primary" />Open Studio</span><ArrowRight className="h-4 w-4" /></a></Button>
             <Button asChild variant="outline" className="ui-hover min-h-12 justify-between rounded-xl px-4"><a href="/files"><span className="flex items-center gap-2"><FolderOpen className="h-4 w-4 text-primary" />Open Files</span><ArrowRight className="h-4 w-4" /></a></Button>

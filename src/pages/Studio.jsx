@@ -1,7 +1,7 @@
 import { secureUploadFile } from "@/lib/secureUpload";
 import { validateUpload } from "@/lib/uploadValidation";
 import { markActivationComplete, trackProductEvent } from "@/lib/productAnalytics";
-import React, { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import JSZip from 'jszip';
 import { studioAudioExtension, studioAudioMimeForExtension } from '@/lib/studioArchiveAudio';
 import { Button } from '@/components/ui/button';
@@ -415,6 +415,15 @@ export default function Studio() {
   const { peers: livePeers, setActivity } = useStudioPresence(roomId || 'local_studio');
   
   const [tracks, setTracks] = useState([]);
+  const timelineLanes = useMemo(() => visibleStudioClipLanes(tracks), [tracks]);
+  const allStudioLanes = useMemo(() => groupStudioClipLanes(tracks), [tracks]);
+  const mixerLanes = useMemo(() => allStudioLanes.map(lane => ({
+    ...lane.primary, laneClips: lane.clips,
+  })), [allStudioLanes]);
+  const timelineHasSolo = useMemo(() => tracks.some(t => t.solo), [tracks]);
+  const projectEndMarker = useMemo(() => tracks.reduce((end, t) =>
+    Math.max(end, (t.startTime || 0) + (t.duration || 0)), 20), [tracks]);
+
   const [waveformDetail, setWaveformDetail] = useState(null);
   const detailCacheRef = useRef(null);
   useEffect(() => {
@@ -4519,7 +4528,7 @@ export default function Studio() {
           </div>
         </div>
         <div className="studio-mobile-tracks-pane min-h-0" aria-label="Track rack">
-        <MobileStudioTracks lanes={visibleStudioClipLanes(tracks)} selectedTrackIds={selectedTrackIds}
+        <MobileStudioTracks lanes={timelineLanes} selectedTrackIds={selectedTrackIds}
           onSelect={id => setSelectedTrackIds([id])} onArm={toggleArm} onMute={toggleMute} onSolo={toggleSolo}
           onVolume={updateVolume} onAdd={addMobileVocalTrack} onImport={handleImportClick} onReconstruct={openGenerativeReconstruction}
           onReview={id=>{
@@ -4575,7 +4584,7 @@ export default function Studio() {
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
                 <div ref={dropProvided.innerRef} {...dropProvided.droppableProps}>
-                  {visibleStudioClipLanes(tracks).map(({ primary: track }, index) => {
+                  {timelineLanes.map(({ primary: track }, index) => {
                     return (
                     <Draggable key={track.id} draggableId={String(track.id)} index={index} isDragDisabled={isRecording}>
                       {(dragProvided, dragSnapshot) => (
@@ -4633,7 +4642,7 @@ export default function Studio() {
         <div className="flex-1 relative flex flex-col bg-gradient-to-b from-studio-header/80 to-studio-bg/90 rounded-r-2xl">
           {/* Timeline Header */}
           <div className="h-8 shrink-0 border-b border-foreground/10 bg-foreground/[0.04] backdrop-blur-md sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
-            {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[2px] bg-red-500/50 z-10 pointer-events-none" style={{ left: `${projectEnd * 20 * zoom}px` }}><div className="absolute top-0 -translate-x-1/2 bg-red-500/80 text-white text-[8px] px-1 rounded-b shadow-md font-bold">END</div></div>; })()}
+            {(() => { const projectEnd = projectEndMarker; return <div className="absolute top-0 bottom-0 w-[2px] bg-red-500/50 z-10 pointer-events-none" style={{ left: `${projectEnd * 20 * zoom}px` }}><div className="absolute top-0 -translate-x-1/2 bg-red-500/80 text-white text-[8px] px-1 rounded-b shadow-md font-bold">END</div></div>; })()}
             <div className="h-full relative cursor-pointer select-none" style={{ width: `${timelineWidth}px`, minWidth: `${timelineWidth}px` }}
               onPointerDown={(e) => {
                 const target = e.currentTarget;
@@ -4712,10 +4721,10 @@ export default function Studio() {
             })()}
             {/* Pro Tools-style selection region (in/out points) */}
             <SelectionRegion selectionStart={selectionStart} selectionEnd={selectionEnd} zoom={zoom} />
-            {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[1px] bg-red-500/30 border-r border-red-500/10 pointer-events-none z-0" style={{ left: `${projectEnd * 20 * zoom}px` }} />; })()}
+            {(() => { const projectEnd = projectEndMarker; return <div className="absolute top-0 bottom-0 w-[1px] bg-red-500/30 border-r border-red-500/10 pointer-events-none z-0" style={{ left: `${projectEnd * 20 * zoom}px` }} />; })()}
             {/* Waveform Rows */}
             <div className="flex flex-col">
-              {visibleStudioClipLanes(tracks).map(({ primary: track, clips: laneClips }) => (
+              {timelineLanes.map(({ primary: track, clips: laneClips }) => (
                 <div
                   key={track.id}
                   onClick={(e) => handleTrackClick(e, track.id)}
@@ -4726,17 +4735,14 @@ export default function Studio() {
                     String(track.id) === String(draggedTrackId) && "z-30 ring-2 ring-primary/50 shadow-xl opacity-90",
                     track.muted ? "opacity-30" : "",
                     laneClips.some(clip => selectedTrackIds.includes(clip.id)) ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : "",
-                    tracks.some(t => t.solo) && !track.solo && "opacity-40 grayscale"
+                    timelineHasSolo && !track.solo && "opacity-40 grayscale"
                   )}
                 >
                   {/* Grid lines */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px)] opacity-30 pointer-events-none z-0" style={{ backgroundSize: `${(editMode === 'grid' ? (gridSize === 1 ? (60 / bpm) * (parseInt(timeSignature.split('/')[0]) || 4) : (60 / bpm) * 4 * gridSize) : (60 / bpm) * (parseInt(timeSignature.split('/')[0]) || 4)) * 20 * zoom}px 100%` }} />
                   
                   {/* Pro Tools-style Crossfade overlay between adjacent clips on this track */}
-                  <CrossfadeOverlay clips={tracks.filter(t => {
-                    const laneKey = track.splitFrom || track.id;
-                    return (t.splitFrom || t.id) === laneKey;
-                  })} zoom={zoom} trackId={track.splitFrom || track.id} />
+                  <CrossfadeOverlay clips={laneClips} zoom={zoom} trackId={track.splitFrom || track.id} />
 
                   {/* Pro Tools-style Volume Automation Lane */}
                   {track.showAutomation && (
@@ -5467,7 +5473,7 @@ export default function Studio() {
             />
             <span className="w-7 text-right font-mono text-[10px]">{masterVolume}%</span>
           </div>
-          <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {groupStudioClipLanes(tracks).length} Tracks</span>
+          <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {allStudioLanes.length} Tracks</span>
           <NudgeValueSelector nudgeValue={nudgeValue} setNudgeValue={setNudgeValue} bpm={bpm} sampleRate={audioSettings.sampleRate} />
         </div>
         <div className="flex items-center gap-4 shrink-0">
@@ -5494,9 +5500,7 @@ export default function Studio() {
       <MixerPanel
         show={showMixerPanel}
         onClose={() => setShowMixerPanel(false)}
-        tracks={groupStudioClipLanes(tracks).map(lane => ({
-          ...lane.primary, laneClips: lane.clips,
-        }))}
+        tracks={mixerLanes}
         masterVolume={masterVolume}
         setMasterVolume={setMasterVolume}
         updateVolume={updateVolume}

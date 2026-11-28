@@ -10,11 +10,7 @@ describe('Studio audio-player reconciliation after edits and Undo/Redo', () => {
     expect(start).toBeGreaterThan(0);
     expect(block).toContain('new Map(tracks.map(track => [String(track.id), track]))');
     expect(block).toContain("audio.dataset?.srcUrl === track.audioUrl");
-    expect(block).toContain('audio.pause()');
-    expect(block).toContain('mixEngineRef.current?.detach(id)');
-    expect(block).toContain('delete audioElementsRef.current[id]');
-    expect(block).toContain('playbackStartingRef.current.delete(id)');
-    expect(block).toContain('playbackFailedRef.current.delete(id)');
+    expect(block).toContain('releaseTrackAudio(id, audio)');
     expect(block).toContain('}, [tracks]);');
   });
   it('does not reuse an obsolete player when RAF starts a newly active split clip', async () => {

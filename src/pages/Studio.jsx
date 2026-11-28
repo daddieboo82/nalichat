@@ -25,6 +25,7 @@ import StudioStatusBanners, { StudioPerformanceNotice } from '@/components/studi
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderTunedVocal, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
+import { releaseStudioAudioPlayer } from '@/lib/studioAudioPlayerRelease';
 import { startStudioBoundaryPlayback } from '@/lib/studioBoundaryPlayback';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
@@ -1420,13 +1421,18 @@ export default function Studio() {
 
   // Creates (or reuses) the <audio> element for a track and routes it through the
   // FX graph. Falls back to plain element playback if Web Audio routing isn't possible.
+  const releaseTrackAudio = (id, expected) => releaseStudioAudioPlayer({
+    players: audioElementsRef.current, id, expected,
+    starting: playbackStartingRef.current, failed: playbackFailedRef.current,
+    engine: mixEngineRef.current,
+  });
+
   const getTrackAudio = (track) => {
     if (!track?.audioUrl) return null;
     let audio = audioElementsRef.current[track.id];
     if (!audio || audio.dataset?.srcUrl !== track.audioUrl) {
       if (audio) {
-        try { audio.pause(); } catch { /* ignore */ }
-        mixEngineRef.current?.detach(track.id);
+        releaseTrackAudio(track.id, audio);
       }
       audio = new Audio();
       audio.preload = 'auto';
@@ -1443,7 +1449,7 @@ export default function Studio() {
         if (audioElementsRef.current[track.id] !== audio ||
             audio.dataset.srcUrl !== track.audioUrl ||
             audio.crossOrigin !== 'anonymous') return;
-        mixEngineRef.current?.detach(track.id);
+        releaseTrackAudio(track.id, audio);
         const plain = new Audio();
         plain.preload = 'auto';
         plain.src = track.audioUrl;
@@ -1590,9 +1596,7 @@ export default function Studio() {
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close();
       }
-      Object.values(audioElementsRef.current).forEach(audio => {
-        audio.pause();
-      });
+      Object.entries(audioElementsRef.current).forEach(([id, audio]) => releaseTrackAudio(id, audio));
       mixEngineRef.current?.dispose();
     };
   }, []);
@@ -1605,11 +1609,7 @@ export default function Studio() {
     for (const [id, audio] of Object.entries(audioElementsRef.current)) {
       const track = byId.get(id);
       if (track && track.audioUrl && audio.dataset?.srcUrl === track.audioUrl) continue;
-      try { audio.pause(); } catch { /* player may already be disposed */ }
-      mixEngineRef.current?.detach(id);
-      delete audioElementsRef.current[id];
-      playbackStartingRef.current.delete(id);
-      playbackFailedRef.current.delete(id);
+      releaseTrackAudio(id, audio);
     }
   }, [tracks]);
 
@@ -2676,10 +2676,7 @@ export default function Studio() {
     sounds.error();
     selectedTrackIds.forEach(id => {
       if (audioElementsRef.current[id]) {
-        audioElementsRef.current[id].pause();
-        audioElementsRef.current[id].src = '';
-        delete audioElementsRef.current[id];
-        mixEngineRef.current?.detach(id);
+        releaseTrackAudio(id);
       }
     });
     const clearedClips = tracks.filter(t => selectedTrackIds.includes(t.id));
@@ -2736,12 +2733,8 @@ export default function Studio() {
 
   const deleteTrack = (trackId) => {
     if (audioElementsRef.current[trackId]) {
-      audioElementsRef.current[trackId].pause();
-      audioElementsRef.current[trackId].removeAttribute('src');
-      audioElementsRef.current[trackId].load();
-      delete audioElementsRef.current[trackId];
       // Undo must create and route a fresh player for the restored clip.
-      mixEngineRef.current?.detach(trackId);
+      releaseTrackAudio(trackId);
     }
     playbackStartingRef.current.delete(trackId);
     playbackFailedRef.current.delete(trackId);

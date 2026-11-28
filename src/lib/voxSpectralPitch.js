@@ -87,6 +87,11 @@ export function createVoxSpectralStream(ratio, options = {}) {
   };
   return {
     latencySamples: n,
+    reset() {
+      // Discard all persistent history; FFT scratch is overwritten per frame.
+      ring.fill(0); out.fill(0); norm.fill(0); previous.fill(0); phase.fill(0);
+      count=0; inputPower=0; outputPower=0; gain=1;
+    },
     process(input, output) {
       if (!(input instanceof Float32Array) || !(output instanceof Float32Array) || input.length !== output.length) throw new TypeError('Expected matching PCM blocks');
       for (let i=0;i<input.length;i++) {

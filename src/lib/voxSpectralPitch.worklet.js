@@ -10,7 +10,13 @@ class VoxSpectralProcessor extends AudioWorkletProcessor {
     this.streams = Array.from({length: channels}, () => createVoxSpectralStream(ratio, {frameSize, hopSize, formantStrength, levelStrength, sampleRate}));
     this.silence = new Float32Array(128);
     this.disposed = false;
-    this.port.onmessage = ({data}) => { if (data?.type === 'dispose') this.disposed = true; };
+    this.port.onmessage = ({data}) => {
+      if (data?.type === 'dispose') this.disposed = true;
+      if (data?.type === 'reset' && !this.disposed) {
+        for (const stream of this.streams) stream.reset();
+        this.port.postMessage({type:'reset-complete',id:data.id});
+      }
+    };
   }
   process(inputs, outputs) {
     const output = outputs[0] || [], input = inputs[0] || [];

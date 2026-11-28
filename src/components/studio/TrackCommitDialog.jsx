@@ -14,7 +14,7 @@ import { toast } from 'sonner';
  * Props:
  *  - open / onOpenChange: dialog visibility
  *  - track: the track to commit
- *  - onCommit: callback(newAudioUrl, duration) — parent replaces track data
+ *  - onCommit: callback(newAudioUrl, result, originalTrack) — parent replaces track data
  */
 export default function TrackCommitDialog({ open, onOpenChange, track, onCommit, spectralPitch=false }) {
   const [committing, setCommitting] = useState(false);
@@ -59,6 +59,7 @@ export default function TrackCommitDialog({ open, onOpenChange, track, onCommit,
       }, 800);
       toast.success("Track committed — processing rendered to audio");
     } catch (e) {
+      if (attemptRef.current !== attempt || !latestRef.current.open || latestRef.current.track !== original) return;
       console.error("Commit failed", e);
       toast.error("Failed to commit track");
     } finally {
@@ -67,7 +68,12 @@ export default function TrackCommitDialog({ open, onOpenChange, track, onCommit,
   };
 
   const handleOpenChange = (nextOpen) => {
-    if (!nextOpen) { attemptRef.current += 1; setCommitting(false); setDone(false); }
+    if (!nextOpen) {
+      attemptRef.current += 1;
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+      setCommitting(false); setDone(false);
+    }
     if (nextOpen && closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;

@@ -18,3 +18,16 @@ export function measureVoxDeviceCosts({sampleRate=48000,now=()=>performance.now(
   }
   return {sampleRate,costs,method:'main-thread-proxy-v1'};
 }
+
+// Context-local cache; no persistent device fingerprint or server requests.
+export function createVoxCalibrationCache(measure=measureVoxDeviceCosts){
+  const cache=new WeakMap();
+  return function getCalibration(context){
+    if(!context || context.state==='closed')return null;
+    if(cache.has(context))return cache.get(context);
+    let result=null;
+    try{result=measure({sampleRate:context.sampleRate});}catch{/* conservative defaults remain available */}
+    cache.set(context,result);
+    return result;
+  };
+}

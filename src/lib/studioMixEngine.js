@@ -10,6 +10,7 @@
 // CORS headers, or a browser that refuses createMediaElementSource) the engine
 // reports failure for that track and the caller falls back to element volume only.
 
+import { createVoxCalibrationCache } from './voxDeviceCalibration.js';
 import { planVoxWorkload } from './voxSpectralBudget.js';
 import { voxPitchRatio, voxPitchRate } from '@/lib/voxShift';
 import { studioFxStructureChanged } from '@/lib/studioFxStructure';
@@ -128,6 +129,7 @@ export function createMixEngine() {
   let masterState = { masterVolume: 100, masterFx: null };
   const entries = new Map(); // trackId -> { element, source, nodes }
   let disposed = false;
+  const getVoxCalibration=createVoxCalibrationCache();
   let spectralRoutes = null, spectralEpoch = 0, spectralStatus = {status:'inactive'};
   const releaseSpectral = () => {
     spectralEpoch++;
@@ -246,16 +248,18 @@ export function createMixEngine() {
     // Experimental: call only with all session media attached and paused.
     // No automatic activation; changes that invalidate the fixed graph restore
     // legacy routing and expose an explicit status to the transport caller.
-    async prepareSpectralPlayback({createNode, reserve=0.5}={}) {
+    async prepareSpectralPlayback({createNode, reserve=0.5, calibrate=true}={}) {
       if(disposed || !context || !master)return {status:'unavailable'};
       if([...entries.values()].some(e=>!e.element.paused))return {status:'playing'};
       invalidateSpectral('reconfigure');
       const epoch=++spectralEpoch,ctx=context;
       const snapshot=[...entries.entries()];
-      const plan=planVoxWorkload(snapshot.map(([id,e])=>{
+      const requests=snapshot.map(([id,e])=>{
         const fx=getTrackEffects(e.track).voxshift;
         return {id,channels:2,ratio:fx&&fx.enabled!==false?voxPitchRatio(fx.params):1};
-      }),{sampleRate:ctx.sampleRate,reserve});
+      });
+      const calibration=calibrate && requests.some(t=>t.ratio!==1) ? getVoxCalibration(ctx) : null;
+      const plan=planVoxWorkload(requests,{sampleRate:ctx.sampleRate,reserve,calibration});
       const deferred=plan.tracks.filter(t=>t.status==='deferred').map(t=>t.id);
       if(deferred.length)return spectralStatus={status:'deferred',deferred,plan};
       const routes=new Map();spectralStatus={status:'preparing'};

@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { resolve } from 'path';
 import { execSync } from 'node:child_process';
+import { base44AnalyticsTimerPatch } from './scripts/base44-analytics-timer-patch.mjs';
 
 function resolveBuildSha() {
   if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
@@ -63,6 +64,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
+    base44AnalyticsTimerPatch(),
     mode === 'test' ? null : base44({
       // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
       // can be removed if the code has been updated to use the new SDK imports from @base44/sdk

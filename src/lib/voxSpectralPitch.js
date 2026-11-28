@@ -27,12 +27,10 @@ function fft(re, im, inverse = false) {
 }
 const wrap = p => p - 2 * Math.PI * Math.round(p / (2 * Math.PI));
 
-export function voxSpectralPitch(input, ratio, { frameSize = 2048, hopSize = 256, formantStrength = 0, sampleRate = 48000 } = {}) {
-  if (!(input instanceof Float32Array)) throw new TypeError('Expected Float32Array PCM');
+export function createVoxSpectralStream(ratio, { frameSize = 2048, hopSize = 256, formantStrength = 0, sampleRate = 48000 } = {}) {
   if (!Number.isFinite(ratio) || ratio < 0.5 || ratio > 2) throw new RangeError('Unsupported pitch ratio');
   if (!Number.isInteger(frameSize) || frameSize < 256 || frameSize > 8192 || (frameSize & (frameSize - 1)) || !Number.isInteger(hopSize) || hopSize < 1 || hopSize > frameSize / 4) throw new RangeError('Invalid FFT or hop size');
   if (!Number.isFinite(formantStrength) || formantStrength < 0 || formantStrength > 1 || !Number.isFinite(sampleRate) || sampleRate < 8000 || sampleRate > 192000) throw new RangeError('Invalid spectral envelope settings');
-  if (ratio === 1 || !input.length) return input.slice();
   const n = frameSize, half = n / 2, h = hopSize, step = 2 * Math.PI * h / n;
   const re = new Float64Array(n), im = new Float64Array(n), sr = new Float64Array(n), si = new Float64Array(n);
   const previous = new Float64Array(half + 1), phase = new Float64Array(half + 1);
@@ -43,9 +41,11 @@ export function voxSpectralPitch(input, ratio, { frameSize = 2048, hopSize = 256
   const ei = formantStrength ? new Float64Array(n) : null;
   const lifter = Math.min(half - 1, Math.max(2, Math.round(sampleRate / 500)));
   const win = Float64Array.from({length:n}, (_,i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / n));
-  const out = new Float64Array(input.length), norm = new Float64Array(input.length);
-  for (let start = -n; start < input.length; start += h) {
-    for (let i = 0; i < n; i++) { const x = input[start+i]; re[i] = (Number.isFinite(x) ? x : 0) * win[i]; im[i] = 0; }
+  const ring = new Float64Array(n), out = new Float64Array(n*2), norm = new Float64Array(n*2);
+  let count = 0;
+  const frame = () => {
+    const start = count - n;
+    for (let i = 0; i < n; i++) { const index = start+i; re[i] = (index < 0 ? 0 : ring[index % n]) * win[i]; im[i] = 0; }
     fft(re, im);
     if (er) {
       let peak = 0;
@@ -77,7 +77,31 @@ export function voxSpectralPitch(input, ratio, { frameSize = 2048, hopSize = 256
     }
     si[0] = si[half] = 0;
     fft(sr, si, true);
-    for (let i = 0; i < n; i++) { const index = start + i; if (index >= 0 && index < input.length) { out[index] += sr[i] * win[i]; norm[index] += win[i] * win[i]; } }
-  }
-  return Float32Array.from(out, (x,i) => norm[i] > 1e-12 ? x / norm[i] : 0);
+    for (let i = 0; i < n; i++) { const index = start + i; if (index >= 0) { const slot = index % out.length; out[slot] += sr[i] * win[i]; norm[slot] += win[i] * win[i]; } }
+  };
+  return {
+    latencySamples: n,
+    process(input, output) {
+      if (!(input instanceof Float32Array) || !(output instanceof Float32Array) || input.length !== output.length) throw new TypeError('Expected matching PCM blocks');
+      for (let i=0;i<input.length;i++) {
+        const x = Number.isFinite(input[i]) ? input[i] : 0;
+        const index = count - n;
+        if (ratio === 1) { output[i] = index < 0 ? 0 : ring[count % n]; }
+        else if (index < 0) output[i] = 0;
+        else { const slot = index % out.length; output[i] = norm[slot] > 1e-12 ? out[slot] / norm[slot] : 0; out[slot] = 0; norm[slot] = 0; }
+        ring[count % n] = x; count++;
+        if (ratio !== 1 && count % h === 0) frame();
+      }
+    },
+  };
+}
+
+export function voxSpectralPitch(input, ratio, options = {}) {
+  if (!(input instanceof Float32Array)) throw new TypeError('Expected Float32Array PCM');
+  const stream = createVoxSpectralStream(ratio, options);
+  if (ratio === 1 || !input.length) return input.slice();
+  const out = new Float32Array(input.length), delay = stream.latencySamples;
+  const padded = new Float32Array(input.length+delay), processed = new Float32Array(padded.length);
+  padded.set(input); stream.process(padded, processed); out.set(processed.subarray(delay));
+  return out;
 }

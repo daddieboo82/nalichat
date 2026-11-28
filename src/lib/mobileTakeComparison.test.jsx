@@ -34,19 +34,18 @@ describe('safe mobile A/B vocal-take comparison',()=>{
   expect(relatedMobileTakes(third,third[2]).map(t=>t.id)).toEqual([10,14,15]);
   expect(relatedMobileTakes(third,unrelated).map(t=>t.id)).toEqual([13]);
  });
- it('switches individual preview source and does not play two takes together',()=>{
+ it('starts the shared transport from the currently selected take',()=>{
   const takes=[{id:10,name:'Take 1',audioUrl:'blob:original'},
    {id:14,name:'Take 2',audioUrl:'blob:second'}];
-  const onChooseTake=vi.fn(),onRetake=vi.fn();
+  const onChooseTake=vi.fn(),onRetake=vi.fn(),onTogglePlayback=vi.fn();
   const track={...original};
   const view=render(<MobileTakeReview track={track} comparisonTakes={takes}
-   onChooseTake={onChooseTake} onRetake={onRetake} onSaveForPC={vi.fn()}/>);
-  expect(document.querySelectorAll('audio')).toHaveLength(1);
-  fireEvent.click(screen.getByRole('button',{name:/Listen to take 2/i}));
+   onChooseTake={onChooseTake} onRetake={onRetake} onSaveForPC={vi.fn()} onTogglePlayback={onTogglePlayback}/>);
+  fireEvent.click(screen.getByRole('button',{name:/Select take 2/i}));
   expect(onChooseTake).toHaveBeenCalledWith(14);
   view.rerender(<MobileTakeReview track={{...original,id:14,audioUrl:'blob:second'}}
-   comparisonTakes={takes} onChooseTake={onChooseTake} onRetake={onRetake} onSaveForPC={vi.fn()}/>);
-  expect(screen.getByLabelText('Playback selected Studio take').getAttribute('src')).toBe('blob:second');
-  expect(document.querySelectorAll('audio')).toHaveLength(1);
+   comparisonTakes={takes} onChooseTake={onChooseTake} onRetake={onRetake} onSaveForPC={vi.fn()} onTogglePlayback={onTogglePlayback}/>);
+  fireEvent.click(screen.getByRole('button',{name:'Play from this take'}));
+  expect(onTogglePlayback).toHaveBeenCalledWith(expect.objectContaining({id:14,audioUrl:'blob:second'}));
  });
 });

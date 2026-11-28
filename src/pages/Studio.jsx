@@ -2613,7 +2613,6 @@ export default function Studio() {
 
   const stop = () => {
     clearSpectralMonitor();monitorRequestedRef.current=false;setMonitorRequested(false);
-    if (spectralEnabled) resetSpectralTransport();
     playbackAttemptRef.current += 1;
     playbackStartingRef.current.clear();
     // Invalidate an in-flight permission request before it resolves.

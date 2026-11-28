@@ -248,7 +248,7 @@ export function createMixEngine() {
     // Experimental: call only with all session media attached and paused.
     // No automatic activation; changes that invalidate the fixed graph restore
     // legacy routing and expose an explicit status to the transport caller.
-    async prepareSpectralPlayback({createNode, reserve=0.5, calibrate=true}={}) {
+    async prepareSpectralPlayback({createNode, reserve=0.5, calibrate=true, allowHybrid=false, priorityIds=[]}={}) {
       if(disposed || !context || !master)return {status:'unavailable'};
       if([...entries.values()].some(e=>!e.element.paused))return {status:'playing'};
       invalidateSpectral('reconfigure');
@@ -256,7 +256,7 @@ export function createMixEngine() {
       const snapshot=[...entries.entries()];
       const requests=snapshot.map(([id,e])=>{
         const fx=getTrackEffects(e.track).voxshift;
-        return {id,channels:2,ratio:fx&&fx.enabled!==false?voxPitchRatio(fx.params):1};
+        return {id,channels:2,priority:priorityIds.includes(id),ratio:fx&&fx.enabled!==false?voxPitchRatio(fx.params):1};
       });
       spectralStatus={status:'preparing'};
       const needsCalibration=calibrate && requests.some(t=>t.ratio!==1);
@@ -267,7 +267,7 @@ export function createMixEngine() {
       if(needsCalibration && !calibration)return spectralStatus={status:'unavailable',reason:'Device calibration unavailable'};
       const plan=planVoxWorkload(requests,{sampleRate:ctx.sampleRate,reserve,calibration});
       const deferred=plan.tracks.filter(t=>t.status==='deferred').map(t=>t.id);
-      if(deferred.length)return spectralStatus={status:'deferred',deferred,plan};
+      if(deferred.length && (!allowHybrid || !plan.tracks.some(t=>t.status==='spectral')))return spectralStatus={status:'deferred',deferred,plan};
       const routes=new Map();spectralStatus={status:'preparing'};
       try {
         const factory=createNode || (await import('./voxSpectralWorklet.js')).createVoxSpectralNode;
@@ -279,7 +279,7 @@ export function createMixEngine() {
         if(snapshot.some(([id,e])=>entries.get(id)!==e || !e.element.paused))throw Error('Session changed during preparation');
         spectralRoutes=routes;
         entries.forEach((e,id)=>rebuild(id,e.track,e.gain));
-        return spectralStatus={status:'ready',plan};
+        return spectralStatus={status:'ready',plan,hybrid:deferred.length>0,deferred};
       }catch(error){
         if(spectralRoutes===routes){releaseSpectral();entries.forEach((e,id)=>rebuild(id,e.track,e.gain));return spectralStatus={status:'failed',reason:error.message};}
         else for(const route of routes.values())try{route.processor?.dispose();}catch{/* released */}
@@ -292,7 +292,7 @@ export function createMixEngine() {
     async refreshSpectralPlayback() {
       if(!spectralRoutes || spectralStatus.status!=='ready')return {status:'unavailable'};
       if([...entries.values()].some(e=>!e.element.paused))return {status:'playing'};
-      const routes=spectralRoutes,epoch=++spectralEpoch,plan=spectralStatus.plan;
+      const routes=spectralRoutes,epoch=++spectralEpoch,{plan,hybrid,deferred}=spectralStatus;
       spectralStatus={status:'resetting',plan};
       try {
         // Disconnect source and output edges while the processor clears history.
@@ -301,7 +301,7 @@ export function createMixEngine() {
         if(epoch!==spectralEpoch || routes!==spectralRoutes || disposed)return {status:'invalidated'};
         if([...entries.values()].some(e=>!e.element.paused))throw Error('Playback resumed before reset completed');
         entries.forEach((e,id)=>rebuild(id,e.track,e.gain));
-        return spectralStatus={status:'ready',plan};
+        return spectralStatus={status:'ready',plan,hybrid,deferred};
       }catch(error){
         if(epoch!==spectralEpoch || routes!==spectralRoutes || disposed)return {status:'invalidated'};
         invalidateSpectral('reset failed');
@@ -310,7 +310,7 @@ export function createMixEngine() {
     },
     playbackLatencySnapshot(){
       const ready=spectralStatus.status==='ready' && !!spectralRoutes;
-      const known=ready || !['preparing','resetting'].includes(spectralStatus.status);
+      const known=ready ? !spectralStatus.hybrid : !['preparing','resetting'].includes(spectralStatus.status);
       return {known:!!context && known,epoch:spectralEpoch,
         algorithmicSeconds:ready?spectralStatus.plan.latencySamples/context.sampleRate:0,
         outputLatencyMs:Number.isFinite(context?.outputLatency)?context.outputLatency*1000:null};

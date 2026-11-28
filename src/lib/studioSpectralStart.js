@@ -7,6 +7,7 @@ export async function prepareStudioSpectralStart({pending, attempt, epoch, curre
     const result=await prepare();
     if(!current())return false;
     if(result.status!=='ready')warn('Spectral preview unavailable; using the existing VoxShift engine.');
+    else if(result.hybrid)warn('Device workload limit: some tracks use the existing VoxShift engine.');
     return true;
   }catch{
     if(!current())return false;

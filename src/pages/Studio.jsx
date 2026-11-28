@@ -1582,7 +1582,7 @@ export default function Studio() {
           mounted:()=>studioMountedRef.current,reset:resetSpectralTransport,warn:message=>toast.warning(message),
           prepare:async()=>{
             const allRouted = tracks.filter(t=>t.audioUrl).map(t=>getTrackAudio(t)).every(a=>a && a.dataset.fxBypass!=='1');
-            return allRouted ? mixEngineRef.current.prepareSpectralPlayback() : {status:'unavailable'};
+            return allRouted ? mixEngineRef.current.prepareSpectralPlayback({allowHybrid:true,priorityIds:selectedTrackIds}) : {status:'unavailable'};
           },
         });
         if (!allowed || playbackAttemptRef.current!==playbackAttempt || historyEpochRef.current!==playbackEpoch || !studioMountedRef.current) return;

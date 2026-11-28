@@ -219,6 +219,8 @@ export function createMixEngine() {
     const entry = entries.get(trackId);
     if (!entry || !context || !master) return;
     teardownEntry(entry);
+    // Retained processors must not keep output edges into the retired strip.
+    spectralRoutes?.get(trackId)?.processor?.node.disconnect();
     const built = connectTrackChain(context, entry.source, track, {
       destination: master.input,
       reverbBus: master.reverbBus,
@@ -273,6 +275,27 @@ export function createMixEngine() {
         else for(const route of routes.values())try{route.processor?.dispose();}catch{/* released */}
         if(epoch===spectralEpoch)return spectralStatus={status:'failed',reason:error.message};
         return {status:'invalidated',reason:error.message};
+      }
+    },
+    // Paused-only reset: rebuild native delay buffers and await DSP reset ACKs.
+    // The transport must pause sources before calling, then seek and resume.
+    async refreshSpectralPlayback() {
+      if(!spectralRoutes || spectralStatus.status!=='ready')return {status:'unavailable'};
+      if([...entries.values()].some(e=>!e.element.paused))return {status:'playing'};
+      const routes=spectralRoutes,epoch=++spectralEpoch,plan=spectralStatus.plan;
+      spectralStatus={status:'resetting',plan};
+      try {
+        // Disconnect source and output edges while the processor clears history.
+        for(const [id,e] of entries){teardownEntry(e);routes.get(id)?.processor?.node.disconnect();}
+        await Promise.all([...routes.values()].map(r=>r.processor ? r.processor.reset() : Promise.resolve()));
+        if(epoch!==spectralEpoch || routes!==spectralRoutes || disposed)return {status:'invalidated'};
+        if([...entries.values()].some(e=>!e.element.paused))throw Error('Playback resumed before reset completed');
+        entries.forEach((e,id)=>rebuild(id,e.track,e.gain));
+        return spectralStatus={status:'ready',plan};
+      }catch(error){
+        if(epoch!==spectralEpoch || routes!==spectralRoutes || disposed)return {status:'invalidated'};
+        invalidateSpectral('reset failed');
+        return spectralStatus={status:'failed',reason:error.message};
       }
     },
     spectralPlaybackStatus(){return spectralStatus;},

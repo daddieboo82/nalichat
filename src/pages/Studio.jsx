@@ -333,7 +333,7 @@ export default function Studio() {
     spectralStartRef.current = null;
     const engine = mixEngineRef.current;
     const status = engine?.spectralPlaybackStatus()?.status;
-    if (status === 'ready' || status === 'preparing') engine.resetSpectralPlayback();
+    if (status === 'ready' || status === 'preparing' || status === 'resetting') engine.resetSpectralPlayback();
   };
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);

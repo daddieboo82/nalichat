@@ -692,7 +692,7 @@ export async function renderMixToMp3(tracks, options = {}) {
   const rendered = await renderMixToBuffer(tracks, options);
   if (!rendered) return null;
   if (options.peakProtection !== false) protectStudioMixPeaks(rendered);
-  const { Mp3Encoder } = await import('lamejs');
+  const { Mp3Encoder } = await import('@breezystack/lamejs');
   const numChannels = rendered.numberOfChannels >= 2 ? 2 : 1;
   const encoder = new Mp3Encoder(numChannels, rendered.sampleRate, 128);
 

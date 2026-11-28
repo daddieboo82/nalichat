@@ -10,6 +10,7 @@
 // CORS headers, or a browser that refuses createMediaElementSource) the engine
 // reports failure for that track and the caller falls back to element volume only.
 
+import { planVoxWorkload } from './voxSpectralBudget.js';
 import { voxPitchRatio, voxPitchRate } from '@/lib/voxShift';
 import { studioFxStructureChanged } from '@/lib/studioFxStructure';
 import {
@@ -127,10 +128,23 @@ export function createMixEngine() {
   let masterState = { masterVolume: 100, masterFx: null };
   const entries = new Map(); // trackId -> { element, source, nodes }
   let disposed = false;
+  let spectralRoutes = null, spectralEpoch = 0, spectralStatus = {status:'inactive'};
+  const releaseSpectral = () => {
+    spectralEpoch++;
+    const old=spectralRoutes;spectralRoutes=null;
+    if(old)for(const route of old.values())try{route.processor?.dispose();}catch{/* already released */}
+    return !!old;
+  };
+  const invalidateSpectral = reason => {
+    const active=releaseSpectral();
+    if(active || spectralStatus.status==='preparing') spectralStatus={status:'invalidated',reason};
+    if(active)entries.forEach((entry,id)=>rebuild(id,entry.track,entry.gain));
+  };
 
   const buildMaster = () => {
     if (!context) return;
     if (master) {
+      invalidateSpectral("master rebuild");
       master.nodes.forEach(disposeNode);
     }
     master = connectMasterChain(context, {
@@ -211,6 +225,7 @@ export function createMixEngine() {
       delayBus: master.delayBus,
       cueBus: master.cueBus,
       gain,
+      spectralRoute: spectralRoutes?.get(trackId),
     });
     entry.nodes = built.nodes;
     entry.trackGain = built.trackGain;
@@ -226,6 +241,42 @@ export function createMixEngine() {
   };
 
   return {
+    // Experimental: call only with all session media attached and paused.
+    // No automatic activation; changes that invalidate the fixed graph restore
+    // legacy routing and expose an explicit status to the transport caller.
+    async prepareSpectralPlayback({createNode, reserve=0.5}={}) {
+      if(disposed || !context || !master)return {status:'unavailable'};
+      if([...entries.values()].some(e=>!e.element.paused))return {status:'playing'};
+      invalidateSpectral('reconfigure');
+      const epoch=++spectralEpoch,ctx=context;
+      const snapshot=[...entries.entries()];
+      const plan=planVoxWorkload(snapshot.map(([id,e])=>{
+        const fx=getTrackEffects(e.track).voxshift;
+        return {id,channels:2,ratio:fx&&fx.enabled!==false?voxPitchRatio(fx.params):1};
+      }),{sampleRate:ctx.sampleRate,reserve});
+      const deferred=plan.tracks.filter(t=>t.status==='deferred').map(t=>t.id);
+      if(deferred.length)return spectralStatus={status:'deferred',deferred,plan};
+      const routes=new Map();spectralStatus={status:'preparing'};
+      try {
+        const factory=createNode || (await import('./voxSpectralWorklet.js')).createVoxSpectralNode;
+        for(const t of plan.tracks){
+          const route={delaySamples:t.delaySamples,processor:null};routes.set(t.id,route);
+          if(t.mode){const e=entries.get(t.id);if(!e)throw Error('Track removed');route.processor=await factory(ctx,{mode:t.mode,ratio:voxPitchRatio(getTrackEffects(e.track).voxshift.params),channels:2});if(route.processor.latencySamples!==t.latencySamples)throw Error('Unexpected processor latency');}
+          if(epoch!==spectralEpoch || disposed || ctx!==context)throw Error('Preparation superseded');
+        }
+        if(snapshot.some(([id,e])=>entries.get(id)!==e || !e.element.paused))throw Error('Session changed during preparation');
+        spectralRoutes=routes;
+        entries.forEach((e,id)=>rebuild(id,e.track,e.gain));
+        return spectralStatus={status:'ready',plan};
+      }catch(error){
+        if(spectralRoutes===routes){releaseSpectral();entries.forEach((e,id)=>rebuild(id,e.track,e.gain));}
+        else for(const route of routes.values())try{route.processor?.dispose();}catch{/* released */}
+        if(epoch===spectralEpoch)return spectralStatus={status:'failed',reason:error.message};
+        return {status:'invalidated',reason:error.message};
+      }
+    },
+    spectralPlaybackStatus(){return spectralStatus;},
+    resetSpectralPlayback(){invalidateSpectral('transport reset');return spectralStatus;},
     /** Lazily create the AudioContext. Must be called from a user gesture. */
     ensureContext() {
       if (disposed) return null;
@@ -356,6 +407,7 @@ export function createMixEngine() {
         this.syncTrack(trackId, track);
         return true;
       }
+      invalidateSpectral("track attached");
       if (existing) this.detach(trackId);
       if (!this.ensureContext() || !master) return false;
 
@@ -388,6 +440,7 @@ export function createMixEngine() {
       const afterFx = prev === track ? beforeFx : getTrackEffects(track);
       let structureChanged = studioFxStructureChanged(prev, track);
       // Only supported insert parameter edits may bypass a rebuild.
+      if (structureChanged && (spectralRoutes || spectralStatus.status==='preparing')) invalidateSpectral("insert configuration changed");
       if (structureChanged && prev && !!prev.autoPolish === !!track?.autoPolish) {
         if (canUpdateLiveInserts(beforeFx, afterFx, entry.liveParams)) {
           structureChanged = false;
@@ -486,12 +539,14 @@ export function createMixEngine() {
     detach(trackId) {
       const entry = entries.get(trackId);
       if (!entry) return;
+      invalidateSpectral("track detached");
       teardownEntry(entry);
       entries.delete(trackId);
     },
 
     dispose() {
       disposed = true;
+      releaseSpectral();
       entries.forEach(teardownEntry);
       entries.clear();
       if (master) master.nodes.forEach(disposeNode);

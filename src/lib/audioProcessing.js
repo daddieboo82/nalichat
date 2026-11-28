@@ -444,13 +444,27 @@ export function connectTrackPreInserts(context,source,track,{gain,nodes=[]}={}) 
   return {trackGain,insertsInput,nodes};
 }
 
-export function connectTrackChain(context, source, track, { destination, reverbBus, delayBus, cueBus, gain } = {}) {
+export function connectTrackChain(context, source, track, { destination, reverbBus, delayBus, cueBus, gain, spectralRoute } = {}) {
   const nodes = [];
   const {trackGain, insertsInput} = connectTrackPreInserts(context,source,track,{gain,nodes});
   const insertsOut = context.createGain();
   nodes.push(insertsOut);
   const liveParams = {};
-  connectPluginChain(context, insertsInput, getTrackEffects(track), insertsOut, nodes, liveParams);
+  let signal = insertsInput;
+  let effects = getTrackEffects(track);
+  if (spectralRoute) {
+    if (spectralRoute.processor) {
+      signal.connect(spectralRoute.processor.node);
+      signal = spectralRoute.processor.node;
+      effects = {...effects,voxshift:{...effects.voxshift,params:{...effects.voxshift.params,Pitch:100}}};
+    }
+    if (spectralRoute.delaySamples) {
+      const seconds=spectralRoute.delaySamples/context.sampleRate;
+      const delay=context.createDelay(seconds+1/context.sampleRate);
+      delay.delayTime.value=seconds;signal.connect(delay);nodes.push(delay);signal=delay;
+    }
+  }
+  connectPluginChain(context, signal, effects, insertsOut, nodes, liveParams);
 
   let output = insertsOut;
   if (typeof context.createStereoPanner === 'function') {

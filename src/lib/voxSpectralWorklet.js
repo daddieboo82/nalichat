@@ -12,6 +12,6 @@ export async function createVoxSpectralNode(context, options = {}) {
     loaded.set(context, pending);
   }
   await loaded.get(context);
-  const node = new AudioWorkletNode(context, 'nali-vox-spectral', {numberOfInputs:1, numberOfOutputs:1, channelCount:channels, channelCountMode:'explicit', channelInterpretation:'discrete', outputChannelCount:[channels], processorOptions:{...options, channels}});
+  const node = new AudioWorkletNode(context, 'nali-vox-spectral', {numberOfInputs:1, numberOfOutputs:1, channelCount:channels, channelCountMode:'explicit', channelInterpretation:'speakers', outputChannelCount:[channels], processorOptions:{...options, channels}});
   return {node, latencySamples:options.frameSize ?? 2048, dispose(){node.port.postMessage({type:'dispose'});node.disconnect();node.port.close();}};
 }

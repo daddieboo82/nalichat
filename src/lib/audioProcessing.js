@@ -621,7 +621,11 @@ export async function renderMixToBuffer(tracks, options = {}) {
       original.start(item.range.when,item.range.offset,item.range.duration);
       const pcm = await pre.startRendering();
       const neutral = {...item.track,volume:100,clipGain:0,autoPolish:false,automationPoints:[],muteAutomationPoints:[]};
-      prepared = await prepareSpectralClip(offline,neutral,pcm,{when:0,offset:0,duration:pcm.duration,endsAt:pcm.duration});
+      // Do not pitch-process silence before the clip: overlapping FFT windows
+      // can otherwise spread the first transient backward into the timeline.
+      const firstSample = Math.min(pcm.length, Math.ceil(item.range.when * sampleRate));
+      const start = firstSample / sampleRate;
+      prepared = await prepareSpectralClip(offline,neutral,pcm,{when:start,offset:start,duration:pcm.duration-start,endsAt:pcm.duration});
     }
     const {track,buffer,range} = prepared;
     const src = offline.createBufferSource();

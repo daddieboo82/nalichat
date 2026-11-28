@@ -25,6 +25,8 @@ import {
   googleLoginErrorMessage,
 } from "@/lib/authErrorMessages";
 
+const PASSWORD_GUIDANCE_LENGTH = 12;
+
 export default function Register() {
   const isNativeIos = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === "ios";
   // Keep paid-plan intent visible throughout registration; account creation
@@ -49,6 +51,7 @@ export default function Register() {
   const [emailStartedTracked, setEmailStartedTracked] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [codeExpired, setCodeExpired] = useState(false);
 
   const markEmailRegistrationStarted = () => {
     if (emailStartedTracked) return;
@@ -112,6 +115,7 @@ export default function Register() {
       await base44.auth.register({ email: normalizedEmail, password });
       setEmail(normalizedEmail);
       setOtpCode("");
+      setCodeExpired(false);
       setResendCooldown(30);
       setShowOtp(true);
     } catch (err) {
@@ -138,7 +142,7 @@ export default function Register() {
   };
 
   const handleVerify = async () => {
-    if (loading || resending || otpCode.trim().length !== 6) return;
+    if (loading || resending || codeExpired || otpCode.trim().length !== 6) return;
     setError("");
     setLoading(true);
     try {
@@ -197,6 +201,8 @@ export default function Register() {
         campaign_landing_path: attribution?.landing_path || undefined,
         google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
       });
+      if (otpOutcome === "otp_expired") setCodeExpired(true);
+      if (otpOutcome === "otp_expired" || otpOutcome === "otp_invalid") setOtpCode("");
       setError(otpReason);
     } finally {
       setLoading(false);
@@ -212,6 +218,7 @@ export default function Register() {
       await base44.auth.resendOtp(normalizedEmail);
       trackProductEvent("otp_resend_success", { source: "email_otp" });
       setOtpCode("");
+      setCodeExpired(false);
       setResendCooldown(30);
       toast({
         title: "New code sent",
@@ -305,62 +312,64 @@ export default function Register() {
         subtitle={`We sent a code to ${email}`}
       >
         {error && (
-          <div className="mb-4 rounded-2xl border border-destructive/20 bg-destructive/10 p-3.5 text-sm leading-relaxed text-destructive">
+          <div role="alert" className="mb-4 rounded-2xl border border-destructive/20 bg-destructive/10 p-3.5 text-sm leading-relaxed text-destructive">
             {error}
           </div>
         )}
-        <div className="mb-6 flex justify-center overflow-x-auto px-1 py-1">
-          <InputOTP
-            maxLength={6}
-            aria-label="6-digit verification code"
-            inputMode="numeric"
-            value={otpCode}
-            onChange={setOtpCode}
-            autoFocus
-            autoComplete="one-time-code"
+        <form onSubmit={(event) => { event.preventDefault(); void handleVerify(); }}>
+          <div className="mb-6 flex justify-center overflow-x-auto px-1 py-1">
+            <InputOTP
+              maxLength={6}
+              aria-label="6-digit verification code"
+              inputMode="numeric"
+              value={otpCode}
+              onChange={setOtpCode}
+              autoFocus
+              autoComplete="one-time-code"
+            >
+              <InputOTPGroup className="gap-1.5 sm:gap-2">
+                <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={0} />
+                <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={1} />
+                <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={2} />
+                <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={3} />
+                <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={4} />
+                <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+          <Button
+            className="ui-hover h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10"
+            type="submit"
+            disabled={loading || resending || codeExpired || otpCode.length < 6}
           >
-            <InputOTPGroup className="gap-1.5 sm:gap-2">
-              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={0} />
-              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={1} />
-              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={2} />
-              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={3} />
-              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={4} />
-              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={5} />
-            </InputOTPGroup>
-          </InputOTP>
-        </div>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              "Verify"
+            )}
+          </Button>
+        </form>
         <Button
-          className="ui-hover h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10"
-          onClick={handleVerify}
-          disabled={loading || resending || otpCode.length < 6}
+          type="button"
+          variant={codeExpired ? "default" : "outline"}
+          onClick={handleResend}
+          disabled={resendCooldown > 0 || loading || resending}
+          className="mt-3 min-h-11 w-full rounded-xl"
         >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Verifying...
-            </>
-          ) : (
-            "Verify"
-          )}
+          {resending ? "Sending…" : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
         </Button>
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          Didn't receive the code?{" "}
-          <button
-            onClick={handleResend}
-            disabled={resendCooldown > 0 || loading || resending}
-            className="ui-hover min-h-9 rounded-lg px-2 py-1 font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {resending ? "Sending…" : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
-          </button>
-        </p>
         <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
-          Codes expire. If your code has expired, use Resend code above when the countdown ends. If you requested more than one code, enter only the newest one.
+          Codes expire. If your code has expired, request a new one above and enter the newest code.
         </p>
         <button
           type="button"
           onClick={() => {
             setShowOtp(false);
             setOtpCode("");
+            setCodeExpired(false);
             setError("");
             setResendCooldown(0);
           }}
@@ -454,12 +463,17 @@ export default function Register() {
               autoComplete="new-password"
               placeholder="••••••••"
               value={password}
+              aria-describedby="registration-password-guidance"
               onChange={(e) => { setPassword(e.target.value); markEmailRegistrationStarted(); }}
               className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />
           </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">Use a long, unique password.</p>
+          <p id="registration-password-guidance" className="text-xs leading-relaxed text-muted-foreground" aria-live="polite">
+            {password.length >= PASSWORD_GUIDANCE_LENGTH
+              ? "Recommended length met. Use a password you haven’t used elsewhere."
+              : `Aim for at least ${PASSWORD_GUIDANCE_LENGTH} characters. Mix upper- and lowercase letters, numbers, and symbols.`}
+          </p>
           <button type="button" onClick={() => setShowPassword((value) => !value)} className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-primary focus-visible:ring-2 focus-visible:ring-primary/40" aria-pressed={showPassword}>
             {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
             {showPassword ? "Hide passwords" : "Show passwords"}
@@ -507,6 +521,7 @@ export default function Register() {
           }
           setEmail(normalizedEmail);
           setOtpCode("");
+          setCodeExpired(false);
           setError("");
           // No new registration request is made. PayPal billing is not involved.
           // The code still must pass Base44's standard OTP verification.

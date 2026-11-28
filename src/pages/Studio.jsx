@@ -1,3 +1,4 @@
+import { committedStudioTrack } from '@/lib/studioTrackCommit';
 import { secureUploadFile } from "@/lib/secureUpload";
 import { validateUpload } from "@/lib/uploadValidation";
 import { markActivationComplete, trackProductEvent } from "@/lib/productAnalytics";
@@ -5874,30 +5875,11 @@ export default function Studio() {
         open={showCommitDialog}
         onOpenChange={setShowCommitDialog}
         track={tracks.find(t => selectedTrackIds.includes(t.id))}
-        onCommit={(newAudioUrl) => {
-          const track = tracks.find(t => selectedTrackIds.includes(t.id));
-          if (!track) return;
+        onCommit={(newAudioUrl, result, original) => {
+          if (!studioMountedRef.current || !tracksRef.current.includes(original)) return false;
           // Keep the previous source available to sibling clips and Undo history.
-          // The render bakes fader, pan, inserts and Send 1 into the file — reset them
-          // so committed audio isn't processed twice on playback/export.
-          setTracksWithHistory(prev => prev.map(t => {
-            if (t.id !== track.id) return t;
-            const { effects: _effects, ...rest } = t;
-            return {
-              ...rest,
-              audioUrl: newAudioUrl,
-              clipGain: 0,
-              volume: 100,
-              pan: 50,
-              send1: 0,
-              send2: 0,
-              send3: 0,
-              plugins: {},
-              fadeIn: 0,
-              fadeOut: 0,
-              committed: true,
-            };
-          }));
+          setTracksWithHistory(prev => prev.map(t => t === original ? committedStudioTrack(t,newAudioUrl,result) : t));
+          return true;
         }}
       />
 

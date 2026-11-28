@@ -114,8 +114,10 @@ function track(name, properties = {}) {
     ...acquisition,
     user_id: properties.user_id || analyticsUserId || "",
     ...properties,
-    ...(isSessionEvent && {
+    ...((isSessionEvent || name === "homepage_view" || name === "signup_click") && {
       device_type: getDeviceType(),
+    }),
+    ...(isSessionEvent && {
       landing_path: currentSession.landingPath || acquisition.landing_path,
     }),
     campaign_source: properties.campaign_source || acquisition.campaign_source || "",
@@ -132,7 +134,7 @@ function track(name, properties = {}) {
     "homepage_view", "homepage_demo_click", "signup_click", "registration_view", "registration_form_interaction", "registration_started",
     "registration_completed", "registration_failed", "login_started", "login_completed", "login_failed", "product_session_started", "product_session_engagement",
     "otp_resend_success", "onboarding_view", "onboarding_form_interaction", "onboarding_submit", "onboarding_save_failed", "onboarding_profile_saved", "onboarding_session_refresh_failed", "onboarding_validation_blocked", "onboarding_complete", "post_login_action", "messenger_discovery_view",
-    "contact_added", "messenger_discovery_message_click", "first_message", "studio_open", "first_upload", "activation_complete", "return_visit", "creator_challenge_open", "creator_challenge_publish",
+    "contact_added", "messenger_discovery_message_click", "first_message", "studio_open", "first_upload", "first_studio_recording", "activation_complete", "return_visit", "creator_challenge_open", "creator_challenge_publish",
     "upgrade_click", "billing_review_click", "paywall_view", "paywall_tier_select", "paywall_primary_cta", "paywall_dismissed", "entitlement_prompt_view", "entitlement_prompt_convert", "checkout_started", "checkout_canceled", "purchase_completed", "purchase_failed", "checkout_error_diagnostic"
   ]);
   const shouldPersistEvent = funnelEvents.has(name) &&
@@ -202,6 +204,17 @@ function flush(reason = "heartbeat") {
   });
 }
 export function trackProductEvent(name, properties = {}) { track(name, properties); }
+
+export function trackFirstStudioRecording(userId) {
+  if (!userId) return;
+  const key = `nali_first_studio_recording:${userId}`;
+  try {
+    if (localStorage.getItem(key) === "1") return;
+    localStorage.setItem(key, "1");
+  } catch {}
+  track("first_studio_recording", { user_id: userId, source: "studio" });
+  markActivationComplete(userId, "first_studio_recording");
+}
 
 export function markActivationComplete(userId, source, properties = {}) {
   if (!userId) return false;

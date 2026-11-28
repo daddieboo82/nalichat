@@ -160,8 +160,23 @@ describe('home, navigation, and recovery flows', () => {
     renderWithProviders(<Home />);
 
     expect(screen.queryByRole('button', { name: 'Immersive Onboarding' })).toBeNull();
-    expect(screen.getAllByRole('link', { name: /Get started|Create your free account/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /Get started|Create your free account/i })).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toBe('/login');
     expect(screen.getByRole('heading', { name: /Everything you create.*One creative universe/i })).toBeTruthy();
+  });
+
+  it('offers direct first actions after the current user completes setup', () => {
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { id: 'new-creator', onboarding_completed: true },
+      isAuthenticated: true,
+    };
+    renderWithProviders(<Home />, [{ pathname: '/', state: { setupCompletedBy: 'new-creator' } }]);
+
+    expect(screen.getByRole('link', { name: 'Record in Studio' }).getAttribute('href')).toBe('/studio');
+    expect(screen.getByRole('link', { name: 'Send a message' }).getAttribute('href')).toBe('/messages');
+    fireEvent.click(screen.getByRole('button', { name: 'Explore NaliBase' }));
+    expect(screen.queryByRole('heading', { name: 'Your profile is ready' })).toBeNull();
   });
 
   it('renders the logged-in NaliBase world hub after onboarding', async () => {

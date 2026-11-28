@@ -7,14 +7,14 @@ import { studioClipAudioRange } from './studioClipAudioRange.js';
 // These operate on actual audio data — no simulation.
 
 // Decode an audio URL into an AudioBuffer
-async function fetchAudioBuffer(url) {
+async function fetchAudioBuffer(url, sampleRate) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Audio fetch failed: ${res.status}`);
   const arrayBuffer = await res.arrayBuffer();
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) throw new Error("Web Audio is not supported");
 
-  const ctx = new AudioContextClass();
+  const ctx = new AudioContextClass(sampleRate === undefined ? undefined : {sampleRate});
   try {
     return await ctx.decodeAudioData(arrayBuffer);
   } finally {
@@ -610,7 +610,7 @@ export async function renderMixToBuffer(tracks, options = {}) {
 
   // Split regions often reference the same underlying recording. Share one
   // decode per source for this render only; do not retain buffers across exports.
-  const sources = await decodeStudioMixSources(active, fetchAudioBuffer);
+  const sources = await decodeStudioMixSources(active, url => fetchAudioBuffer(url, sampleRate));
   const decoded = active.map(t => {
     const buffer = sources.get(t.audioUrl);
     return { track: t, buffer, range: studioClipAudioRange(t, buffer.duration) };

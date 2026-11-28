@@ -94,7 +94,7 @@ export function estimateStudioRoundTrip({
 // Automatic correction only applies to local overdubs against a backing track,
 // never to independent Messaging voice notes or uncalibrated sessions. The
 // original WAV remains untouched; clipStart stores the reversible trim.
-export function safeNaliOverdubCompensation(profile, { micDeviceId, outputLatencyMs, hasBackingTrack, duration } = {}) {
+export function safeNaliOverdubCompensation(profile, { micDeviceId, outputLatencyMs, hasBackingTrack, duration, playbackLatencyStart, playbackLatencyEnd } = {}) {
   if (!hasBackingTrack || !profile?.valid || profile.method !== 'acoustic-correlation-v1' ||
       !Number.isFinite(profile.roundTripMs) || profile.roundTripMs < 4 || profile.roundTripMs > 250 ||
       !Number.isFinite(profile.jitterMs) || profile.jitterMs > 12 ||
@@ -106,7 +106,16 @@ export function safeNaliOverdubCompensation(profile, { micDeviceId, outputLatenc
           Math.abs(profile.browserOutputLatencyMs - outputLatencyMs) > 20)) ||
       !Number.isFinite(profile.calibratedAt) || Date.now() - profile.calibratedAt > 24 * 3600000 ||
       profile.calibratedAt > Date.now()) return 0;
-  return Math.min(profile.roundTripMs / 1000, duration * 0.09);
+  // Calibration uses a direct acoustic path, so add only verified stable
+  // graph delay. Never substitute a guessed hardware or processor delay.
+  let graphSeconds=0;
+  if(playbackLatencyStart || playbackLatencyEnd){
+    const a=playbackLatencyStart,b=playbackLatencyEnd;
+    if(!a?.known || !b?.known || a.epoch!==b.epoch || a.algorithmicSeconds!==b.algorithmicSeconds ||
+        !Number.isFinite(a.algorithmicSeconds) || a.algorithmicSeconds<0 || a.algorithmicSeconds>0.1) return 0;
+    graphSeconds=a.algorithmicSeconds;
+  }
+  return Math.min(profile.roundTripMs / 1000 + graphSeconds, duration * 0.09);
 }
 
 const PROFILE_KEY = 'nalichat-studio-acoustic-latency-v1';

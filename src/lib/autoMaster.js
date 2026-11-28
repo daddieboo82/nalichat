@@ -3,7 +3,7 @@
 // Per-track mixer state (fader, clip gain, pan, inserts, Send 1) and the master FX
 // chain are applied first, so a bounce matches what the Studio mixer plays.
 
-import { connectMasterChain, connectTrackChain } from '@/lib/audioProcessing';
+import { connectMasterChain, connectTrackChain, renderMixToBuffer } from '@/lib/audioProcessing';
 
 const dbToGain = (db) => Math.pow(10, (db || 0) / 20);
 
@@ -14,8 +14,48 @@ export async function renderMasteredMix(tracks, params, mixOptions = {}) {
   const audioContext = new (window.AudioContext || window.webkitAudioContext)();
   const sampleRate = audioContext.sampleRate;
   if (audioContext.state !== 'closed') audioContext.close().catch(() => {});
+  if (mixOptions.spectralPitch === true) {
+    const rendered = await renderMixToBuffer(validTracks, {...mixOptions,sampleRate,connectOutput:context=>connectMasteringChain(context,params)});
+    if (!rendered) throw new Error("No audible tracks to bounce.");
+    return bufferToWave(rendered);
+  }
   const offline = new OfflineAudioContext(2, sampleRate * 300, sampleRate);
 
+  const lowShelf = connectMasteringChain(offline, params);
+
+  // ---- Mixer bus (track FX + Send 1 + master FX) feeding the mastering chain ----
+  const mixBus = connectMasterChain(offline, {
+    masterFx: mixOptions.masterFx,
+    masterVolume: mixOptions.masterVolume ?? 100,
+    destination: lowShelf,
+  });
+
+  // ---- Load + connect stems into the master chain ----
+  for (const track of validTracks) {
+    try {
+      const response = await fetch(track.audioUrl);
+      if (!response.ok) throw new Error(`Failed to load track: ${track.name}`);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await offline.decodeAudioData(arrayBuffer);
+
+      const source = offline.createBufferSource();
+      source.buffer = audioBuffer;
+
+      connectTrackChain(offline, source, track, {
+        destination: mixBus.input,
+        reverbBus: mixBus.reverbBus,
+      });
+      source.start(Math.max(0, track.startTime || 0));
+    } catch (trackErr) {
+      console.warn(`Skipping track ${track.name}:`, trackErr);
+    }
+  }
+
+  const rendered = await offline.startRendering();
+  return bufferToWave(rendered);
+}
+
+function connectMasteringChain(offline, params) {
   // ---- Master processing chain (AI driven) ----
   const lowShelf = offline.createBiquadFilter();
   lowShelf.type = "lowshelf";
@@ -65,36 +105,7 @@ export async function renderMasteredMix(tracks, params, mixOptions = {}) {
   makeup.connect(limiter);
   limiter.connect(offline.destination);
 
-  // ---- Mixer bus (track FX + Send 1 + master FX) feeding the mastering chain ----
-  const mixBus = connectMasterChain(offline, {
-    masterFx: mixOptions.masterFx,
-    masterVolume: mixOptions.masterVolume ?? 100,
-    destination: lowShelf,
-  });
-
-  // ---- Load + connect stems into the master chain ----
-  for (const track of validTracks) {
-    try {
-      const response = await fetch(track.audioUrl);
-      if (!response.ok) throw new Error(`Failed to load track: ${track.name}`);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await offline.decodeAudioData(arrayBuffer);
-
-      const source = offline.createBufferSource();
-      source.buffer = audioBuffer;
-
-      connectTrackChain(offline, source, track, {
-        destination: mixBus.input,
-        reverbBus: mixBus.reverbBus,
-      });
-      source.start(Math.max(0, track.startTime || 0));
-    } catch (trackErr) {
-      console.warn(`Skipping track ${track.name}:`, trackErr);
-    }
-  }
-
-  const rendered = await offline.startRendering();
-  return bufferToWave(rendered);
+  return lowShelf;
 }
 
 export function bufferToWave(audioBuffer) {

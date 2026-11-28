@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 describe('Studio delayed playback errors cannot stop a newer transport', () => {
   it('gives each Play/Pause command its own attempt ID and session epoch', async () => {
     const source = await readFile('src/pages/Studio.jsx','utf8');
-    const start = source.indexOf('const togglePlay = () => {');
+    const start = source.indexOf('const togglePlay = async () => {');
     const end = source.indexOf('  useEffect(() => {\n    return () => {', start);
     const block = source.slice(start,end);
     expect(block).toContain('const playbackAttempt = ++playbackAttemptRef.current');
@@ -24,4 +24,8 @@ describe('Studio delayed playback errors cannot stop a newer transport', () => {
     const end = source.indexOf('const armedMidiOnly',start);
     expect(source.slice(start,end)).toContain('setIsPlaying(false)');
   });
+});
+
+it('captures the final recording latency before releasing spectral playback on Stop',async()=>{
+ const source=await readFile('src/pages/Studio.jsx','utf8');const block=source.slice(source.indexOf('const stop = () => {'),source.indexOf('// Called when the count-in overlay'));expect(block.indexOf('stopRecordingProcess()')).toBeGreaterThanOrEqual(0);expect(block.indexOf('resetSpectralTransport()')).toBeGreaterThan(block.indexOf('stopRecordingProcess()'));
 });

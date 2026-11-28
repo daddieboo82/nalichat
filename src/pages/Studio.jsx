@@ -1,3 +1,4 @@
+import { committedStudioTrack } from '@/lib/studioTrackCommit';
 import { secureUploadFile } from "@/lib/secureUpload";
 import { validateUpload } from "@/lib/uploadValidation";
 import { markActivationComplete, trackFirstStudioRecording, trackProductEvent } from "@/lib/productAnalytics";
@@ -25,6 +26,10 @@ import StudioStatusBanners, { StudioPerformanceNotice } from '@/components/studi
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderTunedVocal, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
+import { createStudioSpectralHold, waitForStudioMediaSeek } from '@/lib/studioSpectralHold';
+import { createStudioSpectralMonitor } from '@/lib/studioSpectralMonitor';
+import { voxPitchRatio } from '@/lib/voxShift';
+import { prepareStudioSpectralStart } from '@/lib/studioSpectralStart';
 import { releaseStudioAudioPlayer } from '@/lib/studioAudioPlayerRelease';
 import { startStudioBoundaryPlayback } from '@/lib/studioBoundaryPlayback';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
@@ -250,6 +255,19 @@ export default function Studio() {
   };
   const mediaStreamRef = useRef(null);
   const audioContextRef = useRef(null);
+  const spectralMonitorRef = useRef(null);
+  const monitorRequestedRef = useRef(false);
+  const [monitorRequested,setMonitorRequested] = useState(false);
+  const clearSpectralMonitor = () => {
+    const monitor=spectralMonitorRef.current;spectralMonitorRef.current=null;
+    try{monitor?.dispose();}catch{/* audio context may already be closed */}
+  };
+  const toggleSpectralMonitor = () => {
+    if(monitorRequestedRef.current){monitorRequestedRef.current=false;setMonitorRequested(false);clearSpectralMonitor();return;}
+    if(isRecording || microphoneStartupRef.current.pending)return;
+    monitorRequestedRef.current=true;setMonitorRequested(true);
+    toast.info('Headphone monitor enabled for the next take. Use headphones to prevent feedback.');
+  };
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const recordingFinalizeInFlightRef = useRef(false);
@@ -326,6 +344,28 @@ export default function Studio() {
   const playbackStartingRef = useRef(new Map());
   const playbackFailedRef = useRef(new Set());
   const playbackAttemptRef = useRef(0);
+  const spectralStartRef = useRef(null);
+  const spectralHoldRef = useRef(null);
+  if (!spectralHoldRef.current) spectralHoldRef.current=createStudioSpectralHold();
+  const spectralEnabled = import.meta.env.VITE_STUDIO_SPECTRAL_PREVIEW === 'true';
+  const resetSpectralTransport = () => {
+    spectralStartRef.current = null;
+    spectralHoldRef.current.cancel();
+    const engine = mixEngineRef.current;
+    const status = engine?.spectralPlaybackStatus()?.status;
+    if (status === 'ready' || status === 'preparing' || status === 'resetting') engine.resetSpectralPlayback();
+  };
+  const holdSpectralJump = () => {
+    const engine=mixEngineRef.current;
+    if(!spectralHoldRef.current.pending && engine?.spectralPlaybackStatus()?.status!=='ready')return false;
+    spectralHoldRef.current.begin({
+      pause:()=>Object.values(audioElementsRef.current).forEach(a=>a.pause()),
+      settle:isCurrent=>waitForStudioMediaSeek(()=>tracksRef.current.filter(t=>studioPlaybackPosition(t,currentTimeRef.current).active && t.audioUrl).map(t=>audioElementsRef.current[t.id]).filter(Boolean),isCurrent),
+      refresh:()=>engine.refreshSpectralPlayback(),
+      onFailure:()=>{engine.resetSpectralPlayback();toast.warning('Spectral reset unavailable; using the existing VoxShift engine.');},
+    });
+    return true;
+  };
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
   if (!mixEngineRef.current) mixEngineRef.current = createMixEngine();
@@ -845,7 +885,8 @@ export default function Studio() {
         if (Array.isArray(savedState?.tracks)) {
           const hydrated = await recoverSavedWaveforms(hydrateStudioTracks(savedState.tracks));
           if (cancelled) return;
-          historyEpochRef.current += 1;
+          if (spectralEnabled) resetSpectralTransport();
+    historyEpochRef.current += 1;
           historyRef.current = [hydrated];
           historyIndexRef.current = 0;
           setHistoryIndex(0);
@@ -885,7 +926,8 @@ export default function Studio() {
               fadeOut: 0,
             })));
             if (cancelled) return;
-            historyEpochRef.current += 1;
+            if (spectralEnabled) resetSpectralTransport();
+    historyEpochRef.current += 1;
             historyRef.current = [hydrated];
             historyIndexRef.current = 0;
             setHistoryIndex(0);
@@ -926,6 +968,7 @@ export default function Studio() {
       return;
     }
     // Starting a new session must not inherit Undo/Redo from the last one.
+    if (spectralEnabled) resetSpectralTransport();
     historyEpochRef.current += 1;
     historyRef.current = [[]];
     historyIndexRef.current = 0;
@@ -964,7 +1007,8 @@ export default function Studio() {
             return;
           }
           // Loading a local session is also a full session replacement.
-          historyEpochRef.current += 1;
+          if (spectralEnabled) resetSpectralTransport();
+    historyEpochRef.current += 1;
           historyRef.current = [parsed];
           historyIndexRef.current = 0;
           setHistoryIndex(0);
@@ -996,6 +1040,7 @@ export default function Studio() {
       { ...base, id: 2, name: "Demo Bassline", color: "bg-blue-500", waveform: generateWaveform(400), duration: 20, audioUrl: null },
     ];
     // A demo replaces the previous session, including its Undo/Redo timeline.
+    if (spectralEnabled) resetSpectralTransport();
     historyEpochRef.current += 1;
     const demoEpoch = historyEpochRef.current;
     historyRef.current = [demoTracks];
@@ -1205,6 +1250,9 @@ export default function Studio() {
     let driftAttempt = playbackAttemptRef.current;
     
     const updateTime = (time) => {
+      if (spectralEnabled && spectralHoldRef.current.pending) {
+        lastTime=time;animationFrameId=requestAnimationFrame(updateTime);return;
+      }
       // Backgrounded browsers can pause RAF for seconds or minutes. Don't
       // seek playback over that gap; keep real elapsed time for live capture.
       const frameGapSeconds = (time - lastTime) / 1000;
@@ -1233,6 +1281,8 @@ export default function Studio() {
       const didWrap = nextPosition.wrapped;
 
       if (didWrap) {
+        const held = spectralEnabled && !isRecording && holdSpectralJump();
+        if (spectralEnabled && !held) resetSpectralTransport();
         // A transport jump must reposition already-playing audio, not just
         // wait for a paused split clip to start on the next RAF.
         for (const track of tracksRef.current) {
@@ -1245,6 +1295,7 @@ export default function Studio() {
         playbackFailedRef.current.clear();
         playbackStartingRef.current.clear();
         playbackAttemptRef.current += 1;
+        if(held){updateCurrentTime(newTime);animationFrameId=requestAnimationFrame(updateTime);return;}
       }
 
       currentTimeRef.current = newTime;
@@ -1323,6 +1374,7 @@ export default function Studio() {
               const lastCorrection = previous?.audio === candidate ? previous.lastCorrection : -Infinity;
               if (sustained && time - lastCorrection >= 2000 &&
                   !playbackStartingRef.current.has(track.id)) {
+                if (spectralEnabled) resetSpectralTransport();
                 try { candidate.currentTime = target; } catch {}
                 driftHistory.set(track.id,{audio:candidate,direction:0,lastCorrection:time});
               } else {
@@ -1333,7 +1385,7 @@ export default function Studio() {
           if (!candidate || !candidate.paused ||
               playbackStartingRef.current.has(track.id) ||
               playbackFailedRef.current.has(track.id)) continue;
-          candidate.currentTime = position.sourceTime;
+          if (!spectralEnabled || mixEngineRef.current?.spectralPlaybackStatus()?.status !== 'ready' || Math.abs(candidate.currentTime-position.sourceTime)>0.05) candidate.currentTime = position.sourceTime;
           const boundaryAttempt = playbackAttemptRef.current;
           const boundaryEpoch = historyEpochRef.current;
           startStudioBoundaryPlayback({
@@ -1485,6 +1537,7 @@ export default function Studio() {
   const updateCurrentTime = (newTime) => {
     if (!Number.isFinite(newTime)) return;
     newTime = Math.max(0, newTime);
+    if (spectralEnabled && !(isPlaying && !isRecording && holdSpectralJump())) resetSpectralTransport();
     if (newTime + 15 > transportHorizonRef.current) {
       transportHorizonRef.current = Math.ceil((newTime + 30) / 60) * 60;
       setTransportHorizon(transportHorizonRef.current);
@@ -1510,7 +1563,12 @@ export default function Studio() {
     mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
   };
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
+    if (spectralStartRef.current !== null) {
+      playbackAttemptRef.current += 1;
+      resetSpectralTransport();
+      return;
+    }
     // A user-initiated Play/Pause supersedes any queued record count-in or
     // pre-roll. Otherwise its old punch-in marker can start recording later.
     if (pendingRecordStartRef.current !== null || countInActive) {
@@ -1533,6 +1591,18 @@ export default function Studio() {
       playbackFailedRef.current.clear();
       sounds.nav();
       setActivity("Playing the mix ▶️");
+      if (spectralEnabled && !isRecording) {
+        const allowed = await prepareStudioSpectralStart({
+          pending:spectralStartRef,attempt:playbackAttempt,epoch:playbackEpoch,
+          currentAttempt:()=>playbackAttemptRef.current,currentEpoch:()=>historyEpochRef.current,
+          mounted:()=>studioMountedRef.current,reset:resetSpectralTransport,warn:message=>toast.warning(message),
+          prepare:async()=>{
+            const allRouted = tracks.filter(t=>t.audioUrl).map(t=>getTrackAudio(t)).every(a=>a && a.dataset.fxBypass!=='1');
+            return allRouted ? mixEngineRef.current.prepareSpectralPlayback({allowHybrid:true,priorityIds:selectedTrackIds}) : {status:'unavailable'};
+          },
+        });
+        if (!allowed || playbackAttemptRef.current!==playbackAttempt || historyEpochRef.current!==playbackEpoch || !studioMountedRef.current) return;
+      }
       const playPromises = [];
       const hasSolo = tracks.some(track => track.solo);
       tracks.forEach(track => {
@@ -1557,6 +1627,7 @@ export default function Studio() {
               historyEpochRef.current !== playbackEpoch) return;
           if (results.every(r => r && r.failed)) {
             toast.error("Playback was blocked by your browser. Click Play again to retry.");
+            if (spectralEnabled) resetSpectralTransport();
             setIsPlaying(false);
           }
         });
@@ -1567,6 +1638,7 @@ export default function Studio() {
         audio.pause();
       });
       automationLatchRef.current.clear();
+      if (spectralEnabled) resetSpectralTransport();
     }
     
     setIsPlaying(!isPlaying);
@@ -1589,6 +1661,7 @@ export default function Studio() {
       pendingRecordStartRef.current = null;
       recordingCheckpointRef.current?.stop();
       recordingCheckpointRef.current = null;
+      clearSpectralMonitor();
       mediaRecorderRef.current?.dispose?.();
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(t => t.stop());
@@ -1838,6 +1911,7 @@ export default function Studio() {
   }, []);
 
   const stopRecordingProcess = (keepPlaying = false, recorderAlreadyStopped = false, originalStartTime = null) => {
+    clearSpectralMonitor();monitorRequestedRef.current=false;setMonitorRequested(false);
     if (midiRecordingRef.current && (!mediaRecorderRef.current ||
         (mediaRecorderRef.current.state === 'inactive' && !recorderAlreadyStopped))) {
       midiRecordingRef.current = false;
@@ -1885,7 +1959,7 @@ export default function Studio() {
       stoppedCheckpoint?.stop();
       const stoppedChunks = audioChunksRef.current;
       const stoppedArmedIds = new Set(tracksRef.current.filter(t => t.armed).map(t => String(t.id)));
-      const stoppedOverdub = { ...recordingOverdubRef.current };
+      const stoppedOverdub = { ...recordingOverdubRef.current, playbackLatencyEnd:mixEngineRef.current?.playbackLatencySnapshot() };
       const stoppedRouteUnchanged = stoppedOverdub.routeEpoch === audioRouteEpochRef.current;
       const stoppedStartTime = originalStartTime !== null ? originalStartTime :
         (recordingStartTime !== null ? recordingStartTime : currentTimeRef.current);
@@ -2155,6 +2229,7 @@ export default function Studio() {
   };
 
   const toggleRecord = async () => {
+    if (spectralEnabled && !isRecording) { playbackAttemptRef.current += 1; resetSpectralTransport(); }
     if (!isRecording && recordingFinalizeInFlightRef.current) {
       toast.error("The previous recording is still being saved. Finish that take before recording again.");
       return;
@@ -2268,6 +2343,7 @@ export default function Studio() {
       let startupStream = null;
       let startupContext = null;
       let startupRecorder = null;
+      let startupMonitor = null;
       try {
         const stream = await openStudioMicrophone(navigator.mediaDevices);
         startupStream = stream;
@@ -2332,8 +2408,49 @@ export default function Studio() {
           stream.getTracks().forEach(track => track.stop());
           return;
         }
-        if (lossless) toast.info('Recording lossless WAV on this device.');
         startupRecorder = mediaRecorder;
+        if (spectralEnabled) {
+          // Prepare backing audio before capture starts. Strict recording mode
+          // avoids mixing variable-delay legacy tracks into a calibrated take.
+          const backing=tracksRef.current.filter(t=>t.audioUrl && !isStudioArmedLane(t,tracksRef.current));
+          if(backing.length){
+            Object.values(audioElementsRef.current).forEach(a=>a.pause());
+            const routed=backing.map(t=>getTrackAudio(t)).every(a=>a && a.dataset.fxBypass!=='1');
+            const result=routed?await mixEngineRef.current.prepareSpectralPlayback({recording:true,allowHybrid:false,reserve:monitorRequestedRef.current ? .8 : .65}):{status:'unavailable'};
+            if(!studioMountedRef.current || microphoneStartupRef.current.token!==startupToken || historyEpochRef.current!==startupEpoch){
+              mediaRecorder.dispose?.();stream.getTracks().forEach(t=>t.stop());
+              if(audioContextRef.current===audioCtx)audioContextRef.current=null;
+              if(audioCtx.state!=='closed')await audioCtx.close();
+              return;
+            }
+            if(result.status!=='ready')toast.info('Recording with the existing low-overhead VoxShift engine.');
+          }
+        }
+        if(spectralEnabled && monitorRequestedRef.current){
+          const armed=tracksRef.current.find(t=>t.armed && !['midi','instrument'].includes(t.type));
+          const fx=armed?getTrackEffects(armed).voxshift:null;
+          const ratio=fx && fx.enabled!==false?voxPitchRatio(fx.params):1;
+          try{
+            startupMonitor=await createStudioSpectralMonitor(audioCtx,source,{enabled:true,ratio});
+            if(!studioMountedRef.current || microphoneStartupRef.current.token!==startupToken || historyEpochRef.current!==startupEpoch){
+              startupMonitor.dispose();mediaRecorder.dispose?.();stream.getTracks().forEach(t=>t.stop());
+              if(audioContextRef.current===audioCtx)audioContextRef.current=null;
+              if(audioCtx.state!=='closed')await audioCtx.close();return;
+            }
+            if(monitorRequestedRef.current){spectralMonitorRef.current=startupMonitor;}
+            else startupMonitor.dispose();
+          }catch(error){
+            console.warn('Headphone monitor unavailable:',error);
+            if(studioMountedRef.current && microphoneStartupRef.current.token===startupToken && historyEpochRef.current===startupEpoch){
+              monitorRequestedRef.current=false;setMonitorRequested(false);
+            }
+          }
+        }
+        // A rejected monitor initialization can also arrive after cancellation.
+        if(!studioMountedRef.current || microphoneStartupRef.current.token!==startupToken || historyEpochRef.current!==startupEpoch){
+          throw new Error('Recording startup superseded');
+        }
+        if (lossless) toast.info('Recording lossless WAV on this device.');
         mediaRecorderRef.current = mediaRecorder;
         const captureChunks = [];
         // The spontaneous onstop handler captures this value before React
@@ -2370,7 +2487,12 @@ export default function Studio() {
         // Start the transport only after the microphone recorder is ready.
         recordingStartRealRef.current = performance.now();
         mediaRecorder.start(200);
+        if(startupMonitor && spectralMonitorRef.current===startupMonitor && monitorRequestedRef.current)startupMonitor.setLevel(.15);
         recordingOverdubRef.current.hasBackingTrack = false;
+        const playbackLatencyStart=mixEngineRef.current?.playbackLatencySnapshot();
+        recordingOverdubRef.current.playbackLatencyStart=playbackLatencyStart;
+        // Compare the actual backing output context, not the microphone monitor.
+        recordingOverdubRef.current.outputLatencyMs=playbackLatencyStart?.outputLatencyMs ?? null;
         tracks.forEach(track => {
           const position = studioPlaybackPosition(track, captureStartTime);
           if (isStudioArmedLane(track, tracks) || !track.audioUrl || track.muted ||
@@ -2455,6 +2577,7 @@ export default function Studio() {
           }
           if (mediaRecorderRef.current === startupRecorder) mediaRecorderRef.current = null;
         }
+        if(startupMonitor){try{startupMonitor.dispose();}catch{/* closed */}if(spectralMonitorRef.current===startupMonitor)spectralMonitorRef.current=null;}
         if (startupContext) {
           if (audioContextRef.current === startupContext) audioContextRef.current = null;
           if (startupContext.state !== 'closed') {
@@ -2501,6 +2624,7 @@ export default function Studio() {
   toggleRecordRef.current = toggleRecord;
 
   const stop = () => {
+    clearSpectralMonitor();monitorRequestedRef.current=false;setMonitorRequested(false);
     playbackAttemptRef.current += 1;
     playbackStartingRef.current.clear();
     // Invalidate an in-flight permission request before it resolves.
@@ -2515,6 +2639,7 @@ export default function Studio() {
     pendingStopAfterRef.current = null;
     if (isRecording) { setIsRecording(false); stopRecordingProcess(); } else { sounds.recStop(); }
     Object.values(audioElementsRef.current).forEach(a => a.pause());
+    if (spectralEnabled) resetSpectralTransport();
     // Stop must reset the playhead immediately: a delayed reset can fire
     // after a rapid Stop -> Play and unexpectedly seek the new playback.
     updateCurrentTime(0);
@@ -4069,7 +4194,8 @@ export default function Studio() {
       }
       // A restored backup replaces the current session. Do not let Undo
       // resurrect tracks from the previous session or redo into its edits.
-      historyEpochRef.current += 1;
+      if (spectralEnabled) resetSpectralTransport();
+    historyEpochRef.current += 1;
       historyRef.current = [restoredTracks];
       historyIndexRef.current = 0;
       setHistoryIndex(0);
@@ -4120,7 +4246,7 @@ export default function Studio() {
         const track = lane.primary;
         const blob = await renderMixToWav(lane.clips.map(clip => ({
           ...clip, audioUrl: clip.audioUrl || clip.file_url,
-        })));
+        })), {spectralPitch:spectralEnabled});
         if (!(blob instanceof Blob) || blob.size === 0) {
           throw new Error(`Could not render stem: ${track.name || index + 1}`);
         }
@@ -4380,6 +4506,7 @@ export default function Studio() {
               <ListTodo className="w-4 h-4" /> Milestones
             </Button>
             <NaliLatencyControl disabled={isRecording || recordingFinalizeInFlightRef.current} />
+            {spectralEnabled && <Button type="button" variant={monitorRequested?'default':'outline'} size="sm" aria-pressed={monitorRequested} disabled={!monitorRequested && (isRecording || microphoneStartupRef.current.pending)} onClick={toggleSpectralMonitor} title="Headphones only. Monitor the first armed audio track’s pitch without changing the recording." className="gap-2 rounded-xl"><Volume2 className="w-4 h-4"/> Headphone Monitor {monitorRequested?'ON':'OFF'}</Button>}
             <Button type="button" onClick={toggleAutoPolishVocals} aria-pressed={autoPolishVocals} aria-label="Auto Polish all vocal tracks" title="Automatically polish all vocal tracks during playback and export, including new vocals" variant={autoPolishVocals ? 'default' : 'outline'} size="sm" className={cn('gap-2 rounded-xl', autoPolishVocals ? 'bg-primary text-primary-foreground' : 'border-primary/50')}>
               <Wand2 className="w-4 h-4" /> Auto Polish {autoPolishVocals ? 'ON' : 'OFF'}
             </Button>
@@ -4463,7 +4590,7 @@ export default function Studio() {
               canPublish={canEditProject}
               tracks={tracks}
               redirectAfter={bounceRedirect}
-              mixOptions={{ masterVolume, masterFx }}
+              mixOptions={{ masterVolume, masterFx, spectralPitch:spectralEnabled }}
             />
             <div className="border-l border-border/50 h-6 mx-1"></div>
             <button
@@ -4648,7 +4775,7 @@ export default function Studio() {
             <p className="text-[11px] text-muted-foreground">Private to your account. Copy the link or open My Sessions on your computer.</p>
           </div>}
         </div>
-        <div className="mt-3"><NaliLatencyControl disabled={isRecording || recordingFinalizeInFlightRef.current}/></div>
+        <div className="mt-3"><NaliLatencyControl disabled={isRecording || recordingFinalizeInFlightRef.current}/>{spectralEnabled && <Button type="button" variant={monitorRequested?'default':'outline'} size="sm" aria-pressed={monitorRequested} disabled={!monitorRequested && (isRecording || microphoneStartupRef.current.pending)} onClick={toggleSpectralMonitor} title="Headphones only. Monitor the first armed audio track’s pitch without changing the recording." className="gap-2 rounded-xl"><Volume2 className="w-4 h-4"/> Headphone Monitor {monitorRequested?'ON':'OFF'}</Button>}</div>
       </div>
 
       {/* Main Workspace */}
@@ -5652,7 +5779,7 @@ export default function Studio() {
         format={exportFormat}
         tracks={tracks}
         projectName={projectName}
-        mixOptions={{ masterVolume, masterFx }}
+        mixOptions={{ masterVolume, masterFx, spectralPitch:spectralEnabled }}
       />
 
       {/* Precision editing tooltip — DOM-direct, no re-renders */}
@@ -5745,33 +5872,15 @@ export default function Studio() {
 
       {/* Pro Tools-style Track Commit — render track to audio */}
       <TrackCommitDialog
+        spectralPitch={spectralEnabled}
         open={showCommitDialog}
         onOpenChange={setShowCommitDialog}
         track={tracks.find(t => selectedTrackIds.includes(t.id))}
-        onCommit={(newAudioUrl) => {
-          const track = tracks.find(t => selectedTrackIds.includes(t.id));
-          if (!track) return;
+        onCommit={(newAudioUrl, result, original) => {
+          if (!studioMountedRef.current || !tracksRef.current.includes(original)) return false;
           // Keep the previous source available to sibling clips and Undo history.
-          // The render bakes fader, pan, inserts and Send 1 into the file — reset them
-          // so committed audio isn't processed twice on playback/export.
-          setTracksWithHistory(prev => prev.map(t => {
-            if (t.id !== track.id) return t;
-            const { effects: _effects, ...rest } = t;
-            return {
-              ...rest,
-              audioUrl: newAudioUrl,
-              clipGain: 0,
-              volume: 100,
-              pan: 50,
-              send1: 0,
-              send2: 0,
-              send3: 0,
-              plugins: {},
-              fadeIn: 0,
-              fadeOut: 0,
-              committed: true,
-            };
-          }));
+          setTracksWithHistory(prev => prev.map(t => t === original ? committedStudioTrack(t,newAudioUrl,result) : t));
+          return true;
         }}
       />
 

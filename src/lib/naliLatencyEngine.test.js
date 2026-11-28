@@ -78,3 +78,17 @@ describe('NaliChat measured acoustic round-trip latency engine', () => {
     expect(stop).toHaveBeenCalledOnce();
   });
 });
+
+it('adds only stable known playback graph latency to an acoustic calibration',()=>{
+ const profile={valid:true,method:'acoustic-correlation-v1',roundTripMs:80,jitterMs:2,confidence:.9,micDeviceId:'mic',calibratedAt:Date.now()};
+ const base={micDeviceId:'mic',hasBackingTrack:true,duration:5};
+ const snapshot={known:true,epoch:2,algorithmicSeconds:1024/48000};
+ const correction=(a,b)=>safeNaliOverdubCompensation(profile,{...base,playbackLatencyStart:a,playbackLatencyEnd:b});
+ expect(correction(snapshot,snapshot)).toBeCloseTo(.08+1024/48000,8);
+ expect(correction({...snapshot,algorithmicSeconds:0},{...snapshot,algorithmicSeconds:0})).toBeCloseTo(.08);
+ expect(correction(snapshot,{...snapshot,epoch:3})).toBe(0);
+ expect(correction(snapshot,{...snapshot,known:false})).toBe(0);
+ expect(correction(snapshot,{...snapshot,algorithmicSeconds:0})).toBe(0);
+ expect(correction(snapshot,undefined)).toBe(0);
+ expect(correction({...snapshot,algorithmicSeconds:-1},{...snapshot,algorithmicSeconds:-1})).toBe(0);
+});

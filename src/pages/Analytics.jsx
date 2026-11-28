@@ -506,10 +506,15 @@ export default function Analytics() {
             <h2 className="font-heading text-lg font-semibold">Visitor Retention — Recorded Sessions</h2>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Each session contributes its highest recorded foreground duration when a page-hide, visibility change, or cleanup event captures that duration. Historical periods may include automated test visits.</p>
             {visitorRetention.checkpointOnly > 0 && (
-              <p className="mt-2 text-xs text-muted-foreground">Only checkpoints were captured at the longest observed duration for {visitorRetention.checkpointOnly} sessions. The duration statistics exclude those sessions.</p>
+              <p className="mt-2 text-xs text-muted-foreground">Only checkpoints were captured for {visitorRetention.checkpointOnly} sessions. Their final durations are unknown.</p>
             )}
+            <div className="mt-4 rounded-xl border border-border/60 bg-background/40 p-3">
+              <p className="text-xs text-muted-foreground">Average observed foreground time (includes partial visits)</p>
+              <p className="mt-1 text-xl font-bold tabular-nums">{visitorRetention.observed.average == null ? "Not measured" : `${visitorRetention.observed.average}s`}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{visitorRetention.observed.sessions} measured sessions. This is an observed lower bound for these sessions, not a complete average of all visits.</p>
+            </div>
             {visitorRetention.sessions === 0 ? (
-              <p className="mt-4 rounded-xl border border-border/60 bg-background/40 p-3 text-sm text-muted-foreground">No recorded session durations in the selected period. Retention cannot be measured yet.</p>
+              <p className="mt-4 rounded-xl border border-border/60 bg-background/40 p-3 text-sm text-muted-foreground">No exit-based session durations in the selected period. See observed foreground time above.</p>
             ) : (
               <>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

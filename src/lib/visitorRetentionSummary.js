@@ -44,5 +44,6 @@ export function summarizeVisitorRetention(events = []) {
     return [...buckets.entries()].map(([label, entries]) => ({ label, ...summary(entries) }))
       .sort((a, b) => b.sessions - a.sessions).slice(0, 8);
   };
-  return { ...summary(rows), checkpointOnly, byLanding: groups('landing'), bySource: groups('source'), byDevice: groups('device') };
+  const observed = summary([...sessions.values()]);
+  return { ...summary(rows), observed, checkpointOnly, byLanding: groups('landing'), bySource: groups('source'), byDevice: groups('device') };
 }

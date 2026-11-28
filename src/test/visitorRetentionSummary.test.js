@@ -27,9 +27,12 @@ describe('visitor retention summary', () => {
     const result = summarizeVisitorRetention([exit, partial, tiedCheckpoint]);
     expect(result).toMatchObject({ sessions: 1, checkpointOnly: 1, median: 7, under10: 100 });
     expect(result.byDevice).toMatchObject([{ label: 'Mobile', sessions: 1 }]);
+    expect(result.observed).toMatchObject({sessions:2,average:6,median:6});
   });
   it('does not infer device from missing funnel metadata', () => {
     const result = summarizeVisitorRetention([event('a', 9)]);
     expect(result.byDevice).toMatchObject([{label:'Unknown',sessions:1}]);
   });
 });
+
+it("reports partial-only visits without pretending their final duration is known",()=>{const a=event("a",5);a.metadata.reason="early_checkpoint";const b=event("a",30);b.metadata.reason="heartbeat";expect(summarizeVisitorRetention([a,b])).toMatchObject({sessions:0,average:null,checkpointOnly:1,observed:{sessions:1,average:30}});expect(summarizeVisitorRetention([]).observed.average).toBeNull();});

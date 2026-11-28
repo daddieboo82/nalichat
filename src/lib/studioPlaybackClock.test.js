@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { studioPlaybackTimeAfterStall } from './studioPlaybackClock';
+import { studioSinglePlaybackClock, studioPlaybackTimeAfterStall } from './studioPlaybackClock';
 
 const clip = { id: 8, audioUrl: 'blob:lead', startTime: 30, clipStart: 5, duration: 120 };
 const playing = (currentTime, extra = {}) => ({
@@ -100,5 +100,28 @@ describe('Studio playback resynchronization after a stalled animation frame', ()
     expect(studioPlaybackTimeAfterStall({ ...base, elements: { 8: playing(NaN) } })).toBe(50.25);
     expect(studioPlaybackTimeAfterStall({ ...base, elements: { 8: playing(33) }, frameGapSeconds: 0.016 })).toBe(50.25);
     expect(studioPlaybackTimeAfterStall({ ...base, elements: { 8: playing(33) }, recording: true })).toBe(50.25);
+  });
+});
+
+describe('single-source playback clock', () => {
+  const take = { id: 1, audioUrl: 'blob:take', startTime: 10, clipStart: 2, duration: 8 };
+  const media = { currentTime: 3.5, readyState: 3, paused: false, dataset: { srcUrl: take.audioUrl } };
+
+  it('uses source time with trim and timeline offsets and never moves the cursor backward', () => {
+    const input = { tracks: [take], elements: { 1: media }, previousTime: 11 };
+    expect(studioSinglePlaybackClock(input)).toEqual({ trackId: 1, time: 11.5 });
+    expect(studioSinglePlaybackClock({ ...input, previousTime: 11.6 })).toEqual({ trackId: 1, time: 11.6 });
+  });
+
+  it('leaves the clip when media ends instead of restarting its last section', () => {
+    const input = { tracks: [take], elements: { 1: { ...media, ended: true, paused: true } }, previousTime: 17 };
+    expect(studioSinglePlaybackClock(input)).toEqual({ trackId: 1, time: 18 });
+  });
+
+  it('leaves the multi-track clock and rejects stopped or stale media', () => {
+    const input = { tracks: [take], elements: { 1: media }, previousTime: 11 };
+    expect(studioSinglePlaybackClock({ ...input, tracks: [take, { ...take, id: 2 }] })).toBeNull();
+    expect(studioSinglePlaybackClock({ ...input, elements: { 1: { ...media, seeking: true } } }))
+      .toEqual({ trackId: 1, time: null });
   });
 });

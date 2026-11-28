@@ -31,3 +31,15 @@ export function nextStudioTransportPosition({
   if (!selectionValid && next > end) return { time: 0, wrapped: true };
   return { time: next, wrapped: false };
 }
+
+
+// Take review plays one pass of the selected clip. Project loops belong to
+// the full mix and must not pull isolated review back into the timeline.
+export function studioReviewEndPosition(reviewedTrack, nextTime) {
+  if (!reviewedTrack || !Number.isFinite(nextTime)) return null;
+  const start = Number(reviewedTrack.startTime ?? 0);
+  const duration = Number(reviewedTrack.duration);
+  if (!Number.isFinite(start) || start < 0 || !Number.isFinite(duration) || duration <= 0) return null;
+  const end = start + duration;
+  return Number.isFinite(end) && nextTime >= end ? end : null;
+}

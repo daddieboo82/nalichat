@@ -298,6 +298,13 @@ export function createMixEngine() {
         return spectralStatus={status:'failed',reason:error.message};
       }
     },
+    playbackLatencySnapshot(){
+      const ready=spectralStatus.status==='ready' && !!spectralRoutes;
+      const known=ready || !['preparing','resetting'].includes(spectralStatus.status);
+      return {known:!!context && known,epoch:spectralEpoch,
+        algorithmicSeconds:ready?spectralStatus.plan.latencySamples/context.sampleRate:0,
+        outputLatencyMs:Number.isFinite(context?.outputLatency)?context.outputLatency*1000:null};
+    },
     spectralPlaybackStatus(){return spectralStatus;},
     resetSpectralPlayback(){invalidateSpectral('transport reset');return spectralStatus;},
     /** Lazily create the AudioContext. Must be called from a user gesture. */

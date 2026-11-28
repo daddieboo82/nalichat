@@ -1941,7 +1941,7 @@ export default function Studio() {
       stoppedCheckpoint?.stop();
       const stoppedChunks = audioChunksRef.current;
       const stoppedArmedIds = new Set(tracksRef.current.filter(t => t.armed).map(t => String(t.id)));
-      const stoppedOverdub = { ...recordingOverdubRef.current };
+      const stoppedOverdub = { ...recordingOverdubRef.current, playbackLatencyEnd:mixEngineRef.current?.playbackLatencySnapshot() };
       const stoppedRouteUnchanged = stoppedOverdub.routeEpoch === audioRouteEpochRef.current;
       const stoppedStartTime = originalStartTime !== null ? originalStartTime :
         (recordingStartTime !== null ? recordingStartTime : currentTimeRef.current);
@@ -2427,6 +2427,10 @@ export default function Studio() {
         recordingStartRealRef.current = performance.now();
         mediaRecorder.start(200);
         recordingOverdubRef.current.hasBackingTrack = false;
+        const playbackLatencyStart=mixEngineRef.current?.playbackLatencySnapshot();
+        recordingOverdubRef.current.playbackLatencyStart=playbackLatencyStart;
+        // Compare the actual backing output context, not the microphone monitor.
+        recordingOverdubRef.current.outputLatencyMs=playbackLatencyStart?.outputLatencyMs ?? null;
         tracks.forEach(track => {
           const position = studioPlaybackPosition(track, captureStartTime);
           if (isStudioArmedLane(track, tracks) || !track.audioUrl || track.muted ||

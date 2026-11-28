@@ -11,8 +11,8 @@ export async function renderStudioTrackCommit(track,options={}){
  if(length<=0)return null;
  const region={length,sampleRate:mix.sampleRate,numberOfChannels:mix.numberOfChannels,duration:length/mix.sampleRate,getChannelData:c=>mix.getChannelData(c).subarray(first)};
  protectStudioMixPeaks(region);
- return {blob:audioBufferToWav(region),duration:region.duration,waveform:studioRecordedWaveform(region,2048)};
+ return {blob:audioBufferToWav(region),startTime:first/mix.sampleRate,duration:region.duration,waveform:studioRecordedWaveform(region,2048)};
 }
-export function committedStudioTrack(track,url,{duration,waveform}){
- return {...track,audioUrl:url,duration,fullDuration:duration,clipStart:0,waveform,splitFrom:undefined,segments:undefined,effects:{},plugins:{},autoPolish:false,clipGain:0,volume:100,pan:50,send1:0,send2:0,send3:0,automationPoints:[],muteAutomationPoints:[],panAutomationPoints:[],send1AutomationPoints:[],send2AutomationPoints:[],send3AutomationPoints:[],committed:true};
+export function committedStudioTrack(track,url,{startTime,duration,waveform}){
+ return {...track,audioUrl:url,startTime,duration,fullDuration:duration,clipStart:0,waveform,splitFrom:undefined,segments:undefined,effects:{},plugins:{},autoPolish:false,clipGain:0,volume:100,pan:50,send1:0,send2:0,send3:0,automationPoints:[],muteAutomationPoints:[],panAutomationPoints:[],send1AutomationPoints:[],send2AutomationPoints:[],send3AutomationPoints:[],committed:true};
 }

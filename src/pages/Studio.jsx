@@ -4234,7 +4234,7 @@ export default function Studio() {
         const track = lane.primary;
         const blob = await renderMixToWav(lane.clips.map(clip => ({
           ...clip, audioUrl: clip.audioUrl || clip.file_url,
-        })));
+        })), {spectralPitch:spectralEnabled});
         if (!(blob instanceof Blob) || blob.size === 0) {
           throw new Error(`Could not render stem: ${track.name || index + 1}`);
         }
@@ -4578,7 +4578,7 @@ export default function Studio() {
               canPublish={canEditProject}
               tracks={tracks}
               redirectAfter={bounceRedirect}
-              mixOptions={{ masterVolume, masterFx }}
+              mixOptions={{ masterVolume, masterFx, spectralPitch:spectralEnabled }}
             />
             <div className="border-l border-border/50 h-6 mx-1"></div>
             <button
@@ -5767,7 +5767,7 @@ export default function Studio() {
         format={exportFormat}
         tracks={tracks}
         projectName={projectName}
-        mixOptions={{ masterVolume, masterFx }}
+        mixOptions={{ masterVolume, masterFx, spectralPitch:spectralEnabled }}
       />
 
       {/* Precision editing tooltip — DOM-direct, no re-renders */}
@@ -5860,6 +5860,7 @@ export default function Studio() {
 
       {/* Pro Tools-style Track Commit — render track to audio */}
       <TrackCommitDialog
+        spectralPitch={spectralEnabled}
         open={showCommitDialog}
         onOpenChange={setShowCommitDialog}
         track={tracks.find(t => selectedTrackIds.includes(t.id))}

@@ -16,7 +16,7 @@ import { toast } from 'sonner';
  *  - track: the track to commit
  *  - onCommit: callback(newAudioUrl, duration) — parent replaces track data
  */
-export default function TrackCommitDialog({ open, onOpenChange, track, onCommit }) {
+export default function TrackCommitDialog({ open, onOpenChange, track, onCommit, spectralPitch=false }) {
   const [committing, setCommitting] = useState(false);
   const [done, setDone] = useState(false);
   const closeTimerRef = useRef(null);
@@ -32,7 +32,7 @@ export default function TrackCommitDialog({ open, onOpenChange, track, onCommit 
     }
     setCommitting(true);
     try {
-      const blob = await renderMixToWav([track]);
+      const blob = await renderMixToWav([track], {spectralPitch});
       if (!blob) {
         toast.error("Nothing to commit — track is empty or muted");
         setCommitting(false);

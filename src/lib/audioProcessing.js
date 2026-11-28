@@ -599,7 +599,7 @@ export async function decodeStudioMixSources(tracks, load, concurrency = 2) {
 }
 
 export async function renderMixToBuffer(tracks, options = {}) {
-  const { masterVolume = 100, masterFx = null, sampleRate = 44100, spectralPitch = false } = options;
+  const { masterVolume = 100, masterFx = null, sampleRate = 44100, spectralPitch = false, connectOutput } = options;
   const audioTracks = (tracks || []).filter(t => t.audioUrl);
   if (audioTracks.length === 0) return null;
 
@@ -622,7 +622,7 @@ export async function renderMixToBuffer(tracks, options = {}) {
 
   const length = Math.ceil(totalSeconds * sampleRate);
   const offline = new OfflineAudioContext(2, length, sampleRate);
-  const master = connectMasterChain(offline, { masterFx, masterVolume, destination: offline.destination });
+  const master = connectMasterChain(offline, { masterFx, masterVolume, destination: connectOutput ? connectOutput(offline) : offline.destination });
 
   for (const item of decoded) {
     let prepared = item;

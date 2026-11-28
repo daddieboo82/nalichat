@@ -2435,9 +2435,18 @@ export default function Studio() {
               if(audioContextRef.current===audioCtx)audioContextRef.current=null;
               if(audioCtx.state!=='closed')await audioCtx.close();return;
             }
-            if(monitorRequestedRef.current){spectralMonitorRef.current=startupMonitor;startupMonitor.setLevel(.15);}
+            if(monitorRequestedRef.current){spectralMonitorRef.current=startupMonitor;}
             else startupMonitor.dispose();
-          }catch(error){console.warn('Headphone monitor unavailable:',error);monitorRequestedRef.current=false;setMonitorRequested(false);}
+          }catch(error){
+            console.warn('Headphone monitor unavailable:',error);
+            if(studioMountedRef.current && microphoneStartupRef.current.token===startupToken && historyEpochRef.current===startupEpoch){
+              monitorRequestedRef.current=false;setMonitorRequested(false);
+            }
+          }
+        }
+        // A rejected monitor initialization can also arrive after cancellation.
+        if(!studioMountedRef.current || microphoneStartupRef.current.token!==startupToken || historyEpochRef.current!==startupEpoch){
+          throw new Error('Recording startup superseded');
         }
         if (lossless) toast.info('Recording lossless WAV on this device.');
         mediaRecorderRef.current = mediaRecorder;
@@ -2476,6 +2485,7 @@ export default function Studio() {
         // Start the transport only after the microphone recorder is ready.
         recordingStartRealRef.current = performance.now();
         mediaRecorder.start(200);
+        if(startupMonitor && spectralMonitorRef.current===startupMonitor && monitorRequestedRef.current)startupMonitor.setLevel(.15);
         recordingOverdubRef.current.hasBackingTrack = false;
         const playbackLatencyStart=mixEngineRef.current?.playbackLatencySnapshot();
         recordingOverdubRef.current.playbackLatencyStart=playbackLatencyStart;

@@ -96,7 +96,7 @@ import { selectReconstructionTrack } from '@/lib/studioReconstructionSelection';
 import { isPrivateVoiceTrainingEnabled, setPrivateVoiceTrainingEnabled, shouldTrainNaliVoiceTake } from '@/lib/naliVoiceTrainingConsent';
 import { trainPrivateNaliVoiceFromRecording, forgetPrivateNaliVoiceTraining } from '@/lib/naliVoicePrivateTraining';
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
-import { nextStudioTransportPosition } from '@/lib/studioTransportBoundary';
+import { nextStudioTransportPosition, studioReviewEndPosition } from '@/lib/studioTransportBoundary';
 import { studioTransportFrameDelta } from '@/lib/studioTransportDelta';
 import { studioSinglePlaybackClock, studioPlaybackTimeAfterStall, studioPlaybackDriftTarget } from '@/lib/studioPlaybackClock';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
@@ -1270,10 +1270,11 @@ export default function Studio() {
       // When the tab resumes, use actual media progress if a current clip
       // demonstrably continued playing. Otherwise retain the safe RAF cap.
       const playbackTracks = getTransportTracks(tracksRef.current);
+      const reviewedTake = playbackTracks !== tracksRef.current ? playbackTracks[0] : null;
       const singleClock = isPlaying && !isRecording && !spectralEnabled
         ? studioSinglePlaybackClock({
           tracks: playbackTracks, elements: audioElementsRef.current,
-          previousTime: currentTimeRef.current, reviewOnly: playbackTracks !== tracksRef.current,
+          previousTime: currentTimeRef.current, reviewOnly: Boolean(reviewedTake),
         }) : null;
       const mediaAlignedTime = singleClock?.time ?? studioPlaybackTimeAfterStall({
         expectedTime: isRecording && recordingStartTime !== null && recordingStartRealRef.current !== null
@@ -1284,10 +1285,19 @@ export default function Studio() {
         elements: audioElementsRef.current,
         recording: isRecording,
       });
+      const reviewEnd = studioReviewEndPosition(reviewedTake, mediaAlignedTime);
+      if (isPlaying && !isRecording && reviewEnd !== null) {
+        Object.values(audioElementsRef.current).forEach(audio => audio.pause());
+        automationLatchRef.current.clear();
+        if (spectralEnabled) resetSpectralTransport();
+        updateCurrentTime(reviewEnd);
+        setIsPlaying(false);
+        return;
+      }
       const nextPosition = nextStudioTransportPosition({
         nextTime: mediaAlignedTime,
         recording: isRecording,
-        looping: loopActiveRef.current,
+        looping: !reviewedTake && loopActiveRef.current,
         selectionStart: selectionStartRef.current,
         selectionEnd: selectionEndRef.current,
         tracks: tracksRef.current,
@@ -1610,6 +1620,12 @@ export default function Studio() {
         updateCurrentTime(startTime);
       }
       playbackReviewRef.current = { trackId: reviewTrack.id, epoch };
+    } else if (!isPlaying && !isRecording) {
+      const playbackTracks = getTransportTracks(tracksRef.current);
+      if (playbackTracks !== tracksRef.current &&
+          studioReviewEndPosition(playbackTracks[0], currentTimeRef.current) !== null) {
+        updateCurrentTime(Number(playbackTracks[0].startTime) || 0);
+      }
     }
     // Each Play/Pause action invalidates promises from earlier starts.
     const playbackAttempt = ++playbackAttemptRef.current;

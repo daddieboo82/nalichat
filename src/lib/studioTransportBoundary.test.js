@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { studioProjectEndSeconds, nextStudioTransportPosition } from './studioTransportBoundary';
+import { studioProjectEndSeconds, nextStudioTransportPosition, studioReviewEndPosition } from './studioTransportBoundary';
 
 describe('Studio long-session transport boundary', () => {
   it('preserves legacy short-session looping without shortening projects that exceed 100 seconds', () => {
@@ -44,4 +44,12 @@ describe('Studio long-session transport boundary', () => {
     expect(nextStudioTransportPosition({ nextTime: 101, looping: true, selectionStart: 20, selectionEnd: 10, tracks: [{ duration: 250 }] }))
       .toEqual({ time: 101, wrapped: false });
   });
+});
+
+it('ends an isolated take at its clip boundary, including trimmed or offset takes', () => {
+  const take = { startTime: 12, duration: 3, clipStart: 2 };
+  expect(studioReviewEndPosition(take, 14.99)).toBeNull();
+  expect(studioReviewEndPosition(take, 15)).toBe(15);
+  expect(studioReviewEndPosition(take, 15.5)).toBe(15);
+  expect(studioReviewEndPosition(null, 15)).toBeNull();
 });

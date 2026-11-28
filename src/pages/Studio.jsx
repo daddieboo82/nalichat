@@ -25,7 +25,7 @@ import StudioStatusBanners, { StudioPerformanceNotice } from '@/components/studi
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderTunedVocal, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
-import { createStudioSpectralHold } from '@/lib/studioSpectralHold';
+import { createStudioSpectralHold, waitForStudioMediaSeek } from '@/lib/studioSpectralHold';
 import { prepareStudioSpectralStart } from '@/lib/studioSpectralStart';
 import { releaseStudioAudioPlayer } from '@/lib/studioAudioPlayerRelease';
 import { startStudioBoundaryPlayback } from '@/lib/studioBoundaryPlayback';
@@ -341,10 +341,10 @@ export default function Studio() {
   };
   const holdSpectralJump = () => {
     const engine=mixEngineRef.current;
-    if(spectralHoldRef.current.pending)return true;
-    if(engine?.spectralPlaybackStatus()?.status!=='ready')return false;
+    if(!spectralHoldRef.current.pending && engine?.spectralPlaybackStatus()?.status!=='ready')return false;
     spectralHoldRef.current.begin({
       pause:()=>Object.values(audioElementsRef.current).forEach(a=>a.pause()),
+      settle:isCurrent=>waitForStudioMediaSeek(()=>tracksRef.current.filter(t=>studioPlaybackPosition(t,currentTimeRef.current).active && t.audioUrl).map(t=>audioElementsRef.current[t.id]).filter(Boolean),isCurrent),
       refresh:()=>engine.refreshSpectralPlayback(),
       onFailure:()=>{engine.resetSpectralPlayback();toast.warning('Spectral reset unavailable; using the existing VoxShift engine.');},
     });
@@ -1369,7 +1369,7 @@ export default function Studio() {
           if (!candidate || !candidate.paused ||
               playbackStartingRef.current.has(track.id) ||
               playbackFailedRef.current.has(track.id)) continue;
-          candidate.currentTime = position.sourceTime;
+          if (!spectralEnabled || mixEngineRef.current?.spectralPlaybackStatus()?.status !== 'ready' || Math.abs(candidate.currentTime-position.sourceTime)>0.05) candidate.currentTime = position.sourceTime;
           const boundaryAttempt = playbackAttemptRef.current;
           const boundaryEpoch = historyEpochRef.current;
           startStudioBoundaryPlayback({

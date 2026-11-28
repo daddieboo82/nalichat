@@ -8,10 +8,11 @@ afterEach(cleanup);
 const track={id:2,name:'Vocal Take 1',audioUrl:'blob:recorded-take',
  captureQuality:{status:'clipping',peakDb:-0.02,rmsDb:-10.7}};
 describe('mobile recorded-take review',()=>{
- it('plays only the selected source and explains the capture-quality measurement',()=>{
-  render(<MobileTakeReview track={track} onRetake={()=>{}} onSaveForPC={()=>{}}/>);
-  const player=screen.getByLabelText('Playback selected Studio take');
-  expect(player.getAttribute('src')).toBe('blob:recorded-take');
+ it('plays from the selected take and explains the capture-quality measurement',()=>{
+  const onTogglePlayback=vi.fn();
+  render(<MobileTakeReview track={track} onTogglePlayback={onTogglePlayback} onRetake={()=>{}} onSaveForPC={()=>{}}/>);
+  fireEvent.click(screen.getByRole('button',{name:'Play from this take'}));
+  expect(onTogglePlayback).toHaveBeenCalledWith(track);
   expect(screen.getByText(/possible clipping/i)).toBeTruthy();
   expect(screen.getByText(/Peak -0.0 dBFS/i)).toBeTruthy();
   expect(screen.getByText(/still in this browser/i)).toBeTruthy();

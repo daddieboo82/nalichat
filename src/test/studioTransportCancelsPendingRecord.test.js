@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 describe('Studio playback supersedes queued record punch-in', () => {
   it('cancels an outstanding pre-roll marker before normal Play/Pause', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
-    const start = source.indexOf('const togglePlay = async () => {');
+    const start = source.indexOf('const togglePlay = async');
     const end = source.indexOf('// Each Play/Pause action invalidates',start);
     const block = source.slice(start,end);
     expect(block).toContain('pendingRecordStartRef.current !== null');
@@ -14,7 +14,7 @@ describe('Studio playback supersedes queued record punch-in', () => {
   });
   it('cancels count-in and prevents a stale one-shot recording bypass', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
-    const start = source.indexOf('const togglePlay = async () => {');
+    const start = source.indexOf('const togglePlay = async');
     const end = source.indexOf('// Each Play/Pause action invalidates',start);
     const block = source.slice(start,end);
     expect(block).toContain('countInActive');
@@ -23,7 +23,7 @@ describe('Studio playback supersedes queued record punch-in', () => {
   });
   it('still invalidates the normal playback attempt after canceling pending recording', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
-    const start = source.indexOf('const togglePlay = async () => {');
+    const start = source.indexOf('const togglePlay = async');
     const end = source.indexOf('if (isRecording)', start);
     const block = source.slice(start,end);
     expect(block.indexOf('pendingRecordStartRef.current = null;')).toBeLessThan(block.indexOf('++playbackAttemptRef.current'));

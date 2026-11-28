@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 describe('Studio delayed playback errors cannot stop a newer transport', () => {
   it('gives each Play/Pause command its own attempt ID and session epoch', async () => {
     const source = await readFile('src/pages/Studio.jsx','utf8');
-    const start = source.indexOf('const togglePlay = async () => {');
+    const start = source.indexOf('const togglePlay = async');
     const end = source.indexOf('  useEffect(() => {\n    return () => {', start);
     const block = source.slice(start,end);
     expect(block).toContain('const playbackAttempt = ++playbackAttemptRef.current');

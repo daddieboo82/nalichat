@@ -44,3 +44,19 @@ describe('optional formant envelope correction',()=>{
   it('preserves identity signal after fixed delay',()=>{const x=tone(440,4096),s=createVoxSpectralStream(1),inBlock=new Float32Array(x.length+s.latencySamples),out=new Float32Array(inBlock.length);inBlock.set(x);s.process(inBlock,out);expect(out.subarray(s.latencySamples)).toEqual(x);});
   it('rejects mismatched input/output lengths',()=>expect(()=>createVoxSpectralStream(1.2).process(new Float32Array(128),new Float32Array(64))).toThrow());
 });
+
+describe('spectral processing modes and level stabilization',()=>{
+  it.each([['recording',512],['mixing',1024],['rendering',2048]])('supports %s with %i samples of delay',(mode,delay)=>{
+    const x=tone(440,rate*2), options={mode,sampleRate:rate};
+    const s=createVoxSpectralStream(1.6,options);expect(s.latencySamples).toBe(delay);
+    const base=voxSpectralPitch(x,1.6,{...options,levelStrength:0}),out=voxSpectralPitch(x,1.6,options);
+    const rms=a=>Math.sqrt(a.subarray(rate,rate*1.8).reduce((sum,v)=>sum+v*v,0)/(rate*.8));
+    const error=a=>Math.abs(20*Math.log10(rms(a)/rms(x)));
+    expect(error(out)).toBeLessThan(error(base));expect(out.every(Number.isFinite)).toBe(true);
+    const padded=new Float32Array(x.length+delay),streamed=new Float32Array(padded.length);padded.set(x);
+    for(let i=0;i<padded.length;i+=128)s.process(padded.subarray(i,i+128),streamed.subarray(i,i+128));
+    expect(streamed.subarray(delay)).toEqual(out);
+  });
+  it('preserves silence with stabilization',()=>expect(voxSpectralPitch(new Float32Array(4096),1.4,{mode:'recording'}).every(v=>v===0)).toBe(true));
+  it('rejects invalid mode and level controls',()=>{expect(()=>createVoxSpectralStream(1.2,{mode:'unknown'})).toThrow();expect(()=>createVoxSpectralStream(1.2,{levelStrength:2})).toThrow();});
+});

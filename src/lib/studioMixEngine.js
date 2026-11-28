@@ -10,7 +10,7 @@
 // CORS headers, or a browser that refuses createMediaElementSource) the engine
 // reports failure for that track and the caller falls back to element volume only.
 
-import { createVoxCalibrationCache } from './voxDeviceCalibration.js';
+import { createAsyncVoxCalibrationCache } from './voxAsyncCalibration.js';
 import { planVoxWorkload } from './voxSpectralBudget.js';
 import { voxPitchRatio, voxPitchRate } from '@/lib/voxShift';
 import { studioFxStructureChanged } from '@/lib/studioFxStructure';
@@ -129,7 +129,7 @@ export function createMixEngine() {
   let masterState = { masterVolume: 100, masterFx: null };
   const entries = new Map(); // trackId -> { element, source, nodes }
   let disposed = false;
-  const getVoxCalibration=createVoxCalibrationCache();
+  const getVoxCalibration=createAsyncVoxCalibrationCache();
   let spectralRoutes = null, spectralEpoch = 0, spectralStatus = {status:'inactive'};
   const releaseSpectral = () => {
     spectralEpoch++;
@@ -258,7 +258,13 @@ export function createMixEngine() {
         const fx=getTrackEffects(e.track).voxshift;
         return {id,channels:2,ratio:fx&&fx.enabled!==false?voxPitchRatio(fx.params):1};
       });
-      const calibration=calibrate && requests.some(t=>t.ratio!==1) ? getVoxCalibration(ctx) : null;
+      spectralStatus={status:'preparing'};
+      const needsCalibration=calibrate && requests.some(t=>t.ratio!==1);
+      const calibration=needsCalibration ? await getVoxCalibration(ctx) : null;
+      if(epoch!==spectralEpoch || disposed || ctx!==context)return {status:'invalidated'};
+      if(snapshot.some(([id,e])=>entries.get(id)!==e || !e.element.paused))return spectralStatus={status:'invalidated'};
+      // A slow or unavailable benchmark must not enable unverified processing.
+      if(needsCalibration && !calibration)return spectralStatus={status:'unavailable',reason:'Device calibration unavailable'};
       const plan=planVoxWorkload(requests,{sampleRate:ctx.sampleRate,reserve,calibration});
       const deferred=plan.tracks.filter(t=>t.status==='deferred').map(t=>t.id);
       if(deferred.length)return spectralStatus={status:'deferred',deferred,plan};

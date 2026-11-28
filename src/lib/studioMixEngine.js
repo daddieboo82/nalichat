@@ -269,7 +269,7 @@ export function createMixEngine() {
         entries.forEach((e,id)=>rebuild(id,e.track,e.gain));
         return spectralStatus={status:'ready',plan};
       }catch(error){
-        if(spectralRoutes===routes){releaseSpectral();entries.forEach((e,id)=>rebuild(id,e.track,e.gain));}
+        if(spectralRoutes===routes){releaseSpectral();entries.forEach((e,id)=>rebuild(id,e.track,e.gain));return spectralStatus={status:'failed',reason:error.message};}
         else for(const route of routes.values())try{route.processor?.dispose();}catch{/* released */}
         if(epoch===spectralEpoch)return spectralStatus={status:'failed',reason:error.message};
         return {status:'invalidated',reason:error.message};
@@ -547,6 +547,7 @@ export function createMixEngine() {
     dispose() {
       disposed = true;
       releaseSpectral();
+      spectralStatus={status:'inactive'};
       entries.forEach(teardownEntry);
       entries.clear();
       if (master) master.nodes.forEach(disposeNode);

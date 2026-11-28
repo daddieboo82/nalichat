@@ -20,8 +20,10 @@ describe('Studio record arm and existing split clips', () => {
   });
   it('excludes armed sibling audio from pre-roll, overdub, and RAF transport', async () => {
     const code = await readFile('src/pages/Studio.jsx', 'utf8');
-    // Two playback guards plus the new latency-calibrated overdub guard.
-    expect(code.match(/!isStudioArmedLane\(track, tracks\)/g)).toHaveLength(3);
+    // Pre-roll and backing-track detection use positive eligibility; actual overdub rejects armed lanes.
+    expect(code.match(/!isStudioArmedLane\(track, tracks\)/g)).toHaveLength(2);
+    const overdub = code.slice(code.indexOf('mediaRecorder.start(200);'), code.indexOf('mobileCaptureAutoFinishRef.current = false;', code.indexOf('mediaRecorder.start(200);')));
+    expect(overdub).toContain('if (isStudioArmedLane(track, tracks) ||');
     expect(code).toContain('hasBackingTrack: tracks.some(track => !isStudioArmedLane(track, tracks)');
     expect(code).toContain('(!isRecording || !isStudioArmedLane(track, sessionTracks))');
   });

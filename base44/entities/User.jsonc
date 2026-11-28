@@ -470,5 +470,27 @@
         "role": "admin"
       }
     }
-  }
+  },
+  "required": [
+    "display_name",
+    "birthdate",
+    "bio",
+    "location",
+    "avatar_url",
+    "phone",
+    "reengagement_sent_at",
+    "inactive_reengagement_sent_at",
+    "timeout_until",
+    "stripe_customer_id",
+    "trial_used_at",
+    "trial_claim_id",
+    "paypal_checkout_claim_id",
+    "paypal_checkout_claimed_at",
+    "stripe_checkout_claim_id",
+    "stripe_checkout_claimed_at",
+    "website",
+    "cover_url",
+    "last_seen",
+    "squad_membership_id"
+  ]
 }

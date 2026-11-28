@@ -38,7 +38,7 @@ describe('mobile long-session recording feedback',()=>{
     const studio=await readFile('src/pages/Studio.jsx','utf8');
     expect(studio).toContain('setMobileCaptureProgress(prev => ({...prev,checkpointSeconds');
     expect(studio).toContain('mediaRecorderRef.current === mediaRecorder');
-    expect(studio).toContain('shouldFinalizeMobilePcm(capturedBytes,pcm)');
+    expect(studio).toContain('shouldFinalizeMobilePcm(capturedBytes,pcm,Boolean(recorder.incrementalStorage))');
     expect(studio).toContain('mobileCaptureAutoFinishRef.current = true');
     expect(studio).toContain('aria-label="Mobile recording progress"');
     const recorder=await readFile('src/lib/studioPcmRecorder.js','utf8');

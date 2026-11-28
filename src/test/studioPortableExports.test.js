@@ -72,7 +72,9 @@ describe("NaliStudio portable exports", () => {
     const end = studio.indexOf("const handleStartBlank =", start);
     const loader = studio.slice(start, end);
     expect(studio).toContain("const waveformPointsRef = useRef(WAVEFORM_POINTS)");
-    expect(loader).toContain("generateWaveform(waveformPointsRef.current)");
+    expect(loader).toContain("studioRecordedWaveform(buffer, waveformPointsRef.current)");
+    expect(loader).toContain("context.decodeAudioData(await response.arrayBuffer())");
+    expect(loader).toContain("applyStudioWaveformRefresh(track, recovered.get(track.audioUrl))");
     expect(loader).toContain("setSearchParams(prev => {");
     expect(loader).toContain(
       "}, [roomId, inviteToken, user?.id, projectLoadRetryKey, setSearchParams]);"
@@ -133,7 +135,7 @@ describe("NaliStudio portable exports", () => {
     const loader = studio.slice(start, end);
     expect(loader).toContain("if (Array.isArray(savedState?.tracks))");
     expect(loader).not.toContain("savedState.tracks.length > 0");
-    expect(loader).toContain("const hydrated = hydrateStudioTracks(");
+    expect(loader).toContain("const hydrated = await recoverSavedWaveforms(hydrateStudioTracks(savedState.tracks))");
     expect(loader).toContain("const persistedTracks = await listPersistedTracks(roomId)");
   });
 
@@ -142,7 +144,7 @@ describe("NaliStudio portable exports", () => {
     const start = studio.indexOf("useEffect(() => {\n    if (!roomId || !user?.id)");
     const end = studio.indexOf("const handleStartBlank =", start);
     const loader = studio.slice(start, end);
-    expect(loader).toContain("const hydrated = persistedTracks.map((track) => ({");
+    expect(loader).toContain("const hydrated = await recoverSavedWaveforms(persistedTracks.map((track) => ({");
     expect(loader).not.toContain("if (persistedTracks.length > 0)");
     expect(loader).toContain("historyRef.current = [hydrated]");
     expect(loader).toContain("setTracks(hydrated)");
@@ -225,8 +227,10 @@ describe("NaliStudio portable exports", () => {
   it("invalidates queued history callbacks when restoring another session", async () => {
     const studio = await source();
     expect(studio).toContain("const historyEpochRef = useRef(0)");
-    expect(studio).toContain("const historyEpoch = historyEpochRef.current");
-    expect(studio).toContain("if (historyEpochRef.current === historyEpoch) pushToHistory(next)");
+    expect(studio).toContain("const epoch = historyEpochRef.current");
+    expect(studio).toContain("if (epoch !== historyEpochRef.current) return previous");
+    expect(studio).toContain("if (entry.epoch !== historyEpochRef.current) continue");
+    expect(studio).toContain("consumedHistoryRef.current.add(entry.key)");
     expect(studio).toContain("historyEpochRef.current += 1");
   });
 

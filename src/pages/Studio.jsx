@@ -420,7 +420,15 @@ export default function Studio() {
   // Real-time collaborator presence
   const { peers: livePeers, setActivity } = useStudioPresence(roomId || 'local_studio');
   
-  const [tracks, setTracks] = useState([]);
+  // Keep track changes and their history journal in the same React state update.
+  const [trackState, setTrackState] = useState(() => ({ tracks: [], journal: [] }));
+  const tracks = trackState.tracks;
+  const setTracks = React.useCallback((updater) => {
+    setTrackState(previous => {
+      const next = typeof updater === 'function' ? updater(previous.tracks) : updater;
+      return next === previous.tracks ? previous : { ...previous, tracks: next };
+    });
+  }, []);
   const timelineSeconds = useMemo(() => tracks.reduce((end, t) =>
     Math.max(end, (Number(t.startTime) || 0) + (Number(t.duration) || 0) + 15),
     Math.max(100, transportHorizon)), [tracks, transportHorizon]);
@@ -1126,17 +1134,38 @@ export default function Studio() {
     setHistoryIndex(historyIndexRef.current);
   };
 
+  // A journal entry is part of committed React state; interrupted renders
+  // cannot publish their abandoned snapshots through refs or timers.
+  const consumedHistoryRef = useRef(new WeakSet());
+  useLayoutEffect(() => {
+    for (const entry of trackState.journal) {
+      if (consumedHistoryRef.current.has(entry.key)) continue;
+      consumedHistoryRef.current.add(entry.key);
+      if (entry.epoch !== historyEpochRef.current) continue;
+      if (historyRef.current.length === 0) {
+        historyRef.current = [entry.before];
+        historyIndexRef.current = 0;
+        setHistoryIndex(0);
+      }
+      pushToHistory(entry.next);
+    }
+  }, [trackState.journal]);
+
   const undo = () => { if (historyIndexRef.current > 0) { historyIndexRef.current -= 1; setHistoryIndex(historyIndexRef.current); setTracks(historyRef.current[historyIndexRef.current]); } };
   const redo = () => { if (historyIndexRef.current < historyRef.current.length - 1) { historyIndexRef.current += 1; setHistoryIndex(historyIndexRef.current); setTracks(historyRef.current[historyIndexRef.current]); } };
 
   const setTracksWithHistory = (updater) => {
-    setTracks(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      const historyEpoch = historyEpochRef.current;
-      setTimeout(() => {
-        if (historyEpochRef.current === historyEpoch) pushToHistory(next);
-      }, 0);
-      return next;
+    const key = {};
+    const epoch = historyEpochRef.current;
+    setTrackState(previous => {
+      if (epoch !== historyEpochRef.current) return previous;
+      const before = previous.tracks;
+      const next = typeof updater === 'function' ? updater(before) : updater;
+      // A same-reference edit can intentionally commit a prior drag preview.
+      return {
+        tracks: next,
+        journal: [...previous.journal.filter(entry => entry.epoch === epoch).slice(-49), { key, epoch, before, next }]
+      };
     });
   };
 

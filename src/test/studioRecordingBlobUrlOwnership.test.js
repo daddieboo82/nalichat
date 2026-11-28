@@ -18,7 +18,8 @@ describe('Studio recorded blob URL ownership', () => {
     const start = src.indexOf('stoppedRecorder.onstop = async () => {');
     const end = src.indexOf('stoppedRecorder.stop();',start);
     const handler = src.slice(start,end);
-    expect(handler).toContain('} finally {\n          // If finalization failed before ownership passed to a track');
+    expect(handler).toContain('} finally {');
+    expect(handler).toContain('// If finalization failed before ownership passed to a track');
     expect(handler).toContain('if (transientRecordedUrl && !recordedUrlTransferred)');
     expect(handler).toContain('URL.revokeObjectURL(transientRecordedUrl);');
     expect(handler).toContain('if (historyEpochRef.current !== stoppedSessionEpoch) return;');

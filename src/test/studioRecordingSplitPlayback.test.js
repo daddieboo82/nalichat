@@ -6,9 +6,15 @@ describe('Studio recording context uses split clip source offsets', () => {
   it('pre-roll and overdub start only the active audible source segment', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
     const preRoll = source.slice(source.indexOf('const preRollPlayPromises = [];'), source.indexOf('if (preRollPlayPromises.length > 0)'));
-    const overdub = source.slice(source.indexOf('// Overdub: play back existing'), source.indexOf('const audioCtx = new', source.indexOf('// Overdub: play back existing')));
+    const start = source.indexOf('mediaRecorder.start(200);');
+    const end = source.indexOf('mobileCaptureAutoFinishRef.current = false;', start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const overdub = source.slice(start, end);
+    expect(preRoll).toContain('studioPlaybackPosition(track, currentTimeRef.current)');
+    expect(overdub).toContain('studioPlaybackPosition(track, captureStartTime)');
+    expect(overdub).toContain('if (isStudioArmedLane(track, tracks) ||');
     for (const block of [preRoll, overdub]) {
-      expect(block).toContain('studioPlaybackPosition(track, currentTimeRef.current)');
       expect(block).toContain('position.active');
       expect(block).toContain('audio.currentTime = position.sourceTime');
       expect(block).not.toContain('audio.currentTime = currentTimeRef.current');

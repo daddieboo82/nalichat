@@ -5,12 +5,14 @@ import { groupStudioClipLanes } from '../lib/studioClipLanes.js';
 describe('Studio split clips stay on one visible lane', () => {
   it('renders one track header and one timeline row per lane, with all clips inside', async () => {
     const source = await readFile('src/pages/Studio.jsx', 'utf8');
-    expect(source).toContain("visibleStudioClipLanes(tracks).map(({ primary: track }, index)");
-    expect(source).toContain("map(({ primary: track, clips: laneClips })");
+    expect(source).toContain("const timelineLanes = useMemo(() => visibleStudioClipLanes(tracks), [tracks])");
+    expect(source).toContain("timelineLanes.map(({ primary: track }, index)");
+    expect(source).toContain("map(({ primary: track, clips: laneClips, primary: lanePrimary })");
     expect(source).toContain("laneClips.map((clip) => {");
     expect(source).toContain("handleTrackClick(event, track.id)");
     expect(source).toContain("reorderVisibleStudioClipLanes(prev, result.source.index, result.destination.index)");
-    expect(source).toContain("groupStudioClipLanes(tracks).length} Tracks");
+    expect(source).toContain("const allStudioLanes = useMemo(() => groupStudioClipLanes(tracks), [tracks])");
+    expect(source).toContain("allStudioLanes.length} Tracks");
   });
 
   it('applies lane mute/solo and volume consistently across split pieces', async () => {

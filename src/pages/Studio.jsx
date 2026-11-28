@@ -26,6 +26,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderTunedVocal, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { createStudioSpectralHold, waitForStudioMediaSeek } from '@/lib/studioSpectralHold';
+import { createStudioSpectralMonitor } from '@/lib/studioSpectralMonitor';
+import { voxPitchRatio } from '@/lib/voxShift';
 import { prepareStudioSpectralStart } from '@/lib/studioSpectralStart';
 import { releaseStudioAudioPlayer } from '@/lib/studioAudioPlayerRelease';
 import { startStudioBoundaryPlayback } from '@/lib/studioBoundaryPlayback';
@@ -252,6 +254,19 @@ export default function Studio() {
   };
   const mediaStreamRef = useRef(null);
   const audioContextRef = useRef(null);
+  const spectralMonitorRef = useRef(null);
+  const monitorRequestedRef = useRef(false);
+  const [monitorRequested,setMonitorRequested] = useState(false);
+  const clearSpectralMonitor = () => {
+    const monitor=spectralMonitorRef.current;spectralMonitorRef.current=null;
+    try{monitor?.dispose();}catch{/* audio context may already be closed */}
+  };
+  const toggleSpectralMonitor = () => {
+    if(monitorRequestedRef.current){monitorRequestedRef.current=false;setMonitorRequested(false);clearSpectralMonitor();return;}
+    if(isRecording || microphoneStartupRef.current.pending)return;
+    monitorRequestedRef.current=true;setMonitorRequested(true);
+    toast.info('Headphone monitor enabled for the next take. Use headphones to prevent feedback.');
+  };
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const recordingFinalizeInFlightRef = useRef(false);
@@ -1645,6 +1660,7 @@ export default function Studio() {
       pendingRecordStartRef.current = null;
       recordingCheckpointRef.current?.stop();
       recordingCheckpointRef.current = null;
+      clearSpectralMonitor();
       mediaRecorderRef.current?.dispose?.();
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(t => t.stop());
@@ -1894,6 +1910,7 @@ export default function Studio() {
   }, []);
 
   const stopRecordingProcess = (keepPlaying = false, recorderAlreadyStopped = false, originalStartTime = null) => {
+    clearSpectralMonitor();monitorRequestedRef.current=false;setMonitorRequested(false);
     if (midiRecordingRef.current && (!mediaRecorderRef.current ||
         (mediaRecorderRef.current.state === 'inactive' && !recorderAlreadyStopped))) {
       midiRecordingRef.current = false;
@@ -2324,6 +2341,7 @@ export default function Studio() {
       let startupStream = null;
       let startupContext = null;
       let startupRecorder = null;
+      let startupMonitor = null;
       try {
         const stream = await openStudioMicrophone(navigator.mediaDevices);
         startupStream = stream;
@@ -2396,7 +2414,7 @@ export default function Studio() {
           if(backing.length){
             Object.values(audioElementsRef.current).forEach(a=>a.pause());
             const routed=backing.map(t=>getTrackAudio(t)).every(a=>a && a.dataset.fxBypass!=='1');
-            const result=routed?await mixEngineRef.current.prepareSpectralPlayback({recording:true,allowHybrid:false,reserve:0.65}):{status:'unavailable'};
+            const result=routed?await mixEngineRef.current.prepareSpectralPlayback({recording:true,allowHybrid:false,reserve:monitorRequestedRef.current ? .8 : .65}):{status:'unavailable'};
             if(!studioMountedRef.current || microphoneStartupRef.current.token!==startupToken || historyEpochRef.current!==startupEpoch){
               mediaRecorder.dispose?.();stream.getTracks().forEach(t=>t.stop());
               if(audioContextRef.current===audioCtx)audioContextRef.current=null;
@@ -2405,6 +2423,21 @@ export default function Studio() {
             }
             if(result.status!=='ready')toast.info('Recording with the existing low-overhead VoxShift engine.');
           }
+        }
+        if(spectralEnabled && monitorRequestedRef.current){
+          const armed=tracksRef.current.find(t=>t.armed && !['midi','instrument'].includes(t.type));
+          const fx=armed?getTrackEffects(armed).voxshift:null;
+          const ratio=fx && fx.enabled!==false?voxPitchRatio(fx.params):1;
+          try{
+            startupMonitor=await createStudioSpectralMonitor(audioCtx,source,{enabled:true,ratio});
+            if(!studioMountedRef.current || microphoneStartupRef.current.token!==startupToken || historyEpochRef.current!==startupEpoch){
+              startupMonitor.dispose();mediaRecorder.dispose?.();stream.getTracks().forEach(t=>t.stop());
+              if(audioContextRef.current===audioCtx)audioContextRef.current=null;
+              if(audioCtx.state!=='closed')await audioCtx.close();return;
+            }
+            if(monitorRequestedRef.current){spectralMonitorRef.current=startupMonitor;startupMonitor.setLevel(.15);}
+            else startupMonitor.dispose();
+          }catch(error){console.warn('Headphone monitor unavailable:',error);monitorRequestedRef.current=false;setMonitorRequested(false);}
         }
         if (lossless) toast.info('Recording lossless WAV on this device.');
         mediaRecorderRef.current = mediaRecorder;
@@ -2532,6 +2565,7 @@ export default function Studio() {
           }
           if (mediaRecorderRef.current === startupRecorder) mediaRecorderRef.current = null;
         }
+        if(startupMonitor){try{startupMonitor.dispose();}catch{/* closed */}if(spectralMonitorRef.current===startupMonitor)spectralMonitorRef.current=null;}
         if (startupContext) {
           if (audioContextRef.current === startupContext) audioContextRef.current = null;
           if (startupContext.state !== 'closed') {
@@ -2578,6 +2612,7 @@ export default function Studio() {
   toggleRecordRef.current = toggleRecord;
 
   const stop = () => {
+    clearSpectralMonitor();monitorRequestedRef.current=false;setMonitorRequested(false);
     if (spectralEnabled) resetSpectralTransport();
     playbackAttemptRef.current += 1;
     playbackStartingRef.current.clear();
@@ -4459,6 +4494,7 @@ export default function Studio() {
               <ListTodo className="w-4 h-4" /> Milestones
             </Button>
             <NaliLatencyControl disabled={isRecording || recordingFinalizeInFlightRef.current} />
+            {spectralEnabled && <Button type="button" variant={monitorRequested?'default':'outline'} size="sm" aria-pressed={monitorRequested} disabled={!monitorRequested && (isRecording || microphoneStartupRef.current.pending)} onClick={toggleSpectralMonitor} title="Headphones only. Monitor the first armed audio track’s pitch without changing the recording." className="gap-2 rounded-xl"><Volume2 className="w-4 h-4"/> Headphone Monitor {monitorRequested?'ON':'OFF'}</Button>}
             <Button type="button" onClick={toggleAutoPolishVocals} aria-pressed={autoPolishVocals} aria-label="Auto Polish all vocal tracks" title="Automatically polish all vocal tracks during playback and export, including new vocals" variant={autoPolishVocals ? 'default' : 'outline'} size="sm" className={cn('gap-2 rounded-xl', autoPolishVocals ? 'bg-primary text-primary-foreground' : 'border-primary/50')}>
               <Wand2 className="w-4 h-4" /> Auto Polish {autoPolishVocals ? 'ON' : 'OFF'}
             </Button>
@@ -4727,7 +4763,7 @@ export default function Studio() {
             <p className="text-[11px] text-muted-foreground">Private to your account. Copy the link or open My Sessions on your computer.</p>
           </div>}
         </div>
-        <div className="mt-3"><NaliLatencyControl disabled={isRecording || recordingFinalizeInFlightRef.current}/></div>
+        <div className="mt-3"><NaliLatencyControl disabled={isRecording || recordingFinalizeInFlightRef.current}/>{spectralEnabled && <Button type="button" variant={monitorRequested?'default':'outline'} size="sm" aria-pressed={monitorRequested} disabled={!monitorRequested && (isRecording || microphoneStartupRef.current.pending)} onClick={toggleSpectralMonitor} title="Headphones only. Monitor the first armed audio track’s pitch without changing the recording." className="gap-2 rounded-xl"><Volume2 className="w-4 h-4"/> Headphone Monitor {monitorRequested?'ON':'OFF'}</Button>}</div>
       </div>
 
       {/* Main Workspace */}

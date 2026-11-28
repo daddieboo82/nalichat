@@ -61,7 +61,7 @@ import { startCompressedRecordingCheckpoints } from '@/lib/compressedRecordingCh
 import MobileStudioRecoveries from '@/components/studio/MobileStudioRecoveries';
 import MobileStudioPreflight from '@/components/studio/MobileStudioPreflight';
 import MobileTakeReview from '@/components/studio/MobileTakeReview';
-import { relatedMobileTakes } from '@/lib/mobileTakeComparison';
+import { relatedMobileTakes, studioPlaybackTracksForReview } from '@/lib/mobileTakeComparison';
 import { copyToClipboard } from '@/lib/clipboard';
 import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
@@ -344,6 +344,7 @@ export default function Studio() {
   const playbackStartingRef = useRef(new Map());
   const playbackFailedRef = useRef(new Set());
   const playbackAttemptRef = useRef(0);
+  const playbackReviewRef = useRef(null);
   const spectralStartRef = useRef(null);
   const spectralHoldRef = useRef(null);
   if (!spectralHoldRef.current) spectralHoldRef.current=createStudioSpectralHold();
@@ -1241,6 +1242,14 @@ export default function Studio() {
       reorderVisibleStudioClipLanes(prev, result.source.index, result.destination.index));
   };
 
+  const getTransportTracks = (sessionTracks) => {
+    const review = playbackReviewRef.current;
+    return studioPlaybackTracksForReview(
+      sessionTracks,
+      review?.epoch === historyEpochRef.current ? review.trackId : null,
+    );
+  };
+
   // Smooth playback via RAF - Optimized to bypass React render cycle for award-winning performance
   useEffect(() => {
     let animationFrameId;
@@ -1260,12 +1269,13 @@ export default function Studio() {
       lastTime = time;
       // When the tab resumes, use actual media progress if a current clip
       // demonstrably continued playing. Otherwise retain the safe RAF cap.
+      const playbackTracks = getTransportTracks(tracksRef.current);
       const mediaAlignedTime = studioPlaybackTimeAfterStall({
         expectedTime: isRecording && recordingStartTime !== null && recordingStartRealRef.current !== null
           ? Math.max(currentTimeRef.current, recordingStartTime + Math.max(0, (time - recordingStartRealRef.current) / 1000))
           : currentTimeRef.current + delta,
         frameGapSeconds,
-        tracks: tracksRef.current,
+        tracks: playbackTracks,
         elements: audioElementsRef.current,
         recording: isRecording,
       });
@@ -1287,6 +1297,7 @@ export default function Studio() {
         // wait for a paused split clip to start on the next RAF.
         for (const track of tracksRef.current) {
           const audio = audioElementsRef.current[track.id];
+          if (!playbackTracks.includes(track)) { audio?.pause(); continue; }
           if (!audio) continue;
           const position = studioPlaybackPosition(track, newTime);
           if (position.active) audio.currentTime = position.sourceTime;
@@ -1345,11 +1356,13 @@ export default function Studio() {
         const scanDrift = isPlaying && !isRecording && time - lastDriftScan >= 500;
         if (scanDrift) lastDriftScan = time;
         const sessionTracks = tracksRef.current;
-        const hasSolo = sessionTracks.some(t => t.solo);
+        const hasSolo = playbackTracks.some(t => t.solo);
+        const reviewOnly = playbackTracks !== sessionTracks;
         for (const track of sessionTracks) {
           const position = studioPlaybackPosition(track, newTime);
           const audio = audioElementsRef.current[track.id];
-          const audible = (!isRecording || !isStudioArmedLane(track, sessionTracks)) && !track.muted && (!hasSolo || track.solo);
+          const audible = reviewOnly ? playbackTracks.includes(track) :
+            (!isRecording || !isStudioArmedLane(track, sessionTracks)) && !track.muted && (!hasSolo || track.solo);
           if (!position.active || !audible || !(track.audioUrl || track.file_url)) {
             if (audio && !audio.paused) audio.pause();
             driftHistory.delete(track.id);
@@ -1466,7 +1479,11 @@ export default function Studio() {
   // Post-fader gain for a track (mute + solo aware), matching the offline bounce.
   const trackMixGain = (track, allTracks = tracks) => {
     const hasSolo = (allTracks || []).some(t => t.solo);
-    const audible = track.muted ? false : (hasSolo ? !!track.solo : true);
+    const review = playbackReviewRef.current;
+    const inReview = review?.epoch === historyEpochRef.current &&
+      allTracks.some(item => String(item.id) === String(review.trackId));
+    const audible = inReview ? String(track.id) === String(review.trackId) :
+      !track.muted && (!hasSolo || track.solo);
     if (!audible) return 0;
     return ((track.volume ?? 75) / 100) * Math.pow(10, (track.clipGain || 0) / 20);
   };
@@ -1563,7 +1580,7 @@ export default function Studio() {
     mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
   };
 
-  const togglePlay = async (reviewStartTime) => {
+  const togglePlay = async (reviewTrack) => {
     if (recordingFinalizeInFlightRef.current) return;
     if (spectralStartRef.current !== null) {
       playbackAttemptRef.current += 1;
@@ -1579,7 +1596,16 @@ export default function Studio() {
       skipCountInRef.current = false;
       setCountInActive(false);
     }
-    if (!isPlaying && !isRecording && Number.isFinite(reviewStartTime)) updateCurrentTime(reviewStartTime);
+    if (!isPlaying && !isRecording && reviewTrack) {
+      const previous = playbackReviewRef.current;
+      const epoch = historyEpochRef.current;
+      const startTime = Number(reviewTrack.startTime) || 0;
+      const insideTake = studioPlaybackPosition(reviewTrack, currentTimeRef.current).active;
+      if (previous?.epoch !== epoch || previous?.trackId !== reviewTrack.id || !insideTake) {
+        updateCurrentTime(startTime);
+      }
+      playbackReviewRef.current = { trackId: reviewTrack.id, epoch };
+    }
     // Each Play/Pause action invalidates promises from earlier starts.
     const playbackAttempt = ++playbackAttemptRef.current;
     playbackStartingRef.current.clear();
@@ -1607,11 +1633,13 @@ export default function Studio() {
         if (!allowed || playbackAttemptRef.current!==playbackAttempt || historyEpochRef.current!==playbackEpoch || !studioMountedRef.current) return;
       }
       const playPromises = [];
-      const hasSolo = tracks.some(track => track.solo);
+      const playbackTracks = getTransportTracks(tracks);
+      const reviewOnly = playbackTracks !== tracks;
+      const hasSolo = playbackTracks.some(track => track.solo);
       tracks.forEach(track => {
         const position = studioPlaybackPosition(track, currentTimeRef.current);
         const audible = !track.muted && (!hasSolo || track.solo);
-        if (track.audioUrl && audible && position.active) {
+        if (track.audioUrl && (reviewOnly ? playbackTracks.includes(track) : audible) && position.active) {
           const audio = getTrackAudio(track);
           if (!audio) return;
           audio.currentTime = position.sourceTime;
@@ -1645,6 +1673,16 @@ export default function Studio() {
     }
     
     setIsPlaying(!isPlaying);
+  };
+
+  const cueMobileTake = (id) => {
+    const track = tracksRef.current.find(item => String(item.id) === String(id));
+    if (!track || isRecording || recordingFinalizeInFlightRef.current) return;
+    if (isPlaying || spectralStartRef.current !== null) void togglePlay();
+    playbackReviewRef.current = { trackId: track.id, epoch: historyEpochRef.current };
+    updateCurrentTime(Number(track.startTime) || 0);
+    setMobileReviewedTakeId(track.id);
+    setSelectedTrackIds([track.id]);
   };
 
   useEffect(() => {
@@ -2237,6 +2275,7 @@ export default function Studio() {
   };
 
   const toggleRecord = async () => {
+    if (!isRecording) playbackReviewRef.current = null;
     if (spectralEnabled && !isRecording) { playbackAttemptRef.current += 1; resetSpectralTransport(); }
     if (!isRecording && recordingFinalizeInFlightRef.current) {
       toast.error("The previous recording is still being saved. Finish that take before recording again.");
@@ -2632,6 +2671,7 @@ export default function Studio() {
   toggleRecordRef.current = toggleRecord;
 
   const stop = () => {
+    playbackReviewRef.current = null;
     clearSpectralMonitor();monitorRequestedRef.current=false;setMonitorRequested(false);
     playbackAttemptRef.current += 1;
     playbackStartingRef.current.clear();
@@ -4738,9 +4778,9 @@ export default function Studio() {
           <div ref={mobileReviewPanelRef}>
             <MobileTakeReview track={tracks.find(t=>String(t.id)===String(mobileReviewedTakeId))}
               comparisonTakes={relatedMobileTakes(tracks,tracks.find(t=>String(t.id)===String(mobileReviewedTakeId)))}
-              onChooseTake={id=>{setMobileReviewedTakeId(id);setSelectedTrackIds([id]);}}
+              onChooseTake={cueMobileTake}
               playing={isPlaying}
-              onTogglePlayback={track => togglePlay(track.startTime ?? 0)}
+              onTogglePlayback={togglePlay}
               onRetake={prepareMobileRetake} onSaveForPC={saveMobileForDesktop}
               recording={isRecording || mobileTakeFinalizing} saving={mobileHandoffSaving} readOnly={!canEditProject} />
           </div>
@@ -4750,8 +4790,7 @@ export default function Studio() {
           onSelect={id => setSelectedTrackIds([id])} onArm={toggleArm} onMute={toggleMute} onSolo={toggleSolo}
           onVolume={updateVolume} onAdd={addMobileVocalTrack} onImport={handleImportClick} onReconstruct={openGenerativeReconstruction}
           onReview={id=>{
-            setMobileReviewedTakeId(id);
-            setSelectedTrackIds([id]);
+            cueMobileTake(id);
             window.requestAnimationFrame(()=>mobileReviewPanelRef.current?.scrollIntoView?.({behavior:'smooth',block:'nearest'}));
           }}
           onMixer={() => setShowMixerPanel(true)} onPolish={toggleAutoPolishVocals} autoPolish={autoPolishVocals}

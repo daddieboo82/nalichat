@@ -36,7 +36,7 @@ export default function MobileTakeReview({
           Take {index+1}{take.quality?.status==='clipping'?' · Possible clipping':''}
         </button>)}
       </div>
-      <p className="text-[11px] text-muted-foreground">Select a take, then play the timeline from that take. All takes remain in your project.</p>
+      <p className="text-[11px] text-muted-foreground">Select a take to hear it on its own. Stop playback to return to the full mix.</p>
     </div>}
     <button type="button" disabled={recording} onClick={() => onTogglePlayback(track)}
       className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 text-sm font-semibold disabled:opacity-40">

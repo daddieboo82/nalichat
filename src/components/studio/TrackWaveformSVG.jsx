@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { studioWaveformBins, studioWaveformStep } from '@/lib/studioWaveformGeometry';
 
 // Maps track.color values (e.g. "bg-purple-500", "bg-primary") to real CSS colors.
 // This is necessary because Tailwind purges dynamically-constructed class names
@@ -54,7 +55,7 @@ export function studioWaveformWindow(waveform, sourceStart = 0, visibleDuration,
 }
 
 
-function TrackWaveformSVG({ track, cropToClip = false }) {
+function TrackWaveformSVG({ track, cropToClip = false, displayWidth }) {
   const wf = track.waveform || EMPTY_WAVEFORM;
   const gradId = React.useId();
   const color = resolveColor(track?.color);
@@ -63,22 +64,24 @@ function TrackWaveformSVG({ track, cropToClip = false }) {
   const fullDuration = cropToClip ? track.fullDuration || track.duration : undefined;
   const {first, last, left, width} = studioWaveformWindow(wf, sourceStart, visibleDuration, fullDuration);
 
+  const step = studioWaveformStep(last - first, displayWidth);
   const peakPath = React.useMemo(() => {
     if (!wf.length || last <= first) return '';
-    const amplitude = value => Number.isFinite(value) ? Math.min(1, Math.abs(value)) * 49 : 0;
+    const bins = studioWaveformBins(wf, first, last, step);
     // Each peak summarizes a time bin, not an instantaneous sample.
     // Span both edges of each bin to avoid shifting transients as zoom changes.
     const commands = [`M ${first / wf.length * 10000},50`];
-    for (let i = first; i < last; i++) {
-      const y = (50 - amplitude(wf[i])).toFixed(3);
-      commands.push(`L ${(i / wf.length * 10000).toFixed(3)},${y}`, `L ${((i + 1) / wf.length * 10000).toFixed(3)},${y}`);
+    for (const { first: i, last: end, peak } of bins) {
+      const y = (50 - peak * 49).toFixed(3);
+      commands.push(`L ${(i / wf.length * 10000).toFixed(3)},${y}`, `L ${(end / wf.length * 10000).toFixed(3)},${y}`);
     }
-    for (let i = last - 1; i >= first; i--) {
-      const y = (50 + amplitude(wf[i])).toFixed(3);
-      commands.push(`L ${((i + 1) / wf.length * 10000).toFixed(3)},${y}`, `L ${(i / wf.length * 10000).toFixed(3)},${y}`);
+    for (let b = bins.length - 1; b >= 0; b--) {
+      const { first: i, last: end, peak } = bins[b];
+      const y = (50 + peak * 49).toFixed(3);
+      commands.push(`L ${(end / wf.length * 10000).toFixed(3)},${y}`, `L ${(i / wf.length * 10000).toFixed(3)},${y}`);
     }
     return commands.join(' ') + ' Z';
-  }, [wf, first, last]);
+  }, [wf, first, last, step]);
 
   return (
     <svg
@@ -111,7 +114,7 @@ function TrackWaveformSVG({ track, cropToClip = false }) {
 // Geometry depends on peaks and the visible source bounds, not mixer state.
 export default React.memo(TrackWaveformSVG, (previous, next) =>
   previous.track.waveform === next.track.waveform && previous.track.color === next.track.color &&
-  previous.cropToClip === next.cropToClip && (!next.cropToClip || (
+  previous.displayWidth === next.displayWidth && previous.cropToClip === next.cropToClip && (!next.cropToClip || (
     previous.track.clipStart === next.track.clipStart && previous.track.duration === next.track.duration &&
     previous.track.fullDuration === next.track.fullDuration))
 );

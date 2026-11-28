@@ -28,6 +28,29 @@ export function studioRecoveryScope(roomId) {
   if (typeof roomId !== 'string' || !/^[a-z0-9_-]{8,100}$/i.test(roomId)) throw new Error('Invalid Studio room identifier.');
   return `room:${roomId}`;
 }
+// Older backups saved the transport estimate. Use the media duration when the
+// browser can read it, without decoding the whole recording into memory.
+export function readStudioRecoveryDuration(url, storedDuration, AudioType = globalThis.Audio) {
+  const estimate = Number.isFinite(storedDuration) && storedDuration > 0 ? storedDuration : 0;
+  if (!AudioType) return Promise.resolve(estimate);
+  return new Promise(resolve => {
+    const media = new AudioType();
+    const finish = (duration) => {
+      clearTimeout(timeout);
+      media.onloadedmetadata = null;
+      media.onerror = null;
+      media.removeAttribute('src');
+      media.load();
+      resolve(Number.isFinite(duration) && duration > 0 ? duration : estimate);
+    };
+    const timeout = setTimeout(() => finish(estimate), 2500);
+    media.preload = 'metadata';
+    media.onloadedmetadata = () => finish(media.duration);
+    media.onerror = () => finish(estimate);
+    media.src = url;
+  });
+}
+
 function openDatabase(indexedDBImpl) {
   return new Promise((resolve, reject) => {
     if (!indexedDBImpl?.open) return reject(new Error('Device recovery storage is unavailable.'));

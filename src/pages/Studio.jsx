@@ -55,7 +55,7 @@ import { getMobileStudioRecordingStatus } from '@/lib/mobileStudioRecordingStatu
 import { studioCaptureHealth, shouldFinalizeMobilePcm } from '@/lib/studioCaptureHealth';
 import { analyzeMobileMicLevel, mobileMicLevelMessage } from '@/lib/mobileMicLevel';
 import { createMobileVocalCoach } from '@/lib/mobileVocalCoach';
-import { saveStudioRecoveryTake, studioRecoveryScope } from '@/lib/studioTakeRecovery';
+import { readStudioRecoveryDuration, saveStudioRecoveryTake, studioRecoveryScope } from '@/lib/studioTakeRecovery';
 import { startMobileRecordingCheckpoints } from '@/lib/mobileRecordingCheckpoints';
 import { startCompressedRecordingCheckpoints } from '@/lib/compressedRecordingCheckpoints';
 import MobileStudioRecoveries from '@/components/studio/MobileStudioRecoveries';
@@ -3695,14 +3695,23 @@ export default function Studio() {
     if (!record?.audio || !record.audio.size) throw new Error('Recovery audio is missing.');
     if (tracksRef.current.length >= maxTracks) throw new Error('Track limit reached. Make room before restoring.');
     const audioUrl = URL.createObjectURL(record.audio);
+    const restoreEpoch = historyEpochRef.current;
+    studioRestoreInFlightRef.current = true;
     try {
+      const duration = await readStudioRecoveryDuration(audioUrl, record.duration);
+      if (!studioMountedRef.current || historyEpochRef.current !== restoreEpoch ||
+          microphoneStartupRef.current.pending || recordingFinalizeInFlightRef.current ||
+          mediaRecorderRef.current?.state === 'recording') {
+        throw new Error('Studio changed while the backup was opening. Restore it again in the current session.');
+      }
+      if (tracksRef.current.length >= maxTracks) throw new Error('Track limit reached. Make room before restoring.');
       const id = nextTrackId(tracksRef.current);
       const track = {
         id, name: `${record.name || 'Mobile Vocal'} (Recovered)`,
         type: 'audio', color: 'bg-purple-500', volume:75, pan:50,
         muted:false, solo:false, armed:false, waveform:[],
-        startTime:record.startTime || 0, duration:record.duration || 0,
-        fullDuration:record.duration || 0, clipStart:0,
+        startTime:record.startTime || 0, duration,
+        fullDuration:duration, clipStart:0,
         audioUrl, file_url:audioUrl, recordedFromMicrophone:true,
       };
       // Never replace a cloud track; the recovered take is appended.
@@ -3713,6 +3722,8 @@ export default function Studio() {
     } catch (error) {
       URL.revokeObjectURL(audioUrl);
       throw error;
+    } finally {
+      studioRestoreInFlightRef.current = false;
     }
   };
 

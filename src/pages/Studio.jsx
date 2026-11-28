@@ -1579,6 +1579,7 @@ export default function Studio() {
       skipCountInRef.current = false;
       setCountInActive(false);
     }
+    if (!isPlaying && !isRecording && Number.isFinite(reviewStartTime)) updateCurrentTime(reviewStartTime);
     // Each Play/Pause action invalidates promises from earlier starts.
     const playbackAttempt = ++playbackAttemptRef.current;
     playbackStartingRef.current.clear();
@@ -1590,7 +1591,6 @@ export default function Studio() {
     }
 
     if (!isPlaying) {
-      if (Number.isFinite(reviewStartTime)) updateCurrentTime(reviewStartTime);
       playbackFailedRef.current.clear();
       sounds.nav();
       setActivity("Playing the mix ▶️");

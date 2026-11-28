@@ -248,7 +248,7 @@ export function createMixEngine() {
     // Experimental: call only with all session media attached and paused.
     // No automatic activation; changes that invalidate the fixed graph restore
     // legacy routing and expose an explicit status to the transport caller.
-    async prepareSpectralPlayback({createNode, reserve=0.5, calibrate=true, allowHybrid=false, priorityIds=[]}={}) {
+    async prepareSpectralPlayback({createNode, reserve=0.5, calibrate=true, allowHybrid=false, priorityIds=[], recording=false}={}) {
       if(disposed || !context || !master)return {status:'unavailable'};
       if([...entries.values()].some(e=>!e.element.paused))return {status:'playing'};
       invalidateSpectral('reconfigure');
@@ -256,7 +256,7 @@ export function createMixEngine() {
       const snapshot=[...entries.entries()];
       const requests=snapshot.map(([id,e])=>{
         const fx=getTrackEffects(e.track).voxshift;
-        return {id,channels:2,priority:priorityIds.includes(id),ratio:fx&&fx.enabled!==false?voxPitchRatio(fx.params):1};
+        return {id,channels:2,mode:recording?'recording':undefined,priority:priorityIds.includes(id),ratio:fx&&fx.enabled!==false?voxPitchRatio(fx.params):1};
       });
       spectralStatus={status:'preparing'};
       const needsCalibration=calibrate && requests.some(t=>t.ratio!==1);

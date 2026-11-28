@@ -17,3 +17,7 @@ it.each([24000,44100,48000,96000])('approximately aligns legacy overflow at %i H
  const p=planVoxWorkload(tracks(16),{sampleRate,alignLegacy:true});expect(p.approximate).toBe(true);for(const t of p.tracks){expect(t.latencySamples+t.estimatedLegacySamples+t.delaySamples).toBe(p.latencySamples);expect(t.estimatedLegacySamples).toBe(t.status==='deferred'?Math.round(sampleRate*.02):0);}expect(p.usedMs).toBeLessThanOrEqual(p.budgetMs);
 });
 it('does not introduce estimated legacy delay in dry or offline plans',()=>{for(const p of [planVoxWorkload([{id:1,channels:2,ratio:1}],{alignLegacy:true}),planVoxWorkload(tracks(16),{offline:true,alignLegacy:true})]){expect(p.approximate).toBe(false);expect(p.tracks.every(t=>t.estimatedLegacySamples===0)).toBe(true);}});
+
+it('restricts recording allocations to low latency and reserves capture headroom',()=>{
+ const t=tracks(8).map(x=>({...x,mode:'recording'}));const p=planVoxWorkload(t,{sampleRate:48000,reserve:.65});expect(p.tracks.filter(x=>x.mode).every(x=>x.mode==='recording')).toBe(true);expect(p.latencySamples).toBe(512);expect(p.usedMs).toBeLessThanOrEqual(p.budgetMs);expect(p.tracks.some(x=>x.status==='deferred')).toBe(true);
+});

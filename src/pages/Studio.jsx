@@ -2210,7 +2210,7 @@ export default function Studio() {
   };
 
   const toggleRecord = async () => {
-    if (spectralEnabled) { playbackAttemptRef.current += 1; resetSpectralTransport(); }
+    if (spectralEnabled && !isRecording) { playbackAttemptRef.current += 1; resetSpectralTransport(); }
     if (!isRecording && recordingFinalizeInFlightRef.current) {
       toast.error("The previous recording is still being saved. Finish that take before recording again.");
       return;
@@ -2388,8 +2388,25 @@ export default function Studio() {
           stream.getTracks().forEach(track => track.stop());
           return;
         }
-        if (lossless) toast.info('Recording lossless WAV on this device.');
         startupRecorder = mediaRecorder;
+        if (spectralEnabled) {
+          // Prepare backing audio before capture starts. Strict recording mode
+          // avoids mixing variable-delay legacy tracks into a calibrated take.
+          const backing=tracksRef.current.filter(t=>t.audioUrl && !isStudioArmedLane(t,tracksRef.current));
+          if(backing.length){
+            Object.values(audioElementsRef.current).forEach(a=>a.pause());
+            const routed=backing.map(t=>getTrackAudio(t)).every(a=>a && a.dataset.fxBypass!=='1');
+            const result=routed?await mixEngineRef.current.prepareSpectralPlayback({recording:true,allowHybrid:false,reserve:0.65}):{status:'unavailable'};
+            if(!studioMountedRef.current || microphoneStartupRef.current.token!==startupToken || historyEpochRef.current!==startupEpoch){
+              mediaRecorder.dispose?.();stream.getTracks().forEach(t=>t.stop());
+              if(audioContextRef.current===audioCtx)audioContextRef.current=null;
+              if(audioCtx.state!=='closed')await audioCtx.close();
+              return;
+            }
+            if(result.status!=='ready')toast.info('Recording with the existing low-overhead VoxShift engine.');
+          }
+        }
+        if (lossless) toast.info('Recording lossless WAV on this device.');
         mediaRecorderRef.current = mediaRecorder;
         const captureChunks = [];
         // The spontaneous onstop handler captures this value before React

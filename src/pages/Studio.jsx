@@ -326,6 +326,14 @@ export default function Studio() {
   const playbackStartingRef = useRef(new Map());
   const playbackFailedRef = useRef(new Set());
   const playbackAttemptRef = useRef(0);
+  const spectralStartRef = useRef(null);
+  const spectralEnabled = import.meta.env.VITE_STUDIO_SPECTRAL_PREVIEW === 'true';
+  const resetSpectralTransport = () => {
+    spectralStartRef.current = null;
+    const engine = mixEngineRef.current;
+    const status = engine?.spectralPlaybackStatus()?.status;
+    if (status === 'ready' || status === 'preparing') engine.resetSpectralPlayback();
+  };
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
   if (!mixEngineRef.current) mixEngineRef.current = createMixEngine();
@@ -1233,6 +1241,7 @@ export default function Studio() {
       const didWrap = nextPosition.wrapped;
 
       if (didWrap) {
+        if (spectralEnabled) resetSpectralTransport();
         // A transport jump must reposition already-playing audio, not just
         // wait for a paused split clip to start on the next RAF.
         for (const track of tracksRef.current) {
@@ -1323,6 +1332,7 @@ export default function Studio() {
               const lastCorrection = previous?.audio === candidate ? previous.lastCorrection : -Infinity;
               if (sustained && time - lastCorrection >= 2000 &&
                   !playbackStartingRef.current.has(track.id)) {
+                if (spectralEnabled) resetSpectralTransport();
                 try { candidate.currentTime = target; } catch {}
                 driftHistory.set(track.id,{audio:candidate,direction:0,lastCorrection:time});
               } else {
@@ -1485,6 +1495,7 @@ export default function Studio() {
   const updateCurrentTime = (newTime) => {
     if (!Number.isFinite(newTime)) return;
     newTime = Math.max(0, newTime);
+    if (spectralEnabled) resetSpectralTransport();
     if (newTime + 15 > transportHorizonRef.current) {
       transportHorizonRef.current = Math.ceil((newTime + 30) / 60) * 60;
       setTransportHorizon(transportHorizonRef.current);
@@ -1510,7 +1521,12 @@ export default function Studio() {
     mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
   };
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
+    if (spectralStartRef.current !== null) {
+      playbackAttemptRef.current += 1;
+      resetSpectralTransport();
+      return;
+    }
     // A user-initiated Play/Pause supersedes any queued record count-in or
     // pre-roll. Otherwise its old punch-in marker can start recording later.
     if (pendingRecordStartRef.current !== null || countInActive) {
@@ -1533,6 +1549,21 @@ export default function Studio() {
       playbackFailedRef.current.clear();
       sounds.nav();
       setActivity("Playing the mix ▶️");
+      if (spectralEnabled && !isRecording) {
+        spectralStartRef.current = playbackAttempt;
+        try {
+          // Prepare all clips, including later timeline regions, before playback.
+          const allRouted = tracks.filter(t=>t.audioUrl).map(t=>getTrackAudio(t)).every(a=>a && a.dataset.fxBypass!=='1');
+          const result = allRouted ? await mixEngineRef.current.prepareSpectralPlayback() : {status:'unavailable'};
+          if (spectralStartRef.current !== playbackAttempt || playbackAttemptRef.current !== playbackAttempt || historyEpochRef.current !== playbackEpoch || !studioMountedRef.current) return;
+          if (result.status !== 'ready') toast.warning('Spectral preview unavailable; using the existing VoxShift engine.');
+        } catch {
+          if (spectralStartRef.current !== playbackAttempt || playbackAttemptRef.current !== playbackAttempt || historyEpochRef.current !== playbackEpoch || !studioMountedRef.current) return;
+          toast.warning('Spectral preview could not initialize; using the existing VoxShift engine.');
+        } finally {
+          if (spectralStartRef.current === playbackAttempt) spectralStartRef.current = null;
+        }
+      }
       const playPromises = [];
       const hasSolo = tracks.some(track => track.solo);
       tracks.forEach(track => {
@@ -1557,6 +1588,7 @@ export default function Studio() {
               historyEpochRef.current !== playbackEpoch) return;
           if (results.every(r => r && r.failed)) {
             toast.error("Playback was blocked by your browser. Click Play again to retry.");
+            if (spectralEnabled) resetSpectralTransport();
             setIsPlaying(false);
           }
         });
@@ -1567,6 +1599,7 @@ export default function Studio() {
         audio.pause();
       });
       automationLatchRef.current.clear();
+      if (spectralEnabled) resetSpectralTransport();
     }
     
     setIsPlaying(!isPlaying);
@@ -2154,6 +2187,7 @@ export default function Studio() {
   };
 
   const toggleRecord = async () => {
+    if (spectralEnabled) { playbackAttemptRef.current += 1; resetSpectralTransport(); }
     if (!isRecording && recordingFinalizeInFlightRef.current) {
       toast.error("The previous recording is still being saved. Finish that take before recording again.");
       return;
@@ -2500,6 +2534,7 @@ export default function Studio() {
   toggleRecordRef.current = toggleRecord;
 
   const stop = () => {
+    if (spectralEnabled) resetSpectralTransport();
     playbackAttemptRef.current += 1;
     playbackStartingRef.current.clear();
     // Invalidate an in-flight permission request before it resolves.

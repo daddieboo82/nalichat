@@ -1,5 +1,6 @@
 // Real client-side audio processing helpers (Web Audio API).
 import { connectVoxShift } from './voxShift.js';
+import { prepareSpectralClip } from './voxSpectralRender.js';
 import { studioRecordedWaveform } from './studioRecordedWaveform.js';
 import { studioClipAudioRange } from './studioClipAudioRange.js';
 // These operate on actual audio data — no simulation.
@@ -577,7 +578,7 @@ export async function decodeStudioMixSources(tracks, load, concurrency = 2) {
 }
 
 export async function renderMixToBuffer(tracks, options = {}) {
-  const { masterVolume = 100, masterFx = null, sampleRate = 44100 } = options;
+  const { masterVolume = 100, masterFx = null, sampleRate = 44100, spectralPitch = false } = options;
   const audioTracks = (tracks || []).filter(t => t.audioUrl);
   if (audioTracks.length === 0) return null;
 
@@ -602,7 +603,8 @@ export async function renderMixToBuffer(tracks, options = {}) {
   const offline = new OfflineAudioContext(2, length, sampleRate);
   const master = connectMasterChain(offline, { masterFx, masterVolume, destination: offline.destination });
 
-  decoded.forEach(({ track, buffer, range }) => {
+  for (const item of decoded) {
+    const {track,buffer,range} = spectralPitch === true ? await prepareSpectralClip(offline,item.track,item.buffer,item.range) : item;
     const src = offline.createBufferSource();
     src.buffer = buffer;
     connectTrackChain(offline, src, track, {
@@ -613,7 +615,7 @@ export async function renderMixToBuffer(tracks, options = {}) {
     });
     // A split or cut clip must render only its selected source region.
     src.start(range.when, range.offset, range.duration);
-  });
+  }
 
   return offline.startRendering();
 }

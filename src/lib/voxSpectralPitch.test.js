@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { voxSpectralPitch } from './voxSpectralPitch.js';
+import { voxSpectralPitch, createVoxSpectralStream } from './voxSpectralPitch.js';
 const rate=24000;
 const tone=(freq,length=rate*2)=>Float32Array.from({length},(_,i)=>0.25*Math.sin(2*Math.PI*freq*i/rate));
 function dominant(samples,target){
@@ -30,4 +30,17 @@ describe('optional formant envelope correction',()=>{
   it.each([0.75,1.25,1.5])('reduces synthetic resonance error at ratio %s',ratio=>{const x=vowel(),base=voxSpectralPitch(x,ratio,{sampleRate:rate}),out=voxSpectralPitch(x,ratio,{sampleRate:rate,formantStrength:1});expect(out.length).toBe(x.length);expect(out.every(Number.isFinite)).toBe(true);expect(envelopeError(out,ratio)).toBeLessThan(envelopeError(base,ratio)*0.65);});
   it('keeps corrected silence silent',()=>expect(voxSpectralPitch(new Float32Array(4096),0.7,{formantStrength:1}).every(x=>x===0)).toBe(true));
   it('rejects invalid envelope controls',()=>{expect(()=>voxSpectralPitch(tone(440,32),1.2,{formantStrength:2})).toThrow();expect(()=>voxSpectralPitch(tone(440,32),1.2,{sampleRate:0})).toThrow();});
+});
+
+ describe('streaming spectral processor',()=>{
+  it.each([0.5,0.72,1,1.38,1.6])('matches offline for irregular blocks at ratio %s',ratio=>{
+    const x=tone(220,8193),options={formantStrength:0.7,sampleRate:rate};
+    const stream=createVoxSpectralStream(ratio,options),delay=stream.latencySamples;
+    const padded=new Float32Array(x.length+delay),out=new Float32Array(padded.length);padded.set(x);
+    for(let i=0;i<padded.length;){const end=Math.min(padded.length,i+(i%137)+1);stream.process(padded.subarray(i,end),out.subarray(i,end));i=end;}
+    expect(out.subarray(0,delay).every(x=>x===0)).toBe(true);
+    expect(out.subarray(delay)).toEqual(voxSpectralPitch(x,ratio,options));
+  });
+  it('preserves identity signal after fixed delay',()=>{const x=tone(440,4096),s=createVoxSpectralStream(1),inBlock=new Float32Array(x.length+s.latencySamples),out=new Float32Array(inBlock.length);inBlock.set(x);s.process(inBlock,out);expect(out.subarray(s.latencySamples)).toEqual(x);});
+  it('rejects mismatched input/output lengths',()=>expect(()=>createVoxSpectralStream(1.2).process(new Float32Array(128),new Float32Array(64))).toThrow());
 });

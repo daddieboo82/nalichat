@@ -11,7 +11,7 @@ describe('Studio cross-origin audio fallback safety', () => {
     expect(fallback).toContain("audioElementsRef.current[track.id] !== audio");
     expect(fallback).toContain("audio.dataset.srcUrl !== track.audioUrl");
     expect(fallback.indexOf('audioElementsRef.current[track.id] !== audio'))
-      .toBeLessThan(fallback.indexOf('mixEngineRef.current?.detach(track.id)'));
+      .toBeLessThan(fallback.indexOf('releaseTrackAudio(track.id, audio)'));
     expect(fallback.indexOf('audio.dataset.srcUrl !== track.audioUrl'))
       .toBeLessThan(fallback.indexOf('audioElementsRef.current[track.id] = plain'));
   });

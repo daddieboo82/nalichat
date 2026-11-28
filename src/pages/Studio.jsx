@@ -2627,6 +2627,7 @@ export default function Studio() {
     pendingStopAfterRef.current = null;
     if (isRecording) { setIsRecording(false); stopRecordingProcess(); } else { sounds.recStop(); }
     Object.values(audioElementsRef.current).forEach(a => a.pause());
+    if (spectralEnabled) resetSpectralTransport();
     // Stop must reset the playhead immediately: a delayed reset can fire
     // after a rapid Stop -> Play and unexpectedly seek the new playback.
     updateCurrentTime(0);

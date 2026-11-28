@@ -22,3 +22,12 @@ describe('experimental spectral pitch',()=>{
   it('does not mutate source samples',()=>{const input=tone(220,4096),copy=input.slice();voxSpectralPitch(input,0.8);expect(input).toEqual(copy);});
   it('rejects invalid settings',()=>{expect(()=>voxSpectralPitch(tone(440,32),NaN)).toThrow();expect(()=>voxSpectralPitch(tone(440,32),1.2,{frameSize:100})).toThrow();});
 });
+
+describe('optional formant envelope correction',()=>{
+  const envelope=f=>0.04+Math.exp(-0.5*((f-700)/180)**2)+0.65*Math.exp(-0.5*((f-1900)/260)**2);
+  const vowel=()=>Float32Array.from({length:rate*2},(_,i)=>{let sum=0;for(let h=1;h<=40;h++)sum+=0.045*envelope(h*100)*Math.sin(2*Math.PI*h*100*i/rate);return sum;});
+  function envelopeError(output,ratio){const amplitudes=[];for(let h=1;h<=Math.floor(3600/(100*ratio));h++){let re=0,im=0;const f=h*100*ratio;for(let i=0;i<rate;i+=4){const w=2*Math.PI*f*i/rate,v=output[rate/2+i]*(0.5-0.5*Math.cos(2*Math.PI*i/rate));re+=v*Math.cos(w);im+=v*Math.sin(w);}amplitudes.push({actual:Math.hypot(re,im),expected:envelope(f)});}const sa=amplitudes.reduce((s,p)=>s+p.actual,0),se=amplitudes.reduce((s,p)=>s+p.expected,0);return Math.sqrt(amplitudes.reduce((s,p)=>s+(p.actual/sa-p.expected/se)**2,0)/amplitudes.reduce((s,p)=>s+(p.expected/se)**2,0));}
+  it.each([0.75,1.25,1.5])('reduces synthetic resonance error at ratio %s',ratio=>{const x=vowel(),base=voxSpectralPitch(x,ratio,{sampleRate:rate}),out=voxSpectralPitch(x,ratio,{sampleRate:rate,formantStrength:1});expect(out.length).toBe(x.length);expect(out.every(Number.isFinite)).toBe(true);expect(envelopeError(out,ratio)).toBeLessThan(envelopeError(base,ratio)*0.65);});
+  it('keeps corrected silence silent',()=>expect(voxSpectralPitch(new Float32Array(4096),0.7,{formantStrength:1}).every(x=>x===0)).toBe(true));
+  it('rejects invalid envelope controls',()=>{expect(()=>voxSpectralPitch(tone(440,32),1.2,{formantStrength:2})).toThrow();expect(()=>voxSpectralPitch(tone(440,32),1.2,{sampleRate:0})).toThrow();});
+});

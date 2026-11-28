@@ -14,3 +14,10 @@ export function relatedMobileTakes(tracks, selected) {
       quality:t.captureQuality, startTime:Number(t.startTime)||0,
     }));
 }
+
+// Review uses the shared timeline player, with only the selected source audible.
+export function studioPlaybackTracksForReview(tracks, trackId) {
+  if (trackId == null) return tracks;
+  const selected = tracks.find(track => String(track.id) === String(trackId));
+  return selected ? [selected] : tracks;
+}

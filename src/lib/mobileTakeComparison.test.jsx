@@ -3,7 +3,7 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { applyStudioRecordedTake } from './studioRecordingTake';
-import { relatedMobileTakes } from './mobileTakeComparison';
+import { relatedMobileTakes, studioPlaybackTracksForReview } from './mobileTakeComparison';
 import MobileTakeReview from '../components/studio/MobileTakeReview';
 afterEach(cleanup);
 const original={id:10,name:'Lead',type:'audio',audioUrl:'blob:original',armed:true,startTime:0,duration:10};
@@ -33,6 +33,13 @@ describe('safe mobile A/B vocal-take comparison',()=>{
   });
   expect(relatedMobileTakes(third,third[2]).map(t=>t.id)).toEqual([10,14,15]);
   expect(relatedMobileTakes(third,unrelated).map(t=>t.id)).toEqual([13]);
+ });
+ it('plays only the selected source during review and restores the full mix without a selection',()=>{
+  const selected={...original,id:14,audioUrl:'blob:second',startTime:0};
+  const tracks=[original,selected,unrelated];
+  expect(studioPlaybackTracksForReview(tracks,'14')).toEqual([selected]);
+  expect(studioPlaybackTracksForReview(tracks,null)).toBe(tracks);
+  expect(studioPlaybackTracksForReview(tracks,'missing')).toBe(tracks);
  });
  it('starts the shared transport from the currently selected take',()=>{
   const takes=[{id:10,name:'Take 1',audioUrl:'blob:original'},

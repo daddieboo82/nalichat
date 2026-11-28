@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { captureMarketingAttribution, getMarketingAttribution } from "@/lib/adAttribution";
 import { trackProductEvent } from "@/lib/productAnalytics";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   MessageSquare, Music, BarChart3, Sparkles,
@@ -227,9 +227,15 @@ export default function Home() {
   // Only treat as logged-in when both the flag and the user record are present,
   // so the greeting disappears instantly on logout.
   const user = isAuthenticated ? authUser : null;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const homepageViewTracked = useRef(false);
+  const showFirstAction = Boolean(user?.id && location.state?.setupCompletedBy === user.id);
 
   // Preserve Google Ads and UTM attribution through the anonymous signup journey.
   useEffect(() => {
+    if (!authChecked || homepageViewTracked.current) return;
+    homepageViewTracked.current = true;
     captureMarketingAttribution();
     const attribution = getMarketingAttribution();
     trackProductEvent("homepage_view", {
@@ -239,17 +245,17 @@ export default function Home() {
       campaign_name: attribution?.utm_campaign || undefined,
       campaign_landing_path: attribution?.landing_path || undefined,
     });
-  }, []);
+  }, [authChecked, user]);
 
   // On phones the Home screen should be immediately usable after onboarding.
   // Keep the tour available from its explicit button, and retain the desktop
   // first-run experience without placing a modal over mobile navigation.
   useEffect(() => {
-    if (!user?.onboarding_completed || user.welcome_tour_completed) return;
+    if (showFirstAction || !user?.onboarding_completed || user.welcome_tour_completed) return;
     if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 767px)")?.matches) return;
     const timer = setTimeout(() => setShowTour(true), 1500);
     return () => clearTimeout(timer);
-  }, [user?.id, user?.onboarding_completed, user?.welcome_tour_completed]);
+  }, [showFirstAction, user?.id, user?.onboarding_completed, user?.welcome_tour_completed]);
 
   const lastVisitedWorld = user ? getLastVisitedWorld(user.id) : null;
 
@@ -265,28 +271,18 @@ export default function Home() {
           <Link to="/" aria-label="NaliBase home" className="flex items-center gap-3"><Logo size={42} glow={false} /><span className="font-heading text-xl font-black tracking-tight">NaliBase</span></Link>
           <nav className="flex items-center gap-2 sm:gap-3" aria-label="Main navigation">
             <Button variant="ghost" className="rounded-xl px-3" asChild><Link to="/login">Log in</Link></Button>
-            <Button className="rounded-xl px-4 font-semibold" asChild><Link to="/register" onClick={() => trackProductEvent("signup_click", { source: "public_header", cta: "get_started" })}>Get started <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
           </nav>
         </header>
-        <section className="relative z-10 mx-auto grid min-h-[72vh] max-w-7xl items-center gap-12 px-5 pb-16 pt-8 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:pb-24">
+        <section className="relative z-10 mx-auto grid min-h-[72vh] max-w-7xl items-center gap-8 px-5 pb-12 pt-4 sm:px-8 sm:pt-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:pb-24">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3.5 py-2 text-xs font-semibold text-muted-foreground shadow-sm"><Sparkles className="h-4 w-4 text-primary" /> Your space to create, connect, and discover</span>
-            <h1 className="mt-6 font-heading text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">Everything you create.<br /><span className="nali-landing-highlight text-primary">One creative universe.</span></h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">Make music, connect with artists, share your work, and explore new creative worlds—all in one place.</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <h1 className="font-heading text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">Everything you create.<br /><span className="nali-landing-highlight text-primary">One creative universe.</span></h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">Record a track in Studio, message a collaborator, and keep your projects in one place.</p>
+            <div className="mt-6 flex flex-col sm:flex-row">
               <Button size="lg" className="nali-landing-primary min-h-12 rounded-xl px-6 text-base font-bold" asChild><Link to="/register" onClick={() => trackProductEvent("signup_click", { source: "public_landing_hero", cta: "start_free" })}>Create your free account <ArrowRight className="ml-2 h-5 w-5" /></Link></Button>
-              <Button size="lg" variant="outline" className="min-h-12 rounded-xl border-border bg-card/60 px-6 text-base" asChild><Link to="/login">I already have an account</Link></Button>
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">Start free. Explore at your own pace.</p>
             <Link to="/music-collaboration" onClick={() => trackProductEvent("homepage_demo_click", { source: "public_landing_hero", cta: "see_how_it_works" })} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
               See how NaliChat works before joining <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-              <DonationButton variant="hero" />
-              <Button variant="outline" className="min-h-12 rounded-xl border-border bg-card/60 px-5" asChild>
-                <a href="mailto:nalichat@nalichat.org?subject=NaliBase%20Website%20Feedback&body=Hi%20NaliBase%20team%2C%0A%0AMy%20feedback%3A%0A%0A">Send Feedback <MessageSquare className="ml-2 h-4 w-4" /></a>
-              </Button>
-            </div>
           </div>
           <div className="nali-landing-grid grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[
@@ -301,7 +297,27 @@ export default function Home() {
             <div className="col-span-1 flex items-center gap-3 rounded-2xl border border-border/80 bg-card/40 px-4 py-3 sm:col-span-2"><Shield className="h-5 w-5 shrink-0 text-primary" /><p className="text-sm text-muted-foreground">One home for your creative life, with room to grow.</p></div>
           </div>
         </section>
-        <footer className="relative z-10 border-t border-border/70 px-5 py-5 text-center text-xs text-muted-foreground sm:px-8">NaliBase · A hub for entertainment and creativity</footer>
+        <footer className="relative z-10 border-t border-border/70 px-5 py-5 text-center text-xs text-muted-foreground sm:px-8">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <DonationButton variant="hero" />
+            <a className="inline-flex min-h-11 items-center font-semibold hover:underline" href="mailto:nalichat@nalichat.org?subject=NaliBase%20Website%20Feedback">Send feedback</a>
+          </div>
+        </footer>
+      </main>
+    );
+  }
+
+  if (showFirstAction) {
+    return (
+      <main className="mx-auto flex min-h-[70dvh] max-w-lg flex-col justify-center gap-4 px-5 py-12">
+        <h1 className="font-heading text-3xl font-bold">Your profile is ready</h1>
+        <Button asChild className="min-h-12 justify-start gap-3">
+          <Link to="/studio" replace><Music className="h-5 w-5" aria-hidden="true" />Record in Studio</Link>
+        </Button>
+        <Button asChild variant="outline" className="min-h-12 justify-start gap-3">
+          <Link to="/messages" replace><MessageSquare className="h-5 w-5" aria-hidden="true" />Send a message</Link>
+        </Button>
+        <Button variant="ghost" onClick={() => navigate("/", { replace: true, state: null })}>Explore NaliBase</Button>
       </main>
     );
   }

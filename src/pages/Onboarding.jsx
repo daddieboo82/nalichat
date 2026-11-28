@@ -212,7 +212,11 @@ function OnboardingForm() {
       // SPA navigation — the auth state is already refreshed in React context
       // (checkUserAuth confirmed onboarding_completed), so a full page reload
       // would just re-download JS and re-run the auth probe for nothing.
-      navigate(destinationAfterSetup(), { replace: true });
+      const destination = destinationAfterSetup();
+      navigate(destination, {
+        replace: true,
+        state: destination === "/" ? { setupCompletedBy: submittingUserId } : undefined,
+      });
     } catch (error) {
       if (!stillCurrentAttempt()) return;
       const httpStatus = Number(error?.response?.status ?? error?.status ?? 0);

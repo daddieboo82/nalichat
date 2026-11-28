@@ -1,6 +1,6 @@
 import { secureUploadFile } from "@/lib/secureUpload";
 import { validateUpload } from "@/lib/uploadValidation";
-import { markActivationComplete, trackProductEvent } from "@/lib/productAnalytics";
+import { markActivationComplete, trackFirstStudioRecording, trackProductEvent } from "@/lib/productAnalytics";
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import JSZip from 'jszip';
 import { studioAudioExtension, studioAudioMimeForExtension } from '@/lib/studioArchiveAudio';
@@ -2031,6 +2031,7 @@ export default function Studio() {
           );
         });
         recordedUrlTransferred = true;
+        if (captureHadMicTrack) trackFirstStudioRecording(trainingOwner);
         // Explicitly opted-in voice training only. Never train other customers'
         // recordings or share model weights across accounts. Recording save is
         // already complete, so training errors cannot destroy the captured take.

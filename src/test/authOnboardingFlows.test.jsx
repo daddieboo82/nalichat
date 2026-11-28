@@ -221,6 +221,24 @@ describe('auth and onboarding flows', () => {
     expect(mockBase44.auth.resendOtp).not.toHaveBeenCalled();
   });
 
+  it('keeps the email and verification step after an expired code', async () => {
+    mockBase44.auth.verifyOtp.mockRejectedValueOnce(new Error('Verification code expired'));
+    mockBase44.auth.resendOtp.mockResolvedValueOnce(undefined);
+    renderInRouter(<Register />);
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'I already have a verification code' }));
+    fireEvent.change(screen.getByLabelText('OTP'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
+
+    await screen.findByRole('alert');
+    expect(screen.getByRole('button', { name: 'Verify' }).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Resend code' }));
+    await screen.findByRole('button', { name: 'Resend in 30s' });
+    expect(mockBase44.auth.resendOtp).toHaveBeenCalledWith('new@example.com');
+    expect(screen.getByText('We sent a code to new@example.com')).toBeTruthy();
+    expect(mockBase44.auth.register).not.toHaveBeenCalled();
+  });
+
   it('sends one resend request across repeated taps and allows retry after failure', async () => {
     let rejectRequest;
     mockBase44.auth.resendOtp.mockReset();

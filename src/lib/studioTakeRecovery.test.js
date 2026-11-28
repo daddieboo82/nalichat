@@ -1,12 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
-import { studioRecoveryScope, saveStudioRecoveryTake } from './studioTakeRecovery';
+import { readStudioRecoveryDuration, studioRecoveryScope, saveStudioRecoveryTake } from './studioTakeRecovery';
 
 describe('NaliChat device-only completed-take recovery', () => {
   it('isolates standalone and cloud-room projects', () => {
     expect(studioRecoveryScope(null)).toBe('draft');
     expect(studioRecoveryScope('6a1f5ee134147461560c2b37')).toBe('room:6a1f5ee134147461560c2b37');
     expect(() => studioRecoveryScope('../other-user')).toThrow();
+  });
+  it('uses measured playback length for a restored clip and falls back when metadata is unavailable', async () => {
+    class RecoveryAudio {
+      removeAttribute() {}
+      load() {}
+      set src(url) {
+        if (url === 'blob:playable') {
+          this.duration = 4.8;
+          this.onloadedmetadata();
+        } else {
+          this.onerror();
+        }
+      }
+    }
+    await expect(readStudioRecoveryDuration('blob:playable', 9, RecoveryAudio)).resolves.toBe(4.8);
+    await expect(readStudioRecoveryDuration('blob:unreadable', 9, RecoveryAudio)).resolves.toBe(9);
   });
   it('rejects invalid records before opening storage', async () => {
     await expect(saveStudioRecoveryTake({

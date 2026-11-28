@@ -1,21 +1,11 @@
-import React, {useEffect,useRef} from 'react';
-import { Headphones, Mic2, Monitor, ShieldCheck } from 'lucide-react';
+import React from 'react';
+import { Headphones, Mic2, Monitor, Pause, Play, ShieldCheck } from 'lucide-react';
 
-// Playback uses an isolated native <audio> element; unlike the timeline it does
-// not alter the project playhead or perform a destructive render. The original
-// take remains a clip even if a new take is prepared.
 export default function MobileTakeReview({
-  track, comparisonTakes = [], onChooseTake, onRetake, onSaveForPC, recording = false, saving = false, readOnly = false,
+  track, comparisonTakes = [], onChooseTake, onTogglePlayback, playing = false,
+  onRetake, onSaveForPC, recording = false, saving = false, readOnly = false,
 }) {
   const url = track?.audioUrl || track?.file_url;
-  const previewRef = useRef(null);
-  useEffect(() => {
-    const audio = previewRef.current;
-    return () => {
-      if (!audio) return;
-      try { audio.pause(); audio.currentTime = 0; } catch { /* browser disposed preview */ }
-    };
-  },[url]);
   if (!track || !url) return null;
   const quality = track.captureQuality;
   const isTemporary = typeof url === 'string' && url.startsWith('blob:');
@@ -40,15 +30,19 @@ export default function MobileTakeReview({
       <div className="flex gap-2 overflow-x-auto pb-1">
         {comparisonTakes.map((take,index)=><button key={take.id} type="button"
           aria-pressed={String(track.id)===String(take.id)}
-          aria-label={`Listen to take ${index+1}: ${take.name}`}
+          aria-label={`Select take ${index+1}: ${take.name}`}
           onClick={()=>onChooseTake?.(take.id)}
           className={`min-h-11 shrink-0 rounded-xl border px-3 text-xs font-semibold ${String(track.id)===String(take.id)?'border-primary bg-primary/15 text-primary':'border-white/20 bg-white/5 text-muted-foreground'}`}>
           Take {index+1}{take.quality?.status==='clipping'?' · Possible clipping':''}
         </button>)}
       </div>
-      <p className="text-[11px] text-muted-foreground">Choose a take to hear it. Switching stops the previous preview. All takes remain in your project.</p>
+      <p className="text-[11px] text-muted-foreground">Select a take, then play the timeline from that take. All takes remain in your project.</p>
     </div>}
-    <audio ref={previewRef} key={url} controls preload="metadata" src={url} className="w-full min-w-0" aria-label="Playback selected Studio take"/>
+    <button type="button" disabled={recording} onClick={() => onTogglePlayback(track)}
+      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 text-sm font-semibold disabled:opacity-40">
+      {playing ? <Pause className="h-4 w-4" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
+      {playing ? 'Pause timeline' : 'Play from this take'}
+    </button>
     <p className="text-xs text-muted-foreground">{recommendation}</p>
     {quality && Number.isFinite(quality.peakDb) && <p className="text-[11px] text-muted-foreground">
       Peak {quality.peakDb.toFixed(1)} dBFS · RMS {Number.isFinite(quality.rmsDb) ? quality.rmsDb.toFixed(1) : 'unknown'} dBFS

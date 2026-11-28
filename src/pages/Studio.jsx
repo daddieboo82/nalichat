@@ -1563,7 +1563,8 @@ export default function Studio() {
     mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
   };
 
-  const togglePlay = async () => {
+  const togglePlay = async (reviewStartTime) => {
+    if (recordingFinalizeInFlightRef.current) return;
     if (spectralStartRef.current !== null) {
       playbackAttemptRef.current += 1;
       resetSpectralTransport();
@@ -1578,6 +1579,7 @@ export default function Studio() {
       skipCountInRef.current = false;
       setCountInActive(false);
     }
+    if (!isPlaying && !isRecording && Number.isFinite(reviewStartTime)) updateCurrentTime(reviewStartTime);
     // Each Play/Pause action invalidates promises from earlier starts.
     const playbackAttempt = ++playbackAttemptRef.current;
     playbackStartingRef.current.clear();
@@ -1585,8 +1587,9 @@ export default function Studio() {
     if (isRecording) {
       setIsRecording(false);
       stopRecordingProcess();
+      return;
     }
-    
+
     if (!isPlaying) {
       playbackFailedRef.current.clear();
       sounds.nav();
@@ -2105,6 +2108,11 @@ export default function Studio() {
           );
         });
         recordedUrlTransferred = true;
+        // A normal recording finish leaves the cursor beyond the playable take.
+        // Preserve an explicit seek or Stop, and let configured post-roll finish.
+        if (!keepPlaying && currentTimeRef.current === stoppedEndTime) {
+          updateCurrentTime(stoppedStartTime);
+        }
         if (captureHadMicTrack) trackFirstStudioRecording(trainingOwner);
         // Explicitly opted-in voice training only. Never train other customers'
         // recordings or share model weights across accounts. Recording save is
@@ -4402,7 +4410,7 @@ export default function Studio() {
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Return to Zero (Home)" aria-label="Return to Zero (Home)" aria-keyshortcuts="Home" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Return to Zero <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Home</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop" aria-label="Stop" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Square className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Numpad 0</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Play/Pause (Space)" aria-label="Play/Pause (Space)" aria-keyshortcuts="Space" onClick={(e) => { togglePlay(); e.currentTarget.blur(); }} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Play/Pause (Space)" aria-label="Play/Pause (Space)" aria-keyshortcuts="Space" aria-pressed={isPlaying} disabled={mobileTakeFinalizing} onClick={(e) => { togglePlay(); e.currentTarget.blur(); }} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Record (R)" aria-label="Record (R)" aria-keyshortcuts="R" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Record <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">R</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Toggle Loop Region" aria-label="Loop" onClick={(e) => { setLoopActive(!loopActive); e.currentTarget.blur(); }} className={cn("w-10 h-10 rounded-lg transition-all", loopActive ? "bg-blue-500/20 text-blue-500" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}><RefreshCw className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Toggle Loop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+L</kbd></TooltipContent></Tooltip>
             {selectionStart !== null && selectionEnd !== null && (
@@ -4731,6 +4739,8 @@ export default function Studio() {
             <MobileTakeReview track={tracks.find(t=>String(t.id)===String(mobileReviewedTakeId))}
               comparisonTakes={relatedMobileTakes(tracks,tracks.find(t=>String(t.id)===String(mobileReviewedTakeId)))}
               onChooseTake={id=>{setMobileReviewedTakeId(id);setSelectedTrackIds([id]);}}
+              playing={isPlaying}
+              onTogglePlayback={track => togglePlay(track.startTime ?? 0)}
               onRetake={prepareMobileRetake} onSaveForPC={saveMobileForDesktop}
               recording={isRecording || mobileTakeFinalizing} saving={mobileHandoffSaving} readOnly={!canEditProject} />
           </div>
@@ -5889,7 +5899,7 @@ export default function Studio() {
         style={{ display:isMobile?"block":"none",paddingBottom:"max(env(safe-area-inset-bottom), 10px)" }} aria-label="Mobile Studio transport">
         <div className="mx-auto flex max-w-md items-center justify-between gap-2">
           <button type="button" onClick={() => stop()} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-studio-raised" aria-label="Stop"><Square className="h-5 w-5"/></button>
-          <button type="button" onClick={togglePlay} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-studio-raised font-semibold" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}{isPlaying ? "Pause" : "Play"}</button>
+          <button type="button" onClick={() => togglePlay()} disabled={mobileTakeFinalizing} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-studio-raised font-semibold disabled:opacity-40" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}{isPlaying ? "Pause" : "Play"}</button>
           <button type="button" onClick={toggleRecord} disabled={!canEditProject || mobileTakeFinalizing} className={cn("studio-mobile-record-button flex min-h-14 flex-[1.2] items-center justify-center gap-2 rounded-2xl font-bold text-white disabled:opacity-40", isRecording ? "bg-red-700" : "bg-red-600")} aria-label={isRecording ? "Stop recording" : "Record"}><Circle className="h-5 w-5 fill-current"/>{isRecording ? "Finish" : "Record"}</button>
           <button type="button" onClick={handleSave} disabled={isRecording || mobileTakeFinalizing || mobileHandoffSaving} className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-studio-raised disabled:opacity-40" aria-label="Save session"><Save className="h-5 w-5"/></button>
         </div>

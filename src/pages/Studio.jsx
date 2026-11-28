@@ -25,6 +25,7 @@ import StudioStatusBanners, { StudioPerformanceNotice } from '@/components/studi
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderTunedVocal, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
+import { createStudioSpectralHold } from '@/lib/studioSpectralHold';
 import { prepareStudioSpectralStart } from '@/lib/studioSpectralStart';
 import { releaseStudioAudioPlayer } from '@/lib/studioAudioPlayerRelease';
 import { startStudioBoundaryPlayback } from '@/lib/studioBoundaryPlayback';
@@ -328,12 +329,26 @@ export default function Studio() {
   const playbackFailedRef = useRef(new Set());
   const playbackAttemptRef = useRef(0);
   const spectralStartRef = useRef(null);
+  const spectralHoldRef = useRef(null);
+  if (!spectralHoldRef.current) spectralHoldRef.current=createStudioSpectralHold();
   const spectralEnabled = import.meta.env.VITE_STUDIO_SPECTRAL_PREVIEW === 'true';
   const resetSpectralTransport = () => {
     spectralStartRef.current = null;
+    spectralHoldRef.current.cancel();
     const engine = mixEngineRef.current;
     const status = engine?.spectralPlaybackStatus()?.status;
     if (status === 'ready' || status === 'preparing' || status === 'resetting') engine.resetSpectralPlayback();
+  };
+  const holdSpectralJump = () => {
+    const engine=mixEngineRef.current;
+    if(spectralHoldRef.current.pending)return true;
+    if(engine?.spectralPlaybackStatus()?.status!=='ready')return false;
+    spectralHoldRef.current.begin({
+      pause:()=>Object.values(audioElementsRef.current).forEach(a=>a.pause()),
+      refresh:()=>engine.refreshSpectralPlayback(),
+      onFailure:()=>{engine.resetSpectralPlayback();toast.warning('Spectral reset unavailable; using the existing VoxShift engine.');},
+    });
+    return true;
   };
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
@@ -1219,6 +1234,9 @@ export default function Studio() {
     let driftAttempt = playbackAttemptRef.current;
     
     const updateTime = (time) => {
+      if (spectralEnabled && spectralHoldRef.current.pending) {
+        lastTime=time;animationFrameId=requestAnimationFrame(updateTime);return;
+      }
       // Backgrounded browsers can pause RAF for seconds or minutes. Don't
       // seek playback over that gap; keep real elapsed time for live capture.
       const frameGapSeconds = (time - lastTime) / 1000;
@@ -1247,7 +1265,8 @@ export default function Studio() {
       const didWrap = nextPosition.wrapped;
 
       if (didWrap) {
-        if (spectralEnabled) resetSpectralTransport();
+        const held = spectralEnabled && !isRecording && holdSpectralJump();
+        if (spectralEnabled && !held) resetSpectralTransport();
         // A transport jump must reposition already-playing audio, not just
         // wait for a paused split clip to start on the next RAF.
         for (const track of tracksRef.current) {
@@ -1260,6 +1279,7 @@ export default function Studio() {
         playbackFailedRef.current.clear();
         playbackStartingRef.current.clear();
         playbackAttemptRef.current += 1;
+        if(held){updateCurrentTime(newTime);animationFrameId=requestAnimationFrame(updateTime);return;}
       }
 
       currentTimeRef.current = newTime;
@@ -1501,7 +1521,7 @@ export default function Studio() {
   const updateCurrentTime = (newTime) => {
     if (!Number.isFinite(newTime)) return;
     newTime = Math.max(0, newTime);
-    if (spectralEnabled) resetSpectralTransport();
+    if (spectralEnabled && !(isPlaying && !isRecording && holdSpectralJump())) resetSpectralTransport();
     if (newTime + 15 > transportHorizonRef.current) {
       transportHorizonRef.current = Math.ceil((newTime + 30) / 60) * 60;
       setTransportHorizon(transportHorizonRef.current);

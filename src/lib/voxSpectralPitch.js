@@ -1,3 +1,5 @@
+import { resolveVoxSpectralOptions } from './voxSpectralModes.js';
+
 // Experimental, offline spectral pitch shifter. Not connected to live playback.
 // Frames retain their original hop spacing; phase propagation tracks the
 // measured instantaneous frequency instead of periodically resetting delay taps.
@@ -27,7 +29,9 @@ function fft(re, im, inverse = false) {
 }
 const wrap = p => p - 2 * Math.PI * Math.round(p / (2 * Math.PI));
 
-export function createVoxSpectralStream(ratio, { frameSize = 2048, hopSize = 256, formantStrength = 0, sampleRate = 48000 } = {}) {
+export function createVoxSpectralStream(ratio, options = {}) {
+  const { frameSize = 2048, hopSize = 256, formantStrength = 0, levelStrength = 0, sampleRate = 48000 } = resolveVoxSpectralOptions(options);
+  if (!Number.isFinite(levelStrength) || levelStrength < 0 || levelStrength > 1) throw new RangeError('Invalid level stabilization');
   if (!Number.isFinite(ratio) || ratio < 0.5 || ratio > 2) throw new RangeError('Unsupported pitch ratio');
   if (!Number.isInteger(frameSize) || frameSize < 256 || frameSize > 8192 || (frameSize & (frameSize - 1)) || !Number.isInteger(hopSize) || hopSize < 1 || hopSize > frameSize / 4) throw new RangeError('Invalid FFT or hop size');
   if (!Number.isFinite(formantStrength) || formantStrength < 0 || formantStrength > 1 || !Number.isFinite(sampleRate) || sampleRate < 8000 || sampleRate > 192000) throw new RangeError('Invalid spectral envelope settings');
@@ -42,7 +46,9 @@ export function createVoxSpectralStream(ratio, { frameSize = 2048, hopSize = 256
   const lifter = Math.min(half - 1, Math.max(2, Math.round(sampleRate / 500)));
   const win = Float64Array.from({length:n}, (_,i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / n));
   const ring = new Float64Array(n), out = new Float64Array(n*2), norm = new Float64Array(n*2);
-  let count = 0;
+  let count = 0, inputPower = 0, outputPower = 0, gain = 1;
+  const powerAlpha = Math.exp(-1 / (sampleRate * 0.05));
+  const gainAlpha = Math.exp(-1 / (sampleRate * 0.03));
   const frame = () => {
     const start = count - n;
     for (let i = 0; i < n; i++) { const index = start+i; re[i] = (index < 0 ? 0 : ring[index % n]) * win[i]; im[i] = 0; }
@@ -89,6 +95,16 @@ export function createVoxSpectralStream(ratio, { frameSize = 2048, hopSize = 256
         if (ratio === 1) { output[i] = index < 0 ? 0 : ring[count % n]; }
         else if (index < 0) output[i] = 0;
         else { const slot = index % out.length; output[i] = norm[slot] > 1e-12 ? out[slot] / norm[slot] : 0; out[slot] = 0; norm[slot] = 0; }
+        if (levelStrength && ratio !== 1 && index >= 0) {
+          const dry = ring[count % n], wet = output[i];
+          inputPower = powerAlpha * inputPower + (1-powerAlpha) * dry * dry;
+          outputPower = powerAlpha * outputPower + (1-powerAlpha) * wet * wet;
+          // Suppress gain chasing in silence; cap correction at +/-12 dB.
+          const target = inputPower > 1e-8 && outputPower > 1e-8
+            ? Math.max(0.25, Math.min(4, Math.pow(inputPower/outputPower,levelStrength/2))) : 1;
+          gain = gainAlpha * gain + (1-gainAlpha) * target;
+          output[i] = wet * gain;
+        }
         ring[count % n] = x; count++;
         if (ratio !== 1 && count % h === 0) frame();
       }

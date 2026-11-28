@@ -5,9 +5,9 @@ import { createVoxSpectralStream } from './voxSpectralPitch.js';
 class VoxSpectralProcessor extends AudioWorkletProcessor {
   constructor({ processorOptions = {} } = {}) {
     super();
-    const { ratio = 1, frameSize = 2048, hopSize = 256, formantStrength = 0, channels = 2 } = processorOptions;
+    const { ratio = 1, frameSize = 2048, hopSize = 256, formantStrength = 0, levelStrength = 0, channels = 2 } = processorOptions;
     if (channels !== 1 && channels !== 2) throw new RangeError('Expected mono or stereo');
-    this.streams = Array.from({length: channels}, () => createVoxSpectralStream(ratio, {frameSize, hopSize, formantStrength, sampleRate}));
+    this.streams = Array.from({length: channels}, () => createVoxSpectralStream(ratio, {frameSize, hopSize, formantStrength, levelStrength, sampleRate}));
     this.silence = new Float32Array(128);
     this.disposed = false;
     this.port.onmessage = ({data}) => { if (data?.type === 'dispose') this.disposed = true; };

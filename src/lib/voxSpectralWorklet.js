@@ -1,8 +1,10 @@
 // Vite emits a bundled module from the same DSP core used by offline export.
 import workletUrl from './voxSpectralPitch.worklet.js?worker&url';
+import { resolveVoxSpectralOptions } from './voxSpectralModes.js';
 const loaded = new WeakMap();
 export async function createVoxSpectralNode(context, options = {}) {
   if (!context?.audioWorklet || typeof globalThis.AudioWorkletNode !== 'function') throw new Error('Spectral AudioWorklet unavailable');
+  options = resolveVoxSpectralOptions(options);
   const channels = options.channels ?? 2;
   if (channels !== 1 && channels !== 2) throw new RangeError('Expected mono or stereo');
   if (!loaded.has(context)) {

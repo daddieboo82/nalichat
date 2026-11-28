@@ -1,6 +1,11 @@
 import { voxPitchRatio } from './voxShift.js';
 import { voxSpectralPitch } from './voxSpectralPitch.js';
 
+export function needsSpectralClip(track) {
+  const vox=(track?.effects || track?.plugins || {}).voxshift;
+  return !!vox && vox.enabled!==false && voxPitchRatio(vox.params)!==1;
+}
+
 // Explicit offline option: process only the selected source region, then feed
 // the existing Studio channel strip with its main pitch stage neutralized.
 // Preset tone, output gain and parallel legacy layers remain intact.

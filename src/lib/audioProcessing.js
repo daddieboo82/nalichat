@@ -1,6 +1,6 @@
 // Real client-side audio processing helpers (Web Audio API).
 import { connectVoxShift } from './voxShift.js';
-import { prepareSpectralClip } from './voxSpectralRender.js';
+import { prepareSpectralClip, needsSpectralClip } from './voxSpectralRender.js';
 import { studioRecordedWaveform } from './studioRecordedWaveform.js';
 import { studioClipAudioRange } from './studioClipAudioRange.js';
 // These operate on actual audio data — no simulation.
@@ -393,15 +393,12 @@ function scheduleAutomation(paramNode, points, fallback, mapValue = value => val
  * Build a full channel strip: fader -> inserts -> pan -> master, plus the
  * post-fader Send 1 tap into the shared reverb bus.
  */
-export function connectTrackChain(context, source, track, { destination, reverbBus, delayBus, cueBus, gain } = {}) {
-  const nodes = [];
+export function connectTrackPreInserts(context,source,track,{gain,nodes=[]}={}) {
   const trackGain = context.createGain();
   trackGain.gain.value = num(gain, trackGainValue(track));
   source.connect(trackGain);
   nodes.push(trackGain);
 
-  const insertsOut = context.createGain();
-  nodes.push(insertsOut);
   // Session Auto Polish is a reversible insert applied equally during playback
   // and offline mixdown; it never rewrites or uploads the source recording.
   let insertsInput = trackGain;
@@ -424,6 +421,34 @@ export function connectTrackChain(context, source, track, { destination, reverbB
     nodes.push(highpass, compressor, makeup);
     insertsInput = makeup;
   }
+  if (typeof context.startRendering === 'function') {
+    const clipGain = Math.pow(10, clamp(num(track?.clipGain, 0), -24, 24) / 20);
+    const volumePoints = track?.automationPoints || [];
+    const mutePoints = track?.muteAutomationPoints || [];
+    const gainTimes = [...new Set([...volumePoints, ...mutePoints].map(p => p?.time).filter(Number.isFinite))].sort((a, b) => a - b);
+    if (gainTimes.length) {
+      trackGain.gain.cancelScheduledValues(0);
+      const gainAt = time => {
+        const volume = automationValueAt(volumePoints, time, track?.volume ?? 75);
+        const muted = automationValueAt(mutePoints, time, track?.muted ? 100 : 0, { step: true }) >= 50;
+        return muted ? 0 : clamp(volume, 0, 100) / 100 * clipGain;
+      };
+      trackGain.gain.setValueAtTime(gainAt(0), 0);
+      gainTimes.forEach(time => {
+        const muteBoundary = mutePoints.some(p => p.time === time);
+        if (muteBoundary) trackGain.gain.setValueAtTime(gainAt(time), Math.max(0, time));
+        else trackGain.gain.linearRampToValueAtTime(gainAt(time), Math.max(0, time));
+      });
+    }
+  }
+  return {trackGain,insertsInput,nodes};
+}
+
+export function connectTrackChain(context, source, track, { destination, reverbBus, delayBus, cueBus, gain } = {}) {
+  const nodes = [];
+  const {trackGain, insertsInput} = connectTrackPreInserts(context,source,track,{gain,nodes});
+  const insertsOut = context.createGain();
+  nodes.push(insertsOut);
   const liveParams = {};
   connectPluginChain(context, insertsInput, getTrackEffects(track), insertsOut, nodes, liveParams);
 
@@ -455,24 +480,6 @@ export function connectTrackChain(context, source, track, { destination, reverbB
   // OfflineAudioContext can schedule the exact same automation curves used by
   // realtime playback, keeping exported mixes aligned with what the user hears.
   if (typeof context.startRendering === 'function') {
-    const clipGain = Math.pow(10, clamp(num(track?.clipGain, 0), -24, 24) / 20);
-    const volumePoints = track?.automationPoints || [];
-    const mutePoints = track?.muteAutomationPoints || [];
-    const gainTimes = [...new Set([...volumePoints, ...mutePoints].map(p => p?.time).filter(Number.isFinite))].sort((a, b) => a - b);
-    if (gainTimes.length) {
-      trackGain.gain.cancelScheduledValues(0);
-      const gainAt = time => {
-        const volume = automationValueAt(volumePoints, time, track?.volume ?? 75);
-        const muted = automationValueAt(mutePoints, time, track?.muted ? 100 : 0, { step: true }) >= 50;
-        return muted ? 0 : clamp(volume, 0, 100) / 100 * clipGain;
-      };
-      trackGain.gain.setValueAtTime(gainAt(0), 0);
-      gainTimes.forEach(time => {
-        const muteBoundary = mutePoints.some(p => p.time === time);
-        if (muteBoundary) trackGain.gain.setValueAtTime(gainAt(time), Math.max(0, time));
-        else trackGain.gain.linearRampToValueAtTime(gainAt(time), Math.max(0, time));
-      });
-    }
     if (output?.pan) scheduleAutomation(output.pan, track?.panAutomationPoints, track?.pan ?? 50, value => clamp((value - 50) / 50, -1, 1));
     sendGains.forEach((node, index) => {
       if (node) scheduleAutomation(node.gain, track?.[`send${index + 1}AutomationPoints`], track?.[`send${index + 1}`] ?? 0, value => clamp(value, 0, 100) / 100);
@@ -604,7 +611,19 @@ export async function renderMixToBuffer(tracks, options = {}) {
   const master = connectMasterChain(offline, { masterFx, masterVolume, destination: offline.destination });
 
   for (const item of decoded) {
-    const {track,buffer,range} = spectralPitch === true ? await prepareSpectralClip(offline,item.track,item.buffer,item.range) : item;
+    let prepared = item;
+    if (spectralPitch === true && needsSpectralClip(item.track)) {
+      // Render the original pre-insert stage on the absolute session timeline,
+      // including fader automation and compressor state, before spectral pitch.
+      const pre = new OfflineAudioContext(item.buffer.numberOfChannels, length, sampleRate);
+      const original = pre.createBufferSource(); original.buffer = item.buffer;
+      connectTrackPreInserts(pre,original,item.track).insertsInput.connect(pre.destination);
+      original.start(item.range.when,item.range.offset,item.range.duration);
+      const pcm = await pre.startRendering();
+      const neutral = {...item.track,volume:100,clipGain:0,autoPolish:false,automationPoints:[],muteAutomationPoints:[]};
+      prepared = await prepareSpectralClip(offline,neutral,pcm,{when:0,offset:0,duration:pcm.duration,endsAt:pcm.duration});
+    }
+    const {track,buffer,range} = prepared;
     const src = offline.createBufferSource();
     src.buffer = buffer;
     connectTrackChain(offline, src, track, {

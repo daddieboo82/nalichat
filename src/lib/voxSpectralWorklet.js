@@ -1,0 +1,15 @@
+// Vite emits a bundled module from the same DSP core used by offline export.
+import workletUrl from './voxSpectralPitch.worklet.js?worker&url';
+const loaded = new WeakMap();
+export async function createVoxSpectralNode(context, options = {}) {
+  if (!context?.audioWorklet || typeof globalThis.AudioWorkletNode !== 'function') throw new Error('Spectral AudioWorklet unavailable');
+  const channels = options.channels ?? 2;
+  if (channels !== 1 && channels !== 2) throw new RangeError('Expected mono or stereo');
+  if (!loaded.has(context)) {
+    const pending = context.audioWorklet.addModule(workletUrl).catch(error => { loaded.delete(context); throw error; });
+    loaded.set(context, pending);
+  }
+  await loaded.get(context);
+  const node = new AudioWorkletNode(context, 'nali-vox-spectral', {numberOfInputs:1, numberOfOutputs:1, channelCount:channels, channelCountMode:'explicit', channelInterpretation:'discrete', outputChannelCount:[channels], processorOptions:{...options, channels}});
+  return {node, latencySamples:options.frameSize ?? 2048, dispose(){node.port.postMessage({type:'dispose'});node.disconnect();node.port.close();}};
+}

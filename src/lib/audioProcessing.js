@@ -1,3 +1,4 @@
+import { voxExportWindow } from './voxExportWindow.js';
 // Real client-side audio processing helpers (Web Audio API).
 import { connectVoxShift } from './voxShift.js';
 import { prepareSpectralClip, needsSpectralClip } from './voxSpectralRender.js';
@@ -629,17 +630,17 @@ export async function renderMixToBuffer(tracks, options = {}) {
     if (spectralPitch === true && needsSpectralClip(item.track)) {
       // Render the original pre-insert stage on the absolute session timeline,
       // including fader automation and compressor state, before spectral pitch.
-      const pre = new OfflineAudioContext(item.buffer.numberOfChannels, length, sampleRate);
+      const window = voxExportWindow(item.track,item.range,length,sampleRate);
+      const pre = new OfflineAudioContext(item.buffer.numberOfChannels, window.length, sampleRate);
       const original = pre.createBufferSource(); original.buffer = item.buffer;
       connectTrackPreInserts(pre,original,item.track).insertsInput.connect(pre.destination);
-      original.start(item.range.when,item.range.offset,item.range.duration);
+      original.start(item.range.when-window.origin/sampleRate,item.range.offset,item.range.duration);
       const pcm = await pre.startRendering();
       const neutral = {...item.track,volume:100,clipGain:0,autoPolish:false,automationPoints:[],muteAutomationPoints:[]};
       // Do not pitch-process silence before the clip: overlapping FFT windows
       // can otherwise spread the first transient backward into the timeline.
-      const firstSample = Math.min(pcm.length, Math.ceil(item.range.when * sampleRate));
-      const start = firstSample / sampleRate;
-      prepared = await prepareSpectralClip(offline,neutral,pcm,{when:start,offset:start,duration:pcm.duration-start,endsAt:pcm.duration});
+      const start = window.start;
+      prepared = await prepareSpectralClip(offline,neutral,pcm,{when:start,offset:window.offset,duration:pcm.duration-window.offset,endsAt:window.end/sampleRate});
     }
     const {track,buffer,range} = prepared;
     const src = offline.createBufferSource();

@@ -98,7 +98,7 @@ import { trainPrivateNaliVoiceFromRecording, forgetPrivateNaliVoiceTraining } fr
 import { studioPlaybackPosition } from '@/lib/studioPlaybackPosition';
 import { nextStudioTransportPosition } from '@/lib/studioTransportBoundary';
 import { studioTransportFrameDelta } from '@/lib/studioTransportDelta';
-import { studioPlaybackTimeAfterStall, studioPlaybackDriftTarget } from '@/lib/studioPlaybackClock';
+import { studioSinglePlaybackClock, studioPlaybackTimeAfterStall, studioPlaybackDriftTarget } from '@/lib/studioPlaybackClock';
 import { studioPreRollWindow } from '@/lib/studioPreRollWindow';
 import { compactStudioWaveform } from '@/lib/studioTrackStripWaveform';
 import { studioRecordedWaveform, studioWaveformRegion } from '@/lib/studioRecordedWaveform';
@@ -1270,7 +1270,12 @@ export default function Studio() {
       // When the tab resumes, use actual media progress if a current clip
       // demonstrably continued playing. Otherwise retain the safe RAF cap.
       const playbackTracks = getTransportTracks(tracksRef.current);
-      const mediaAlignedTime = studioPlaybackTimeAfterStall({
+      const singleClock = isPlaying && !isRecording && !spectralEnabled
+        ? studioSinglePlaybackClock({
+          tracks: playbackTracks, elements: audioElementsRef.current,
+          previousTime: currentTimeRef.current, reviewOnly: playbackTracks !== tracksRef.current,
+        }) : null;
+      const mediaAlignedTime = singleClock?.time ?? studioPlaybackTimeAfterStall({
         expectedTime: isRecording && recordingStartTime !== null && recordingStartRealRef.current !== null
           ? Math.max(currentTimeRef.current, recordingStartTime + Math.max(0, (time - recordingStartRealRef.current) / 1000))
           : currentTimeRef.current + delta,
@@ -1370,7 +1375,7 @@ export default function Studio() {
           }
           const candidate = audio?.dataset?.srcUrl === track.audioUrl
             ? audio : getTrackAudioRef.current?.(track);
-          if (scanDrift) {
+          if (scanDrift && singleClock?.trackId !== track.id) {
             const target = studioPlaybackDriftTarget({audio:candidate,track,position,recording:isRecording});
             const previous = driftHistory.get(track.id);
             if (target === null) {

@@ -1,3 +1,30 @@
+import { studioPlaybackPosition } from './studioPlaybackPosition.js';
+
+// For one audible audio source the media clock is authoritative. Seeking that
+// source to a slower animation clock can repeat words on a busy phone.
+export function studioSinglePlaybackClock({ tracks, elements, previousTime, reviewOnly = false }) {
+  const solo = !reviewOnly && tracks.some(track => track.solo);
+  const audible = tracks.filter(track => track.audioUrl &&
+    (reviewOnly || (!track.muted && (!solo || track.solo))));
+  if (audible.length !== 1) return null;
+  const [track] = audible;
+  const audio = elements[track.id];
+  const result = { trackId: track.id, time: null };
+  if (!audio || audio.seeking || audio.readyState < 2 ||
+      audio.dataset?.srcUrl !== track.audioUrl || !Number.isFinite(audio.currentTime) ||
+      !studioPlaybackPosition(track, previousTime).active) return result;
+
+  const start = Number(track.startTime ?? 0);
+  const end = start + Number(track.duration);
+  const mediaTime = start + audio.currentTime - Number(track.clipStart ?? 0);
+  // An ended player also reports paused. Move outside the clip in that case
+  // so the boundary loop cannot restart the source as if it were buffering.
+  if (audio.ended || mediaTime >= end) return { trackId: track.id, time: end };
+  if (audio.paused) return result;
+  if (!studioPlaybackPosition(track, mediaTime).active) return result;
+  return { trackId: track.id, time: Math.max(previousTime, mediaTime) };
+}
+
 // When requestAnimationFrame stalls, HTMLMediaElement audio can continue to
 // advance in the background. Re-anchor the Studio playhead to actual media
 // progress only when there is a currently playing, unambiguous clip.

@@ -265,7 +265,7 @@ export function createMixEngine() {
       if(snapshot.some(([id,e])=>entries.get(id)!==e || !e.element.paused))return spectralStatus={status:'invalidated'};
       // A slow or unavailable benchmark must not enable unverified processing.
       if(needsCalibration && !calibration)return spectralStatus={status:'unavailable',reason:'Device calibration unavailable'};
-      const plan=planVoxWorkload(requests,{sampleRate:ctx.sampleRate,reserve,calibration});
+      const plan=planVoxWorkload(requests,{sampleRate:ctx.sampleRate,reserve,calibration,alignLegacy:allowHybrid});
       const deferred=plan.tracks.filter(t=>t.status==='deferred').map(t=>t.id);
       if(deferred.length && (!allowHybrid || !plan.tracks.some(t=>t.status==='spectral')))return spectralStatus={status:'deferred',deferred,plan};
       const routes=new Map();spectralStatus={status:'preparing'};

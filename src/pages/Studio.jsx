@@ -25,6 +25,7 @@ import StudioStatusBanners, { StudioPerformanceNotice } from '@/components/studi
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getTrackEffects, separateStems, generateMelody, renderMixToWav, renderTunedVocal, audioBufferToWav } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
+import { prepareStudioSpectralStart } from '@/lib/studioSpectralStart';
 import { releaseStudioAudioPlayer } from '@/lib/studioAudioPlayerRelease';
 import { startStudioBoundaryPlayback } from '@/lib/studioBoundaryPlayback';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
@@ -853,7 +854,8 @@ export default function Studio() {
         if (Array.isArray(savedState?.tracks)) {
           const hydrated = await recoverSavedWaveforms(hydrateStudioTracks(savedState.tracks));
           if (cancelled) return;
-          historyEpochRef.current += 1;
+          if (spectralEnabled) resetSpectralTransport();
+    historyEpochRef.current += 1;
           historyRef.current = [hydrated];
           historyIndexRef.current = 0;
           setHistoryIndex(0);
@@ -893,7 +895,8 @@ export default function Studio() {
               fadeOut: 0,
             })));
             if (cancelled) return;
-            historyEpochRef.current += 1;
+            if (spectralEnabled) resetSpectralTransport();
+    historyEpochRef.current += 1;
             historyRef.current = [hydrated];
             historyIndexRef.current = 0;
             setHistoryIndex(0);
@@ -934,6 +937,7 @@ export default function Studio() {
       return;
     }
     // Starting a new session must not inherit Undo/Redo from the last one.
+    if (spectralEnabled) resetSpectralTransport();
     historyEpochRef.current += 1;
     historyRef.current = [[]];
     historyIndexRef.current = 0;
@@ -972,7 +976,8 @@ export default function Studio() {
             return;
           }
           // Loading a local session is also a full session replacement.
-          historyEpochRef.current += 1;
+          if (spectralEnabled) resetSpectralTransport();
+    historyEpochRef.current += 1;
           historyRef.current = [parsed];
           historyIndexRef.current = 0;
           setHistoryIndex(0);
@@ -1004,6 +1009,7 @@ export default function Studio() {
       { ...base, id: 2, name: "Demo Bassline", color: "bg-blue-500", waveform: generateWaveform(400), duration: 20, audioUrl: null },
     ];
     // A demo replaces the previous session, including its Undo/Redo timeline.
+    if (spectralEnabled) resetSpectralTransport();
     historyEpochRef.current += 1;
     const demoEpoch = historyEpochRef.current;
     historyRef.current = [demoTracks];
@@ -1550,19 +1556,16 @@ export default function Studio() {
       sounds.nav();
       setActivity("Playing the mix ▶️");
       if (spectralEnabled && !isRecording) {
-        spectralStartRef.current = playbackAttempt;
-        try {
-          // Prepare all clips, including later timeline regions, before playback.
-          const allRouted = tracks.filter(t=>t.audioUrl).map(t=>getTrackAudio(t)).every(a=>a && a.dataset.fxBypass!=='1');
-          const result = allRouted ? await mixEngineRef.current.prepareSpectralPlayback() : {status:'unavailable'};
-          if (spectralStartRef.current !== playbackAttempt || playbackAttemptRef.current !== playbackAttempt || historyEpochRef.current !== playbackEpoch || !studioMountedRef.current) return;
-          if (result.status !== 'ready') toast.warning('Spectral preview unavailable; using the existing VoxShift engine.');
-        } catch {
-          if (spectralStartRef.current !== playbackAttempt || playbackAttemptRef.current !== playbackAttempt || historyEpochRef.current !== playbackEpoch || !studioMountedRef.current) return;
-          toast.warning('Spectral preview could not initialize; using the existing VoxShift engine.');
-        } finally {
-          if (spectralStartRef.current === playbackAttempt) spectralStartRef.current = null;
-        }
+        const allowed = await prepareStudioSpectralStart({
+          pending:spectralStartRef,attempt:playbackAttempt,epoch:playbackEpoch,
+          currentAttempt:()=>playbackAttemptRef.current,currentEpoch:()=>historyEpochRef.current,
+          mounted:()=>studioMountedRef.current,reset:resetSpectralTransport,warn:message=>toast.warning(message),
+          prepare:async()=>{
+            const allRouted = tracks.filter(t=>t.audioUrl).map(t=>getTrackAudio(t)).every(a=>a && a.dataset.fxBypass!=='1');
+            return allRouted ? mixEngineRef.current.prepareSpectralPlayback() : {status:'unavailable'};
+          },
+        });
+        if (!allowed || playbackAttemptRef.current!==playbackAttempt || historyEpochRef.current!==playbackEpoch || !studioMountedRef.current) return;
       }
       const playPromises = [];
       const hasSolo = tracks.some(track => track.solo);
@@ -4103,7 +4106,8 @@ export default function Studio() {
       }
       // A restored backup replaces the current session. Do not let Undo
       // resurrect tracks from the previous session or redo into its edits.
-      historyEpochRef.current += 1;
+      if (spectralEnabled) resetSpectralTransport();
+    historyEpochRef.current += 1;
       historyRef.current = [restoredTracks];
       historyIndexRef.current = 0;
       setHistoryIndex(0);
